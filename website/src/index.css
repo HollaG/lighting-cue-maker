@@ -1,0 +1,25 @@
+/* Global reset & dot-pattern background */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  /* Very light grey base */
+  background-color: #f5f5f5;
+
+  /* Radial dot pattern using a subtle slightly-darker grey */
+  background-image: radial-gradient(circle, #d0d0d0 1px, transparent 1px);
+  background-size: 24px 24px;
+}
