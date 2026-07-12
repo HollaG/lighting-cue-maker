@@ -9,10 +9,10 @@ export type Option = {
 export type FixtureGroupConfiguration = {
   id: string; // stable
   name: string;
-  attributes: Attribute[];
+  attributes: AttributeConfiguration[];
 };
 
-export type Attribute = {
+export type AttributeConfiguration = {
   id: string; // stable
   name: string;
   type: AttributeTypes;

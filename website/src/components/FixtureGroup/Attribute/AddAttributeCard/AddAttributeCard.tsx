@@ -14,7 +14,7 @@ import {
   Radio,
 } from "@mantine/core";
 import { MultiSelectCreatable } from "../../../MultiSelectCreatable/MultiSelectCreatable";
-import { AttributeTypes, BooleanOptions, type Attribute, type Option } from "../../../../types/types";
+import { AttributeTypes, BooleanOptions, type AttributeConfiguration, type Option } from "../../../../types/types";
 import { useEffect, useMemo, useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";
@@ -60,15 +60,6 @@ export const AddAttributeCard = ({
   // we cannot use a controlled component here because the form is in uncontrolled mode.
   const [selectedAttribute, setSelectedAttribute] = useState<AttributeTypes | null>(null);
 
-  const tagInputAttributes = useMemo(
-    () => ({
-      name: `fixtureGroup.${fixtureGroupId}.attributes.${id}.optionPossibleValues`,
-      key: form.key(`fixtureGroup.${fixtureGroupId}.attributes.${id}.optionPossibleValues`),
-      ...form.getInputProps(`fixtureGroup.${fixtureGroupId}.attributes.${id}.optionPossibleValues`),
-    }),
-    [],
-  );
-
   useEffect(() => {
     form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}`, {
       name: "",
@@ -86,16 +77,16 @@ export const AddAttributeCard = ({
         [AttributeTypes.TEXT]: null,
         [AttributeTypes.NONE]: null,
       },
-    } as Omit<Attribute, "id">); // ID only for database
+    } as Omit<AttributeConfiguration, "id">); // ID only for database
 
     // NOTE: This seems to be required, as otherwise the select field does NOT get set with the correct attribute type
     // setTimeout(() => {
     //   form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
     // }, 1);
 
-    waitNextFrame().then(() => {
-      form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
-    });
+    // waitNextFrame().then(() => {
+    //   form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
+    // });
 
     return () => {
       form.removeListItem(`fixtureGroup.${fixtureGroupId}.attributes`, id);
@@ -123,8 +114,7 @@ export const AddAttributeCard = ({
         </Box>
         <Flex mt={"md"} justify={"end"} style={{ flexShrink: 1 }}>
           <Button variant="transparent" size="xs" color="red" onClick={() => onDeleteAttribute(id)}>
-            {" "}
-            Remove{" "}
+            Remove attribute
           </Button>
         </Flex>
       </Group>
@@ -138,7 +128,7 @@ export const AddAttributeCard = ({
           }}
         >
           <Select
-            label="Type"
+            label="Input type"
             placeholder="Pick an attribute"
             data={ATTRIBUTE_OPTIONS}
             defaultValue={AttributeTypes.SELECT}

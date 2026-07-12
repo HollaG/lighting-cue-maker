@@ -1,7 +1,12 @@
-import { Button, Card, Center, Divider, Group, MultiSelect, Select, Stack, Text } from "@mantine/core";
+import { Box, Button, Card, Center, Divider, Flex, Group, MultiSelect, Select, Stack, Text } from "@mantine/core";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { useEffect, useState } from "react";
-import { AttributeTypes, type Attribute, type FixtureGroupConfiguration, type Option } from "../../types/types";
+import {
+  AttributeTypes,
+  type AttributeConfiguration,
+  type FixtureGroupConfiguration,
+  type Option,
+} from "../../types/types";
 import { MultiSelectCreatable } from "../MultiSelectCreatable/MultiSelectCreatable";
 import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
 import type { UseFormReturnType } from "@mantine/form";
@@ -47,14 +52,24 @@ export const FixtureGroupCard = ({
   return (
     <Card withBorder>
       <Stack>
-        <CustomTextInput
-          withAsterisk
-          label={`Light group ${index + 1} name`}
-          placeholder="Enter a name..."
-          name={`fixtureGroup.${id}.name`}
-          key={form.key(`fixtureGroup.${id}.name`)}
-          {...form.getInputProps(`fixtureGroup.${id}.name`)}
-        />
+        <Group>
+          <Box flex={1}>
+            <CustomTextInput
+              withAsterisk
+              label={`Light group ${index + 1} name`}
+              placeholder="Enter a name..."
+              name={`fixtureGroup.${id}.name`}
+              key={form.key(`fixtureGroup.${id}.name`)}
+              {...form.getInputProps(`fixtureGroup.${id}.name`)}
+            />
+          </Box>
+
+          <Flex mt={"md"} justify={"end"} style={{ flexShrink: 1 }}>
+            <Button variant="transparent" size="xs" color="red" onClick={() => onDeleteFixtureGroup(id)}>
+              Remove group
+            </Button>
+          </Flex>
+        </Group>
 
         {attributeIds.map((attributeId, index) => (
           <>
