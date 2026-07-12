@@ -1,0 +1,20 @@
+.wrapper {
+  &[data-size='xxl'] {
+    & .input {
+
+      height: 68px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+  }
+
+  /* &[data-size='xxs'] {
+    & .input {
+      padding-left: 10px;
+      padding-right: 10px;
+      height: 28px;
+      font-size: 10px;
+
+    }
+  } */
+}

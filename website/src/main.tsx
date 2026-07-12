@@ -4,13 +4,19 @@ import App from './App.tsx'
 
 import './index.css';
 import '@mantine/core/styles.css';
-import { createTheme, MantineProvider } from '@mantine/core';
+import { createTheme, MantineProvider, TextInput } from '@mantine/core';
+import classes from "./main.module.css"
 
 const theme = createTheme({
   fontFamily: 'Inter, sans-serif',
   fontFamilyMonospace: 'JetBrains Mono, monospace',
   headings: {
     fontFamily: 'Inter, sans-serif',
+  },
+  components: {
+    TextInput: TextInput.extend({
+      classNames: classes
+    }),
   },
 });
 
