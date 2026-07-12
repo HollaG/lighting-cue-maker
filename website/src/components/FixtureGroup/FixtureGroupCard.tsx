@@ -45,7 +45,7 @@ export const FixtureGroupCard = ({
     });
 
     return () => {
-      form.removeListItem("fixtureGroup", id);
+      form.setFieldValue(`fixtureGroup.${id}`, undefined);
     };
   }, []);
 
@@ -72,19 +72,16 @@ export const FixtureGroupCard = ({
         </Group>
 
         {attributeIds.map((attributeId, index) => (
-          <>
-            <AddAttributeCard
-              key={attributeId}
-              id={attributeId}
-              fixtureGroupId={id}
-              form={form}
-              index={index}
-              onDeleteAttribute={(id) => {
-                setAttributeIds((prev) => prev.filter((prevId) => prevId !== id));
-              }}
-            />
-            {/* {index !== attributeIds.length - 1 && <Divider />} */}
-          </>
+          <AddAttributeCard
+            key={attributeId}
+            id={attributeId}
+            fixtureGroupId={id}
+            form={form}
+            index={index}
+            onDeleteAttribute={(id) => {
+              setAttributeIds((prev) => prev.filter((prevId) => prevId !== id));
+            }}
+          />
         ))}
         {/* <AddAttributeCard /> */}
 

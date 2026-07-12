@@ -89,7 +89,7 @@ export const AddAttributeCard = ({
     // });
 
     return () => {
-      form.removeListItem(`fixtureGroup.${fixtureGroupId}.attributes`, id);
+      form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}`, undefined);
     };
   }, []);
 
