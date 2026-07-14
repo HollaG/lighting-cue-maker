@@ -59,9 +59,10 @@ export const AddAttributeCard = ({
   // the attribute type selected.
   // we cannot use a controlled component here because the form is in uncontrolled mode.
   const [selectedAttribute, setSelectedAttribute] = useState<AttributeTypes | null>(null);
-
+  const baseFieldName = `fixtureGroups.${fixtureGroupId}.attributes.${id}`;
+  const opvFieldName = `${baseFieldName}.optionPossibleValues`;
   useEffect(() => {
-    form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}`, {
+    form.setFieldValue(baseFieldName, {
       name: "",
       type: AttributeTypes.NONE,
       metadata: new Map<string, any>(),
@@ -81,23 +82,22 @@ export const AddAttributeCard = ({
 
     // NOTE: This seems to be required, as otherwise the select field does NOT get set with the correct attribute type
     // setTimeout(() => {
-    //   form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
+    //   form.setFieldValue(`fixtureGroups.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
     // }, 1);
 
     // waitNextFrame().then(() => {
-    //   form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
+    //   form.setFieldValue(`fixtureGroups.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
     // });
 
     return () => {
-      form.setFieldValue(`fixtureGroup.${fixtureGroupId}.attributes.${id}`, undefined);
+      // form.removeListItem(`fixtureGroups.${fixtureGroupId}.attributes`, index);
+      form.setFieldValue(`fixtureGroups.${fixtureGroupId}.attributes.${id}`, undefined);
     };
   }, []);
 
-  form.watch(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`, ({ previousValue, value, touched, dirty }) => {
+  form.watch(`${baseFieldName}.type`, ({ previousValue, value, touched, dirty }) => {
     setSelectedAttribute(value);
   });
-
-  const opvFieldName = `fixtureGroup.${fixtureGroupId}.attributes.${id}.optionPossibleValues`;
   return (
     <Card py={0}>
       <Group>
@@ -107,9 +107,9 @@ export const AddAttributeCard = ({
             style={{ width: "100%" }}
             label={`Attribute ${index + 1} name`}
             placeholder="e.g. Intensity, Colour, Position"
-            name={`fixtureGroup.${fixtureGroupId}.attributes.${id}.name`}
-            key={form.key(`fixtureGroup.${fixtureGroupId}.attributes.${id}.name`)}
-            {...form.getInputProps(`fixtureGroup.${fixtureGroupId}.attributes.${id}.name`)}
+            name={`${baseFieldName}.name`}
+            key={form.key(`${baseFieldName}.name`)}
+            {...form.getInputProps(`${baseFieldName}.name`)}
           />
         </Box>
         <Flex mt={"md"} justify={"end"} style={{ flexShrink: 1 }}>
@@ -138,9 +138,9 @@ export const AddAttributeCard = ({
             //   setSelectedAttribute(value.value);
             // }}
             allowDeselect={false}
-            name={`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`}
-            key={form.key(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`)}
-            {...form.getInputProps(`fixtureGroup.${fixtureGroupId}.attributes.${id}.type`)}
+            name={`${baseFieldName}.type`}
+            key={form.key(`${baseFieldName}.type`)}
+            {...form.getInputProps(`${baseFieldName}.type`)}
           />
         </Box>
 
@@ -290,7 +290,7 @@ const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
 };
 
 // specify min and max
-const SliderOptionsHandler = () => {};
+const SliderOptionsHandler = () => { };
 
 // specify default value
 const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; form: UseFormReturnType<any> }) => {
@@ -315,4 +315,4 @@ const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; f
 };
 
 // nothing
-const TextOptionsHandler = () => {};
+const TextOptionsHandler = () => { };

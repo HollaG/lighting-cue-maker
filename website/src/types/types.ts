@@ -41,8 +41,8 @@ export type AttributeTypes = (typeof AttributeTypes)[keyof typeof AttributeTypes
  */
 export type AttributeTypesOptions = {
   [AttributeTypes.TEXT]: null;
-  [AttributeTypes.SELECT]: Option[];
-  [AttributeTypes.MULTISELECT]: Option[];
+  [AttributeTypes.SELECT]: string[];
+  [AttributeTypes.MULTISELECT]: string[];
   [AttributeTypes.COLOUR]: ColourOption[];
   [AttributeTypes.SLIDER]: { min: number; max: number };
   [AttributeTypes.BOOLEAN]: BooleanOptions;
@@ -55,14 +55,14 @@ export type ColourOption = {
 };
 
 export const BooleanOptions = {
-  CHECKED: "checked",
-  UNCHECKED: "unchecked",
+  CHECKED: "checkedDefault",
+  UNCHECKED: "uncheckedDefault",
 } as const;
 
 export type BooleanOptions = (typeof BooleanOptions)[keyof typeof BooleanOptions];
 
 export type LightEventConfiguration = {
-  dbId: number;
+  // dbId: number;
   id: string; // google doc id oR something else
   name: string;
   cuesPerBand?: number;

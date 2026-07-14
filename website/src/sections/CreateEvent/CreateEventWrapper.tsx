@@ -4,20 +4,58 @@ import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
 import { useForm } from "@mantine/form";
 import { useState } from "react";
+import { flatten } from "../../utils/flatten";
+import { useRequest } from "../../hooks/useRequest";
+import type { AttributeConfiguration, FixtureGroupConfiguration, LightEventConfiguration } from "../../types/types";
+
+type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
+  fixtureGroups: {
+    [fixtureGroupId: number]: Omit<FixtureGroupConfiguration, "attributes"> & {
+      attributes: {
+        [attributeId: number]: AttributeConfiguration;
+      }
+    }
+  }
+}
 
 export const CreateEventWrapper = () => {
   const [fixtureGroupIds, setFixtureGroupIds] = useState<number[]>([]);
-  const form = useForm({
+
+  const { executeRequest, data, isLoading, error } = useRequest("/api/v1/events", "POST");
+
+  const form = useForm<FormData>({
     mode: "uncontrolled",
     initialValues: {
-      eventName: "",
+      name: "",
       cuesPerBand: undefined,
       uniqueCuesPerBand: undefined,
-      fixtureGroup: {},
+      fixtureGroups: {},
     },
   });
+
+  const onFormSubmit = (v: FormData) => {
+    // convert FormData into LightEventConfiguration
+    if (v.cuesPerBand !== undefined && typeof v.cuesPerBand === "string") v.cuesPerBand = Number(v.cuesPerBand);
+    if (v.uniqueCuesPerBand !== undefined && typeof v.uniqueCuesPerBand === "string") v.uniqueCuesPerBand = Number(v.uniqueCuesPerBand);
+    const config = flatten(v) as Omit<LightEventConfiguration, "id">;
+
+    // convert all ID fields into String
+    config.fixtureGroups.forEach((fixtureGroup) => {
+      delete fixtureGroup.id;
+      fixtureGroup.attributes.forEach((attribute) => {
+        delete attribute.id;
+      });
+    });
+
+    console.log({ config })
+
+
+
+
+    executeRequest({ ...config });
+  }
   return (
-    <form onSubmit={form.onSubmit((v) => console.log(v))}>
+    <form onSubmit={form.onSubmit((v) => onFormSubmit(v))}>
       <Container size={"xl"}>
         <Divider my="lg" label="Create new event" labelPosition="center" />
 
@@ -25,9 +63,9 @@ export const CreateEventWrapper = () => {
         <CustomTextInput
           placeholder="Type your event name here..."
           size="xxl"
-          name="eventName"
-          key={form.key("eventName")}
-          {...form.getInputProps("eventName")}
+          name="name"
+          key={form.key("name")}
+          {...form.getInputProps("name")}
         />
         <CustomTextInput
           label="How many cues per band? (optional)"

@@ -39,13 +39,13 @@ export const FixtureGroupCard = ({
   useEffect(() => {
     // ID will never change
     console.log("setting field value");
-    form.setFieldValue(`fixtureGroup.${id}`, {
+    form.setFieldValue(`fixtureGroups.${id}`, {
       name: "",
       attributes: {}, // instead of a [], we use an Object
     });
 
     return () => {
-      form.setFieldValue(`fixtureGroup.${id}`, undefined);
+      form.setFieldValue(`fixtureGroups.${id}`, undefined);
     };
   }, []);
 
@@ -58,9 +58,9 @@ export const FixtureGroupCard = ({
               withAsterisk
               label={`Light group ${index + 1} name`}
               placeholder="Enter a name..."
-              name={`fixtureGroup.${id}.name`}
-              key={form.key(`fixtureGroup.${id}.name`)}
-              {...form.getInputProps(`fixtureGroup.${id}.name`)}
+              name={`fixtureGroups.${id}.name`}
+              key={form.key(`fixtureGroups.${id}.name`)}
+              {...form.getInputProps(`fixtureGroups.${id}.name`)}
             />
           </Box>
 
@@ -79,6 +79,7 @@ export const FixtureGroupCard = ({
             form={form}
             index={index}
             onDeleteAttribute={(id) => {
+              console.log({ attributeIds, id });
               setAttributeIds((prev) => prev.filter((prevId) => prevId !== id));
             }}
           />
