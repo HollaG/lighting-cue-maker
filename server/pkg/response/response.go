@@ -27,10 +27,11 @@ func Created(c *gin.Context, data any) {
 	})
 }
 
-func BadRequest(c *gin.Context, message string) {
+func BadRequest(c *gin.Context, message string, data any) {
 	c.JSON(http.StatusBadRequest, Response{
 		Success: false,
 		Error:   message,
+		Data:    data,
 	})
 }
 

@@ -1,29 +1,54 @@
 package models
 
-import "time"
+import (
+	"gorm.io/gorm"
+)
 
+// Used for POST /events to create an event
 type CreateLightEventReq struct {
-	Name              string                      `json:"name"`
-	CuesPerBand       int                         `json:"cuesPerBand"`
-	UniqueCuesPerBand int                         `json:"uniqueCuesPerBand"`
-	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups"`
+	Name              string                               `json:"name"`
+	CuesPerBand       int                                  `json:"cuesPerBand"`
+	UniqueCuesPerBand int                                  `json:"uniqueCuesPerBand"`
+	FixtureGroups     []CreateFixtureGroupConfigurationReq `json:"fixtureGroups"`
 
 	// optional
 	Description string `json:"description,omitempty"`
 }
 
-type LightEvent struct {
-	CreateLightEventReq
+type CreateFixtureGroupConfigurationReq struct {
+	Name       string                            `json:"name"`
+	Attributes []CreateAttributeConfigurationReq `json:"attributes"`
+}
 
-	ID        string    `json:"id"`
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+type CreateAttributeConfigurationReq struct {
+	Name     string               `json:"name"`
+	Type     AttributeType        `json:"type"`
+	Metadata map[string]any       `json:"metadata"`
+	Options  AttributeTypeOptions `json:"optionPossibleValues"`
+}
+
+// ------------------------------------------------
+
+// DB model
+type LightEvent struct {
+	Uuid string `json:"id" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex:idx_uuid_event,where:deleted_at IS NULL"`
+
+	Name              string                      `json:"name"`
+	CuesPerBand       int                         `json:"cuesPerBand"`
+	UniqueCuesPerBand int                         `json:"uniqueCuesPerBand"`
+	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups"`
+
+	gorm.Model
 }
 
 type FixtureGroupConfiguration struct {
-	ID         string                   `json:"id"`
-	Name       string                   `json:"name"`
-	Attributes []AttributeConfiguration `json:"attributes"`
+	Uuid string `json:"id" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex:idx_uuid_fg,where:deleted_at IS NULL"`
+
+	LightEventID uint                     `json:"-"`
+	Name         string                   `json:"name"`
+	Attributes   []AttributeConfiguration `json:"attributes"`
+
+	gorm.Model
 }
 
 // AttributeType is the kind of attribute (mirrors the TS const enum).
@@ -67,8 +92,8 @@ type SliderOption struct {
 
 // Please note that the key of the map MUST be from `type AttributeType`.
 type AttributeTypeOptions struct {
-	Select      []Option       `json:"select,omitempty"`
-	Multiselect []Option       `json:"multiselect,omitempty"`
+	Select      []string       `json:"select,omitempty"`
+	Multiselect []string       `json:"multiselect,omitempty"`
 	Colour      []ColourOption `json:"colour,omitempty"`
 	Slider      *SliderOption  `json:"slider,omitempty"`
 	Boolean     *BooleanOption `json:"boolean,omitempty"`
@@ -77,9 +102,13 @@ type AttributeTypeOptions struct {
 
 // AttributeConfiguration is the top-level attribute definition.
 type AttributeConfiguration struct {
-	ID       string               `json:"id"`
-	Name     string               `json:"name"`
-	Type     AttributeType        `json:"type"`
-	Metadata map[string]any       `json:"metadata"`
-	Options  AttributeTypeOptions `json:"optionPossibleValues"`
+	Uuid string `json:"id" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex:idx_uuid_attr,where:deleted_at IS NULL"`
+
+	FixtureGroupConfigurationID uint                 `json:"-"`
+	Name                        string               `json:"name"`
+	Type                        AttributeType        `json:"type"`
+	Metadata                    map[string]any       `json:"metadata" gorm:"serializer:json"`
+	Options                     AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
+
+	gorm.Model
 }
