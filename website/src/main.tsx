@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import { createTheme, MantineProvider, TextInput } from "@mantine/core";
+import { createTheme, MantineProvider, Text, TextInput } from "@mantine/core";
 import classes from "./main.module.css";
 
 const theme = createTheme({
@@ -17,6 +17,19 @@ const theme = createTheme({
   components: {
     TextInput: TextInput.extend({
       classNames: classes,
+    }),
+    Text: Text.extend({
+      vars: (theme, props) => {
+        if (props.variant === "lyric") {
+          return {
+            root: {
+              "--text-fz": "inherit",
+              "fontFamily": theme.fontFamilyMonospace ?? "monospace",
+            },
+          };
+        }
+        return { root: {} };
+      },
     }),
   },
 });

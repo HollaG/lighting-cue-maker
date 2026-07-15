@@ -72,10 +72,11 @@ export type LightEventConfiguration = {
   fixtureGroups: FixtureGroupConfiguration[];
 };
 
-type Band = {
+export type Item = {
   name: string; // future: let you see history?
   rawLyrics: string;
   content: Content[];
 
   cues: Cue[];
+  id: string;
 };

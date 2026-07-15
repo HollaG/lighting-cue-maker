@@ -8,6 +8,9 @@ export function useFetch<T>(path: string, canFetch?: boolean) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [counter, setCounter] = useState(0);
+
+  const refetch = () => setCounter((prev) => prev + 1);
 
   useEffect(() => {
     if (!canFetch) {
@@ -44,7 +47,7 @@ export function useFetch<T>(path: string, canFetch?: boolean) {
         });
       })
       .finally(() => setLoading(false));
-  }, [url, canFetch]);
+  }, [url, canFetch, counter]);
 
-  return { data, loading, error, success };
+  return { data, loading, error, success, refetch };
 }

@@ -1,0 +1,31 @@
+.lyric-input {
+  font-size: 16px !important;
+}
+
+.lyric:hover {
+  /* highlight the lyric in yellow, set the width to be 120% of current */
+  background-color: yellow;
+  /* padding-left: 1rem;
+  padding-right: 1rem; */
+  cursor: pointer
+}
+
+.lyric {
+  transition: all 0.2s ease-in-out;
+  background-color: transparent;
+
+}
+
+.space:hover {
+  /* highlight the space in yellow, and */
+  background-color: yellow;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  cursor: pointer
+}
+
+.space {
+  padding: 0rem;
+  transition: all 0.2s ease-in-out;
+
+}

@@ -1,9 +1,10 @@
 import { notifications } from "@mantine/notifications";
 import { useCallback, useState } from "react";
+import type { ApiResponse } from "../types/server";
 
-export function useRequest<T>(path: string, method: "POST" | "PUT" | "DELETE") {
+export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE") {
   const url = `http://localhost:${import.meta.env.VITE_PUBLIC_PORT}${path}`;
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData] = useState<U | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,9 +33,9 @@ export function useRequest<T>(path: string, method: "POST" | "PUT" | "DELETE") {
           });
         }
 
-        const result = await response.json();
-        setData(result);
-        return result;
+        const result: ApiResponse<U> = await response.json();
+        setData(result.data);
+        return result.data;
       } catch (err) {
         const msg = (err as Error).message ?? "Failed to fetch.";
         setError(msg);
