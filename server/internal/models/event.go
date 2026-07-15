@@ -40,7 +40,7 @@ type LightEvent struct {
 	UniqueCuesPerBand int                         `json:"uniqueCuesPerBand"`
 	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups"`
 
-	ID        uint           `json:"id" gorm:"primaryKey"`
+	ID        uint           `json:"-" gorm:"primaryKey"`
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
@@ -53,7 +53,7 @@ type FixtureGroupConfiguration struct {
 	Name         string                   `json:"name"`
 	Attributes   []AttributeConfiguration `json:"attributes"`
 
-	ID        uint           `json:"id" gorm:"primaryKey"`
+	ID        uint           `json:"-" gorm:"primaryKey"`
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
@@ -117,7 +117,7 @@ type AttributeConfiguration struct {
 	Type                        AttributeType        `json:"type"`
 	Metadata                    map[string]any       `json:"metadata" gorm:"serializer:json"`
 	Options                     AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
-	ID                          uint                 `json:"id" gorm:"primaryKey"`
+	ID                          uint                 `json:"-" gorm:"primaryKey"`
 	CreatedAt                   time.Time            `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt                   time.Time            `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt                   gorm.DeletedAt       `json:"deletedAt" gorm:"index"`

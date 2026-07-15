@@ -32,7 +32,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 	{
 		ping.Register(v1)
 
-		// /events
+		// /events (and nested /events/:id/items)
 		events.Register(v1.Group("/events"))
 
 		// Add future entity route groups here:

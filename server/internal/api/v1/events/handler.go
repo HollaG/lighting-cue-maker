@@ -125,7 +125,10 @@ func getEvent(c *gin.Context) {
 	}
 
 	var event models.LightEvent
-	result := database.DB().Where("uuid = ?", eventId).First(&event)
+	result := database.DB().
+		Preload("FixtureGroups").
+		Preload("FixtureGroups.Attributes").
+		Where("uuid = ?", eventId).First(&event)
 	if result.Error != nil {
 		response.NotFound(c, "Event not found")
 		return

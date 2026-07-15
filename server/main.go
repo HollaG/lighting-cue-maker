@@ -26,6 +26,7 @@ func main() {
 		&models.LightEvent{},
 		&models.FixtureGroupConfiguration{},
 		&models.AttributeConfiguration{},
+		&models.Item{},
 	); err != nil {
 		log.Fatalf("database: AutoMigrate failed: %v", err)
 	}
