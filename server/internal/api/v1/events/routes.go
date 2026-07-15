@@ -6,4 +6,5 @@ import "github.com/gin-gonic/gin"
 func Register(rg *gin.RouterGroup) {
 	// Example: rg.GET("/events", getEvents)
 	rg.POST("", createEvent)
+	rg.GET(":id", getEvent)
 }

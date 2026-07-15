@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -38,7 +40,10 @@ type LightEvent struct {
 	UniqueCuesPerBand int                         `json:"uniqueCuesPerBand"`
 	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups"`
 
-	gorm.Model
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }
 
 type FixtureGroupConfiguration struct {
@@ -48,7 +53,10 @@ type FixtureGroupConfiguration struct {
 	Name         string                   `json:"name"`
 	Attributes   []AttributeConfiguration `json:"attributes"`
 
-	gorm.Model
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }
 
 // AttributeType is the kind of attribute (mirrors the TS const enum).
@@ -109,6 +117,39 @@ type AttributeConfiguration struct {
 	Type                        AttributeType        `json:"type"`
 	Metadata                    map[string]any       `json:"metadata" gorm:"serializer:json"`
 	Options                     AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
-
-	gorm.Model
+	ID                          uint                 `json:"id" gorm:"primaryKey"`
+	CreatedAt                   time.Time            `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt                   time.Time            `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt                   gorm.DeletedAt       `json:"deletedAt" gorm:"index"`
 }
+
+// ------------------------------------------------
+// Response DTOs (camelCase JSON, no gorm internals)
+
+// type AttributeConfigurationDTO struct {
+// 	ID        string               `json:"id"`
+// 	Name      string               `json:"name"`
+// 	Type      AttributeType        `json:"type"`
+// 	Metadata  map[string]any       `json:"metadata"`
+// 	Options   AttributeTypeOptions `json:"optionPossibleValues"`
+// 	CreatedAt time.Time            `json:"createdAt"`
+// 	UpdatedAt time.Time            `json:"updatedAt"`
+// }
+
+// type FixtureGroupConfigurationDTO struct {
+// 	ID         string                       `json:"id"`
+// 	Name       string                       `json:"name"`
+// 	Attributes []AttributeConfigurationDTO  `json:"attributes"`
+// 	CreatedAt  time.Time                    `json:"createdAt"`
+// 	UpdatedAt  time.Time                    `json:"updatedAt"`
+// }
+
+// type LightEventDTO struct {
+// 	ID                string                         `json:"id"`
+// 	Name              string                         `json:"name"`
+// 	CuesPerBand       int                            `json:"cuesPerBand"`
+// 	UniqueCuesPerBand int                            `json:"uniqueCuesPerBand"`
+// 	FixtureGroups     []FixtureGroupConfigurationDTO `json:"fixtureGroups"`
+// 	CreatedAt         time.Time                      `json:"createdAt"`
+// 	UpdatedAt         time.Time                      `json:"updatedAt"`
+// }

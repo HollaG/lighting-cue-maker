@@ -115,3 +115,23 @@ func createEvent(c *gin.Context) {
 		"event": event,
 	})
 }
+
+func getEvent(c *gin.Context) {
+	eventId := c.Param("id")
+
+	if eventId == "" {
+		response.BadRequest(c, "Event ID is required", nil)
+		return
+	}
+
+	var event models.LightEvent
+	result := database.DB().Where("uuid = ?", eventId).First(&event)
+	if result.Error != nil {
+		response.NotFound(c, "Event not found")
+		return
+	}
+
+	response.OK(c, map[string]any{
+		"event": event,
+	})
+}
