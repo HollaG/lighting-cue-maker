@@ -16,17 +16,16 @@ func getItems(c *gin.Context) {
 		return
 	}
 
-	// get the light event (to get the ID)
+	// verify the event exists
 	var event models.LightEvent
-	// get the light event (to get the ID)
 	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
 		response.NotFound(c, "Event not found")
 		return
 	}
 
-	// select all items with the light event id
+	// select all items belonging to this event
 	var items []models.Item
-	if result := database.DB().Where("light_event_id = ?", event.ID).Find(&items); result.Error != nil {
+	if result := database.DB().Where("light_event_uuid = ?", event.Uuid).Find(&items); result.Error != nil {
 		response.InternalError(c, "Failed to get items")
 		return
 	}
@@ -46,7 +45,7 @@ func createItem(c *gin.Context) {
 		return
 	}
 
-	// Verify the event actually exists and grab its primary key
+	// Verify the event actually exists
 	var event models.LightEvent
 	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
 		response.NotFound(c, "Event not found")
@@ -73,8 +72,8 @@ func createItem(c *gin.Context) {
 	}
 
 	item := models.Item{
-		LightEventID: event.ID,
-		Name:         req.Name,
+		LightEventUuid: event.Uuid,
+		Name:           req.Name,
 		// RawLyrics and Content are intentionally omitted — they default to "" and nil
 	}
 

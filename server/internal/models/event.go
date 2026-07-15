@@ -33,27 +33,25 @@ type CreateAttributeConfigurationReq struct {
 
 // DB model
 type LightEvent struct {
-	Uuid string `json:"id" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex:idx_uuid_event,where:deleted_at IS NULL"`
+	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
 	Name              string                      `json:"name"`
 	CuesPerBand       int                         `json:"cuesPerBand"`
 	UniqueCuesPerBand int                         `json:"uniqueCuesPerBand"`
-	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups"`
+	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups" gorm:"foreignKey:LightEventUuid;references:Uuid"`
 
-	ID        uint           `json:"-" gorm:"primaryKey"`
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }
 
 type FixtureGroupConfiguration struct {
-	Uuid string `json:"id" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex:idx_uuid_fg,where:deleted_at IS NULL"`
+	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
-	LightEventID uint                     `json:"-"`
-	Name         string                   `json:"name"`
-	Attributes   []AttributeConfiguration `json:"attributes"`
+	LightEventUuid string                   `json:"-" gorm:"type:uuid;not null"`
+	Name           string                   `json:"name"`
+	Attributes     []AttributeConfiguration `json:"attributes" gorm:"foreignKey:FixtureGroupConfigurationUuid;references:Uuid"`
 
-	ID        uint           `json:"-" gorm:"primaryKey"`
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
@@ -110,46 +108,15 @@ type AttributeTypeOptions struct {
 
 // AttributeConfiguration is the top-level attribute definition.
 type AttributeConfiguration struct {
-	Uuid string `json:"id" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex:idx_uuid_attr,where:deleted_at IS NULL"`
+	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
-	FixtureGroupConfigurationID uint                 `json:"-"`
-	Name                        string               `json:"name"`
-	Type                        AttributeType        `json:"type"`
-	Metadata                    map[string]any       `json:"metadata" gorm:"serializer:json"`
-	Options                     AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
-	ID                          uint                 `json:"-" gorm:"primaryKey"`
-	CreatedAt                   time.Time            `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt                   time.Time            `json:"updatedAt" gorm:"autoUpdateTime"`
-	DeletedAt                   gorm.DeletedAt       `json:"deletedAt" gorm:"index"`
+	FixtureGroupConfigurationUuid string               `json:"-" gorm:"type:uuid;not null"`
+	Name                          string               `json:"name"`
+	Type                          AttributeType        `json:"type"`
+	Metadata                      map[string]any       `json:"metadata" gorm:"serializer:json"`
+	Options                       AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
+
+	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }
-
-// ------------------------------------------------
-// Response DTOs (camelCase JSON, no gorm internals)
-
-// type AttributeConfigurationDTO struct {
-// 	ID        string               `json:"id"`
-// 	Name      string               `json:"name"`
-// 	Type      AttributeType        `json:"type"`
-// 	Metadata  map[string]any       `json:"metadata"`
-// 	Options   AttributeTypeOptions `json:"optionPossibleValues"`
-// 	CreatedAt time.Time            `json:"createdAt"`
-// 	UpdatedAt time.Time            `json:"updatedAt"`
-// }
-
-// type FixtureGroupConfigurationDTO struct {
-// 	ID         string                       `json:"id"`
-// 	Name       string                       `json:"name"`
-// 	Attributes []AttributeConfigurationDTO  `json:"attributes"`
-// 	CreatedAt  time.Time                    `json:"createdAt"`
-// 	UpdatedAt  time.Time                    `json:"updatedAt"`
-// }
-
-// type LightEventDTO struct {
-// 	ID                string                         `json:"id"`
-// 	Name              string                         `json:"name"`
-// 	CuesPerBand       int                            `json:"cuesPerBand"`
-// 	UniqueCuesPerBand int                            `json:"uniqueCuesPerBand"`
-// 	FixtureGroups     []FixtureGroupConfigurationDTO `json:"fixtureGroups"`
-// 	CreatedAt         time.Time                      `json:"createdAt"`
-// 	UpdatedAt         time.Time                      `json:"updatedAt"`
-// }
