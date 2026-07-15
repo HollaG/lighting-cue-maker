@@ -1,10 +1,14 @@
-import { Accordion, Box, Button, Collapse, Container, Group, SegmentedControl, Stack, Text, TextInput, Title } from "@mantine/core"
+import { Accordion, Box, Button, Center, Collapse, Container, Group, SegmentedControl, Stack, Text, TextInput, Title } from "@mantine/core"
 
 import classes from "./HomeHeader.module.css"
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput"
+import { useEffect, useState } from "react"
+import { useAppContext } from "../../context/AppContext"
 
-export const HomeHeader = ({ show }: { show: boolean }) => {
-  return <Collapse expanded={show}>
+export const HomeHeader = () => {
+  const { code, setCode } = useAppContext()
+
+  return <Collapse expanded={true}>
     <Container mt="6rem">
       <Stack>
 
@@ -23,15 +27,35 @@ export const HomeHeader = ({ show }: { show: boolean }) => {
 
         <Box my={2}></Box>
 
-        <Group>
-          <CustomTextInput
-            label="Have an event code?"
-            placeholder="Input placeholder"
-          />
-          <Box>
+        <Center>
+          <Stack style={{ alignItems: 'center' }}>
+            <Title order={4}>Have an event code? </Title>
+
+            <Box style={{
+              minWidth: "40em",
+              // maxWidth: "80%"
+            }}>
+              <CustomTextInput
+                // variant="filled"
+                size="lg"
+                // label="Have an event code?"
+                placeholder="Paste or type code here..."
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                styles={{
+                  input: {
+                    textAlign: 'center'
+                  }
+                }}
+              />
+            </Box>
+            {/* <Box>
             <Button variant="subtle"> Open event </Button>
-          </Box>
-        </Group>
+          </Box> */}
+          </Stack>
+
+        </Center>
+        <Box my={2}></Box>
       </Stack>
     </Container>
   </Collapse>

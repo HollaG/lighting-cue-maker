@@ -1,4 +1,4 @@
-import { Box, Button, Center, Container, Divider, Group, SimpleGrid, Text, TextInput, Title } from "@mantine/core";
+import { Box, Button, Center, Collapse, Container, Divider, Group, SimpleGrid, Text, TextInput, Title } from "@mantine/core";
 import { AddFixtureGroupButton } from "../../components/FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
 import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard";
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
@@ -7,6 +7,7 @@ import { useState } from "react";
 import { flatten } from "../../utils/flatten";
 import { useRequest } from "../../hooks/useRequest";
 import type { AttributeConfiguration, FixtureGroupConfiguration, LightEventConfiguration } from "../../types/types";
+import { useAppContext } from "../../context/AppContext";
 
 type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
   fixtureGroups: {
@@ -20,7 +21,7 @@ type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
 
 export const CreateEventWrapper = () => {
   const [fixtureGroupIds, setFixtureGroupIds] = useState<number[]>([]);
-
+  const { isValidEvent } = useAppContext()
   const { executeRequest, data, isLoading, error } = useRequest("/api/v1/events", "POST");
 
   const form = useForm<FormData>({
@@ -55,70 +56,73 @@ export const CreateEventWrapper = () => {
     executeRequest({ ...config });
   }
   return (
-    <form onSubmit={form.onSubmit((v) => onFormSubmit(v))}>
-      <Container size={"xl"}>
-        <Divider my="lg" label="Create new event" labelPosition="center" />
+    <Collapse expanded={!isValidEvent}>
+      <form onSubmit={form.onSubmit((v) => onFormSubmit(v))}>
+        <Container size={"xl"}>
+          <Divider my="lg" label="or, create a new event" labelPosition="center" />
 
-        {/* <Title> Create a new event </Title> */}
-        <CustomTextInput
-          placeholder="Type your event name here..."
-          size="xxl"
-          name="name"
-          key={form.key("name")}
-          {...form.getInputProps("name")}
-        />
-        <CustomTextInput
-          label="How many cues per band? (optional)"
-          placeholder="Enter a number..."
-          name="cuesPerBand"
-          type="number"
-          key={form.key("cuesPerBand")}
-          {...form.getInputProps("cuesPerBand")}
-        />
-        <CustomTextInput
-          label="How many unique cues per band? (optional)"
-          placeholder="Enter a number..."
-          name="uniqueCuesPerBand"
-          type="number"
-          key={form.key("uniqueCuesPerBand")}
-          {...form.getInputProps("uniqueCuesPerBand")}
-        />
+          {/* <Title> Create a new event </Title> */}
+          <CustomTextInput
+            placeholder="Type your event name here..."
+            size="xxl"
+            name="name"
+            key={form.key("name")}
+            {...form.getInputProps("name")}
+          />
+          <CustomTextInput
+            label="How many cues per band? (optional)"
+            placeholder="Enter a number..."
+            name="cuesPerBand"
+            type="number"
+            key={form.key("cuesPerBand")}
+            {...form.getInputProps("cuesPerBand")}
+          />
+          <CustomTextInput
+            label="How many unique cues per band? (optional)"
+            placeholder="Enter a number..."
+            name="uniqueCuesPerBand"
+            type="number"
+            key={form.key("uniqueCuesPerBand")}
+            {...form.getInputProps("uniqueCuesPerBand")}
+          />
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
-          {/* <FixtureGroupCard editable />
+          <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
+            {/* <FixtureGroupCard editable />
         <FixtureGroupCard editable />
         <FixtureGroupCard editable />
 
         <FixtureGroupCard editable /> */}
 
-          {fixtureGroupIds.map((id, index) => (
-            <FixtureGroupCard
-              key={id}
-              index={index}
-              editable
-              id={id}
-              form={form}
-              onDeleteFixtureGroup={(id) => {
-                setFixtureGroupIds((prev) => prev.filter((prevId) => prevId !== id));
+            {fixtureGroupIds.map((id, index) => (
+              <FixtureGroupCard
+                key={id}
+                index={index}
+                editable
+                id={id}
+                form={form}
+                onDeleteFixtureGroup={(id) => {
+                  setFixtureGroupIds((prev) => prev.filter((prevId) => prevId !== id));
+                }}
+              />
+            ))}
+
+            <AddFixtureGroupButton
+              onClick={() => {
+                // Date.now() keys the IDs in strictly ascending order, so we can preserve ordering.
+                setFixtureGroupIds((prev) => [...prev, Date.now()]);
               }}
             />
-          ))}
+          </SimpleGrid>
 
-          <AddFixtureGroupButton
-            onClick={() => {
-              // Date.now() keys the IDs in strictly ascending order, so we can preserve ordering.
-              setFixtureGroupIds((prev) => [...prev, Date.now()]);
-            }}
-          />
-        </SimpleGrid>
+          <Center mt={"xl"}>
+            <Button type="submit" size="lg">
+              {" "}
+              Create Event{" "}
+            </Button>
+          </Center>
+        </Container>{" "}
+      </form>
+    </Collapse>
 
-        <Center mt={"xl"}>
-          <Button type="submit" size="lg">
-            {" "}
-            Create Event{" "}
-          </Button>
-        </Center>
-      </Container>{" "}
-    </form>
   );
 };

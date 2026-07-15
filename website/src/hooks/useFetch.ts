@@ -2,13 +2,19 @@ import { useEffect, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import type { ApiResponse } from "../types/server";
 
-export function useFetch<T>(path: string) {
+export function useFetch<T>(path: string, canFetch?: boolean) {
   const url = `http://localhost:${import.meta.env.VITE_PUBLIC_PORT}${path}`;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (!canFetch) {
+      setLoading(false);
+      return;
+    }
+    setSuccess(false);
     setLoading(true);
     setError(null);
 
@@ -25,6 +31,7 @@ export function useFetch<T>(path: string) {
           });
         } else {
           setData(res.data ?? null);
+          setSuccess(true);
         }
       })
       .catch((err: Error) => {
@@ -37,7 +44,7 @@ export function useFetch<T>(path: string) {
         });
       })
       .finally(() => setLoading(false));
-  }, [url]);
+  }, [url, canFetch]);
 
-  return { data, loading, error };
+  return { data, loading, error, success };
 }
