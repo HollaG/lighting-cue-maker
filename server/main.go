@@ -27,6 +27,7 @@ func main() {
 		&models.FixtureGroupConfiguration{},
 		&models.AttributeConfiguration{},
 		&models.Item{},
+		&models.Cue{},
 	); err != nil {
 		log.Fatalf("database: AutoMigrate failed: %v", err)
 	}
