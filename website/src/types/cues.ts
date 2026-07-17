@@ -10,6 +10,10 @@ export interface Cue {
   comments: string;
 
   assignments: FixtureGroupsAssignment;
+
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date;
 }
 
 type FixtureGroupsAssignment = {

@@ -31,22 +31,31 @@ export const generateRich = (rawLyrics: string) => {
 
   // }
 
-  console.log({ splitLines });
+  const splitWord = splitLines
+    .map(
+      (line) =>
+        line
+          .trim()
+          .split(/[\ ]+/g)
+          .filter((word) => !word.includes("<comment") && !word.includes("</comment>"))
+          .flatMap((word) => (word.length !== 0 ? [" ", word] : word)), // DO NOT add spaces for line breaks. Line breaks are represented as "".
+    )
+    .map((line) => (line[line.length - 1] === "" ? line : [...line, " "])) // DO NOT add spaces for line breaks
 
-  const splitWord = splitLines.map((line) =>
-    line
-      .trim()
-      .split(/[\ \-]+/g)
-      .filter((word) => !word.includes("<comment") && !word.includes("</comment>")),
-  );
-  const joined = splitLines.join(" <break> ");
-
-  console.log(splitWord);
-  // first, split the rawLyrics
-  const splitRaw = joined.split(/[\ \-]+/g);
-
-  // don't handle comments for now, filter them out
-  const splitFiltered = splitRaw;
+    // Convert all "line break" characters to a space character so we can treat them the same TODO: do we want to separate line break characters?
+    .map((line) => line.map((word) => (word === "" ? " " : word)));
 
   return splitWord;
+};
+
+// 1. Remove empty space from the start and end of each line (note: we added this in `generateRich`)
+export const generateRaw = (content: string[][]) => {
+  const c = content.map((line) => {
+    if (line.length === 1 && line[0] === " ") {
+      // this is a line break character
+      return [""];
+    }
+    return line.join("").trim();
+  });
+  return c.join("\n");
 };

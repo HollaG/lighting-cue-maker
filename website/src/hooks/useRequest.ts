@@ -2,7 +2,7 @@ import { notifications } from "@mantine/notifications";
 import { useCallback, useState } from "react";
 import type { ApiResponse } from "../types/server";
 
-export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE") {
+export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE" | "PATCH") {
   const url = `http://localhost:${import.meta.env.VITE_PUBLIC_PORT}${path}`;
   const [data, setData] = useState<U | null>(null);
   const [isLoading, setIsLoading] = useState(false);

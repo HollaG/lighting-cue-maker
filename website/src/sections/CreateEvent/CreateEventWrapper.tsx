@@ -1,4 +1,16 @@
-import { Box, Button, Center, Collapse, Container, Divider, Group, SimpleGrid, Text, TextInput, Title } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Center,
+  Collapse,
+  Container,
+  Divider,
+  Group,
+  SimpleGrid,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
 import { AddFixtureGroupButton } from "../../components/FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
 import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard";
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
@@ -14,14 +26,14 @@ type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
     [fixtureGroupId: number]: Omit<FixtureGroupConfiguration, "attributes"> & {
       attributes: {
         [attributeId: number]: AttributeConfiguration;
-      }
-    }
-  }
-}
+      };
+    };
+  };
+};
 
 export const CreateEventWrapper = () => {
   const [fixtureGroupIds, setFixtureGroupIds] = useState<number[]>([]);
-  const { isValidEvent } = useAppContext()
+  const { isValidEvent } = useAppContext();
   const { executeRequest, data, isLoading, error } = useRequest("/api/v1/events", "POST");
 
   const form = useForm<FormData>({
@@ -37,7 +49,8 @@ export const CreateEventWrapper = () => {
   const onFormSubmit = (v: FormData) => {
     // convert FormData into LightEventConfiguration
     if (v.cuesPerBand !== undefined && typeof v.cuesPerBand === "string") v.cuesPerBand = Number(v.cuesPerBand);
-    if (v.uniqueCuesPerBand !== undefined && typeof v.uniqueCuesPerBand === "string") v.uniqueCuesPerBand = Number(v.uniqueCuesPerBand);
+    if (v.uniqueCuesPerBand !== undefined && typeof v.uniqueCuesPerBand === "string")
+      v.uniqueCuesPerBand = Number(v.uniqueCuesPerBand);
     const config = flatten(v) as Omit<LightEventConfiguration, "id">;
 
     // convert all ID fields into String
@@ -48,13 +61,8 @@ export const CreateEventWrapper = () => {
       });
     });
 
-    console.log({ config })
-
-
-
-
-    executeRequest({ ...config });
-  }
+    executeRequest(config);
+  };
   return (
     <Collapse expanded={!isValidEvent}>
       <form onSubmit={form.onSubmit((v) => onFormSubmit(v))}>
@@ -123,6 +131,5 @@ export const CreateEventWrapper = () => {
         </Container>{" "}
       </form>
     </Collapse>
-
   );
 };
