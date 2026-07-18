@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import type { ApiResponse } from "../types/server";
 
-export function useFetch<T>(path: string, canFetch?: boolean) {
+export function useFetch<T>(
+  path: string,
+  canFetch?: boolean,
+): { data: T | null; loading: boolean; error: string | null; success: boolean; refetch: () => void } {
   const url = `http://localhost:${import.meta.env.VITE_PUBLIC_PORT}${path}`;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);

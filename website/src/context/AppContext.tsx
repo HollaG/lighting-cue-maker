@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { useFetch } from "../hooks/useFetch";
 import {
   type UpdateItemReq,
@@ -6,11 +6,13 @@ import {
   type CreateCueRes,
   type GetEventRes,
   type UpdateItemRes,
+  type GetCuesRes,
 } from "../types/http";
 import type { Item, LightEventConfiguration } from "../types/types";
 import { generateRaw, generateRich } from "../utils/convertText";
 import { useRequest } from "../hooks/useRequest";
 import { type Cue } from "../types/cues";
+import { useLocalStorage } from "@mantine/hooks";
 
 type AppContextType = {
   /** The UUID code of the currently active light event, or null if none. */
@@ -41,6 +43,9 @@ type AppContextType = {
   setLyricInputMode: (lyricInputMode: LyricMode) => void;
 
   onAddCue: (lineIndex: number, wordIndex: number, isSpace: boolean) => void;
+
+  cueOrder: string[];
+  cues: Cue[];
 };
 
 type LyricMode = "raw" | "rich";
@@ -48,7 +53,7 @@ type LyricMode = "raw" | "rich";
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [code, setCode] = useState<string>("");
+  const [code, setCode] = useLocalStorage<string>({ key: "code", defaultValue: "" });
   const [activeItem, setActiveItem] = useState<Item | null>(null);
 
   // Only fetch when we have a 36-char UUID. Guards against null crash.
@@ -56,12 +61,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const { data: fetchResp, loading, success } = useFetch<GetEventRes>(`/api/v1/events/${code}`, isValidCode);
 
   const isValidEvent = fetchResp !== null && success && isValidCode;
+  const evt = fetchResp?.event;
 
   const [lyricInputMode, setLyricInputMode] = useState<LyricMode>("raw");
   const [rawLyrics, setRawLyrics] = useState<string>("");
   const [content, setContent] = useState<string[][]>([]);
 
-  const [cues, setCues] = useState<{ [cueId: string]: Cue }>({});
+  // const [cues, setCues] = useState<{ [cueId: string]: Cue }>({});
 
   // Items
   const [itemName, setItemName] = useState(""); // controlled component
@@ -94,6 +100,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     `/api/v1/events/${code}/items/${activeItem?.id}`,
     "PATCH",
   );
+
+  // Cues
+  const { data: cuesData, refetch: refetchCues } = useFetch<GetCuesRes>(
+    `/api/v1/events/${fetchResp?.event?.id}/items/${activeItem?.id}/cues`,
+    isValidEvent,
+  );
+  const cues = cuesData?.cues ?? [];
 
   const changeActiveItem = (item: Item) => {
     setActiveItem(item);
@@ -147,7 +160,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const res = await executeCreateCueRequest({});
       const id = res.cue.id;
 
-      setCues((prev) => ({ ...prev, [id]: res.cue }));
+      // deprecated, we re-fetch all the cues from the DB instead
+      // setCues((prev) => ({ ...prev, [id]: res.cue }));
 
       // if thing is a word, then
       if (isSpace) {
@@ -169,22 +183,56 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         content[lineIndex][wordIndex] = cueId;
         setContent(content);
       }
+
+      // lal la la
+
+      // update the raw lyrics
+      setRawLyrics(generateRaw(content));
+
+      // refresh the list of cues (from the database).
+      // this will be updated downstream
+      refetchCues();
     } catch (e) {}
   };
+
+  // ------------- Calculated variables ----------------
+  const cueOrder = useMemo(() => {
+    const cueOrder: string[] = [];
+    // rawLyrics.replace(/<cueId=(.*?)=cueId>/gm, (match, p1) => {
+    //   cueOrder.push(p1);
+    //   return match;
+    // });
+
+    // For content
+    for (const line of content) {
+      for (const word of line) {
+        const match = word.match(/<cueId=(.*?)=cueId>/);
+        if (match) {
+          cueOrder.push(match[1]);
+        }
+      }
+    }
+    return cueOrder;
+    // Count the number of individual "elements". This works because whenever we add a new cue, the # of elements changes, as we always add space before / after it.
+  }, [rawLyrics, content.reduce((prev, curr) => prev + curr.reduce((pp, cc) => pp + cc.length, 0), 0)]);
 
   return (
     <AppContext.Provider
       value={{
+        // Event variables
         code,
         setCode,
         event: fetchResp?.event || null,
         isValidEvent,
+
+        // Item variables
         activeItem,
         changeActiveItem,
         items,
         itemName,
         setItemName,
         onAddItem,
+
         rawLyrics,
         setRawLyrics,
         content,
@@ -192,8 +240,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         onFinishAddingLyrics,
         lyricInputMode,
         setLyricInputMode,
+
+        // Cue variables
         onAddCue,
         onBeginAddingLyrics,
+        cueOrder,
+        cues,
       }}
     >
       {children}

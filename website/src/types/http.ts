@@ -9,6 +9,9 @@ export type GetEventRes = {
 export type CreateCueReq = {};
 export type CreateCueRes = { cue: Cue };
 
+export type GetCuesReq = {};
+export type GetCuesRes = { cues: Cue[] };
+
 export type UpdateItemReq = Partial<Item>;
 
 export type UpdateItemRes = { item: Item };
