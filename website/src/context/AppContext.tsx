@@ -1,257 +1,147 @@
-import { createContext, useContext, useMemo, useState } from "react";
-import { useFetch } from "../hooks/useFetch";
-import {
-  type UpdateItemReq,
-  type CreateCueReq,
-  type CreateCueRes,
-  type GetEventRes,
-  type UpdateItemRes,
-  type GetCuesRes,
-} from "../types/http";
+import { createContext, useContext } from "react";
+import { generateRich } from "../utils/convertText";
 import type { Item, LightEventConfiguration } from "../types/types";
-import { generateRaw, generateRich } from "../utils/convertText";
-import { useRequest } from "../hooks/useRequest";
-import { type Cue } from "../types/cues";
-import { useLocalStorage } from "@mantine/hooks";
+import type { Cue } from "../types/cues";
+import { useEventState } from "../hooks/useEventState";
+import { useItemState } from "../hooks/useItemState";
+import { useLyricsState, type LyricMode } from "../hooks/useLyricsState";
+import { useCueState } from "../hooks/useCueState";
+
+// ─── Public context shape ────────────────────────────────────────────────────
 
 type AppContextType = {
-  /** The UUID code of the currently active light event, or null if none. */
+  // Event
   code: string | null;
   setCode: (code: string | null) => void;
-
   event: LightEventConfiguration | null;
   isValidEvent: boolean;
 
+  // Items
   activeItem: Item | null;
-  changeActiveItem: (activeItem: Item | null) => void;
-
+  changeActiveItem: (item: Item | null) => void;
   items: Item[];
   itemName: string;
   setItemName: (name: string) => void;
   onAddItem: () => void;
 
+  // Lyrics
   rawLyrics: string;
   setRawLyrics: (rawLyrics: string) => void;
-
   content: string[][];
-  setContent: (content: []) => void;
-
+  setContent: (content: string[][]) => void;
+  lyricInputMode: LyricMode;
+  setLyricInputMode: (mode: LyricMode) => void;
   onFinishAddingLyrics: () => void;
   onBeginAddingLyrics: () => void;
 
-  lyricInputMode: LyricMode;
-  setLyricInputMode: (lyricInputMode: LyricMode) => void;
-
+  // Cues
   onAddCue: (lineIndex: number, wordIndex: number, isSpace: boolean) => void;
-
   cueOrder: string[];
   cues: Cue[];
 };
 
-type LyricMode = "raw" | "rich";
+// ─── Context ─────────────────────────────────────────────────────────────────
 
 const AppContext = createContext<AppContextType | null>(null);
 
+// ─── Provider ────────────────────────────────────────────────────────────────
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [code, setCode] = useLocalStorage<string>({ key: "code", defaultValue: "" });
-  const [activeItem, setActiveItem] = useState<Item | null>(null);
-
-  // Only fetch when we have a 36-char UUID. Guards against null crash.
-  const isValidCode = code !== null && code.length === 36;
-  const { data: fetchResp, loading, success } = useFetch<GetEventRes>(`/api/v1/events/${code}`, isValidCode);
-
-  const isValidEvent = fetchResp !== null && success && isValidCode;
-  const evt = fetchResp?.event;
-
-  const [lyricInputMode, setLyricInputMode] = useState<LyricMode>("raw");
-  const [rawLyrics, setRawLyrics] = useState<string>("");
-  const [content, setContent] = useState<string[][]>([]);
-
-  // const [cues, setCues] = useState<{ [cueId: string]: Cue }>({});
-
-  // Items
-  const [itemName, setItemName] = useState(""); // controlled component
-  const { data: itemsData, refetch: refetchItems } = useFetch<{ items: Item[] }>(
-    `/api/v1/events/${fetchResp?.event?.id}/items`,
-    isValidEvent,
-  );
-  const items = itemsData?.items ?? [];
-
-  const { executeRequest: executeCreateItem } = useRequest<{ name: string }, { item: Item }>(
-    `/api/v1/events/${fetchResp?.event?.id}/items`,
-    "POST",
+  const event = useEventState();
+  const item = useItemState(event.event?.id, event.isValidEvent);
+  const lyrics = useLyricsState();
+  const cues = useCueState(
+    event.event?.id,
+    item.activeItem?.id,
+    event.isValidEvent,
+    lyrics.content,
+    lyrics.setContent,
+    lyrics.setRawLyrics,
   );
 
-  const onAddItem = async () => {
-    const res = await executeCreateItem({ name: itemName });
-    if (res?.item) {
-      changeActiveItem(res.item);
+  // ── Cross-cutting handlers ─────────────────────────────────────────────────
+
+  /**
+   * Switch the active item and immediately hydrate the lyrics editor
+   * with that item's stored raw lyrics.
+   */
+  const changeActiveItem = (newItem: Item | null) => {
+    item.setActiveItem(newItem);
+    if (newItem) {
+      lyrics.setRawLyrics(newItem.rawLyrics ?? "");
+      lyrics.setContent(generateRich(newItem.rawLyrics ?? ""));
+    } else {
+      lyrics.setRawLyrics("");
+      lyrics.setContent([]);
     }
-    refetchItems();
-    setItemName("");
-  };
-
-  const { executeRequest: executeCreateCueRequest } = useRequest<CreateCueReq, CreateCueRes>(
-    `/api/v1/events/${code}/items/${activeItem?.id}/cues`,
-    "POST",
-  );
-
-  const { executeRequest: executeUpdateItem } = useRequest<UpdateItemReq, UpdateItemRes>(
-    `/api/v1/events/${code}/items/${activeItem?.id}`,
-    "PATCH",
-  );
-
-  // Cues
-  const { data: cuesData, refetch: refetchCues } = useFetch<GetCuesRes>(
-    `/api/v1/events/${fetchResp?.event?.id}/items/${activeItem?.id}/cues`,
-    isValidEvent,
-  );
-  const cues = cuesData?.cues ?? [];
-
-  const changeActiveItem = (item: Item) => {
-    setActiveItem(item);
-    setRawLyrics(item.rawLyrics);
-    setContent(generateRich(item.rawLyrics));
-  };
-
-  const onFinishAddingLyrics = () => {
-    const content = generateRich(rawLyrics);
-    setContent(content);
-    setLyricInputMode("rich");
-
-    // save
-    executeUpdateItem({ rawLyrics }).then((item) => {
-      refetchItems(); // refresh the list of items to include the newly added lyrics
-      setActiveItem(item.item); // refresh the current active item, TODO: maybe have this selector be an index reference ?
-    });
-  };
-
-  const onBeginAddingLyrics = () => {
-    console.log({ content });
-    // convert the rich format into raw text
-    // Rules:
-    setRawLyrics(generateRaw(content));
-    setLyricInputMode("raw");
-
-    // This is not actually needed! We can get the content from the raw Lyrics, so we only really need to store the raw.
-    // executeUpdateItem({ content });
   };
 
   /**
-   * Add a cue.
-   *
-   * If it's a space, then insert [cue_id=uuid] where the space is, and add 2 spaces before and after it
-   * If it's a word, then insert [cue_id=uuid] before the word and bracket it like [cue_id=uuid]word
-   *
-   * TODO: Should we use a object type instead??
-   * TODO: Since we want to support other types e.g. One-shots,
-   *       we should have a controllable variable that directs the onclick event towards each handler.
-   *       This will let us control the behaviour of the onclick event,
-   *
-   * @param lineIndex
-   * @param wordIndex
+   * Create a new item, immediately activate it, then refresh the list.
    */
-  const onAddCue = async (lineIndex: number, wordIndex: number, isSpace: boolean) => {
-    // TODO: show loading
-
-    // First, we need to add a cue to the database, so we can get the cue_id.
-
-    try {
-      const res = await executeCreateCueRequest({});
-      const id = res.cue.id;
-
-      // deprecated, we re-fetch all the cues from the DB instead
-      // setCues((prev) => ({ ...prev, [id]: res.cue }));
-
-      // if thing is a word, then
-      if (isSpace) {
-        // convert the space into [cueId=uuid]
-        let cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>";
-        content[lineIndex][wordIndex] = cueId;
-
-        // add 2 " " on the left and right of this item in this line
-        let line = content[lineIndex];
-
-        // first, do the "right side" of the index, so we can do the "left" with less math
-        line.splice(wordIndex + 1, 0, " ");
-        line.splice(wordIndex, 0, " ");
-
-        content[lineIndex] = line;
-        setContent(content);
-      } else {
-        let cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>" + content[lineIndex][wordIndex];
-        content[lineIndex][wordIndex] = cueId;
-        setContent(content);
-      }
-
-      // lal la la
-
-      // update the raw lyrics
-      setRawLyrics(generateRaw(content));
-
-      // refresh the list of cues (from the database).
-      // this will be updated downstream
-      refetchCues();
-    } catch (e) {}
+  const onAddItem = async () => {
+    const res = await item.executeCreateItem({ name: item.itemName });
+    if (res?.item) changeActiveItem(res.item);
+    item.refetchItems();
+    item.setItemName("");
   };
 
-  // ------------- Calculated variables ----------------
-  const cueOrder = useMemo(() => {
-    const cueOrder: string[] = [];
-    // rawLyrics.replace(/<cueId=(.*?)=cueId>/gm, (match, p1) => {
-    //   cueOrder.push(p1);
-    //   return match;
-    // });
+  /**
+   * Commit the current raw lyrics to the database and switch to rich view.
+   * Refreshes item state so the saved rawLyrics is reflected everywhere.
+   */
+  const onFinishAddingLyrics = () => {
+    const richContent = generateRich(lyrics.rawLyrics);
+    lyrics.setContent(richContent);
+    lyrics.setLyricInputMode("rich");
 
-    // For content
-    for (const line of content) {
-      for (const word of line) {
-        const match = word.match(/<cueId=(.*?)=cueId>/);
-        if (match) {
-          cueOrder.push(match[1]);
-        }
-      }
-    }
-    return cueOrder;
-    // Count the number of individual "elements". This works because whenever we add a new cue, the # of elements changes, as we always add space before / after it.
-  }, [rawLyrics, content.reduce((prev, curr) => prev + curr.reduce((pp, cc) => pp + cc.length, 0), 0)]);
+    item.executeUpdateItem({ rawLyrics: lyrics.rawLyrics }).then((res) => {
+      item.refetchItems();
+      item.setActiveItem(res.item);
+    });
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <AppContext.Provider
       value={{
-        // Event variables
-        code,
-        setCode,
-        event: fetchResp?.event || null,
-        isValidEvent,
+        // Event
+        code: event.code,
+        setCode: event.setCode,
+        event: event.event,
+        isValidEvent: event.isValidEvent,
 
-        // Item variables
-        activeItem,
+        // Items
+        activeItem: item.activeItem,
         changeActiveItem,
-        items,
-        itemName,
-        setItemName,
+        items: item.items,
+        itemName: item.itemName,
+        setItemName: item.setItemName,
         onAddItem,
 
-        rawLyrics,
-        setRawLyrics,
-        content,
-        setContent,
+        // Lyrics
+        rawLyrics: lyrics.rawLyrics,
+        setRawLyrics: lyrics.setRawLyrics,
+        content: lyrics.content,
+        setContent: lyrics.setContent,
+        lyricInputMode: lyrics.lyricInputMode,
+        setLyricInputMode: lyrics.setLyricInputMode,
         onFinishAddingLyrics,
-        lyricInputMode,
-        setLyricInputMode,
+        onBeginAddingLyrics: lyrics.onBeginAddingLyrics,
 
-        // Cue variables
-        onAddCue,
-        onBeginAddingLyrics,
-        cueOrder,
-        cues,
+        // Cues
+        onAddCue: cues.onAddCue,
+        cueOrder: cues.cueOrder,
+        cues: cues.cues,
       }}
     >
       {children}
     </AppContext.Provider>
   );
 }
+
+// ─── Consumer hook ────────────────────────────────────────────────────────────
 
 /**
  * Hook to consume the global app context.
