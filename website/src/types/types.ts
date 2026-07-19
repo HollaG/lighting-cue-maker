@@ -40,7 +40,7 @@ export type AttributeTypes = (typeof AttributeTypes)[keyof typeof AttributeTypes
  *              if type=Colour, then read ColourOption[], which tells us the hex code and the name of the colour.
  */
 export type AttributeTypesOptions = {
-  [AttributeTypes.TEXT]: null;
+  [AttributeTypes.TEXT]: string;
   [AttributeTypes.SELECT]: string[];
   [AttributeTypes.MULTISELECT]: string[];
   [AttributeTypes.COLOUR]: ColourOption[];

@@ -70,7 +70,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
                         name: attribute.name,
                         type: attribute.type,
                         value: {
-                          [AttributeTypes.TEXT]: null,
+                          [AttributeTypes.TEXT]: "",
                           [AttributeTypes.SELECT]: "",
                           [AttributeTypes.MULTISELECT]: [],
                           [AttributeTypes.COLOUR]: { hex: "", name: "" },
@@ -122,12 +122,43 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     }
   };
 
+  const simplifyCues = (cue: Cue) => {
+    let finalText = "";
+    if (!cue.assignments) return "";
+    for (const [groupId, groupAssignment] of Object.entries(cue.assignments)) {
+      finalText += `${groupAssignment.name}: `;
+      for (const [attributeId, attributeAssignment] of Object.entries(groupAssignment.assignment)) {
+        switch (attributeAssignment.type) {
+          case AttributeTypes.TEXT:
+          case AttributeTypes.SELECT:
+          case AttributeTypes.SLIDER:
+            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type]} `;
+            break;
+          case AttributeTypes.MULTISELECT:
+            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type].join(", ")}`;
+            break;
+          case AttributeTypes.COLOUR:
+            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type].name}`;
+            break;
+          case AttributeTypes.BOOLEAN:
+            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type] === true ? "True" : "False"}`;
+            break;
+          case AttributeTypes.NONE:
+            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type]}`;
+            break;
+        }
+        finalText += " / ";
+      }
+    }
+    return finalText;
+  };
+
   return (
     <CardBase isActive={false}>
       <Stack gap={0}>
         <Group mb="md">
           <Title order={4}> Cue {cueNumber} </Title>
-          <Box flex={1} />
+          <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
           <Button color="orange" size="xs" disabled={!isDirty} onClick={() => handleSave()}>
             {" "}
             Save changes{" "}
@@ -280,6 +311,9 @@ const AttributeDisplay = ({
           form={form}
           name={name}
           colourOptions={optionPossibleValues[AttributeTypes.COLOUR]}
+          defaultValue={
+            form.getInitialValues().assignments[groupId].assignment[attribute.id].value[AttributeTypes.COLOUR]
+          }
         />
       );
 
@@ -302,11 +336,13 @@ function ColourSelect({
   name,
   fieldName,
   form,
+  defaultValue,
 }: {
   name: string;
   colourOptions: ColourOption[];
   fieldName: string;
   form: UseFormReturnType<FormData>;
+  defaultValue: ColourOption;
 }) {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -314,7 +350,7 @@ function ColourSelect({
 
   // `search` is transient UI state — it controls the input text for dropdown filtering.
   // The actual committed value (a ColourOption object) lives in the form.
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(defaultValue.name);
 
   const formPath = `${fieldName}` as const;
 
@@ -329,7 +365,12 @@ function ColourSelect({
     </Combobox.Option>
   ));
 
-  // register onChange even
+  useEffect(() => {
+    // ONLY on mount, update the search
+    // This case is applicable when the user has a
+    // saved cue, and because this component is not controlled,
+    // we need to manually set the "default" value loaded from database
+  }, []);
 
   return (
     <Combobox

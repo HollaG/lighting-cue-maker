@@ -23,7 +23,7 @@ type FixtureGroupAssignment = {
     name: string;
     type: AttributeTypes;
     value: {
-      [AttributeTypes.TEXT]: null;
+      [AttributeTypes.TEXT]: string;
       [AttributeTypes.SELECT]: string; // value
       [AttributeTypes.MULTISELECT]: string[]; // value
       [AttributeTypes.COLOUR]: ColourOption;
