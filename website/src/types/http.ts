@@ -15,3 +15,6 @@ export type GetCuesRes = { cues: Cue[] };
 export type UpdateItemReq = Partial<Item>;
 
 export type UpdateItemRes = { item: Item };
+
+export type UpdateCueReq = Partial<Cue>;
+export type UpdateCueRes = { cue: Cue };

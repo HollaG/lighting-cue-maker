@@ -16,7 +16,7 @@ export type AttributeConfiguration = {
   id: string; // stable
   name: string;
   type: AttributeTypes;
-  metadata: Map<string, any>;
+  metadata: Record<string, any>;
   optionPossibleValues: AttributeTypesOptions;
 };
 
