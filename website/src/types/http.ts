@@ -18,3 +18,13 @@ export type UpdateItemRes = { item: Item };
 
 export type UpdateCueReq = Partial<Cue>;
 export type UpdateCueRes = { cue: Cue };
+
+export type GenerateQlcCollections = {
+  maxFunctionId: number;
+  attributeValueToFunctionMap: { [valueId: string]: string[] };
+  lightEventId: string;
+};
+
+export type GenerateQlcCollectionsRes = {
+  items: Item[];
+};

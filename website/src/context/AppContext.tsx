@@ -54,9 +54,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     event.event?.id,
     item.activeItem?.id,
     event.isValidEvent,
+    lyrics.rawLyrics,
     lyrics.content,
     lyrics.setContent,
     lyrics.setRawLyrics,
+    item.executeUpdateItem,
   );
 
   // ── Cross-cutting handlers ─────────────────────────────────────────────────

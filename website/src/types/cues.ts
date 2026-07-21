@@ -22,14 +22,16 @@ type FixtureGroupAssignment = {
   [attributeId: string]: {
     name: string;
     type: AttributeTypes;
-    value: {
-      [AttributeTypes.TEXT]: string;
-      [AttributeTypes.SELECT]: string; // value
-      [AttributeTypes.MULTISELECT]: string[]; // value
-      [AttributeTypes.COLOUR]: ColourOption;
-      [AttributeTypes.SLIDER]: number; // value
-      [AttributeTypes.BOOLEAN]: boolean; // True = checked, false = not checked
-      [AttributeTypes.NONE]: null;
-    };
+    value: ValueAssignment;
   };
+};
+
+export type ValueAssignment = {
+  [AttributeTypes.TEXT]: string;
+  [AttributeTypes.SELECT]: string; // value
+  [AttributeTypes.MULTISELECT]: string[]; // value
+  [AttributeTypes.COLOUR]: ColourOption;
+  [AttributeTypes.SLIDER]: number; // value
+  [AttributeTypes.BOOLEAN]: boolean; // True = checked, false = not checked
+  [AttributeTypes.NONE]: null;
 };

@@ -110,7 +110,7 @@ export const ChoreoEventWrapper = () => {
         </Stack>
         <Stack>
           {cueOrder.map((cueId, index) => {
-            let cue = cues.find((c) => c.id === convertUuidForDatabase(cueId));
+            let cue = cues.find((c) => c.id === cueId);
             if (!cue) return null;
             return <CueCard key={cue.id} cue={cue} cueNumber={index + 1} />;
           })}

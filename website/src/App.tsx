@@ -14,7 +14,7 @@ import { QLCConverter } from "./sections/QLCConverter/QLCConverter";
 function App() {
   return (
     <AppProvider>
-      <Box py={"xl"}>
+      <Box pt="xl" pb={"48rem"}>
         <Notifications />
         <Box className={classes.controlBar}>
           <Button variant="light">Night mode</Button>
