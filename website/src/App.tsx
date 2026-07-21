@@ -5,6 +5,7 @@ import classes from "./App.module.css";
 import { HomeHeader } from "./sections/HomeHeader/HomeHeader";
 import { CreateEventWrapper } from "./sections/CreateEvent/CreateEventWrapper";
 import { ChoreoEventWrapper } from "./sections/ChoreoEvent/ChoreoEventWrapper";
+import { QLCConverter } from "./sections/QLCConverter/QLCConverter";
 
 // When the app loads, if query parameter showId is not present, render a CTA
 // if showId is present, load the Google Doc corresponding to that showId
@@ -20,7 +21,7 @@ function App() {
 
       <CreateEventWrapper />
       <ChoreoEventWrapper />
-      {/* <QLCConverter /> */}
+      <QLCConverter />
     </Box>
   );
 }
