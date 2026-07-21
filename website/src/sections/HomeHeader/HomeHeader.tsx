@@ -1,12 +1,12 @@
-import { Accordion, Box, Button, Center, Collapse, Container, Group, SegmentedControl, Stack, Text, TextInput, Title } from "@mantine/core"
+import { Box, Center, Collapse, Container, Group, Stack, Text, Title } from "@mantine/core"
 
 import classes from "./HomeHeader.module.css"
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput"
-import { useEffect, useState } from "react"
-import { useAppContext } from "../../context/AppContext"
+import { useAppStore } from "../../store/appStore"
 
 export const HomeHeader = () => {
-  const { code, setCode } = useAppContext()
+  const code = useAppStore((s) => s.code);
+  const setCode = useAppStore((s) => s.setCode);
 
   return <Collapse expanded={true}>
     <Container mt="6rem">

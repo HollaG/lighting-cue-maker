@@ -1,15 +1,10 @@
 import {
-  Box,
   Button,
   Center,
   Collapse,
   Container,
   Divider,
-  Group,
   SimpleGrid,
-  Text,
-  TextInput,
-  Title,
 } from "@mantine/core";
 import { AddFixtureGroupButton } from "../../components/FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
 import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard";
@@ -19,7 +14,7 @@ import { useState } from "react";
 import { flatten } from "../../utils/flatten";
 import { useRequest } from "../../hooks/useRequest";
 import type { AttributeConfiguration, FixtureGroupConfiguration, LightEventConfiguration } from "../../types/types";
-import { useAppContext } from "../../context/AppContext";
+import { useAppStore } from "../../store/appStore";
 
 type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
   fixtureGroups: {
@@ -33,8 +28,8 @@ type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
 
 export const CreateEventWrapper = () => {
   const [fixtureGroupIds, setFixtureGroupIds] = useState<number[]>([]);
-  const { isValidEvent } = useAppContext();
-  const { executeRequest, data, isLoading, error } = useRequest("/api/v1/events", "POST");
+  const isValidEvent = useAppStore((s) => s.isValidEvent);
+  const { executeRequest } = useRequest("/api/v1/events", "POST");
 
   const form = useForm<FormData>({
     mode: "uncontrolled",
@@ -55,9 +50,9 @@ export const CreateEventWrapper = () => {
 
     // convert all ID fields into String
     config.fixtureGroups.forEach((fixtureGroup) => {
-      delete fixtureGroup.id;
+      delete (fixtureGroup as { id?: string }).id;
       fixtureGroup.attributes.forEach((attribute) => {
-        delete attribute.id;
+        delete (attribute as { id?: string }).id;
       });
     });
 

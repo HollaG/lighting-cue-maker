@@ -1,20 +1,16 @@
 import {
-  Accordion,
   ActionIcon,
   Box,
   Button,
-  Card,
   Checkbox,
   Collapse,
   Combobox,
   Fieldset,
   Group,
-  Input,
   InputBase,
   MultiSelect,
   Select,
   SimpleGrid,
-  Space,
   Stack,
   Text,
   Title,
@@ -22,7 +18,7 @@ import {
 } from "@mantine/core";
 import { CardBase } from "../CardBase";
 import type { Cue } from "../../../types/cues";
-import { useAppContext } from "../../../context/AppContext";
+import { useAppStore } from "../../../store/appStore";
 import {
   AttributeTypes,
   BooleanOptions,
@@ -40,12 +36,12 @@ import type { UpdateCueReq, UpdateCueRes } from "../../../types/http";
 type FormData = Cue;
 
 export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => {
-  const { event } = useAppContext();
+  const event = useAppStore((s) => s.event);
 
   // TODO: change into context under `activeCue`
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const fixtureGroups = event.fixtureGroups;
+  const fixtureGroups = event?.fixtureGroups ?? [];
 
   const initialValues: FormData = useMemo(
     () => ({
@@ -55,37 +51,36 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
       updatedAt: cue.updatedAt,
       deletedAt: cue.deletedAt,
 
-      assignments:
-        cue && cue.assignments && Object.keys(cue.assignments).length != 0
-          ? cue.assignments
-          : Object.fromEntries(
-              event.fixtureGroups.map((group) => [
-                group.id,
-                {
-                  name: group.name,
-                  assignment: Object.fromEntries(
-                    group.attributes.map((attribute) => [
-                      attribute.id,
-                      {
-                        name: attribute.name,
-                        type: attribute.type,
-                        value: {
-                          [AttributeTypes.TEXT]: "",
-                          [AttributeTypes.SELECT]: "",
-                          [AttributeTypes.MULTISELECT]: [],
-                          [AttributeTypes.COLOUR]: { hex: "", name: "" },
-                          [AttributeTypes.SLIDER]: null,
-                          [AttributeTypes.BOOLEAN]: false,
-                          [AttributeTypes.NONE]: null,
-                        },
+      assignments: (cue && cue.assignments && Object.keys(cue.assignments).length != 0
+        ? cue.assignments
+        : Object.fromEntries(
+            fixtureGroups.map((group) => [
+              group.id,
+              {
+                name: group.name,
+                assignment: Object.fromEntries(
+                  group.attributes.map((attribute) => [
+                    attribute.id,
+                    {
+                      name: attribute.name,
+                      type: attribute.type,
+                      value: {
+                        [AttributeTypes.TEXT]: "",
+                        [AttributeTypes.SELECT]: "",
+                        [AttributeTypes.MULTISELECT]: [],
+                        [AttributeTypes.COLOUR]: { hex: "", name: "" },
+                        [AttributeTypes.SLIDER]: 0,
+                        [AttributeTypes.BOOLEAN]: false,
+                        [AttributeTypes.NONE]: null,
                       },
-                    ]),
-                  ),
-                },
-              ]),
-            ),
+                    },
+                  ]),
+                ),
+              },
+            ]),
+          )) as any,
     }),
-    [cue],
+    [cue, fixtureGroups],
   );
   const form = useForm<FormData>({
     mode: "uncontrolled",
@@ -99,7 +94,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
   });
 
   const { executeRequest } = useRequest<UpdateCueReq, UpdateCueRes>(
-    `/api/v1/events/${event.id}/items/${cue.id}/cues/${cue.id}`,
+    `/api/v1/events/${event?.id ?? ""}/items/${cue.id}/cues/${cue.id}`,
     "PATCH",
   );
 
@@ -122,12 +117,13 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     }
   };
 
-  const simplifyCues = (cue: Cue) => {
+  /*
+  const _simplifyCues = (cue: Cue) => {
     let finalText = "";
     if (!cue.assignments) return "";
-    for (const [groupId, groupAssignment] of Object.entries(cue.assignments)) {
+    for (const [, groupAssignment] of Object.entries(cue.assignments)) {
       finalText += `${groupAssignment.name}: `;
-      for (const [attributeId, attributeAssignment] of Object.entries(groupAssignment.assignment)) {
+      for (const [, attributeAssignment] of Object.entries(groupAssignment.assignment)) {
         switch (attributeAssignment.type) {
           case AttributeTypes.TEXT:
           case AttributeTypes.SELECT:
@@ -152,6 +148,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     }
     return finalText;
   };
+  */
 
   return (
     <CardBase isActive={false}>
@@ -217,7 +214,7 @@ const FixtureGroupSection = ({
 
 const AttributeDisplay = ({
   attribute,
-  index,
+  index: _index,
   form,
   groupId,
 }: {
@@ -407,7 +404,7 @@ function ColourSelect({
             // Restore display to whatever the form currently holds (in case the user typed but didn't select).
             const committed = formPath
               .split(".")
-              .reduce((cur, key) => (cur ? cur[key] : undefined), form.getValues()) as ColourOption | undefined;
+              .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as ColourOption | undefined;
 
             // const committed = form.getValues()[formPath.[0]][] as ColourOption | undefined;
             setSearch(committed?.name ?? "");
@@ -421,7 +418,7 @@ function ColourSelect({
                 height: "1rem",
                 borderRadius: "4px",
                 backgroundColor: (
-                  formPath.split(".").reduce((cur, key) => (cur ? cur[key] : undefined), form.getValues()) as
+                  formPath.split(".").reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
                     | ColourOption
                     | undefined
                 )?.hex,

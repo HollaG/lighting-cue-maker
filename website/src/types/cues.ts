@@ -1,4 +1,4 @@
-import type { AttributeTypes, ColourOption, Option } from "./types";
+import type { AttributeTypes, ColourOption } from "./types";
 
 /**
  * Cues indicate

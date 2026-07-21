@@ -5,7 +5,6 @@ import {
   Collapse,
   Container,
   Divider,
-  Flex,
   Group,
   Scroller,
   SimpleGrid,
@@ -15,29 +14,26 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { useAppContext } from "../../context/AppContext";
+import { useAppStore } from "../../store/appStore";
 import classes from "./ChoreoEventWrapper.module.css";
 import { RichContent } from "../../components/RichContent/RichContent";
 import { CueCard } from "../../components/Siding/CueCard/CueCard";
-import { convertUuidForDatabase } from "../../utils/convertUuid";
 
 export const ChoreoEventWrapper = () => {
-  const {
-    isValidEvent,
-    activeItem,
-    changeActiveItem,
-    items,
-    itemName,
-    setItemName,
-    onAddItem,
-    lyricInputMode,
-    rawLyrics,
-    setRawLyrics,
-    onFinishAddingLyrics,
-    onBeginAddingLyrics,
-    cueOrder,
-    cues,
-  } = useAppContext();
+  const isValidEvent = useAppStore((s) => s.isValidEvent);
+  const activeItem = useAppStore((s) => s.activeItem);
+  const changeActiveItem = useAppStore((s) => s.changeActiveItem);
+  const items = useAppStore((s) => s.items);
+  const itemName = useAppStore((s) => s.itemName);
+  const setItemName = useAppStore((s) => s.setItemName);
+  const onAddItem = useAppStore((s) => s.onAddItem);
+  const lyricInputMode = useAppStore((s) => s.lyricInputMode);
+  const rawLyrics = useAppStore((s) => s.rawLyrics);
+  const setRawLyrics = useAppStore((s) => s.setRawLyrics);
+  const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
+  const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
+  const cueOrder = useAppStore((s) => s.cueOrder);
+  const cues = useAppStore((s) => s.cues);
 
   return (
     <Collapse expanded={isValidEvent}>

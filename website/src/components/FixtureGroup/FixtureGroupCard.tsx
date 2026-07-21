@@ -1,27 +1,11 @@
-import { Box, Button, Card, Center, Divider, Flex, Group, MultiSelect, Select, Stack, Text } from "@mantine/core";
+import { Box, Button, Card, Center, Flex, Group, Stack } from "@mantine/core";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { useEffect, useState } from "react";
-import {
-  AttributeTypes,
-  type AttributeConfiguration,
-  type FixtureGroupConfiguration,
-  type Option,
-} from "../../types/types";
-import { MultiSelectCreatable } from "../MultiSelectCreatable/MultiSelectCreatable";
 import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
 import type { UseFormReturnType } from "@mantine/form";
 
-/**
- *
- * @param editable Display mode or edit mode (unused)
- * @param id Generated Fixture Group ID
- * @param index Index of the fixture group in the array. Used to display "Fixture Group 1/2 ..."
- * @param form passed down form object
- * @param onDeleteFixtureGroup callback to remove this card
- * @returns
- */
 export const FixtureGroupCard = ({
-  editable,
+  editable: _editable,
   id,
   form,
   index,

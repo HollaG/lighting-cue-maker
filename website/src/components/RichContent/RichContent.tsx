@@ -1,10 +1,11 @@
 import { Group, Flex, Box, Text, Stack, Center } from "@mantine/core";
-import { useAppContext } from "../../context/AppContext";
+import { useAppStore } from "../../store/appStore";
 import classes from "./RichContext.module.css";
 import clsx from "clsx";
 
 export const RichContent = () => {
-  const { content, setContent, onAddCue } = useAppContext();
+  const content = useAppStore((s) => s.content);
+  const onAddCue = useAppStore((s) => s.onAddCue);
 
   const getDisplayDiv = (word: string, index1: number, index2: number, cueCount: [number]) => {
     if (word.startsWith("<cueId=")) {

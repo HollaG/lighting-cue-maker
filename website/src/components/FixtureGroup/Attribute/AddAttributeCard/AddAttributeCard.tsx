@@ -3,22 +3,18 @@ import {
   Group,
   Button,
   Select,
-  Text,
   TagsInput,
   Center,
   Box,
   Stack,
   ColorInput,
-  TextInput,
-  Flex,
   Radio,
+  Flex,
 } from "@mantine/core";
-import { MultiSelectCreatable } from "../../../MultiSelectCreatable/MultiSelectCreatable";
 import { AttributeTypes, BooleanOptions, type AttributeConfiguration, type Option } from "../../../../types/types";
 import { useEffect, useMemo, useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";
-import { waitNextFrame } from "../../../../utils/raf";
 const ATTRIBUTE_OPTIONS: Option[] = [
   { label: "Text", value: AttributeTypes.TEXT },
   { label: "Select one", value: AttributeTypes.SELECT },
@@ -26,12 +22,6 @@ const ATTRIBUTE_OPTIONS: Option[] = [
   { label: "Colour select", value: AttributeTypes.COLOUR },
   { label: "Slider", value: AttributeTypes.SLIDER },
   { label: "Checkbox", value: AttributeTypes.BOOLEAN },
-];
-
-const COLOUR_OPTIONS: Option[] = [
-  { label: "Red", value: "red" },
-  { label: "Green", value: "green" },
-  { label: "Blue", value: "blue" },
 ];
 /**
  *
@@ -78,16 +68,7 @@ export const AddAttributeCard = ({
         [AttributeTypes.TEXT]: null,
         [AttributeTypes.NONE]: null,
       },
-    } as Omit<AttributeConfiguration, "id">); // ID only for database
-
-    // NOTE: This seems to be required, as otherwise the select field does NOT get set with the correct attribute type
-    // setTimeout(() => {
-    //   form.setFieldValue(`fixtureGroups.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
-    // }, 1);
-
-    // waitNextFrame().then(() => {
-    //   form.setFieldValue(`fixtureGroups.${fixtureGroupId}.attributes.${id}.type`, AttributeTypes.SELECT);
-    // });
+    } as unknown as Omit<AttributeConfiguration, "id">); // ID only for database
 
     return () => {
       // form.removeListItem(`fixtureGroups.${fixtureGroupId}.attributes`, index);
@@ -95,7 +76,7 @@ export const AddAttributeCard = ({
     };
   }, []);
 
-  form.watch(`${baseFieldName}.type`, ({ previousValue, value, touched, dirty }) => {
+  form.watch(`${baseFieldName}.type`, ({ value }) => {
     setSelectedAttribute(value);
   });
   return (
@@ -214,9 +195,8 @@ const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
 
   const initialColorInput = useMemo(() => Date.now().toString(), []); // there should already be one input ready
 
-  const [colourOptions, setColourOptions] = useState<Option[]>([]);
-  const [colorInputIds, setColorInputIds] = useState<string[]>([initialColorInput]); // IDs for Colours are String.
-  // because we have TWO inputs per colour, so the full id is ${colorInputId}-hex or ${colorInputId}-name
+  // const [colorInputIds, setColorInputIds] = useState<string[]>([initialColorInput]); // IDs for Colours are String.
+  const [colorInputIds, setColorInputIds] = useState<string[]>([initialColorInput]);
 
   useEffect(() => {
     // init the field value for this colour
@@ -289,9 +269,6 @@ const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
   );
 };
 
-// specify min and max
-const SliderOptionsHandler = () => { };
-
 // specify default value
 const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; form: UseFormReturnType<any> }) => {
   opvFieldName = `${opvFieldName}.${AttributeTypes.BOOLEAN}`;
@@ -313,6 +290,3 @@ const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; f
     </Radio.Group>
   );
 };
-
-// nothing
-const TextOptionsHandler = () => { };

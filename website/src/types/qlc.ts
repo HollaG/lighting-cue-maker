@@ -1,6 +1,5 @@
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-import type { Cue } from "./cues";
 import { AttributeTypes, type Item } from "./types";
 import { getCueOrder, getValueFromValueAssignment } from "../utils/cueUtils";
 

@@ -34,7 +34,7 @@ export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE"
         }
 
         const result: ApiResponse<U> = await response.json();
-        setData(result.data);
+        setData(result.data ?? null);
         return result.data;
       } catch (err) {
         const msg = (err as Error).message ?? "Failed to fetch.";

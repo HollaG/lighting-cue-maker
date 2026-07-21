@@ -19,4 +19,4 @@ export interface CueContent extends TextContent {
   // other stuff here
 }
 
-interface LineBreakContent extends Content {}
+export interface LineBreakContent extends Content {}

@@ -9,16 +9,14 @@ import {
   Grid,
   Group,
   MultiSelect,
-  SimpleGrid,
   Stack,
   Text,
   Title,
-  type MultiSelectProps,
 } from "@mantine/core";
-import { useAppContext } from "../../context/AppContext";
+import { useAppStore } from "../../store/appStore";
 import { useEffect, useState } from "react";
 import { AttributeTypes, type AttributeConfiguration } from "../../types/types";
-import { IconArrowRight, IconArrowRightBar } from "@tabler/icons-react";
+import { IconArrowRightBar } from "@tabler/icons-react";
 import {
   extractQLCFunctionsToJSON,
   generateAndInsertCollections,
@@ -26,9 +24,7 @@ import {
   type QLCFunction,
 } from "../../types/qlc";
 import { useForm, type UseFormReturnType } from "@mantine/form";
-import { useFetch } from "../../hooks/useFetch";
 import { useRequest } from "../../hooks/useRequest";
-import type { GenerateQlcCollectionsRes } from "../../types/http";
 
 const COLUMN_SPANS = [2, 3, 1, 6];
 
@@ -37,7 +33,7 @@ type GroupedFnList = {
   items: { value: string; label: string }[]; // Function ID
 }[];
 export const QLCConverter = () => {
-  const { event } = useAppContext();
+  const event = useAppStore((s) => s.event);
   const [file, setFile] = useState<File | null>(null);
 
   const [functionList, setFunctionList] = useState<{ [fnId: string]: QLCFunction }>({});
@@ -54,7 +50,7 @@ export const QLCConverter = () => {
   });
 
   // const {} = useFetch(`/api/v1/qlc/generate?lightEventId=${event?.id}`, false)
-  const { executeRequest } = useRequest<unknown, GenerateQlcCollectionsRes>(
+  const { executeRequest } = useRequest<unknown, { items: any[] }>(
     `/api/v1/qlc/${event?.id}/generate`,
     "POST",
   );
@@ -63,17 +59,25 @@ export const QLCConverter = () => {
     if (!file) return;
     file.text().then((xml) => {
       const fnList = extractQLCFunctionsToJSON(xml);
-      setFunctionList(fnList.reduce((acc, fn) => ({ ...acc, [fn.ID]: fn }), {}));
+      setFunctionList(
+        fnList.reduce(
+          (acc, fn) => (fn.ID ? { ...acc, [fn.ID]: fn } : acc),
+          {} as { [fnId: string]: QLCFunction },
+        ),
+      );
 
       // set up the groupedFnList, group by Type
       const grouped = fnList.reduce(
         (acc, fn) => {
-          if (!acc[fn.Type]) {
-            acc[fn.Type] = [];
+          const fnType = fn.Type ?? "Unknown";
+          const fnId = fn.ID ?? "";
+          const fnName = fn.Name ?? "";
+          if (!acc[fnType]) {
+            acc[fnType] = [];
           }
-          acc[fn.Type].push({
-            label: fn.Name,
-            value: fn.ID,
+          acc[fnType].push({
+            label: fnName,
+            value: fnId,
           });
           return acc;
         },
@@ -206,8 +210,8 @@ export const QLCConverter = () => {
                     </Grid.Col>
                     {fixtureGroup.attributes
                       .filter((v) => isQlcMappable(v.type))
-                      .map((attribute, attrIndex) => (
-                        <OptList2 key={attribute.id} attribute={attribute} groupedFnList={groupedFnList} form={form} />
+                      .map((attribute) => (
+                        <OptList2 key={attribute.id} attribute={attribute} groupedFnList={groupedFnList ?? []} form={form} />
                       ))}
                   </>
                 ))}
