@@ -44,7 +44,8 @@ type CreateCueReq struct {
 }
 
 type UpdateCueReq struct {
-	Cue map[string]any `json:"cue"`
+	Assignments *map[string]any `json:"assignments,omitempty"`
+	Comments    *string         `json:"comments,omitempty"`
 }
 
 type Cue struct {

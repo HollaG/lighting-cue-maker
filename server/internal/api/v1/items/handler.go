@@ -197,3 +197,76 @@ func createCue(c *gin.Context) {
 		"cue": cue,
 	})
 }
+
+// get the list of cues belonging to this band
+func getCues(c *gin.Context) {
+	eventUuid := c.Param("id")
+	itemUuid := c.Param("itemId")
+
+	// verify the event exists
+	var event models.LightEvent
+	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
+		response.NotFound(c, "Event not found")
+		return
+	}
+
+	// select all items belonging to this event
+	var cues []models.Cue
+	if result := database.DB().Where("item_uuid = ?", itemUuid).Find(&cues); result.Error != nil {
+		response.InternalError(c, "Failed to get cues")
+		return
+	}
+
+	response.OK(c, map[string]any{
+		"cues": cues,
+	})
+}
+
+func updateCue(c *gin.Context) {
+	// itemUuid := c.Param("itemId")
+	cueUuid := c.Param("cueId")
+
+	var cue models.Cue
+	if result := database.DB().Where("uuid = ?", cueUuid).First(&cue); result.Error != nil {
+		response.NotFound(c, "Cue not found")
+		return
+	}
+
+	// update the cue
+	var req models.UpdateCueReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(err)
+		response.BadRequest(c, "Invalid request body", map[string]any{
+			"request": req,
+		})
+		return
+	}
+
+	updates := map[string]any{}
+	if req.Comments != nil {
+		updates["comments"] = *req.Comments
+	}
+	if req.Assignments != nil {
+		updates["assignments"] = req.Assignments
+	}
+
+	if len(updates) > 0 {
+		if result := database.DB().Model(&models.Cue{}).Where("uuid = ?", cueUuid).Updates(updates); result.Error != nil {
+			response.InternalError(c, "Failed to update cue")
+			return
+		}
+	}
+
+	// Re-fetch the full cue from DB so the response reflects the persisted state.
+	var updatedCue models.Cue
+	if result := database.DB().Where("uuid = ?", cueUuid).First(&updatedCue); result.Error != nil {
+		response.InternalError(c, "Failed to fetch updated cue")
+		return
+	}
+
+	fmt.Println("API PATCH /v1/events/:id/items/:itemId/cues/:cueId")
+
+	response.OK(c, map[string]any{
+		"cue": updatedCue,
+	})
+}

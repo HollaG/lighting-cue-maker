@@ -6,6 +6,7 @@ import (
 	"lighting-cue-maker/server/config"
 	"lighting-cue-maker/server/internal/api/v1/events"
 	"lighting-cue-maker/server/internal/api/v1/ping"
+	"lighting-cue-maker/server/internal/api/v1/qlc"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 
 		// /events (and nested /events/:id/items)
 		events.Register(v1.Group("/events"))
+		qlc.Register(v1.Group("/qlc"))
 
 		// Add future entity route groups here:
 		// fixtures.Register(v1)
