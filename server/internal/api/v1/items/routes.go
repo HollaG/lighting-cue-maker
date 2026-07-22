@@ -12,4 +12,5 @@ func Register(rg *gin.RouterGroup) {
 	rg.GET("/:itemId/cues", getCues)
 	rg.POST("/:itemId/cues", createCue)
 	rg.PATCH("/:itemId/cues/:cueId", updateCue)
+	rg.DELETE("/:itemId/cues/:cueId", deleteCue)
 }

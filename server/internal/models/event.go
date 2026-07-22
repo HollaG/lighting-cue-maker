@@ -14,7 +14,8 @@ type CreateLightEventReq struct {
 	FixtureGroups     []CreateFixtureGroupConfigurationReq `json:"fixtureGroups"`
 
 	// optional
-	Description string `json:"description,omitempty"`
+	Description  string `json:"description,omitempty"`
+	ExternalLink string `json:"externalLink,omitempty"`
 }
 
 type CreateFixtureGroupConfigurationReq struct {
@@ -36,6 +37,8 @@ type LightEvent struct {
 	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
 	Name              string                      `json:"name"`
+	Description       string                      `json:"description"`
+	ExternalLink      string                      `json:"externalLink"`
 	CuesPerBand       int                         `json:"cuesPerBand"`
 	UniqueCuesPerBand int                         `json:"uniqueCuesPerBand"`
 	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups" gorm:"foreignKey:LightEventUuid;references:Uuid"`

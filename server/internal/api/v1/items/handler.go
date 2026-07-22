@@ -270,3 +270,24 @@ func updateCue(c *gin.Context) {
 		"cue": updatedCue,
 	})
 }
+
+func deleteCue(c *gin.Context) {
+	cueUuid := c.Param("cueId")
+
+	var cue models.Cue
+	if result := database.DB().Where("uuid = ?", cueUuid).First(&cue); result.Error != nil {
+		response.NotFound(c, "Cue not found")
+		return
+	}
+
+	if result := database.DB().Delete(&cue); result.Error != nil {
+		response.InternalError(c, "Failed to delete cue")
+		return
+	}
+
+	fmt.Println("API DELETE /v1/events/:id/items/:itemId/cues/:cueId")
+
+	response.OK(c, map[string]any{
+		"message": "Cue deleted",
+	})
+}

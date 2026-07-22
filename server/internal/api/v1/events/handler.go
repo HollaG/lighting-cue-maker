@@ -100,6 +100,8 @@ func createEvent(c *gin.Context) {
 		CuesPerBand:       req.CuesPerBand,
 		UniqueCuesPerBand: req.UniqueCuesPerBand,
 		FixtureGroups:     fixtureGroups,
+		Description:       req.Description,
+		ExternalLink:      req.ExternalLink,
 	}
 
 	result := database.DB().Create(&event)
