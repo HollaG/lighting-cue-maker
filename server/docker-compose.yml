@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:18.4
     container_name: lighting_cue_maker_db
     restart: unless-stopped
     env_file:
@@ -11,9 +11,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -38,8 +39,6 @@ services:
       CORS_URL: ${CORS_URL}
     ports:
       - "${PORT}:${PORT}"
-    volumes:
-      - ./.env:/app/.env:ro
     depends_on:
       db:
         condition: service_healthy
