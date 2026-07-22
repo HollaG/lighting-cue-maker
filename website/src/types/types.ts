@@ -67,6 +67,8 @@ export type LightEventConfiguration = {
   name: string;
   cuesPerBand?: number;
   uniqueCuesPerBand?: number;
+  description: string;
+  externalLink?: string;
 
   // options
   fixtureGroups: FixtureGroupConfiguration[];

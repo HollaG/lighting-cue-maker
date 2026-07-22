@@ -1,11 +1,4 @@
-import {
-  Button,
-  Center,
-  Collapse,
-  Container,
-  Divider,
-  SimpleGrid,
-} from "@mantine/core";
+import { Button, Center, Collapse, Container, Divider, SimpleGrid, Textarea } from "@mantine/core";
 import { AddFixtureGroupButton } from "../../components/FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
 import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard";
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
@@ -15,6 +8,7 @@ import { flatten } from "../../utils/flatten";
 import { useRequest } from "../../hooks/useRequest";
 import type { AttributeConfiguration, FixtureGroupConfiguration, LightEventConfiguration } from "../../types/types";
 import { useAppStore } from "../../store/appStore";
+import type { CreateEventRes } from "../../types/http";
 
 type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
   fixtureGroups: {
@@ -29,7 +23,9 @@ type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
 export const CreateEventWrapper = () => {
   const [fixtureGroupIds, setFixtureGroupIds] = useState<number[]>([]);
   const isValidEvent = useAppStore((s) => s.isValidEvent);
-  const { executeRequest } = useRequest("/api/v1/events", "POST");
+  const setCode = useAppStore((s) => s.setCode);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { executeRequest } = useRequest<FormData, CreateEventRes>("/api/v1/events", "POST");
 
   const form = useForm<FormData>({
     mode: "uncontrolled",
@@ -38,16 +34,19 @@ export const CreateEventWrapper = () => {
       cuesPerBand: undefined,
       uniqueCuesPerBand: undefined,
       fixtureGroups: {},
+      externalLink: "",
+      description: "",
     },
   });
 
-  const onFormSubmit = (v: FormData) => {
+  const onFormSubmit = async (v: FormData) => {
     // convert FormData into LightEventConfiguration
     if (v.cuesPerBand !== undefined && typeof v.cuesPerBand === "string") v.cuesPerBand = Number(v.cuesPerBand);
     if (v.uniqueCuesPerBand !== undefined && typeof v.uniqueCuesPerBand === "string")
       v.uniqueCuesPerBand = Number(v.uniqueCuesPerBand);
     const config = flatten(v) as Omit<LightEventConfiguration, "id">;
 
+    console.log({ config });
     // convert all ID fields into String
     config.fixtureGroups.forEach((fixtureGroup) => {
       delete (fixtureGroup as { id?: string }).id;
@@ -56,8 +55,21 @@ export const CreateEventWrapper = () => {
       });
     });
 
-    executeRequest(config);
+    setIsSubmitting(true);
+    try {
+      const result = await executeRequest(config);
+      if (result?.event?.id) {
+        // set this ID as the event
+        setCode(result.event.id);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isValidEvent) return;
   return (
     <Collapse expanded={!isValidEvent}>
       <form onSubmit={form.onSubmit((v) => onFormSubmit(v))}>
@@ -71,6 +83,25 @@ export const CreateEventWrapper = () => {
             name="name"
             key={form.key("name")}
             {...form.getInputProps("name")}
+          />
+          <Textarea
+            minRows={3}
+            variant="unstyled"
+            autosize
+            name="description"
+            key={form.key("description")}
+            {...form.getInputProps("description")}
+            placeholder="Type a brief description e.g. rules/remarks that choreographers can see."
+            styles={{
+              input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+            }}
+          />
+          <CustomTextInput
+            label="Google Docs / OneDrive / Link"
+            placeholder="Paste a link to more information, if necessary"
+            name="externalLink"
+            key={form.key("externalLink")}
+            {...form.getInputProps("externalLink")}
           />
           <CustomTextInput
             label="How many cues per band? (optional)"
@@ -118,7 +149,7 @@ export const CreateEventWrapper = () => {
           </SimpleGrid>
 
           <Center mt={"xl"}>
-            <Button type="submit" size="lg">
+            <Button type="submit" size="lg" disabled={isSubmitting}>
               {" "}
               Create Event{" "}
             </Button>

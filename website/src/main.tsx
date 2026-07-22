@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import { createTheme, MantineProvider, Text, TextInput } from "@mantine/core";
+import { Container, createTheme, MantineProvider, rem, Text, TextInput } from "@mantine/core";
 import classes from "./main.module.css";
 
 const theme = createTheme({
@@ -24,7 +24,7 @@ const theme = createTheme({
           return {
             root: {
               "--text-fz": "inherit",
-              "fontFamily": theme.fontFamilyMonospace ?? "monospace",
+              fontFamily: theme.fontFamilyMonospace ?? "monospace",
             },
           };
         }

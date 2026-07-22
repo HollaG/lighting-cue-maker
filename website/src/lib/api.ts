@@ -1,7 +1,7 @@
 import { notifications } from "@mantine/notifications";
 import type { ApiResponse } from "../types/server";
 
-const BASE_URL = `http://localhost:${import.meta.env.VITE_PUBLIC_PORT ?? "8080"}`;
+const BASE_URL = import.meta.env.VITE_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${BASE_URL}${path}`;
@@ -12,7 +12,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
 
     if (!res.ok) {
-      const msg = res.statusText || "An unknown server error occurred.";
+      const result: ApiResponse<T> = await res.json();
+      const msg = result.error ?? res.statusText ?? "An unknown server error occurred.";
       notifications.show({
         title: "Server Error",
         message: msg,

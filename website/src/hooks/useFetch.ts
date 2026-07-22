@@ -6,7 +6,8 @@ export function useFetch<T>(
   path: string,
   canFetch?: boolean,
 ): { data: T | null; loading: boolean; error: string | null; success: boolean; refetch: () => void } {
-  const url = `http://localhost:${import.meta.env.VITE_PUBLIC_PORT}${path}`;
+  const baseUrl = import.meta.env.VITE_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+  const url = `${baseUrl}${path}`;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

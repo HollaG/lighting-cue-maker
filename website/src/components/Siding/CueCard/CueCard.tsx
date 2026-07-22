@@ -37,6 +37,7 @@ type FormData = Cue;
 
 export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => {
   const event = useAppStore((s) => s.event);
+  const onDeleteCue = useAppStore((s) => s.onDeleteCue);
 
   // TODO: change into context under `activeCue`
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -117,45 +118,21 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     }
   };
 
-  /*
-  const _simplifyCues = (cue: Cue) => {
-    let finalText = "";
-    if (!cue.assignments) return "";
-    for (const [, groupAssignment] of Object.entries(cue.assignments)) {
-      finalText += `${groupAssignment.name}: `;
-      for (const [, attributeAssignment] of Object.entries(groupAssignment.assignment)) {
-        switch (attributeAssignment.type) {
-          case AttributeTypes.TEXT:
-          case AttributeTypes.SELECT:
-          case AttributeTypes.SLIDER:
-            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type]} `;
-            break;
-          case AttributeTypes.MULTISELECT:
-            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type].join(", ")}`;
-            break;
-          case AttributeTypes.COLOUR:
-            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type].name}`;
-            break;
-          case AttributeTypes.BOOLEAN:
-            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type] === true ? "True" : "False"}`;
-            break;
-          case AttributeTypes.NONE:
-            finalText += `${attributeAssignment.name}=${attributeAssignment.value[attributeAssignment.type]}`;
-            break;
-        }
-        finalText += " / ";
-      }
+  const beforeDeleteCue = (cue: Cue) => {
+    const result = confirm("Are you sure you want to delete this cue?");
+    if (result) {
+      onDeleteCue(cue.id);
     }
-    return finalText;
   };
-  */
-
   return (
     <CardBase isActive={false}>
       <Stack gap={0}>
         <Group mb="md">
           <Title order={4}> Cue {cueNumber} </Title>
           <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
+          <Button color="red" size="xs" variant="transparent" onClick={() => beforeDeleteCue(cue)}>
+            Delete{" "}
+          </Button>
           <Button color="orange" size="xs" disabled={!isDirty} onClick={() => handleSave()}>
             {" "}
             Save changes{" "}
@@ -404,7 +381,9 @@ function ColourSelect({
             // Restore display to whatever the form currently holds (in case the user typed but didn't select).
             const committed = formPath
               .split(".")
-              .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as ColourOption | undefined;
+              .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
+              | ColourOption
+              | undefined;
 
             // const committed = form.getValues()[formPath.[0]][] as ColourOption | undefined;
             setSearch(committed?.name ?? "");
@@ -418,7 +397,9 @@ function ColourSelect({
                 height: "1rem",
                 borderRadius: "4px",
                 backgroundColor: (
-                  formPath.split(".").reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
+                  formPath
+                    .split(".")
+                    .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
                     | ColourOption
                     | undefined
                 )?.hex,

@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Center,
+  Collapse,
   Container,
   Divider,
   FileButton,
@@ -25,6 +26,7 @@ import {
 } from "../../types/qlc";
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useRequest } from "../../hooks/useRequest";
+import TextButton from "../../components/TextButton/TextButton";
 
 const COLUMN_SPANS = [2, 3, 1, 6];
 
@@ -34,11 +36,13 @@ type GroupedFnList = {
 }[];
 export const QLCConverter = () => {
   const event = useAppStore((s) => s.event);
+  const activeItem = useAppStore((s) => s.activeItem);
   const [file, setFile] = useState<File | null>(null);
 
   const [functionList, setFunctionList] = useState<{ [fnId: string]: QLCFunction }>({});
   const [groupedFnList, setGroupedFnList] = useState<GroupedFnList>();
 
+  const [showExport, setShowExport] = useState(false);
   const form = useForm<{
     [attributeId: string]: string[]; // function IDs
   }>({
@@ -50,20 +54,14 @@ export const QLCConverter = () => {
   });
 
   // const {} = useFetch(`/api/v1/qlc/generate?lightEventId=${event?.id}`, false)
-  const { executeRequest } = useRequest<unknown, { items: any[] }>(
-    `/api/v1/qlc/${event?.id}/generate`,
-    "POST",
-  );
+  const { executeRequest } = useRequest<unknown, { items: any[] }>(`/api/v1/qlc/${event?.id}/generate`, "POST");
 
   useEffect(() => {
     if (!file) return;
     file.text().then((xml) => {
       const fnList = extractQLCFunctionsToJSON(xml);
       setFunctionList(
-        fnList.reduce(
-          (acc, fn) => (fn.ID ? { ...acc, [fn.ID]: fn } : acc),
-          {} as { [fnId: string]: QLCFunction },
-        ),
+        fnList.reduce((acc, fn) => (fn.ID ? { ...acc, [fn.ID]: fn } : acc), {} as { [fnId: string]: QLCFunction }),
       );
 
       // set up the groupedFnList, group by Type
@@ -95,8 +93,6 @@ export const QLCConverter = () => {
       }
     });
   }, [file]);
-
-  console.log({ functionList, groupedFnList });
 
   function loadFromLocalstorage() {
     const storedValue = window.localStorage.getItem("qlc-mapping");
@@ -134,56 +130,70 @@ export const QLCConverter = () => {
     URL.revokeObjectURL(url);
   }
 
-  return (
-    <Container size={"xl"}>
-      <Divider my="lg" label="configure this event for QLC+ export" labelPosition="center" />
-      <Stack gap="xs">
-        <Title order={3}>This app supports direct export to QLC+!</Title>
-        <Text>
-          Assign each attribute to one or more QLC+ functions. The app will then create QLC+ Collections corresponding
-          to each cue, and fill the Collection with the QLC+ Function that you've selected.
-        </Text>
-        <Text>
-          For example, if a Cue 1 in ItemName has Wash→Intensity→100%, mapped to "QLC Dimmer 1" and Wash→Colour→Red,
-          mapped to "QLC Colour 1", the exported cue "ItemName 01" will contain "QLC Dimmer 1" and "QLC Colour 1".
-        </Text>
-      </Stack>
-      <Stack mt="lg">
-        <Group>
-          <FileButton onChange={setFile} accept=".qxw">
-            {(props) => (
-              <Button size="sm" {...props}>
-                Upload .qxw file
-              </Button>
-            )}
-          </FileButton>
-          {file && <Text>Selected: {file.name}</Text>}
-          {!file && <Text> Please select a QLC+ file!</Text>}
-        </Group>
-      </Stack>
+  if (!event || !activeItem) return <></>;
 
-      <Grid>
-        <form>
-          <Grid.Col span={8}>
-            <Flex gap="md">
-              <Button
-                disabled={!file}
-                ml={"auto"}
-                size="xs"
-                color="gray"
-                variant="light"
-                onClick={loadFromLocalstorage}
-              >
-                Reload saved data
-              </Button>
-            </Flex>
-            <Stack>
-              {/* <Stack gap={0}>
+  return (
+    <Container size={"xl"} mt="xl">
+      <Divider
+        my="lg"
+        label={
+          <Group gap="xs">
+            <div>configure this event for QLC+ export</div>
+            <TextButton size="xs" onClick={() => setShowExport((prev) => !prev)}>
+              for LDs, click here
+            </TextButton>
+          </Group>
+        }
+        labelPosition="center"
+      />
+      <Collapse expanded={showExport}>
+        <Stack gap="xs">
+          <Title order={3}>This app supports direct export to QLC+!</Title>
+          <Text>
+            Assign each attribute to one or more QLC+ functions. The app will then create QLC+ Collections corresponding
+            to each cue, and fill the Collection with the QLC+ Function that you've selected.
+          </Text>
+          <Text>
+            For example, if a Cue 1 in ItemName has Wash→Intensity→100%, mapped to "QLC Dimmer 1" and Wash→Colour→Red,
+            mapped to "QLC Colour 1", the exported cue "ItemName 01" will contain "QLC Dimmer 1" and "QLC Colour 1".
+          </Text>
+        </Stack>
+        <Stack mt="lg">
+          <Group>
+            <FileButton onChange={setFile} accept=".qxw">
+              {(props) => (
+                <Button size="sm" {...props}>
+                  Upload .qxw file
+                </Button>
+              )}
+            </FileButton>
+            {file && <Text>Selected: {file.name}</Text>}
+            {!file && <Text> Please select a QLC+ file!</Text>}
+          </Group>
+        </Stack>
+
+        <Grid>
+          <form>
+            <Grid.Col span={8}>
+              <Flex gap="md">
+                <Button
+                  disabled={!file}
+                  ml={"auto"}
+                  size="xs"
+                  color="gray"
+                  variant="light"
+                  onClick={loadFromLocalstorage}
+                >
+                  Reload saved data
+                </Button>
+              </Flex>
+              <Stack>
+                {/* <Stack gap={0}>
                 <Text> Configured attribute options </Text>
                 <Text> Note: string inputs are not available for automatic configuration</Text>
               </Stack> */}
 
-              {/* {event?.fixtureGroups.map((fixtureGroup, index) => (
+                {/* {event?.fixtureGroups.map((fixtureGroup, index) => (
             <Stack key={fixtureGroup.id}>
               <Text fw={700}>
                 Group {index + 1}: {fixtureGroup.name}
@@ -197,38 +207,43 @@ export const QLCConverter = () => {
             </Stack>
           ))} */}
 
-              <Grid columns={12}>
-                {event?.fixtureGroups.map((fixtureGroup, index) => (
-                  <>
-                    <Grid.Col span={12} mt={"lg"}>
-                      <Stack>
-                        <Text>
-                          Group {index + 1}: {fixtureGroup.name}
-                        </Text>
-                        <Divider />
-                      </Stack>
-                    </Grid.Col>
-                    {fixtureGroup.attributes
-                      .filter((v) => isQlcMappable(v.type))
-                      .map((attribute) => (
-                        <OptList2 key={attribute.id} attribute={attribute} groupedFnList={groupedFnList ?? []} form={form} />
-                      ))}
-                  </>
-                ))}
-              </Grid>
-            </Stack>
+                <Grid columns={12}>
+                  {event?.fixtureGroups.map((fixtureGroup, index) => (
+                    <>
+                      <Grid.Col span={12} mt={"lg"}>
+                        <Stack>
+                          <Text>
+                            Group {index + 1}: {fixtureGroup.name}
+                          </Text>
+                          <Divider />
+                        </Stack>
+                      </Grid.Col>
+                      {fixtureGroup.attributes
+                        .filter((v) => isQlcMappable(v.type))
+                        .map((attribute) => (
+                          <OptList2
+                            key={attribute.id}
+                            attribute={attribute}
+                            groupedFnList={groupedFnList ?? []}
+                            form={form}
+                          />
+                        ))}
+                    </>
+                  ))}
+                </Grid>
+              </Stack>
+            </Grid.Col>
+          </form>
+          <Grid.Col span={8}>
+            <Center>
+              <Box>
+                <Button disabled={!file} onClick={exportToQlc}>
+                  Export
+                </Button>
+              </Box>
+            </Center>
           </Grid.Col>
-        </form>
-        <Grid.Col span={8}>
-          <Center>
-            <Box>
-              <Button disabled={!file} onClick={exportToQlc}>
-                Export
-              </Button>
-            </Box>
-          </Center>
-        </Grid.Col>
-        {/* <Stack>
+          {/* <Stack>
           <Stack gap={0}>
             <Text> Available QLC+ functions </Text>
             <Text>
@@ -238,7 +253,7 @@ export const QLCConverter = () => {
             </Text>
           </Stack>
         </Stack> */}
-        {/* <Grid.Col span={4}>
+          {/* <Grid.Col span={4}>
           <Stack>
             <Stack gap={0}>
               <Text> Output in QLC </Text>
@@ -248,7 +263,8 @@ export const QLCConverter = () => {
             </Stack>
           </Stack>
         </Grid.Col> */}
-      </Grid>
+        </Grid>
+      </Collapse>
     </Container>
   );
 };

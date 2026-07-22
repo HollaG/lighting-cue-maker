@@ -1,16 +1,18 @@
 import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
 import { api } from "../../lib/api";
-import { generateRaw } from "../../utils/convertText";
+import { generateRaw, generateRich } from "../../utils/convertText";
 import { getCueOrder } from "../../utils/cueUtils";
 import type { Cue } from "../../types/cues";
-import type { GetCuesRes, CreateCueRes, UpdateItemRes } from "../../types/http";
+import type { GetCuesRes, CreateCueRes, UpdateItemRes, DeleteCuesRes } from "../../types/http";
+import { convertUuidForEmbedding } from "../../utils/convertUuid";
 
 export interface CueSlice {
   cues: Cue[];
   cueOrder: string[];
   fetchCues: () => Promise<void>;
   onAddCue: (lineIndex: number, wordIndex: number, isSpace: boolean) => Promise<void>;
+  onDeleteCue: (cueId: string) => Promise<void>;
 }
 
 export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, get) => ({
@@ -24,9 +26,7 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
       return;
     }
     try {
-      const res = await api.get<GetCuesRes>(
-        `/api/v1/events/${event.id}/items/${activeItem.id}/cues`,
-      );
+      const res = await api.get<GetCuesRes>(`/api/v1/events/${event.id}/items/${activeItem.id}/cues`);
       const fetchedCues = res?.cues ?? [];
       set({
         cues: fetchedCues,
@@ -42,10 +42,7 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
     if (!event?.id || !activeItem?.id) return;
 
     try {
-      const res = await api.post<CreateCueRes>(
-        `/api/v1/events/${event.id}/items/${activeItem.id}/cues`,
-        {},
-      );
+      const res = await api.post<CreateCueRes>(`/api/v1/events/${event.id}/items/${activeItem.id}/cues`, {});
       const id = res.cue.id;
 
       const updatedContent = [...content.map((line) => [...line])];
@@ -54,13 +51,21 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
         const cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>";
         updatedContent[lineIndex][wordIndex] = cueId;
 
+        // works because (1) tapping on space, which is the only content in the line
+        const isLineBreak = updatedContent[lineIndex].length === 1;
+
         const line = updatedContent[lineIndex];
+
         line.splice(wordIndex + 1, 0, " ");
         line.splice(wordIndex, 0, " ");
         updatedContent[lineIndex] = line;
+
+        if (isLineBreak) {
+          updatedContent.splice(lineIndex + 1, 0, [" "]);
+          updatedContent.splice(lineIndex, 0, [" "]);
+        }
       } else {
-        const cueId =
-          "<cueId=" + id.replaceAll("-", "_") + "=cueId>" + updatedContent[lineIndex][wordIndex];
+        const cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>" + updatedContent[lineIndex][wordIndex];
         updatedContent[lineIndex][wordIndex] = cueId;
       }
 
@@ -72,12 +77,21 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
         cueOrder: getCueOrder(newRawLyrics),
       });
 
-      await api.patch<UpdateItemRes>(
-        `/api/v1/events/${event.id}/items/${activeItem.id}`,
-        { rawLyrics: newRawLyrics },
-      );
+      await api.patch<UpdateItemRes>(`/api/v1/events/${event.id}/items/${activeItem.id}`, { rawLyrics: newRawLyrics });
 
       await fetchCues();
     } catch (e) {}
+  },
+
+  onDeleteCue: async (cueId: string) => {
+    // remove from rawLyrics, remove from state's cues, update cues in database
+    const { event, activeItem, rawLyrics } = get();
+    if (!event?.id || !activeItem?.id) return;
+
+    const newRawLyrics = rawLyrics.replace("<cueId=" + convertUuidForEmbedding(cueId) + "=cueId>", "");
+
+    await api.delete<DeleteCuesRes>(`/api/v1/events/${event.id}/items/${activeItem.id}/cues/${cueId}`);
+    await get().fetchCues();
+    set({ rawLyrics: newRawLyrics, cueOrder: getCueOrder(newRawLyrics), content: generateRich(newRawLyrics) });
   },
 });

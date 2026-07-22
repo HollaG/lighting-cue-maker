@@ -3,7 +3,8 @@ import { useCallback, useState } from "react";
 import type { ApiResponse } from "../types/server";
 
 export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE" | "PATCH") {
-  const url = `http://localhost:${import.meta.env.VITE_PUBLIC_PORT}${path}`;
+  const baseUrl = import.meta.env.VITE_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+  const url = `${baseUrl}${path}`;
   const [data, setData] = useState<U | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +25,8 @@ export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE"
         });
 
         if (!response.ok) {
-          const msg = response.statusText ?? "An unknown error occurred.";
+          const result: ApiResponse<U> = await response.json();
+          const msg = result.error ?? response.statusText ?? "An unknown error occurred.";
           setError(msg);
           notifications.show({
             title: "Server Error",

@@ -5,11 +5,17 @@ export type GetEventRes = {
   event: LightEventConfiguration;
 };
 
+export type CreateEventRes = {
+  event: LightEventConfiguration;
+};
+
 export type CreateCueReq = {};
 export type CreateCueRes = { cue: Cue };
 
 export type GetCuesReq = {};
 export type GetCuesRes = { cues: Cue[] };
+
+export type DeleteCuesRes = { message: string };
 
 export type UpdateItemReq = Partial<Item>;
 
