@@ -23,9 +23,10 @@ import { useAppStore } from "../../store/appStore";
 import classes from "./ChoreoEventWrapper.module.css";
 import { RichContent } from "../../components/RichContent/RichContent";
 import { CueCard } from "../../components/Siding/CueCard/CueCard";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CardBase } from "../../components/Siding/CardBase";
 import type { LightEventConfiguration } from "../../types/types";
+import { CueList } from "./CueList/CueList";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -45,6 +46,12 @@ export const ChoreoEventWrapper = () => {
   const cueOrder = useAppStore((s) => s.cueOrder);
   const cues = useAppStore((s) => s.cues);
 
+  const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
+
+  useEffect(() => {
+    setInternalRawLyrics(rawLyrics);
+  }, [rawLyrics]);
+
   // for the Item selection
   const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
   const [controlsRefs, setControlsRefs] = useState<Record<string, HTMLButtonElement | null>>({});
@@ -53,19 +60,25 @@ export const ChoreoEventWrapper = () => {
     controlsRefs[id] = node;
     setControlsRefs(controlsRefs);
   };
+  const onClickFinishAddingLyricsButton = () => {
+    setRawLyrics(internalRawLyrics);
+    onFinishAddingLyrics();
+  };
 
-  const controls = items.map((item, index) => (
-    <UnstyledButton
-      key={item.id}
-      className={classes.control}
-      ref={setControlRef(item.id)}
-      onClick={() => changeActiveItem(item)}
-      mod={{ active: activeItem?.id === item.id }}
-      p={"xs"}
-    >
-      <span className={classes.controlLabel}>{item.name}</span>
-    </UnstyledButton>
-  ));
+  const controls = useMemo(() => {
+    return items.map((item, index) => (
+      <UnstyledButton
+        key={item.id}
+        className={classes.control}
+        ref={setControlRef(item.id)}
+        onClick={() => changeActiveItem(item)}
+        mod={{ active: activeItem?.id === item.id }}
+        p={"xs"}
+      >
+        <span className={classes.controlLabel}>{item.name}</span>
+      </UnstyledButton>
+    ));
+  }, [items, activeItem]);
 
   const deleteExtraSpaces = () => {
     setRawLyrics(rawLyrics.replaceAll("\n\n\n", "\n\n"));
@@ -147,7 +160,7 @@ export const ChoreoEventWrapper = () => {
                       <Button size="xs" variant="subtle" color="black" onClick={deleteExtraSpaces}>
                         Remove extra line breaks
                       </Button>
-                      <Button size="xs" color="green" onClick={() => onFinishAddingLyrics()}>
+                      <Button size="xs" color="green" onClick={() => onClickFinishAddingLyricsButton()}>
                         {" "}
                         Finish adding
                       </Button>
@@ -166,8 +179,8 @@ export const ChoreoEventWrapper = () => {
                   variant="unstyled"
                   autosize
                   className={classes["lyric-input"]}
-                  value={rawLyrics}
-                  onChange={(e) => setRawLyrics(e.target.value)}
+                  value={internalRawLyrics}
+                  onChange={(e) => setInternalRawLyrics(e.target.value)}
                   placeholder="Paste all your lyrics here! You can also include band introductions or other improv stuff."
                   styles={{
                     input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
@@ -189,11 +202,7 @@ export const ChoreoEventWrapper = () => {
                   </Button>
                 </Box> */}
               </Group>
-              {cueOrder.map((cueId, index) => {
-                let cue = cues.find((c) => c.id === cueId);
-                if (!cue) return null;
-                return <CueCard key={cue.id} cue={cue} cueNumber={index + 1} />;
-              })}
+              <CueList />
             </Stack>
           </SimpleGrid>
         )}

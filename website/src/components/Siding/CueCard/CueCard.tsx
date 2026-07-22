@@ -6,8 +6,11 @@ import {
   Collapse,
   Combobox,
   Fieldset,
+  Flex,
   Group,
+  HoverCard,
   InputBase,
+  Modal,
   MultiSelect,
   Select,
   SimpleGrid,
@@ -27,22 +30,30 @@ import {
   type FixtureGroupConfiguration,
 } from "../../../types/types";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { IconChevronUp } from "@tabler/icons-react";
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useRequest } from "../../../hooks/useRequest";
 import type { UpdateCueReq, UpdateCueRes } from "../../../types/http";
+import { useDisclosure } from "@mantine/hooks";
 
 type FormData = Cue;
 
 export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => {
   const event = useAppStore((s) => s.event);
   const onDeleteCue = useAppStore((s) => s.onDeleteCue);
+  const onUpdateCue = useAppStore((s) => s.onUpdateCue);
+  const cues = useAppStore((s) => s.cues);
+  const cueOrder = useAppStore((s) => s.cueOrder);
+  const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
-  // TODO: change into context under `activeCue`
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+
+  const [opened, { open, close }] = useDisclosure(false);
   const fixtureGroups = event?.fixtureGroups ?? [];
+
+  const [selectedCopyCue, setSelectedCopyCue] = useState<string>("");
 
   const initialValues: FormData = useMemo(
     () => ({
@@ -94,24 +105,39 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     },
   });
 
-  const { executeRequest } = useRequest<UpdateCueReq, UpdateCueRes>(
-    `/api/v1/events/${event?.id ?? ""}/items/${cue.id}/cues/${cue.id}`,
-    "PATCH",
-  );
+  const cueRef = useRef<HTMLDivElement>(null);
+
+  const [translateDistance, setTranslateDistance] = useState<string>("0px");
+
+  useEffect(() => {
+    // Get the reference element's offset-X value
+    if (!currrentlySelectedCueId || !cueRef.current || cue.id !== currrentlySelectedCueId) {
+      setTranslateDistance("0px");
+      return;
+    }
+    const elementId = `ref-${currrentlySelectedCueId}`;
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    const { offsetTop } = element;
+    console.log({ offsetTop });
+
+    const thisElementOffsetTop = cueRef.current?.offsetTop ?? 0;
+    console.log({ thisElementOffsetTop });
+
+    const translateDistance = offsetTop - thisElementOffsetTop;
+    const thisElementHeight = cueRef.current?.offsetHeight ?? 0;
+
+    setTranslateDistance((translateDistance - thisElementHeight / 2).toString() + "px");
+  }, [currrentlySelectedCueId]);
 
   const handleSave = async () => {
     try {
       console.log(form.getValues(), "--------------------");
       // convert the form value to API request body
-      const requestBody: UpdateCueReq = {
-        comments: form.values.comments,
-        assignments: form.values.assignments,
-      };
+      await onUpdateCue(form.getValues());
 
       // transform empty strings to NULLs.
       // because postgres will reject empty strings for VARCHAR
-
-      await executeRequest(requestBody);
     } catch (e) {
     } finally {
       setIsDirty(false);
@@ -124,38 +150,83 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
       onDeleteCue(cue.id);
     }
   };
+
+  const onCopyCue = (cueId: string) => {
+    const cue = cues.find((c) => c.id === cueId);
+    if (cue) {
+      console.log({ cue });
+      delete cue.id;
+      form.setValues(cue);
+      close();
+    } else console.error("No such cue found!");
+  };
   return (
-    <CardBase isActive={false}>
-      <Stack gap={0}>
-        <Group mb="md">
-          <Title order={4}> Cue {cueNumber} </Title>
-          <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
-          <Button color="red" size="xs" variant="transparent" onClick={() => beforeDeleteCue(cue)}>
-            Delete{" "}
-          </Button>
-          <Button color="orange" size="xs" disabled={!isDirty} onClick={() => handleSave()}>
-            {" "}
-            Save changes{" "}
-          </Button>
-          <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
-            <IconChevronUp
-              style={{
-                transition: "transform 0.2s",
-                transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)",
-              }}
-              width={"1rem"}
+    <div
+      ref={cueRef}
+      style={{
+        transform: `translateY(${translateDistance})`,
+        transition: "all 0.3s ease",
+      }}
+    >
+      <CardBase isActive={false} shadow={cue.id === currrentlySelectedCueId ? "lg" : "none"}>
+        <Modal opened={opened} onClose={close} title={`Copy a cue to cue ${cueNumber}`} centered>
+          <Stack>
+            <Select
+              value={selectedCopyCue}
+              onChange={(value) => setSelectedCopyCue(value ?? "")}
+              data={cueOrder
+                .map((cId) => (cId !== cue.id ? cId : ""))
+
+                .map((cueId, index) => ({ value: cueId, label: `Cue ${index + 1}` }))
+                .filter((opt) => opt.value !== "")}
             />
-          </ActionIcon>
-        </Group>
-        <Collapse expanded={!isCollapsed}>
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
-            {fixtureGroups.map((group, index) => (
-              <FixtureGroupSection key={group.id} group={group} index={index + 1} form={form} />
-            ))}
-          </SimpleGrid>
-        </Collapse>
-      </Stack>
-    </CardBase>
+            <Flex justify={"end"}>
+              <Button onClick={() => onCopyCue(selectedCopyCue)}> Copy </Button>
+            </Flex>
+          </Stack>
+        </Modal>
+        <Stack gap={0}>
+          <Group mb="md">
+            <Title order={4}> Cue {cueNumber} </Title>
+            <Button
+              variant="transparent"
+              size="xs"
+              // style={{
+              //   textDecoration: "underline dotted",
+              // }}
+              color="black"
+              onClick={open}
+            >
+              Copy another cue
+            </Button>
+            <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
+            <Button color="red" size="xs" variant="transparent" onClick={() => beforeDeleteCue(cue)}>
+              Delete{" "}
+            </Button>
+            <Button color="orange" size="xs" disabled={!isDirty} onClick={() => handleSave()}>
+              {" "}
+              Save changes{" "}
+            </Button>
+            <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
+              <IconChevronUp
+                style={{
+                  transition: "transform 0.2s",
+                  transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+                width={"1rem"}
+              />
+            </ActionIcon>
+          </Group>
+          <Collapse expanded={!isCollapsed}>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+              {fixtureGroups.map((group, index) => (
+                <FixtureGroupSection key={group.id} group={group} index={index + 1} form={form} />
+              ))}
+            </SimpleGrid>
+          </Collapse>
+        </Stack>
+      </CardBase>
+    </div>
   );
 };
 

@@ -1,16 +1,4 @@
-import {
-  Card,
-  Group,
-  Button,
-  Select,
-  TagsInput,
-  Center,
-  Box,
-  Stack,
-  ColorInput,
-  Radio,
-  Flex,
-} from "@mantine/core";
+import { Card, Group, Button, Select, TagsInput, Center, Box, Stack, ColorInput, Radio, Flex } from "@mantine/core";
 import { AttributeTypes, BooleanOptions, type AttributeConfiguration, type Option } from "../../../../types/types";
 import { useEffect, useMemo, useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
@@ -239,6 +227,19 @@ const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
               key={form.key(`${opvFieldName}.${index}.hex`)}
               {...form.getInputProps(`${opvFieldName}.${index}.hex`)}
               withEyeDropper={false}
+              swatches={[
+                "#ffffff",
+                "#ffbf00",
+                "#ff0000",
+                "#00ff00",
+                "#0000ff",
+                "#00ffff",
+                "#ff00ff",
+                "#ffff00",
+                "#800080",
+                "#FFC0CB",
+                "#fd7e14",
+              ]}
             />
           </Box>
           <Box flex={5}>

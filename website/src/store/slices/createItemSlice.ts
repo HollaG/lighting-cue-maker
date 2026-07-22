@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
 import { api } from "../../lib/api";
 import { generateRich } from "../../utils/convertText";
+import { getCueOrder } from "../../utils/cueUtils";
 import type { Item } from "../../types/types";
 
 export interface ItemSlice {
@@ -30,8 +31,10 @@ export const createItemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, 
       set({
         rawLyrics: lyrics,
         content: generateRich(lyrics),
+        cues: [],
+        cueOrder: getCueOrder(lyrics),
       });
-      get().fetchCues();
+      void get().fetchCues();
     } else {
       set({
         rawLyrics: "",

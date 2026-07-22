@@ -2,25 +2,34 @@ import { Group, Flex, Box, Text, Stack, Center } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import classes from "./RichContext.module.css";
 import clsx from "clsx";
+import { convertUuidForDatabase } from "../../utils/convertUuid";
 
 export const RichContent = () => {
   const content = useAppStore((s) => s.content);
   const onAddCue = useAppStore((s) => s.onAddCue);
+  const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
+  const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   const getDisplayDiv = (word: string, index1: number, index2: number, cueCount: [number]) => {
     if (word.startsWith("<cueId=")) {
       cueCount[0]++;
       if (word.endsWith("=cueId>")) {
         // then we know it's a cue standing by itself (not attached to a word)
-
+        const cueId = convertUuidForDatabase(word.split("<cueId=")[1].split("=cueId>")[0]);
         return (
           <Center
+            id={`ref-${cueId}`}
             style={{
               paddingLeft: "0.5rem",
               paddingRight: "0.5rem",
               height: "stretch",
               backgroundColor: "yellow",
               border: "4px solid yellow",
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              if (currentlySelectedCueId === cueId) setCurrentlySelectedCueId(undefined);
+              else setCurrentlySelectedCueId(cueId);
             }}
           >
             Cue {cueCount[0]}
@@ -31,8 +40,22 @@ export const RichContent = () => {
 
       console.log({ textContent });
       // return <Box style={{ backgroundColor: "yellow" }}>{textContent}</Box>;
+      console.log({ word });
+
+      // use regex to extract the cueId
+      const cueId = convertUuidForDatabase(word.match(/<cueId=(.*?)=cueId>/)?.[1] || "");
+      console.log({ cueId });
+      // const cueId = convertUuidForDatabase(word.replace(textContent, "").split("cueId=")[1].split("=cueId")[0]);
       return (
-        <Group gap={0}>
+        <Group
+          id={`ref-${cueId}`}
+          gap={0}
+          style={{ cursor: "pointer" }}
+          onClick={() => {
+            if (currentlySelectedCueId === cueId) setCurrentlySelectedCueId(undefined);
+            else setCurrentlySelectedCueId(cueId);
+          }}
+        >
           <Text variant="lyric" className={clsx(classes["lyric"], classes["in-cue"])}>
             {textContent}
           </Text>
@@ -64,7 +87,7 @@ export const RichContent = () => {
   };
 
   return (
-    <Stack gap={0}>
+    <Stack gap={0} style={{ position: "relative" }}>
       {(() => {
         const cueCount: [number] = [0];
         return content.map((line, index1) => (
