@@ -61,7 +61,7 @@ func getItem(c *gin.Context) {
 
 	// verify the item exists
 	var item models.Item
-	if result := database.DB().Where("uuid = ?", itemUuid).First(&item); result.Error != nil {
+	if result := database.DB().Preload("Cues").Where("uuid = ? AND light_event_uuid = ?", itemUuid, event.Uuid).First(&item); result.Error != nil {
 		response.NotFound(c, "Item not found")
 		return
 	}

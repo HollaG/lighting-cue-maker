@@ -8,6 +8,7 @@ import "github.com/gin-gonic/gin"
 func Register(rg *gin.RouterGroup) {
 	rg.POST("", createItem)
 	rg.GET("", getItems)
+	rg.GET("/:itemId", getItem)
 	rg.PATCH("/:itemId", updateItem)
 	rg.GET("/:itemId/cues", getCues)
 	rg.POST("/:itemId/cues", createCue)
