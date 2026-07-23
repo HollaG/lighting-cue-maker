@@ -84,7 +84,7 @@ func getDataForXmlGeneration(c *gin.Context) {
 	// Only fetch items that have raw lyrics, and only preload cues that have assignments.
 	var items []models.Item
 	result := database.DB().
-		Preload("Cues", "assignments IS NOT NULL").
+		Preload("Cues").
 		Where("light_event_uuid = ?", lightEventId).
 		Where("raw_lyrics != ''").
 		Where("EXISTS (SELECT 1 FROM cues WHERE cues.item_uuid = items.uuid AND cues.deleted_at IS NULL)").

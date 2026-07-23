@@ -1,12 +1,14 @@
 package items
 
 import (
+	"encoding/json"
 	"fmt"
 	"lighting-cue-maker/server/internal/models"
 	"lighting-cue-maker/server/pkg/database"
 	"lighting-cue-maker/server/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
 )
 
 func getItems(c *gin.Context) {
@@ -183,13 +185,41 @@ func createCue(c *gin.Context) {
 	// eventUuid := c.Param("id")
 	itemUuid := c.Param("itemId")
 
-	cue := models.Cue{
-		ItemUuid: itemUuid,
-		// Assignments: map[string]any{},
-		Comments: "",
+	var req models.UpdateCueReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(err)
+		response.BadRequest(c, "Invalid request body", map[string]any{
+			"request": req,
+		})
+		return
 	}
 
-	database.DB().Create(&cue)
+	comments := ""
+	if req.Comments != nil {
+		comments = *req.Comments
+	}
+
+	assignments := map[string]any{}
+	if req.Assignments != nil {
+		assignments = *req.Assignments
+	}
+
+	assignmentsBytes, err := json.Marshal(assignments)
+	if err != nil {
+		response.BadRequest(c, "Failed to parse assignments JSON", nil)
+		return
+	}
+
+	cue := models.Cue{
+		ItemUuid:    itemUuid,
+		Assignments: datatypes.JSON(assignmentsBytes),
+		Comments:    comments,
+	}
+
+	if result := database.DB().Create(&cue); result.Error != nil {
+		response.InternalError(c, "Failed to create cue")
+		return
+	}
 
 	fmt.Println("API POST /v1/events/:id/items/:itemId/cues")
 
@@ -247,7 +277,7 @@ func updateCue(c *gin.Context) {
 		updates["comments"] = *req.Comments
 	}
 	if req.Assignments != nil {
-		updates["assignments"] = req.Assignments
+		updates["assignments"] = *req.Assignments
 	}
 
 	if len(updates) > 0 {
