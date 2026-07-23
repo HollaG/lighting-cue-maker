@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import { Container, createTheme, MantineProvider, rem, Text, TextInput } from "@mantine/core";
+import { createTheme, MantineProvider, Text, TextInput } from "@mantine/core";
 import classes from "./main.module.css";
 
 const theme = createTheme({

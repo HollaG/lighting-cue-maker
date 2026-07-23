@@ -19,15 +19,24 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: "code",
-      partialize: (state) => ({ code: state.code }),
+      partialize: (state) => ({
+        code: state.code,
+        activeItem: state.activeItem,
+      }),
     },
   ),
 );
 
 // Helper function to initialize event fetch when code was persisted in localStorage
 if (typeof window !== "undefined") {
-  const initialCode = useAppStore.getState().code;
-  if (initialCode && initialCode.length === 36) {
-    useAppStore.getState().fetchEvent(initialCode);
+  const store = useAppStore.getState();
+  if (store.code && store.code.length === 36) {
+    store.fetchEvent(store.code).then(() => {
+      const activeItem = useAppStore.getState().activeItem;
+      if (activeItem) {
+        useAppStore.getState().changeActiveItem(activeItem);
+      }
+    });
   }
 }
+

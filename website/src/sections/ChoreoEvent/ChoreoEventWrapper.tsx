@@ -2,15 +2,12 @@ import {
   Anchor,
   Box,
   Button,
-  Card,
   Center,
   Collapse,
   Container,
   Divider,
-  Flex,
   FloatingIndicator,
   Group,
-  Scroller,
   SimpleGrid,
   Stack,
   Text,
@@ -22,9 +19,7 @@ import {
 import { useAppStore } from "../../store/appStore";
 import classes from "./ChoreoEventWrapper.module.css";
 import { RichContent } from "../../components/RichContent/RichContent";
-import { CueCard } from "../../components/Siding/CueCard/CueCard";
 import { useEffect, useMemo, useState } from "react";
-import { CardBase } from "../../components/Siding/CardBase";
 import type { LightEventConfiguration } from "../../types/types";
 import { CueList } from "./CueList/CueList";
 
@@ -43,8 +38,6 @@ export const ChoreoEventWrapper = () => {
   const setRawLyrics = useAppStore((s) => s.setRawLyrics);
   const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
   const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
-  const cueOrder = useAppStore((s) => s.cueOrder);
-  const cues = useAppStore((s) => s.cues);
 
   const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
 
@@ -66,7 +59,7 @@ export const ChoreoEventWrapper = () => {
   };
 
   const controls = useMemo(() => {
-    return items.map((item, index) => (
+    return items.map((item) => (
       <UnstyledButton
         key={item.id}
         className={classes.control}
@@ -81,7 +74,8 @@ export const ChoreoEventWrapper = () => {
   }, [items, activeItem]);
 
   const deleteExtraSpaces = () => {
-    setRawLyrics(rawLyrics.replaceAll("\n\n\n", "\n\n"));
+    // setRawLyrics(rawLyrics.replaceAll("\n\n\n", "\n\n"));
+    setInternalRawLyrics(internalRawLyrics.replaceAll("\n\n\n", "\n\n"));
   };
 
   console.log({ rawLyrics });
@@ -107,7 +101,11 @@ export const ChoreoEventWrapper = () => {
             <div className={classes.root} ref={setRootRef}>
               {controls}
 
-              <FloatingIndicator target={controlsRefs[activeItem?.id]} parent={rootRef} className={classes.indicator} />
+              <FloatingIndicator
+                target={activeItem ? controlsRefs[activeItem.id] : null}
+                parent={rootRef}
+                className={classes.indicator}
+              />
             </div>
 
             <Center mt="sm">

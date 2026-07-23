@@ -8,7 +8,6 @@ import {
   Fieldset,
   Flex,
   Group,
-  HoverCard,
   InputBase,
   Modal,
   MultiSelect,
@@ -33,8 +32,6 @@ import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IconChevronUp } from "@tabler/icons-react";
 import { useForm, type UseFormReturnType } from "@mantine/form";
-import { useRequest } from "../../../hooks/useRequest";
-import type { UpdateCueReq, UpdateCueRes } from "../../../types/http";
 import { useDisclosure } from "@mantine/hooks";
 
 type FormData = Cue;
@@ -152,11 +149,11 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
   };
 
   const onCopyCue = (cueId: string) => {
-    const cue = cues.find((c) => c.id === cueId);
-    if (cue) {
-      console.log({ cue });
-      delete cue.id;
-      form.setValues(cue);
+    const cueToCopy = cues.find((c) => c.id === cueId);
+    if (cueToCopy) {
+      console.log({ cue: cueToCopy });
+      const { id: _, ...cueWithoutId } = cueToCopy;
+      form.setValues(cueWithoutId as Partial<FormData>);
       close();
     } else console.error("No such cue found!");
   };
@@ -416,6 +413,14 @@ function ColourSelect({
     // saved cue, and because this component is not controlled,
     // we need to manually set the "default" value loaded from database
   }, []);
+
+  // watch the saved value
+  // @ts-ignore
+  form.watch(formPath, ({ value }: { value: ColourOption }) => {
+    if (value) {
+      setSearch(value.name); // always sync
+    }
+  });
 
   return (
     <Combobox
