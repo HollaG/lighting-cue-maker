@@ -1,7 +1,7 @@
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 import { AttributeTypes, type Item } from "./types";
-import { getCueOrder, getValueFromValueAssignment } from "../utils/cueUtils";
+import { getCueOrder, getValueFromValueAssignment, hasAValue } from "../utils/cueUtils";
 
 // Define the specific type based on your requirements
 export type QLCFunction = {
@@ -210,6 +210,8 @@ export function generateAndInsertCollections(
 
   let fnIdCounter = startingFnId;
 
+  console.log("--------------- Generating ---------------");
+  console.log({ items });
   for (const item of items) {
     const { name, rawLyrics, cues } = item;
 
@@ -243,6 +245,31 @@ export function generateAndInsertCollections(
 
       for (const [attrId, attr] of Object.entries(completeAttributeMap)) {
         if (!QLC_MAPPABLE_TYPES.has(attr.type)) continue;
+
+        const isNotSelected = hasAValue(attr.type, attr.value);
+
+        if (isNotSelected) {
+          // this attribute is NOT selected
+          console.info(`[generateAndInsertCollection] empty attribute`);
+          const keyString = `${attrId}|not-selected`;
+          const qlcFunctionIds = mapping[keyString];
+
+          if (!qlcFunctionIds || qlcFunctionIds.length === 0) {
+            console.warn(`[generateAndInsertCollections] No QLC+ function mapped for "${keyString}"`);
+            continue;
+          }
+
+          // One <Step> per mapped QLC+ function ID
+          for (const qlcFnId of qlcFunctionIds) {
+            const stepEl = workspaceDoc.createElement("Step");
+            stepEl.setAttribute("Number", String(stepNumber));
+            stepEl.textContent = qlcFnId;
+            fnEl.appendChild(stepEl);
+            stepNumber++;
+          }
+
+          continue;
+        }
 
         const selectedValue = getValueFromValueAssignment(attr.type, attr.value);
 

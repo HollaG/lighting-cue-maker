@@ -327,16 +327,6 @@ const OptList2 = ({
             <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|false`} />
           </Grid.Col>
         </>
-        // <Group>
-        //   <Stack style={{ maxWidth: COLUMN_WIDTHS[1] }}>
-        //     <Text> Yes </Text>
-        //     <Text> No </Text>
-        //   </Stack>
-        //   <Stack style={{ maxWidth: COLUMN_WIDTHS[2] }}>
-        //     <IconArrowRightBar width={"1rem"} />
-        //     <IconArrowRightBar width={"1rem"} />
-        //   </Stack>
-        // </Group>
       );
     case AttributeTypes.SELECT:
       return (
@@ -357,6 +347,20 @@ const OptList2 = ({
               </Grid.Col>
             </>
           ))}
+
+          {/* For none selected option */}
+          <Grid.Col span={COLUMN_SPANS[0]}>
+            <Text></Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[1]}>
+            <Text>Not selected</Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[2]}>
+            <IconArrowRightBar width={"1rem"} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[3]}>
+            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+          </Grid.Col>
         </>
       );
 
@@ -379,6 +383,19 @@ const OptList2 = ({
               </Grid.Col>
             </>
           ))}
+          {/* For none selected option */}
+          <Grid.Col span={COLUMN_SPANS[0]}>
+            <Text></Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[1]}>
+            <Text>Not selected</Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[2]}>
+            <IconArrowRightBar width={"1rem"} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[3]}>
+            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+          </Grid.Col>
         </>
       );
 
@@ -392,7 +409,16 @@ const OptList2 = ({
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[1]}>
                 <Group key={index}>
-                  <Box style={{ width: "1rem", height: "1rem", backgroundColor: colourOption.hex }} />
+                  <Box
+                    style={{
+                      width: "1rem",
+                      height: "1rem",
+                      backgroundColor: colourOption.hex,
+
+                      // TODO @nightmode
+                      border: colourOption.hex === "#ffffff" ? "1px solid black" : "",
+                    }}
+                  />
                   <Text> {colourOption.name} </Text>
                 </Group>
               </Grid.Col>
@@ -408,6 +434,19 @@ const OptList2 = ({
               </Grid.Col>
             </>
           ))}
+          {/* For none selected option */}
+          <Grid.Col span={COLUMN_SPANS[0]}>
+            <Text></Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[1]}>
+            <Text>Not selected</Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[2]}>
+            <IconArrowRightBar width={"1rem"} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[3]}>
+            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+          </Grid.Col>
         </>
         // <Group>
         //   <Stack style={{ maxWidth: COLUMN_WIDTHS[1] }}>

@@ -1,6 +1,6 @@
 import { Group, Flex, Box, Text, Stack, Center } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
-import classes from "./RichContext.module.css";
+import classes from "./RichContent.module.css";
 import clsx from "clsx";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 
@@ -31,6 +31,7 @@ export const RichContent = () => {
               if (currentlySelectedCueId === cueId) setCurrentlySelectedCueId(undefined);
               else setCurrentlySelectedCueId(cueId);
             }}
+            className={clsx(classes["cue-wrapper"], currentlySelectedCueId === cueId ? classes["cue-selected"] : "")}
           >
             Cue {cueCount[0]}
           </Center>
@@ -55,6 +56,7 @@ export const RichContent = () => {
             if (currentlySelectedCueId === cueId) setCurrentlySelectedCueId(undefined);
             else setCurrentlySelectedCueId(cueId);
           }}
+          className={clsx(classes["cue-wrapper"], currentlySelectedCueId === cueId ? classes["cue-selected"] : "")}
         >
           <Text variant="lyric" className={clsx(classes["lyric"], classes["in-cue"])}>
             {textContent}

@@ -1,4 +1,4 @@
-import type { AttributeTypes, ColourOption } from "./types";
+import { AttributeTypes, type ColourOption } from "./types";
 
 /**
  * Cues indicate
@@ -34,4 +34,14 @@ export type ValueAssignment = {
   [AttributeTypes.SLIDER]: number; // value
   [AttributeTypes.BOOLEAN]: boolean; // True = checked, false = not checked
   [AttributeTypes.NONE]: null;
+};
+
+export const DEFAULT_VALUE_ASSIGNMENT: ValueAssignment = {
+  [AttributeTypes.TEXT]: "",
+  [AttributeTypes.SELECT]: "", // value
+  [AttributeTypes.MULTISELECT]: [], // value
+  [AttributeTypes.COLOUR]: { hex: "", name: "" },
+  [AttributeTypes.SLIDER]: 0, // value
+  [AttributeTypes.BOOLEAN]: false, // True = checked, false = not checked
+  [AttributeTypes.NONE]: null,
 };

@@ -127,6 +127,12 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     setTranslateDistance((translateDistance - thisElementHeight / 2).toString() + "px");
   }, [currrentlySelectedCueId]);
 
+  // on the FIRST render, run a "save", so that the correct value assignments
+  // are populated into the DB.
+  useEffect(() => {
+    handleSave();
+  }, []);
+
   const handleSave = async () => {
     try {
       console.log(form.getValues(), "--------------------");
@@ -479,6 +485,18 @@ function ColourSelect({
                     | ColourOption
                     | undefined
                 )?.hex,
+
+                // TODO @nightmode
+                border:
+                  (
+                    formPath
+                      .split(".")
+                      .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
+                      | ColourOption
+                      | undefined
+                  )?.hex === "#ffffff"
+                    ? "2px solid black"
+                    : "",
               }}
             />
           }
@@ -500,6 +518,9 @@ function ColourSelectOption({ hex, name }: ColourOption) {
       <Box
         style={{
           backgroundColor: hex,
+
+          // TODO @nightmode
+          border: hex === "#ffffff" ? "2px solid black" : "",
           width: "20px",
           height: "20px",
           borderRadius: "4px",

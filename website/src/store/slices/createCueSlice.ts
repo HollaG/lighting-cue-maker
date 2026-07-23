@@ -3,7 +3,6 @@ import type { AppStore } from "../appStore";
 import { api } from "../../lib/api";
 import { generateRaw, generateRich } from "../../utils/convertText";
 import { getCueOrder } from "../../utils/cueUtils";
-import type { Cue } from "../../types/cues";
 import type {
   GetCuesRes,
   CreateCueRes,
@@ -13,6 +12,7 @@ import type {
   UpdateCueRes,
 } from "../../types/http";
 import { convertUuidForEmbedding } from "../../utils/convertUuid";
+import type { Cue } from "../../types/cues";
 
 export interface CueSlice {
   cues: Cue[];
@@ -61,8 +61,13 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
   },
 
   onAddCue: async (lineIndex: number, wordIndex: number, isSpace: boolean) => {
-    const { event, activeItem, content, setContent, fetchCues } = get();
+    const { event, activeItem, content, setContent, fetchCues, setActiveItem } = get();
     if (!event?.id || !activeItem?.id) return;
+
+    // generate the default `assignments`
+    // const assignments: { assignments: FixtureGroupAssignments } = {};
+
+    // SPECIAL: go through the attributes and check if there is another default set
 
     try {
       const res = await api.post<CreateCueRes>(`/api/v1/events/${event.id}/items/${activeItem.id}/cues`, {});
@@ -100,9 +105,16 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
         cueOrder: getCueOrder(newRawLyrics),
       });
 
-      await api.patch<UpdateItemRes>(`/api/v1/events/${event.id}/items/${activeItem.id}`, { rawLyrics: newRawLyrics });
+      const { item: updatedItem } = await api.patch<UpdateItemRes>(
+        `/api/v1/events/${event.id}/items/${activeItem.id}`,
+        { rawLyrics: newRawLyrics },
+      );
+
+      setActiveItem(updatedItem);
 
       await fetchCues();
+
+      // update the active item
     } catch (e) {}
   },
 

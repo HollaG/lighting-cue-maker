@@ -21,7 +21,7 @@ export interface LyricsSlice {
 export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set, get) => ({
   rawLyrics: "",
   content: [],
-  lyricInputMode: "raw",
+  lyricInputMode: "rich",
 
   setRawLyrics: (rawLyrics: string) => set({ rawLyrics }),
   setContent: (content: string[][]) => set({ content }),

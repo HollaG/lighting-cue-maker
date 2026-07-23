@@ -56,3 +56,42 @@ export const getValueFromValueAssignment = (type: AttributeTypes, value: ValueAs
     }
   }
 };
+
+export const hasAValue = (type: AttributeTypes, value: ValueAssignment) => {
+  // for these types, the value can never be unselected
+
+  switch (type) {
+    case AttributeTypes.SELECT: {
+      if (!value || Object.keys(value).length === 0) {
+        // cue not touched at all
+        return false;
+      }
+      const v = value.select;
+      return v === "";
+    }
+    case AttributeTypes.MULTISELECT: {
+      if (!value || Object.keys(value).length === 0) {
+        // cue not touched at all
+        return false;
+      }
+      const v = value.multiselect;
+      return v && v.length === 0;
+    }
+    case AttributeTypes.COLOUR: {
+      if (!value || Object.keys(value).length === 0) {
+        // cue not touched at all
+        return false;
+      }
+      const v = value.colour.hex;
+      return v === "";
+    }
+
+    case AttributeTypes.TEXT:
+    case AttributeTypes.SLIDER:
+    case AttributeTypes.BOOLEAN:
+    case AttributeTypes.NONE:
+      return true;
+    default:
+      return false;
+  }
+};

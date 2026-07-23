@@ -38,6 +38,11 @@ export type AttributeTypes = (typeof AttributeTypes)[keyof typeof AttributeTypes
  * Only the value given by `type` in Attribute will be used.
  * For example, if type=Select, then read Option[], which is a list of Select options.
  *              if type=Colour, then read ColourOption[], which tells us the hex code and the name of the colour.
+ *
+ * Important note for the future:
+ * This schema doesn't really support the idea of a "DEFAULT_VALUE".
+ * We can either (a) extend the schema
+ *               (b) duplicate the schema in another field like `optionDefaultValues`
  */
 export type AttributeTypesOptions = {
   [AttributeTypes.TEXT]: string;

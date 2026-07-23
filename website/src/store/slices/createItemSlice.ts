@@ -24,24 +24,34 @@ export const createItemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, 
   setActiveItem: (item: Item | null) => set({ activeItem: item }),
   setItemName: (itemName: string) => set({ itemName }),
 
-  changeActiveItem: (newItem: Item | null) => {
-    set({ activeItem: newItem });
-    if (newItem) {
-      const lyrics = newItem.rawLyrics ?? "";
-      set({
-        rawLyrics: lyrics,
-        content: generateRich(lyrics),
-        cues: [],
-        cueOrder: getCueOrder(lyrics),
-      });
-      void get().fetchCues();
-    } else {
-      set({
-        rawLyrics: "",
-        content: [],
-        cues: [],
-        cueOrder: [],
-      });
+  changeActiveItem: async (newItem: Item | null) => {
+    // when changing the active item, make a HTTP call to get the most updated data
+    const { event, isValidEvent } = get();
+
+    if (!event?.id || !isValidEvent || !newItem?.id) return;
+    try {
+      const { item: updatedItem } = await api.get<{ item: Item }>(`/api/v1/events/${event.id}/items/${newItem.id}`);
+      set({ activeItem: updatedItem });
+
+      if (updatedItem) {
+        const lyrics = updatedItem.rawLyrics ?? "";
+        set({
+          rawLyrics: lyrics,
+          content: generateRich(lyrics),
+          cues: [],
+          cueOrder: getCueOrder(lyrics),
+        });
+        void get().fetchCues();
+      } else {
+        set({
+          rawLyrics: "",
+          content: [],
+          cues: [],
+          cueOrder: [],
+        });
+      }
+    } catch (e) {
+      console.error(e);
     }
   },
 
