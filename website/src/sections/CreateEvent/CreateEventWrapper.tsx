@@ -9,6 +9,7 @@ import { useRequest } from "../../hooks/useRequest";
 import type { AttributeConfiguration, FixtureGroupConfiguration, LightEventConfiguration } from "../../types/types";
 import { useAppStore } from "../../store/appStore";
 import type { CreateEventRes } from "../../types/http";
+import { useGetEvent } from "../../query/useGetEvent";
 
 type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
   fixtureGroups: {
@@ -22,7 +23,8 @@ type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
 
 export const CreateEventWrapper = () => {
   const [fixtureGroupIds, setFixtureGroupIds] = useState<number[]>([]);
-  const isValidEvent = useAppStore((s) => s.isValidEvent);
+  const code = useAppStore((s) => s.code);
+  const { isValidEvent } = useGetEvent({ code });
   const setCode = useAppStore((s) => s.setCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { executeRequest } = useRequest<FormData, CreateEventRes>("/api/v1/events", "POST");

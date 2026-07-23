@@ -27,6 +27,7 @@ import {
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useRequest } from "../../hooks/useRequest";
 import TextButton from "../../components/TextButton/TextButton";
+import { useGetEvent } from "../../query/useGetEvent";
 
 const COLUMN_SPANS = [2, 3, 1, 6];
 
@@ -35,8 +36,9 @@ type GroupedFnList = {
   items: { value: string; label: string }[]; // Function ID
 }[];
 export const QLCConverter = () => {
-  const event = useAppStore((s) => s.event);
-  const activeItem = useAppStore((s) => s.activeItem);
+  const code = useAppStore((s) => s.code);
+  const { event } = useGetEvent({ code });
+  const activeItemId = useAppStore((s) => s.activeItemId);
   const [file, setFile] = useState<File | null>(null);
 
   const [functionList, setFunctionList] = useState<{ [fnId: string]: QLCFunction }>({});
@@ -130,7 +132,7 @@ export const QLCConverter = () => {
     URL.revokeObjectURL(url);
   }
 
-  if (!event || !activeItem) return <></>;
+  if (!event || !activeItemId) return <></>;
 
   return (
     <Container size={"xl"} mt="xl">
@@ -209,7 +211,7 @@ export const QLCConverter = () => {
 
                 <Grid columns={12}>
                   {event?.fixtureGroups.map((fixtureGroup, index) => (
-                    <>
+                    <div key={fixtureGroup.id}>
                       <Grid.Col span={12} mt={"lg"}>
                         <Stack>
                           <Text>
@@ -228,7 +230,7 @@ export const QLCConverter = () => {
                             form={form}
                           />
                         ))}
-                    </>
+                    </div>
                   ))}
                 </Grid>
               </Stack>
@@ -332,7 +334,7 @@ const OptList2 = ({
       return (
         <>
           {attribute.optionPossibleValues[AttributeTypes.SELECT].map((val, index) => (
-            <>
+            <div key={val}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
               </Grid.Col>
@@ -345,7 +347,7 @@ const OptList2 = ({
               <Grid.Col span={COLUMN_SPANS[3]}>
                 <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
               </Grid.Col>
-            </>
+            </div>
           ))}
 
           {/* For none selected option */}
@@ -368,7 +370,7 @@ const OptList2 = ({
       return (
         <>
           {attribute.optionPossibleValues[AttributeTypes.MULTISELECT].map((val, index) => (
-            <>
+            <div key={val}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
               </Grid.Col>
@@ -381,7 +383,7 @@ const OptList2 = ({
               <Grid.Col span={COLUMN_SPANS[3]}>
                 <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
               </Grid.Col>
-            </>
+            </div>
           ))}
           {/* For none selected option */}
           <Grid.Col span={COLUMN_SPANS[0]}>
@@ -403,7 +405,7 @@ const OptList2 = ({
       return (
         <>
           {attribute.optionPossibleValues[AttributeTypes.COLOUR].map((colourOption, index) => (
-            <>
+            <div key={colourOption.hex}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
               </Grid.Col>
@@ -432,7 +434,7 @@ const OptList2 = ({
                   inputId={`${attribute.id}|${colourOption.hex}`}
                 />
               </Grid.Col>
-            </>
+            </div>
           ))}
           {/* For none selected option */}
           <Grid.Col span={COLUMN_SPANS[0]}>

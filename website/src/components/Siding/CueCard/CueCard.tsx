@@ -33,15 +33,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { IconChevronUp } from "@tabler/icons-react";
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
+import { useGetEvent } from "../../../query/useGetEvent";
+import { useGetCues } from "../../../query/useGetCues";
+import { useGetItem } from "../../../query/useGetItem";
 
 type FormData = Cue;
 
 export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => {
-  const event = useAppStore((s) => s.event);
+  const code = useAppStore((s) => s.code);
+  const activeItemId = useAppStore((s) => s.activeItemId);
+  const { event } = useGetEvent({ code });
+
+  const { item, cueOrder, refetchItem } = useGetItem({ eventId: event?.id, itemId: activeItemId });
+  const { refetchCues, cues } = useGetCues({ eventId: event?.id, itemId: activeItemId });
+
   const onDeleteCue = useAppStore((s) => s.onDeleteCue);
   const onUpdateCue = useAppStore((s) => s.onUpdateCue);
-  const cues = useAppStore((s) => s.cues);
-  const cueOrder = useAppStore((s) => s.cueOrder);
   const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -137,7 +144,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     try {
       console.log(form.getValues(), "--------------------");
       // convert the form value to API request body
-      await onUpdateCue(form.getValues());
+      await onUpdateCue(form.getValues(), event, refetchItem, refetchCues);
 
       // transform empty strings to NULLs.
       // because postgres will reject empty strings for VARCHAR
@@ -150,7 +157,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
   const beforeDeleteCue = (cue: Cue) => {
     const result = confirm("Are you sure you want to delete this cue?");
     if (result) {
-      onDeleteCue(cue.id);
+      onDeleteCue(cue.id, item.rawLyrics, event, refetchItem, refetchCues);
     }
   };
 

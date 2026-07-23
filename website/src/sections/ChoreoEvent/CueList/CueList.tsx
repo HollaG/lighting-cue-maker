@@ -1,12 +1,14 @@
 import { memo } from "react";
 import { Stack } from "@mantine/core";
-import { useAppStore } from "../../../store/appStore";
 import { CueCard } from "../../../components/Siding/CueCard/CueCard";
+import { useGetCues } from "../../../query/useGetCues";
+import { useGetItem } from "../../../query/useGetItem";
 
-export const CueList = memo(() => {
-  const cueOrder = useAppStore((s) => s.cueOrder);
-  const cues = useAppStore((s) => s.cues);
+export const CueList = memo(({ eventId, itemId }: { eventId?: string; itemId: string }) => {
+  const { cues } = useGetCues({ eventId, itemId });
+  const { cueOrder } = useGetItem({ eventId, itemId });
 
+  if (!eventId || !itemId || !cues || !cues.length) return;
   return (
     <Stack style={{ position: "relative" }}>
       {cueOrder.map((cueId, index) => {
@@ -17,4 +19,3 @@ export const CueList = memo(() => {
     </Stack>
   );
 });
-

@@ -17,6 +17,10 @@ export type GetCuesRes = { cues: Cue[] };
 
 export type DeleteCuesRes = { message: string };
 
+export type GetItemsRes = { items: Item[] };
+
+export type GetItemRes = { item: Item };
+
 export type UpdateItemReq = Partial<Item>;
 
 export type UpdateItemRes = { item: Item };

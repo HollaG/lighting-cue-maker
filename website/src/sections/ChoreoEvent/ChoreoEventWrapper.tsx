@@ -20,30 +20,33 @@ import { useAppStore } from "../../store/appStore";
 import classes from "./ChoreoEventWrapper.module.css";
 import { RichContent } from "../../components/RichContent/RichContent";
 import { useEffect, useMemo, useState } from "react";
-import type { LightEventConfiguration } from "../../types/types";
 import { CueList } from "./CueList/CueList";
+import { useGetEvent } from "../../query/useGetEvent";
+import { useGetItems } from "../../query/useGetItems";
+import { useGetItem } from "../../query/useGetItem";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
-  const evt = useAppStore((s) => s.event as LightEventConfiguration | null);
-  const isValidEvent = useAppStore((s) => s.isValidEvent);
-  const activeItem = useAppStore((s) => s.activeItem);
+  const code = useAppStore((s) => s.code);
+  const { event: evt, isValidEvent } = useGetEvent({ code });
+  const activeItemId = useAppStore((s) => s.activeItemId);
+
+  const { items, refetchItems } = useGetItems({ eventId: evt?.id ?? "" });
+  const { item, refetchItem } = useGetItem({ eventId: evt?.id ?? "", itemId: activeItemId ?? undefined });
+
   const changeActiveItem = useAppStore((s) => s.changeActiveItem);
-  const items = useAppStore((s) => s.items);
   const itemName = useAppStore((s) => s.itemName);
   const setItemName = useAppStore((s) => s.setItemName);
   const onAddItem = useAppStore((s) => s.onAddItem);
   const lyricInputMode = useAppStore((s) => s.lyricInputMode);
-  const rawLyrics = useAppStore((s) => s.rawLyrics);
-  const setRawLyrics = useAppStore((s) => s.setRawLyrics);
   const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
   const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
 
   const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
 
   useEffect(() => {
-    setInternalRawLyrics(rawLyrics);
-  }, [rawLyrics]);
+    setInternalRawLyrics(item?.rawLyrics ?? "");
+  }, [item?.rawLyrics]);
 
   // for the Item selection
   const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
@@ -54,8 +57,8 @@ export const ChoreoEventWrapper = () => {
     setControlsRefs(controlsRefs);
   };
   const onClickFinishAddingLyricsButton = () => {
-    setRawLyrics(internalRawLyrics);
-    onFinishAddingLyrics();
+    // setRawLyrics(internalRawLyrics);
+    onFinishAddingLyrics(internalRawLyrics, evt, refetchItem);
   };
 
   const controls = useMemo(() => {
@@ -64,21 +67,19 @@ export const ChoreoEventWrapper = () => {
         key={item.id}
         className={classes.control}
         ref={setControlRef(item.id)}
-        onClick={() => changeActiveItem(item)}
-        mod={{ active: activeItem?.id === item.id }}
+        onClick={() => changeActiveItem(item.id)}
+        mod={{ active: activeItemId === item.id }}
         p={"xs"}
       >
         <span className={classes.controlLabel}>{item.name}</span>
       </UnstyledButton>
     ));
-  }, [items, activeItem]);
+  }, [items, activeItemId]);
 
   const deleteExtraSpaces = () => {
     // setRawLyrics(rawLyrics.replaceAll("\n\n\n", "\n\n"));
     setInternalRawLyrics(internalRawLyrics.replaceAll("\n\n\n", "\n\n"));
   };
-
-  console.log({ rawLyrics });
 
   return (
     <Collapse expanded={isValidEvent}>
@@ -102,7 +103,7 @@ export const ChoreoEventWrapper = () => {
               {controls}
 
               <FloatingIndicator
-                target={activeItem ? controlsRefs[activeItem.id] : null}
+                target={activeItemId ? controlsRefs[activeItemId] : null}
                 parent={rootRef}
                 className={classes.indicator}
               />
@@ -117,7 +118,7 @@ export const ChoreoEventWrapper = () => {
                 placeholder="Your item name"
                 rightSectionWidth={"80px"}
                 rightSection={
-                  <Button size="xs" variant="transparent" onClick={onAddItem}>
+                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt, refetchItems)}>
                     Add item
                   </Button>
                 }
@@ -135,7 +136,7 @@ export const ChoreoEventWrapper = () => {
                 placeholder="Your item name"
                 rightSectionWidth={"80px"}
                 rightSection={
-                  <Button size="xs" variant="transparent" onClick={onAddItem}>
+                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt, refetchItems)}>
                     Add item
                   </Button>
                 }
@@ -145,7 +146,7 @@ export const ChoreoEventWrapper = () => {
         )}
       </Container>
       <Container fluid>
-        {!!activeItem && (
+        {!!item && (
           <SimpleGrid cols={2} px="xl" mt="3rem">
             <Stack>
               <Group>
@@ -187,7 +188,7 @@ export const ChoreoEventWrapper = () => {
                 />
               )}
 
-              {lyricInputMode === "rich" && <RichContent />}
+              {lyricInputMode === "rich" && <RichContent itemId={item.id} />}
             </Stack>
             <Stack>
               <Group>
@@ -200,7 +201,7 @@ export const ChoreoEventWrapper = () => {
                   </Button>
                 </Box> */}
               </Group>
-              <CueList />
+              <CueList eventId={evt?.id} itemId={item.id} />
             </Stack>
           </SimpleGrid>
         )}

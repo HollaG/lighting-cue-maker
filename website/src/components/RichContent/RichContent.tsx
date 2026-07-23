@@ -3,12 +3,21 @@ import { useAppStore } from "../../store/appStore";
 import classes from "./RichContent.module.css";
 import clsx from "clsx";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
+import { useGetEvent } from "../../query/useGetEvent";
+import { useEffect } from "react";
+import { useGetItem } from "../../query/useGetItem";
+import { generateRich } from "../../utils/convertText";
+import { useGetCues } from "../../query/useGetCues";
 
-export const RichContent = () => {
-  const content = useAppStore((s) => s.content);
+export const RichContent = ({ itemId }: { itemId: string }) => {
   const onAddCue = useAppStore((s) => s.onAddCue);
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
+
+  const code = useAppStore((s) => s.code);
+  const { event } = useGetEvent({ code });
+  const { item, content, refetchItem } = useGetItem({ eventId: code, itemId });
+  const { refetchCues } = useGetCues({ eventId: code, itemId });
 
   const getDisplayDiv = (word: string, index1: number, index2: number, cueCount: [number]) => {
     if (word.startsWith("<cueId=")) {
@@ -72,7 +81,7 @@ export const RichContent = () => {
           <Box
             className={classes["space"]}
             style={{ width: "calc(1rem / 2)", height: "stretch" }}
-            onClick={() => onAddCue(index1, index2, true)}
+            onClick={() => onAddCue(index1, index2, true, event, content, refetchItem, refetchCues)}
           >
             ㅤ
           </Box>
@@ -80,7 +89,11 @@ export const RichContent = () => {
       }
 
       return (
-        <Text variant="lyric" className={classes["lyric"]} onClick={() => onAddCue(index1, index2, false)}>
+        <Text
+          variant="lyric"
+          className={classes["lyric"]}
+          onClick={() => onAddCue(index1, index2, false, event, content, refetchItem, refetchCues)}
+        >
           {/* {word.length === 0 ? "ㅤ" : word} */}
           {word}
         </Text>
