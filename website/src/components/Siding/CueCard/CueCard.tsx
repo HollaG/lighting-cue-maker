@@ -198,7 +198,7 @@ const CueCardInternal = ({
   };
 
   return (
-    <form onSubmit={form.onSubmit((values) => handleSave())}>
+    <form onSubmit={form.onSubmit((_) => handleSave())}>
       <div
         ref={cueRef}
         style={{
@@ -567,7 +567,6 @@ function ColourSelectOption({ hex, name }: ColourOption) {
 }
 
 function BooleanSelect({
-  defaultValue,
   name,
   fieldName,
   form,
@@ -577,13 +576,7 @@ function BooleanSelect({
   fieldName: string;
   form: UseFormReturnType<FormData>;
 }) {
-  return (
-    <Checkbox
-      label={name}
-      key={form.key(fieldName)}
-      {...form.getInputProps(fieldName, { type: "checkbox" })}
-    />
-  );
+  return <Checkbox label={name} key={form.key(fieldName)} {...form.getInputProps(fieldName, { type: "checkbox" })} />;
 }
 
 // re-render if cue.updatedAt is different OR isCueSelected is false

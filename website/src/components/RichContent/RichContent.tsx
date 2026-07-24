@@ -74,5 +74,3 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
     </Stack>
   );
 };
-
-const RichLine = () => {};
