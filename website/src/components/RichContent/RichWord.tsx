@@ -10,11 +10,9 @@ interface RichWordProps {
   index2: number;
   cueNumber?: number;
   isSelected?: boolean;
-  onSelectCue: (cueId: string) => void;
-  onAddCue: (lineIndex: number, wordIndex: number, isSpace: boolean) => void;
 }
 
-const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, onSelectCue, onAddCue }: RichWordProps) => {
+const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected }: RichWordProps) => {
   console.log("word rendering");
   if (word.startsWith("<cueId=")) {
     if (word.endsWith("=cueId>")) {
@@ -22,6 +20,8 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, onSelec
       return (
         <Center
           id={`ref-${cueId}`}
+          data-action="select-cue"
+          data-cue-id={cueId}
           style={{
             paddingLeft: "0.5rem",
             paddingRight: "0.5rem",
@@ -30,7 +30,6 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, onSelec
             border: "4px solid yellow",
             cursor: "pointer",
           }}
-          onClick={() => onSelectCue(cueId)}
           className={clsx(classes["cue-wrapper"], isSelected ? classes["cue-selected"] : "")}
         >
           Cue {cueNumber}
@@ -44,9 +43,10 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, onSelec
     return (
       <Group
         id={`ref-${cueId}`}
+        data-action="select-cue"
+        data-cue-id={cueId}
         gap={0}
         style={{ cursor: "pointer" }}
-        onClick={() => onSelectCue(cueId)}
         className={clsx(classes["cue-wrapper"], isSelected ? classes["cue-selected"] : "")}
       >
         <Text variant="lyric" className={clsx(classes["lyric"], classes["in-cue"])}>
@@ -61,9 +61,12 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, onSelec
     if (word === " ") {
       return (
         <Box
+          data-action="add-cue"
+          data-line-index={index1}
+          data-word-index={index2}
+          data-is-space="true"
           className={classes["space"]}
           style={{ width: "calc(1rem / 2)", height: "stretch" }}
-          onClick={() => onAddCue(index1, index2, true)}
         >
           ㅤ
         </Box>
@@ -71,7 +74,14 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, onSelec
     }
 
     return (
-      <Text variant="lyric" className={classes["lyric"]} onClick={() => onAddCue(index1, index2, false)}>
+      <Text
+        data-action="add-cue"
+        data-line-index={index1}
+        data-word-index={index2}
+        data-is-space="false"
+        variant="lyric"
+        className={classes["lyric"]}
+      >
         {word}
       </Text>
     );
@@ -79,7 +89,6 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, onSelec
 };
 
 export const RichWord = React.memo(RichWordInternal, (prevProps, nextProps) => {
-  // rerender only if word and isSelected changes and cueNumber (changing cue number needs to update the component)
   return (
     prevProps.word === nextProps.word &&
     prevProps.isSelected === nextProps.isSelected &&

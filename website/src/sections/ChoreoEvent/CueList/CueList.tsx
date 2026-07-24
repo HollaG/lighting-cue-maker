@@ -11,6 +11,8 @@ export const CueList = memo(({ eventId, itemId }: { eventId?: string; itemId: st
   const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   if (!eventId || !itemId || !cues || !cues.length) return;
+
+  // return <></>;
   return (
     <Stack style={{ position: "relative" }}>
       {isCuesLoading

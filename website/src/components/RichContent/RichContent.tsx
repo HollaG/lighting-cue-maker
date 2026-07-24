@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import React, { useCallback } from "react";
 import { Group, Flex, Stack } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
@@ -17,22 +17,31 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
   const { content, refetchItem } = useGetItem({ eventId: event?.id, itemId });
   const { refetchCues } = useGetCues({ eventId: event?.id, itemId });
 
-  const handleSelectCue = useCallback(
-    (cueId: string) => {
-      setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
-    },
-    [currentlySelectedCueId, setCurrentlySelectedCueId],
-  );
+  const handleContainerClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>("[data-action]");
+      if (!target) return;
 
-  const handleAddCue = useCallback(
-    (lineIndex: number, wordIndex: number, isSpace: boolean) => {
-      onAddCue(lineIndex, wordIndex, isSpace, event, content, refetchItem, refetchCues);
+      const action = target.dataset.action;
+
+      if (action === "select-cue") {
+        const cueId = target.dataset.cueId;
+        if (cueId) {
+          setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
+        }
+      } else if (action === "add-cue") {
+        const lineIndex = Number(target.dataset.lineIndex);
+        const wordIndex = Number(target.dataset.wordIndex);
+        const isSpace = target.dataset.isSpace === "true";
+
+        onAddCue(lineIndex, wordIndex, isSpace, event, content, refetchItem, refetchCues);
+      }
     },
-    [onAddCue, event, content, refetchItem, refetchCues],
+    [currentlySelectedCueId, setCurrentlySelectedCueId, onAddCue, event, content, refetchItem, refetchCues],
   );
 
   return (
-    <Stack gap={0} style={{ position: "relative" }}>
+    <Stack gap={0} onClick={handleContainerClick} style={{ position: "relative" }}>
       {(() => {
         let cueCount = 0;
         return content.map((line, index1) => (
@@ -55,15 +64,7 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
 
               return (
                 <Flex key={index2} style={{ flexDirection: "row" }}>
-                  <RichWord
-                    word={word}
-                    index1={index1}
-                    index2={index2}
-                    cueNumber={cueNumber}
-                    isSelected={isSelected}
-                    onSelectCue={handleSelectCue}
-                    onAddCue={handleAddCue}
-                  />
+                  <RichWord word={word} index1={index1} index2={index2} cueNumber={cueNumber} isSelected={isSelected} />
                 </Flex>
               );
             })}
@@ -73,3 +74,5 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
     </Stack>
   );
 };
+
+const RichLine = () => {};

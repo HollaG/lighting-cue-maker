@@ -1,4 +1,4 @@
-import { Box, Button } from "@mantine/core";
+import { Box } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 
 import classes from "./App.module.css";

@@ -566,9 +566,4 @@ function ColourSelectOption({ hex, name }: ColourOption) {
 }
 
 // re-render if cue.updatedAt is different OR isCueSelected is false
-export const CueCard = React.memo(CueCardInternal, (prevProps, nextProps) => {
-  const { cue: prevCue, isCueSelected: prevSelected } = prevProps;
-  const { cue: nextCue, isCueSelected: nextSelected } = nextProps;
-
-  return prevCue.updatedAt === nextCue.updatedAt && prevSelected === nextSelected;
-});
+export const CueCard = React.memo(CueCardInternal);
