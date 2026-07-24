@@ -39,6 +39,7 @@ export const ChoreoEventWrapper = () => {
   const setItemName = useAppStore((s) => s.setItemName);
   const onAddItem = useAppStore((s) => s.onAddItem);
   const lyricInputMode = useAppStore((s) => s.lyricInputMode);
+  const setLyricInputMode = useAppStore((s) => s.setLyricInputMode);
   const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
   const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
 
@@ -80,6 +81,12 @@ export const ChoreoEventWrapper = () => {
     // setRawLyrics(rawLyrics.replaceAll("\n\n\n", "\n\n"));
     setInternalRawLyrics(internalRawLyrics.replaceAll("\n\n\n", "\n\n"));
   };
+
+  useEffect(() => {
+    if (item?.rawLyrics === "") {
+      setLyricInputMode("raw");
+    }
+  }, [item?.rawLyrics]);
 
   return (
     <Collapse expanded={isValidEvent}>

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { GetCuesRes } from "../types/http";
 
-export const useGetCues = ({ eventId, itemId }: { eventId: string; itemId: string }) => {
+export const useGetCues = ({ eventId, itemId }: { eventId?: string | null; itemId?: string | null }) => {
   const query = useQuery({
     queryKey: ["events", eventId, "items", itemId, "cues"],
     queryFn: async () => {

@@ -15,7 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { AttributeTypes, type AttributeConfiguration } from "../../types/types";
 import { IconArrowRightBar } from "@tabler/icons-react";
 import {
@@ -176,7 +176,7 @@ export const QLCConverter = () => {
 
         <Grid>
           <form>
-            <Grid.Col span={8}>
+            <Grid.Col span={12}>
               <Flex gap="md">
                 <Button
                   disabled={!file}
@@ -190,28 +190,9 @@ export const QLCConverter = () => {
                 </Button>
               </Flex>
               <Stack>
-                {/* <Stack gap={0}>
-                <Text> Configured attribute options </Text>
-                <Text> Note: string inputs are not available for automatic configuration</Text>
-              </Stack> */}
-
-                {/* {event?.fixtureGroups.map((fixtureGroup, index) => (
-            <Stack key={fixtureGroup.id}>
-              <Text fw={700}>
-                Group {index + 1}: {fixtureGroup.name}
-              </Text>
-              {fixtureGroup.attributes.filter(needsQlcMap).map((attribute, attrIndex) => (
-                <Group key={attribute.id} style={{ alignItems: "start" }}>
-                  <Text style={{ width: COLUMN_WIDTHS[0] }}>{attribute.name}</Text>
-                  <OptionList attribute={attribute} />
-                </Group>
-              ))}
-            </Stack>
-          ))} */}
-
                 <Grid columns={12}>
                   {event?.fixtureGroups.map((fixtureGroup, index) => (
-                    <div key={fixtureGroup.id}>
+                    <Fragment key={fixtureGroup.id}>
                       <Grid.Col span={12} mt={"lg"}>
                         <Stack>
                           <Text>
@@ -230,13 +211,13 @@ export const QLCConverter = () => {
                             form={form}
                           />
                         ))}
-                    </div>
+                    </Fragment>
                   ))}
                 </Grid>
               </Stack>
             </Grid.Col>
           </form>
-          <Grid.Col span={8}>
+          <Grid.Col span={12}>
             <Center>
               <Box>
                 <Button disabled={!file} onClick={exportToQlc}>
@@ -334,7 +315,7 @@ const OptList2 = ({
       return (
         <>
           {attribute.optionPossibleValues[AttributeTypes.SELECT].map((val, index) => (
-            <div key={val}>
+            <Fragment key={val}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
               </Grid.Col>
@@ -347,7 +328,7 @@ const OptList2 = ({
               <Grid.Col span={COLUMN_SPANS[3]}>
                 <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
               </Grid.Col>
-            </div>
+            </Fragment>
           ))}
 
           {/* For none selected option */}
@@ -370,7 +351,7 @@ const OptList2 = ({
       return (
         <>
           {attribute.optionPossibleValues[AttributeTypes.MULTISELECT].map((val, index) => (
-            <div key={val}>
+            <Fragment key={val}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
               </Grid.Col>
@@ -383,7 +364,7 @@ const OptList2 = ({
               <Grid.Col span={COLUMN_SPANS[3]}>
                 <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
               </Grid.Col>
-            </div>
+            </Fragment>
           ))}
           {/* For none selected option */}
           <Grid.Col span={COLUMN_SPANS[0]}>
@@ -405,7 +386,7 @@ const OptList2 = ({
       return (
         <>
           {attribute.optionPossibleValues[AttributeTypes.COLOUR].map((colourOption, index) => (
-            <div key={colourOption.hex}>
+            <Fragment key={colourOption.hex}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
               </Grid.Col>
@@ -434,7 +415,7 @@ const OptList2 = ({
                   inputId={`${attribute.id}|${colourOption.hex}`}
                 />
               </Grid.Col>
-            </div>
+            </Fragment>
           ))}
           {/* For none selected option */}
           <Grid.Col span={COLUMN_SPANS[0]}>

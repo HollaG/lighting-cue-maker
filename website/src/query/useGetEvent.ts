@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { LightEventConfiguration } from "../types/types";
 import type { GetEventRes } from "../types/http";
 
 export const useGetEvent = ({ code }: { code: string }) => {

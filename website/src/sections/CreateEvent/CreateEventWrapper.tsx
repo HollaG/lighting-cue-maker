@@ -28,7 +28,7 @@ export const CreateEventWrapper = () => {
   const setCode = useAppStore((s) => s.setCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { executeRequest } = useRequest<FormData, CreateEventRes>("/api/v1/events", "POST");
-
+  const setActiveItemId = useAppStore((s) => s.setActiveItemId);
   const form = useForm<FormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -63,6 +63,7 @@ export const CreateEventWrapper = () => {
       if (result?.event?.id) {
         // set this ID as the event
         setCode(result.event.id);
+        setActiveItemId("");
       }
     } catch (e) {
       console.error(e);

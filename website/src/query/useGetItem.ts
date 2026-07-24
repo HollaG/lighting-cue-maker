@@ -4,7 +4,7 @@ import { generateRich } from "../utils/convertText";
 import { getCueOrder } from "../utils/cueUtils";
 import type { GetItemRes } from "../types/http";
 
-export const useGetItem = ({ eventId, itemId }: { eventId?: string; itemId?: string }) => {
+export const useGetItem = ({ eventId, itemId }: { eventId?: string | null; itemId?: string | null }) => {
   const query = useQuery({
     queryKey: ["events", eventId, "items", itemId],
     queryFn: async () => {

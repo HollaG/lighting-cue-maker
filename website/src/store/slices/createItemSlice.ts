@@ -10,7 +10,7 @@ export interface ItemSlice {
   setActiveItemId: (id: string | null) => void;
   setItemName: (name: string) => void;
   changeActiveItem: (id: string | null) => void;
-  onAddItem: (event: LightEventConfiguration, refetchItems: GetItemsRefetchFn) => Promise<void>;
+  onAddItem: (event: LightEventConfiguration | null, refetchItems: GetItemsRefetchFn) => Promise<void>;
 }
 
 export const createItemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, get) => ({
@@ -24,7 +24,7 @@ export const createItemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, 
     set({ activeItemId: id });
   },
 
-  onAddItem: async (event: LightEventConfiguration, refetchItems: GetItemsRefetchFn) => {
+  onAddItem: async (event: LightEventConfiguration | null, refetchItems: GetItemsRefetchFn) => {
     const { itemName, changeActiveItem } = get();
     if (!event?.id || !itemName.trim()) return;
     try {

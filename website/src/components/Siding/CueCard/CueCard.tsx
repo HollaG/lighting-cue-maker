@@ -59,6 +59,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
 
   const [selectedCopyCue, setSelectedCopyCue] = useState<string>("");
 
+  console.log({ assgn: cue.assignments });
   const initialValues: FormData = useMemo(
     () => ({
       id: cue.id,
@@ -137,7 +138,23 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
   // on the FIRST render, run a "save", so that the correct value assignments
   // are populated into the DB.
   useEffect(() => {
-    handleSave();
+    const needsInitialSave = !cue.assignments || Object.keys(cue.assignments).length === 0;
+    if (!needsInitialSave || !event?.id) return;
+
+    // Defer initial save to browser idle time so initial render and scrolling stay smooth
+    const runSave = () => {
+      // NOTE: Passing refetchItem / refetchCues here for now to ensure query sync,
+      // but in the future we can save silently without refetching to prevent re-render cascades.
+      handleSave();
+    };
+
+    if (typeof requestIdleCallback !== "undefined") {
+      const handle = requestIdleCallback(runSave);
+      return () => cancelIdleCallback(handle);
+    } else {
+      const timer = setTimeout(runSave, 100);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const handleSave = async () => {
@@ -157,12 +174,12 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
   const beforeDeleteCue = (cue: Cue) => {
     const result = confirm("Are you sure you want to delete this cue?");
     if (result) {
-      onDeleteCue(cue.id, item.rawLyrics, event, refetchItem, refetchCues);
+      onDeleteCue(cue.id, item?.rawLyrics ?? "", event, refetchItem, refetchCues);
     }
   };
 
   const onCopyCue = (cueId: string) => {
-    const cueToCopy = cues.find((c) => c.id === cueId);
+    const cueToCopy = (cues || []).find((c) => c.id === cueId);
     if (cueToCopy) {
       console.log({ cue: cueToCopy });
       const { id: _, ...cueWithoutId } = cueToCopy;
@@ -170,6 +187,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
       close();
     } else console.error("No such cue found!");
   };
+
   return (
     <div
       ref={cueRef}

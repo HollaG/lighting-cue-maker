@@ -4,9 +4,7 @@ import classes from "./RichContent.module.css";
 import clsx from "clsx";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useGetEvent } from "../../query/useGetEvent";
-import { useEffect } from "react";
 import { useGetItem } from "../../query/useGetItem";
-import { generateRich } from "../../utils/convertText";
 import { useGetCues } from "../../query/useGetCues";
 
 export const RichContent = ({ itemId }: { itemId: string }) => {
@@ -16,8 +14,8 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
 
   const code = useAppStore((s) => s.code);
   const { event } = useGetEvent({ code });
-  const { item, content, refetchItem } = useGetItem({ eventId: code, itemId });
-  const { refetchCues } = useGetCues({ eventId: code, itemId });
+  const { content, refetchItem } = useGetItem({ eventId: event?.id, itemId });
+  const { refetchCues } = useGetCues({ eventId: event?.id, itemId });
 
   const getDisplayDiv = (word: string, index1: number, index2: number, cueCount: [number]) => {
     if (word.startsWith("<cueId=")) {

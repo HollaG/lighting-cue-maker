@@ -22,7 +22,7 @@ export interface CueSlice {
     lineIndex: number,
     wordIndex: number,
     isSpace: boolean,
-    event: LightEventConfiguration,
+    event: LightEventConfiguration | null,
     content: string[][],
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
@@ -30,13 +30,13 @@ export interface CueSlice {
   onDeleteCue: (
     cueId: string,
     rawLyrics: string,
-    event: LightEventConfiguration,
+    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => Promise<void>;
   onUpdateCue: (
     cue: Cue,
-    event: LightEventConfiguration,
+    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => Promise<void>;
@@ -53,13 +53,13 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
     lineIndex: number,
     wordIndex: number,
     isSpace: boolean,
-    event: LightEventConfiguration,
+    event: LightEventConfiguration | null,
     content: string[][],
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => {
     const { activeItemId } = get();
-    if (!event.id || !activeItemId || !content) return;
+    if (!event?.id || !activeItemId || !content) return;
 
     try {
       const res = await api.post<CreateCueRes>(`/api/v1/events/${event.id}/items/${activeItemId}/cues`, {});
@@ -102,7 +102,7 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
 
   onUpdateCue: async (
     updatedCue: Cue,
-    event: LightEventConfiguration,
+    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => {
@@ -124,7 +124,7 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
   onDeleteCue: async (
     cueId: string,
     rawLyrics: string,
-    event: LightEventConfiguration,
+    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => {

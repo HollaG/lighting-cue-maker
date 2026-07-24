@@ -13,7 +13,7 @@ export interface LyricsSlice {
   onBeginAddingLyrics: () => void;
   onFinishAddingLyrics: (
     rawLyrics: string,
-    event: LightEventConfiguration,
+    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
   ) => Promise<void>;
 }
@@ -29,7 +29,7 @@ export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (s
     });
   },
 
-  onFinishAddingLyrics: async (rawLyrics: string, event: LightEventConfiguration, refetchItem: GetItemRefetchFn) => {
+  onFinishAddingLyrics: async (rawLyrics: string, event: LightEventConfiguration | null, refetchItem: GetItemRefetchFn) => {
     const { activeItemId } = get();
     set({
       lyricInputMode: "rich",
@@ -38,7 +38,7 @@ export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (s
     if (event?.id && activeItemId) {
       try {
         await api.patch<UpdateItemRes>(`/api/v1/events/${event.id}/items/${activeItemId}`, { rawLyrics });
-        await refetchItem();
+        refetchItem();
       } catch {}
     }
   },
