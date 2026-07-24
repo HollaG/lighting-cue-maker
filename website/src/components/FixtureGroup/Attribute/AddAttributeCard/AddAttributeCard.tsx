@@ -3,7 +3,7 @@ import { AttributeTypes, BooleanOptions, type AttributeConfiguration, type Optio
 import { useEffect, useMemo, useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";
-const ATTRIBUTE_OPTIONS: Option[] = [
+const ATTRIBUTE_OPTIONS: Option<AttributeTypes>[] = [
   { label: "Text", value: AttributeTypes.TEXT },
   { label: "Select one", value: AttributeTypes.SELECT },
   { label: "Select many", value: AttributeTypes.MULTISELECT },

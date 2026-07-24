@@ -1,4 +1,4 @@
-import { Button, Center, Collapse, Container, Divider, SimpleGrid, Textarea } from "@mantine/core";
+import { Button, Center, Collapse, Container, Divider, SimpleGrid, TagsInput, Textarea } from "@mantine/core";
 import { AddFixtureGroupButton } from "../../components/FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
 import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard";
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
@@ -6,12 +6,17 @@ import { useForm } from "@mantine/form";
 import { useState } from "react";
 import { flatten } from "../../utils/flatten";
 import { useRequest } from "../../hooks/useRequest";
-import type { AttributeConfiguration, FixtureGroupConfiguration, LightEventConfiguration } from "../../types/types";
+import type {
+  AttributeConfiguration,
+  BumpConfiguration,
+  FixtureGroupConfiguration,
+  LightEventConfiguration,
+} from "../../types/types";
 import { useAppStore } from "../../store/appStore";
-import type { CreateEventRes } from "../../types/http";
+import type { CreateEventReq, CreateEventRes } from "../../types/http";
 import { useGetEvent } from "../../query/useGetEvent";
 
-type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
+type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id" | "bumpConfigurations"> & {
   fixtureGroups: {
     [fixtureGroupId: number]: Omit<FixtureGroupConfiguration, "attributes"> & {
       attributes: {
@@ -19,6 +24,10 @@ type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id"> & {
       };
     };
   };
+
+  // Actually saved as a full BumpConfiguration object in the backend, but we can modify
+  // the FE to send full object data. The BE remains fully ready to support.
+  bumpConfigurations: string[];
 };
 
 export const CreateEventWrapper = () => {
@@ -27,7 +36,7 @@ export const CreateEventWrapper = () => {
   const { isValidEvent } = useGetEvent({ code });
   const setCode = useAppStore((s) => s.setCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { executeRequest } = useRequest<FormData, CreateEventRes>("/api/v1/events", "POST");
+  const { executeRequest } = useRequest<CreateEventReq, CreateEventRes>("/api/v1/events", "POST");
   const setActiveItemId = useAppStore((s) => s.setActiveItemId);
   const form = useForm<FormData>({
     mode: "uncontrolled",
@@ -38,6 +47,7 @@ export const CreateEventWrapper = () => {
       fixtureGroups: {},
       externalLink: "",
       description: "",
+      bumpConfigurations: [],
     },
   });
 
@@ -55,6 +65,11 @@ export const CreateEventWrapper = () => {
       fixtureGroup.attributes.forEach((attribute) => {
         delete (attribute as { id?: string }).id;
       });
+    });
+
+    // convert BumpConfigurations into array of { name: string }
+    config.bumpConfigurations = v.bumpConfigurations.map((bumpConfiguration) => {
+      return { name: bumpConfiguration } as BumpConfiguration;
     });
 
     setIsSubmitting(true);
@@ -80,48 +95,60 @@ export const CreateEventWrapper = () => {
           <Divider my="lg" label="or, create a new event" labelPosition="center" />
 
           {/* <Title> Create a new event </Title> */}
-          <CustomTextInput
-            placeholder="Type your event name here..."
-            size="xxl"
-            name="name"
-            key={form.key("name")}
-            {...form.getInputProps("name")}
-          />
-          <Textarea
-            minRows={3}
-            variant="unstyled"
-            autosize
-            name="description"
-            key={form.key("description")}
-            {...form.getInputProps("description")}
-            placeholder="Type a brief description e.g. rules/remarks that choreographers can see."
-            styles={{
-              input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
-            }}
-          />
-          <CustomTextInput
-            label="Google Docs / OneDrive / Link"
-            placeholder="Paste a link to more information, if necessary"
-            name="externalLink"
-            key={form.key("externalLink")}
-            {...form.getInputProps("externalLink")}
-          />
-          <CustomTextInput
-            label="How many cues per band? (optional)"
-            placeholder="Enter a number..."
-            name="cuesPerBand"
-            type="number"
-            key={form.key("cuesPerBand")}
-            {...form.getInputProps("cuesPerBand")}
-          />
-          <CustomTextInput
-            label="How many unique cues per band? (optional)"
-            placeholder="Enter a number..."
-            name="uniqueCuesPerBand"
-            type="number"
-            key={form.key("uniqueCuesPerBand")}
-            {...form.getInputProps("uniqueCuesPerBand")}
-          />
+          <Container ml={0} p={0}>
+            <CustomTextInput
+              placeholder="Type your event name here..."
+              size="xxl"
+              name="name"
+              key={form.key("name")}
+              {...form.getInputProps("name")}
+            />
+            <Textarea
+              minRows={3}
+              variant="unstyled"
+              autosize
+              name="description"
+              key={form.key("description")}
+              {...form.getInputProps("description")}
+              placeholder="Type a brief description e.g. rules/remarks that choreographers can see."
+              styles={{
+                input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+              }}
+            />
+            <CustomTextInput
+              label="Google Docs / OneDrive / Link"
+              placeholder="Paste a link to more information, if necessary"
+              name="externalLink"
+              key={form.key("externalLink")}
+              {...form.getInputProps("externalLink")}
+            />
+            <CustomTextInput
+              label="How many cues per band? (optional)"
+              placeholder="Enter a number..."
+              name="cuesPerBand"
+              type="number"
+              key={form.key("cuesPerBand")}
+              {...form.getInputProps("cuesPerBand")}
+            />
+            <CustomTextInput
+              label="How many unique cues per band? (optional)"
+              placeholder="Enter a number..."
+              name="uniqueCuesPerBand"
+              type="number"
+              key={form.key("uniqueCuesPerBand")}
+              {...form.getInputProps("uniqueCuesPerBand")}
+            />
+
+            <TagsInput
+              name={"bumpConfigurations"}
+              key={form.key("bumpConfigurations")}
+              {...form.getInputProps("bumpConfigurations")}
+              label="Define bump options"
+              description="These are possible bumps (instantaneous changes in lighting) that you can do"
+              placeholder="Type a name, then press enter to add"
+              variant="unstyled"
+            />
+          </Container>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
             {/* <FixtureGroupCard editable />

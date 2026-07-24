@@ -28,6 +28,7 @@ func main() {
 		&models.AttributeConfiguration{},
 		&models.Item{},
 		&models.Cue{},
+		&models.BumpConfiguration{},
 	); err != nil {
 		log.Fatalf("database: AutoMigrate failed: %v", err)
 	}

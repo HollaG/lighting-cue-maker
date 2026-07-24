@@ -95,13 +95,24 @@ func createEvent(c *gin.Context) {
 		fixtureGroups = append(fixtureGroups, group)
 	}
 
+	bumpConfigurations := []models.BumpConfiguration{}
+	// For future use, we can easily change this to store other values.
+
+	for _, bumpReq := range req.BumpConfigurations {
+		bumpConfigurations = append(bumpConfigurations, models.BumpConfiguration{
+			Name:        bumpReq.Name,
+			Description: bumpReq.Description,
+		})
+	}
+
 	event := models.LightEvent{
-		Name:              req.Name,
-		CuesPerBand:       req.CuesPerBand,
-		UniqueCuesPerBand: req.UniqueCuesPerBand,
-		FixtureGroups:     fixtureGroups,
-		Description:       req.Description,
-		ExternalLink:      req.ExternalLink,
+		Name:               req.Name,
+		CuesPerBand:        req.CuesPerBand,
+		UniqueCuesPerBand:  req.UniqueCuesPerBand,
+		FixtureGroups:      fixtureGroups,
+		BumpConfigurations: bumpConfigurations,
+		Description:        req.Description,
+		ExternalLink:       req.ExternalLink,
 	}
 
 	result := database.DB().Create(&event)
@@ -130,6 +141,7 @@ func getEvent(c *gin.Context) {
 	result := database.DB().
 		Preload("FixtureGroups").
 		Preload("FixtureGroups.Attributes").
+		Preload("BumpConfigurations").
 		Where("uuid = ?", eventId).First(&event)
 	if result.Error != nil {
 		response.NotFound(c, "Event not found")

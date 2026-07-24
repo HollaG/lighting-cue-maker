@@ -12,6 +12,12 @@ export type FixtureGroupConfiguration = {
   attributes: AttributeConfiguration[];
 };
 
+export type BumpConfiguration = {
+  id: string; // stable
+  name: string;
+  description: string;
+};
+
 export type AttributeConfiguration = {
   id: string; // stable
   name: string;
@@ -77,6 +83,7 @@ export type LightEventConfiguration = {
 
   // options
   fixtureGroups: FixtureGroupConfiguration[];
+  bumpConfigurations: BumpConfiguration[];
 };
 
 export type Item = {

@@ -6,12 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// Used for POST /events to create an event
+// Request DTOs
 type CreateLightEventReq struct {
-	Name              string                               `json:"name"`
-	CuesPerBand       int                                  `json:"cuesPerBand"`
-	UniqueCuesPerBand int                                  `json:"uniqueCuesPerBand"`
-	FixtureGroups     []CreateFixtureGroupConfigurationReq `json:"fixtureGroups"`
+	Name               string                               `json:"name"`
+	CuesPerBand        int                                  `json:"cuesPerBand"`
+	UniqueCuesPerBand  int                                  `json:"uniqueCuesPerBand"`
+	FixtureGroups      []CreateFixtureGroupConfigurationReq `json:"fixtureGroups"`
+	BumpConfigurations []CreateBumpConfigurationReq         `json:"bumpConfigurations"`
 
 	// optional
 	Description  string `json:"description,omitempty"`
@@ -32,16 +33,18 @@ type CreateAttributeConfigurationReq struct {
 
 // ------------------------------------------------
 
-// DB model
+// DB Models
+
 type LightEvent struct {
 	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
-	Name              string                      `json:"name"`
-	Description       string                      `json:"description"`
-	ExternalLink      string                      `json:"externalLink"`
-	CuesPerBand       int                         `json:"cuesPerBand"`
-	UniqueCuesPerBand int                         `json:"uniqueCuesPerBand"`
-	FixtureGroups     []FixtureGroupConfiguration `json:"fixtureGroups" gorm:"foreignKey:LightEventUuid;references:Uuid"`
+	Name               string                      `json:"name"`
+	Description        string                      `json:"description"`
+	ExternalLink       string                      `json:"externalLink"`
+	CuesPerBand        int                         `json:"cuesPerBand"`
+	UniqueCuesPerBand  int                         `json:"uniqueCuesPerBand"`
+	FixtureGroups      []FixtureGroupConfiguration `json:"fixtureGroups" gorm:"foreignKey:LightEventUuid;references:Uuid"`
+	BumpConfigurations []BumpConfiguration         `json:"bumpConfigurations" gorm:"foreignKey:LightEventUuid;references:Uuid"`
 
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
@@ -122,4 +125,20 @@ type AttributeConfiguration struct {
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+}
+
+type CreateBumpConfigurationReq struct {
+	EventId     string `json:"eventId,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+}
+
+type BumpConfiguration struct {
+	Uuid           string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	LightEventUuid string         `json:"-" gorm:"type:uuid;not null"`
+	Name           string         `json:"name"`
+	Description    string         `json:"description"`
+	CreatedAt      time.Time      `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt      gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }

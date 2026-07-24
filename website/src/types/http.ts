@@ -5,6 +5,8 @@ export type GetEventRes = {
   event: LightEventConfiguration;
 };
 
+export type CreateEventReq = Omit<LightEventConfiguration, "id">;
+
 export type CreateEventRes = {
   event: LightEventConfiguration;
 };

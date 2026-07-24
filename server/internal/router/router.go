@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"lighting-cue-maker/server/config"
+	"lighting-cue-maker/server/internal/api/v1/bumps"
 	"lighting-cue-maker/server/internal/api/v1/cues"
 	"lighting-cue-maker/server/internal/api/v1/events"
 	"lighting-cue-maker/server/internal/api/v1/items"
@@ -38,6 +39,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		events.Register(v1.Group("/events"))
 		items.Register(v1.Group("/items"))
 		cues.Register(v1.Group("/cues"))
+		bumps.Register(v1.Group("/bumps"))
 		qlc.Register(v1.Group("/qlc"))
 
 		// Add future entity route groups here:
