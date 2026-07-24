@@ -2,13 +2,19 @@
   font-size: 16px !important;
 }
 
-.lyric:hover {
-  background-color: yellow;
-  cursor: pointer;
+/* Base styles for hoverable items */
+.lyric,
+.space {
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: yellow;
+    cursor: pointer;
+  }
 }
 
+/* Individual item overrides */
 .lyric {
-  transition: all 0.2s ease-in-out;
   background-color: transparent;
 
   &.in-cue {
@@ -21,16 +27,13 @@
   }
 }
 
-.space:hover {
-  background-color: yellow;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  cursor: pointer;
-}
-
 .space {
   padding: 0rem;
-  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
 }
 
 .cue {

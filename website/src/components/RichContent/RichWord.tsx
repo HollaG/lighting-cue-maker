@@ -13,7 +13,7 @@ interface RichWordProps {
 }
 
 const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected }: RichWordProps) => {
-  console.log("word rendering");
+  if (word === "-") return <Text variant="lyric">{word}</Text>;
   if (word.startsWith("<cueId=")) {
     if (word.endsWith("=cueId>")) {
       const cueId = convertUuidForDatabase(word.split("<cueId=")[1].split("=cueId>")[0]);

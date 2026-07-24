@@ -36,10 +36,33 @@ export const generateRich = (rawLyrics: string) => {
       (line) =>
         line
           .trim()
+
+          // split by space within each line so each word is a individual item in the array
           .split(/[\ ]+/g)
           .filter((word) => !word.includes("<comment") && !word.includes("</comment>"))
-          .flatMap((word) => (word.length !== 0 ? [" ", word] : word)), // DO NOT add spaces for line breaks. Line breaks are represented as "".
+
+          // Convert a "word"
+          // If the word is an actual word, then add a space in front of it
+          // If the word is an empty string, then it is a line break
+          // Split by "-" so we can segment words with multiple syllables
+          .flatMap((word) => {
+            if (word.length === 0) return "";
+            if (word.includes("-")) {
+              const syllables = word.split("-");
+              const syllableMap = syllables.flatMap((syllable, index) => {
+                const out = [syllable];
+                if (index < syllables.length - 1) out.push("-");
+                return out;
+              });
+
+              return [" ", ...syllableMap];
+            }
+
+            return [" ", ...[word]];
+          }), // DO NOT add spaces for line breaks. Line breaks are represented as "".
     )
+
+    // Add a space at the end of every line (so that we can potentially click on that div at the end of the line)
     .map((line) => (line[line.length - 1] === "" ? line : [...line, " "])) // DO NOT add spaces for line breaks
 
     // Convert all "line break" characters to a space character so we can treat them the same TODO: do we want to separate line break characters?
