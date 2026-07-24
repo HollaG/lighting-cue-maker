@@ -29,7 +29,7 @@ import {
   type FixtureGroupConfiguration,
 } from "../../../types/types";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { IconChevronUp } from "@tabler/icons-react";
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
@@ -39,7 +39,15 @@ import { useGetItem } from "../../../query/useGetItem";
 
 type FormData = Cue;
 
-export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => {
+const CueCardInternal = ({
+  cue,
+  cueNumber,
+  isCueSelected,
+}: {
+  cue: Cue;
+  cueNumber: number;
+  isCueSelected: boolean;
+}) => {
   const code = useAppStore((s) => s.code);
   const activeItemId = useAppStore((s) => s.activeItemId);
   const { event } = useGetEvent({ code });
@@ -49,7 +57,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
 
   const onDeleteCue = useAppStore((s) => s.onDeleteCue);
   const onUpdateCue = useAppStore((s) => s.onUpdateCue);
-  const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
+  // const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -59,7 +67,6 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
 
   const [selectedCopyCue, setSelectedCopyCue] = useState<string>("");
 
-  console.log({ assgn: cue.assignments });
   const initialValues: FormData = useMemo(
     () => ({
       id: cue.id,
@@ -110,17 +117,19 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     },
   });
 
+  console.log("cuecard rendering");
+
   const cueRef = useRef<HTMLDivElement>(null);
 
   const [translateDistance, setTranslateDistance] = useState<string>("0px");
 
   useEffect(() => {
     // Get the reference element's offset-X value
-    if (!currrentlySelectedCueId || !cueRef.current || cue.id !== currrentlySelectedCueId) {
+    if (!isCueSelected || !cueRef.current) {
       setTranslateDistance("0px");
       return;
     }
-    const elementId = `ref-${currrentlySelectedCueId}`;
+    const elementId = `ref-${cue.id}`;
     const element = document.getElementById(elementId);
     if (!element) return;
     const { offsetTop } = element;
@@ -133,7 +142,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
     const thisElementHeight = cueRef.current?.offsetHeight ?? 0;
 
     setTranslateDistance((translateDistance - thisElementHeight / 2).toString() + "px");
-  }, [currrentlySelectedCueId]);
+  }, [isCueSelected]);
 
   // on the FIRST render, run a "save", so that the correct value assignments
   // are populated into the DB.
@@ -196,7 +205,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
         transition: "all 0.3s ease",
       }}
     >
-      <CardBase isActive={false} shadow={cue.id === currrentlySelectedCueId ? "lg" : "none"}>
+      <CardBase isActive={false} shadow={isCueSelected ? "lg" : "none"}>
         <Modal opened={opened} onClose={close} title={`Copy a cue to cue ${cueNumber}`} centered>
           <Stack>
             <Select
@@ -246,7 +255,7 @@ export const CueCard = ({ cue, cueNumber }: { cue: Cue; cueNumber: number }) => 
             </ActionIcon>
           </Group>
           <Collapse expanded={!isCollapsed}>
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
               {fixtureGroups.map((group, index) => (
                 <FixtureGroupSection key={group.id} group={group} index={index + 1} form={form} />
               ))}
@@ -555,3 +564,11 @@ function ColourSelectOption({ hex, name }: ColourOption) {
     </Group>
   );
 }
+
+// re-render if cue.updatedAt is different OR isCueSelected is false
+export const CueCard = React.memo(CueCardInternal, (prevProps, nextProps) => {
+  const { cue: prevCue, isCueSelected: prevSelected } = prevProps;
+  const { cue: nextCue, isCueSelected: nextSelected } = nextProps;
+
+  return prevCue.updatedAt === nextCue.updatedAt && prevSelected === nextSelected;
+});

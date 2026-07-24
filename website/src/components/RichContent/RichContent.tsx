@@ -1,11 +1,11 @@
-import { Group, Flex, Box, Text, Stack, Center } from "@mantine/core";
+import { useCallback } from "react";
+import { Group, Flex, Stack } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
-import classes from "./RichContent.module.css";
-import clsx from "clsx";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItem } from "../../query/useGetItem";
 import { useGetCues } from "../../query/useGetCues";
+import { RichWord } from "./RichWord";
 
 export const RichContent = ({ itemId }: { itemId: string }) => {
   const onAddCue = useAppStore((s) => s.onAddCue);
@@ -17,99 +17,56 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
   const { content, refetchItem } = useGetItem({ eventId: event?.id, itemId });
   const { refetchCues } = useGetCues({ eventId: event?.id, itemId });
 
-  const getDisplayDiv = (word: string, index1: number, index2: number, cueCount: [number]) => {
-    if (word.startsWith("<cueId=")) {
-      cueCount[0]++;
-      if (word.endsWith("=cueId>")) {
-        // then we know it's a cue standing by itself (not attached to a word)
-        const cueId = convertUuidForDatabase(word.split("<cueId=")[1].split("=cueId>")[0]);
-        return (
-          <Center
-            id={`ref-${cueId}`}
-            style={{
-              paddingLeft: "0.5rem",
-              paddingRight: "0.5rem",
-              height: "stretch",
-              backgroundColor: "yellow",
-              border: "4px solid yellow",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              if (currentlySelectedCueId === cueId) setCurrentlySelectedCueId(undefined);
-              else setCurrentlySelectedCueId(cueId);
-            }}
-            className={clsx(classes["cue-wrapper"], currentlySelectedCueId === cueId ? classes["cue-selected"] : "")}
-          >
-            Cue {cueCount[0]}
-          </Center>
-        );
-      }
-      const textContent = word.replace(/\<cueId=.*=cueId\>/gm, "");
+  const handleSelectCue = useCallback(
+    (cueId: string) => {
+      setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
+    },
+    [currentlySelectedCueId, setCurrentlySelectedCueId],
+  );
 
-      console.log({ textContent });
-      // return <Box style={{ backgroundColor: "yellow" }}>{textContent}</Box>;
-      console.log({ word });
-
-      // use regex to extract the cueId
-      const cueId = convertUuidForDatabase(word.match(/<cueId=(.*?)=cueId>/)?.[1] || "");
-      console.log({ cueId });
-      // const cueId = convertUuidForDatabase(word.replace(textContent, "").split("cueId=")[1].split("=cueId")[0]);
-      return (
-        <Group
-          id={`ref-${cueId}`}
-          gap={0}
-          style={{ cursor: "pointer" }}
-          onClick={() => {
-            if (currentlySelectedCueId === cueId) setCurrentlySelectedCueId(undefined);
-            else setCurrentlySelectedCueId(cueId);
-          }}
-          className={clsx(classes["cue-wrapper"], currentlySelectedCueId === cueId ? classes["cue-selected"] : "")}
-        >
-          <Text variant="lyric" className={clsx(classes["lyric"], classes["in-cue"])}>
-            {textContent}
-          </Text>
-          <Box className={classes["cue"]}>
-            <Text>Cue {cueCount[0]}</Text>
-          </Box>
-        </Group>
-      );
-    } else {
-      if (word === " ") {
-        return (
-          <Box
-            className={classes["space"]}
-            style={{ width: "calc(1rem / 2)", height: "stretch" }}
-            onClick={() => onAddCue(index1, index2, true, event, content, refetchItem, refetchCues)}
-          >
-            ㅤ
-          </Box>
-        );
-      }
-
-      return (
-        <Text
-          variant="lyric"
-          className={classes["lyric"]}
-          onClick={() => onAddCue(index1, index2, false, event, content, refetchItem, refetchCues)}
-        >
-          {/* {word.length === 0 ? "ㅤ" : word} */}
-          {word}
-        </Text>
-      );
-    }
-  };
+  const handleAddCue = useCallback(
+    (lineIndex: number, wordIndex: number, isSpace: boolean) => {
+      onAddCue(lineIndex, wordIndex, isSpace, event, content, refetchItem, refetchCues);
+    },
+    [onAddCue, event, content, refetchItem, refetchCues],
+  );
 
   return (
     <Stack gap={0} style={{ position: "relative" }}>
       {(() => {
-        const cueCount: [number] = [0];
+        let cueCount = 0;
         return content.map((line, index1) => (
           <Group key={index1} gap="0px">
-            {line.map((word, index2) => (
-              <Flex key={index2} style={{ flexDirection: "row" }}>
-                {getDisplayDiv(word, index1, index2, cueCount)}
-              </Flex>
-            ))}
+            {line.map((word, index2) => {
+              let cueNumber: number | undefined = undefined;
+              let cueId: string | undefined = undefined;
+
+              if (word.startsWith("<cueId=")) {
+                cueCount++;
+                cueNumber = cueCount;
+                if (word.endsWith("=cueId>")) {
+                  cueId = convertUuidForDatabase(word.split("<cueId=")[1].split("=cueId>")[0]);
+                } else {
+                  cueId = convertUuidForDatabase(word.match(/<cueId=(.*?)=cueId>/)?.[1] || "");
+                }
+              }
+
+              const isSelected = !!cueId && currentlySelectedCueId === cueId;
+
+              return (
+                <Flex key={index2} style={{ flexDirection: "row" }}>
+                  <RichWord
+                    word={word}
+                    index1={index1}
+                    index2={index2}
+                    cueNumber={cueNumber}
+                    isSelected={isSelected}
+                    onSelectCue={handleSelectCue}
+                    onAddCue={handleAddCue}
+                  />
+                </Flex>
+              );
+            })}
           </Group>
         ));
       })()}

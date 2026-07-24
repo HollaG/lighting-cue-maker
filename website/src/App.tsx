@@ -17,9 +17,7 @@ function App() {
     <QueryClientProvider client={client}>
       <Box pt="xl" pb={"48rem"}>
         <Notifications />
-        <Box className={classes.controlBar}>
-          <Button variant="light">Night mode</Button>
-        </Box>
+        <Box className={classes.controlBar}>{/* <Button variant="light">Night mode</Button> */}</Box>
 
         <HomeHeader />
 
