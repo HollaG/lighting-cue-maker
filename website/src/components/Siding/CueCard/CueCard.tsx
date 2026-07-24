@@ -198,72 +198,74 @@ const CueCardInternal = ({
   };
 
   return (
-    <div
-      ref={cueRef}
-      style={{
-        transform: `translateY(${translateDistance})`,
-        transition: "all 0.3s ease",
-      }}
-    >
-      <CardBase isActive={false} shadow={isCueSelected ? "lg" : "none"}>
-        <Modal opened={opened} onClose={close} title={`Copy a cue to cue ${cueNumber}`} centered>
-          <Stack>
-            <Select
-              value={selectedCopyCue}
-              onChange={(value) => setSelectedCopyCue(value ?? "")}
-              data={cueOrder
-                .map((cId) => (cId !== cue.id ? cId : ""))
+    <form onSubmit={form.onSubmit((values) => handleSave())}>
+      <div
+        ref={cueRef}
+        style={{
+          transform: `translateY(${translateDistance})`,
+          transition: "all 0.3s ease",
+        }}
+      >
+        <CardBase isActive={false} shadow={isCueSelected ? "lg" : "none"}>
+          <Modal opened={opened} onClose={close} title={`Copy a cue to cue ${cueNumber}`} centered>
+            <Stack>
+              <Select
+                value={selectedCopyCue}
+                onChange={(value) => setSelectedCopyCue(value ?? "")}
+                data={cueOrder
+                  .map((cId) => (cId !== cue.id ? cId : ""))
 
-                .map((cueId, index) => ({ value: cueId, label: `Cue ${index + 1}` }))
-                .filter((opt) => opt.value !== "")}
-            />
-            <Flex justify={"end"}>
-              <Button onClick={() => onCopyCue(selectedCopyCue)}> Copy </Button>
-            </Flex>
-          </Stack>
-        </Modal>
-        <Stack gap={0}>
-          <Group mb="md">
-            <Title order={4}> Cue {cueNumber} </Title>
-            <Button
-              variant="transparent"
-              size="xs"
-              // style={{
-              //   textDecoration: "underline dotted",
-              // }}
-              color="black"
-              onClick={open}
-            >
-              Copy another cue
-            </Button>
-            <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
-            <Button color="red" size="xs" variant="transparent" onClick={() => beforeDeleteCue(cue)}>
-              Delete{" "}
-            </Button>
-            <Button color="orange" size="xs" disabled={!isDirty} onClick={() => handleSave()}>
-              {" "}
-              Save changes{" "}
-            </Button>
-            <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
-              <IconChevronUp
-                style={{
-                  transition: "transform 0.2s",
-                  transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)",
-                }}
-                width={"1rem"}
+                  .map((cueId, index) => ({ value: cueId, label: `Cue ${index + 1}` }))
+                  .filter((opt) => opt.value !== "")}
               />
-            </ActionIcon>
-          </Group>
-          <Collapse expanded={!isCollapsed}>
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
-              {fixtureGroups.map((group, index) => (
-                <FixtureGroupSection key={group.id} group={group} index={index + 1} form={form} />
-              ))}
-            </SimpleGrid>
-          </Collapse>
-        </Stack>
-      </CardBase>
-    </div>
+              <Flex justify={"end"}>
+                <Button onClick={() => onCopyCue(selectedCopyCue)}> Copy </Button>
+              </Flex>
+            </Stack>
+          </Modal>
+          <Stack gap={0}>
+            <Group mb="md">
+              <Title order={4}> Cue {cueNumber} </Title>
+              <Button
+                variant="transparent"
+                size="xs"
+                // style={{
+                //   textDecoration: "underline dotted",
+                // }}
+                color="black"
+                onClick={open}
+              >
+                Copy another cue
+              </Button>
+              <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
+              <Button color="red" size="xs" variant="transparent" onClick={() => beforeDeleteCue(cue)}>
+                Delete{" "}
+              </Button>
+              <Button color="orange" size="xs" disabled={!isDirty} type="submit">
+                {" "}
+                Save changes{" "}
+              </Button>
+              <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
+                <IconChevronUp
+                  style={{
+                    transition: "transform 0.2s",
+                    transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                  width={"1rem"}
+                />
+              </ActionIcon>
+            </Group>
+            <Collapse expanded={!isCollapsed}>
+              <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+                {fixtureGroups.map((group, index) => (
+                  <FixtureGroupSection key={group.id} group={group} index={index + 1} form={form} />
+                ))}
+              </SimpleGrid>
+            </Collapse>
+          </Stack>
+        </CardBase>
+      </div>
+    </form>
   );
 };
 
@@ -401,12 +403,11 @@ const AttributeDisplay = ({
 
     case AttributeTypes.BOOLEAN:
       return (
-        <Checkbox
-          label={name}
-          defaultChecked={optionPossibleValues[AttributeTypes.BOOLEAN] === BooleanOptions.CHECKED}
-          name={`${baseFieldName}.${AttributeTypes.BOOLEAN}`}
-          key={form.key(`${baseFieldName}.${AttributeTypes.BOOLEAN}`)}
-          {...form.getInputProps(`${baseFieldName}.${AttributeTypes.BOOLEAN}`)}
+        <BooleanSelect
+          name={name}
+          fieldName={`${baseFieldName}.${AttributeTypes.BOOLEAN}`}
+          form={form}
+          defaultValue={optionPossibleValues[AttributeTypes.BOOLEAN]}
         />
       );
   }
@@ -562,6 +563,26 @@ function ColourSelectOption({ hex, name }: ColourOption) {
       />
       <Text>{name}</Text>
     </Group>
+  );
+}
+
+function BooleanSelect({
+  defaultValue,
+  name,
+  fieldName,
+  form,
+}: {
+  defaultValue: BooleanOptions;
+  name: string;
+  fieldName: string;
+  form: UseFormReturnType<FormData>;
+}) {
+  return (
+    <Checkbox
+      label={name}
+      key={form.key(fieldName)}
+      {...form.getInputProps(fieldName, { type: "checkbox" })}
+    />
   );
 }
 
