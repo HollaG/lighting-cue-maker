@@ -11,5 +11,10 @@ export const createEventSlice: StateCreator<AppStore, [], [], EventSlice> = (set
 
   setCode: (code: string) => {
     set({ code });
+
+    // sync to URL ?code= but do not refresh the page
+    const url = new URL(window.location.href);
+    url.searchParams.set("code", code);
+    window.history.pushState({}, "", url);
   },
 });
