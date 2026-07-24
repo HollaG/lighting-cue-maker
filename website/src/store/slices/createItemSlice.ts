@@ -1,7 +1,7 @@
 import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
 import { api } from "../../lib/api";
-import type { Item, LightEventConfiguration } from "../../types/types";
+import type { Item } from "../../types/types";
 import type { GetItemsRefetchFn } from "../../query/useGetItems";
 
 export interface ItemSlice {
@@ -10,7 +10,7 @@ export interface ItemSlice {
   setActiveItemId: (id: string | null) => void;
   setItemName: (name: string) => void;
   changeActiveItem: (id: string | null) => void;
-  onAddItem: (event: LightEventConfiguration | null, refetchItems: GetItemsRefetchFn) => Promise<void>;
+  onAddItem: (eventId: string | null, refetchItems: GetItemsRefetchFn) => Promise<void>;
 }
 
 export const createItemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, get) => ({
@@ -24,11 +24,12 @@ export const createItemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, 
     set({ activeItemId: id });
   },
 
-  onAddItem: async (event: LightEventConfiguration | null, refetchItems: GetItemsRefetchFn) => {
+  onAddItem: async (eventId: string | null, refetchItems: GetItemsRefetchFn) => {
     const { itemName, changeActiveItem } = get();
-    if (!event?.id || !itemName.trim()) return;
+    if (!eventId || !itemName.trim()) return;
     try {
-      const res = await api.post<{ item: Item }>(`/api/v1/events/${event.id}/items`, {
+      const res = await api.post<{ item: Item }>(`/api/v1/items`, {
+        eventId,
         name: itemName,
       });
       if (res?.item) {

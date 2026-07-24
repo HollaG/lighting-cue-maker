@@ -1,18 +1,19 @@
 package items
 
 import (
-	"encoding/json"
 	"fmt"
 	"lighting-cue-maker/server/internal/models"
 	"lighting-cue-maker/server/pkg/database"
 	"lighting-cue-maker/server/pkg/response"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/datatypes"
 )
 
 func getItems(c *gin.Context) {
-	eventUuid := c.Param("id")
+	eventUuid := c.Query("eventId")
+	if eventUuid == "" {
+		eventUuid = c.Param("id")
+	}
 	if eventUuid == "" {
 		response.BadRequest(c, "Event ID is required", nil)
 		return
@@ -32,7 +33,7 @@ func getItems(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("API GET /v1/events/:id/items")
+	fmt.Println("API GET /v1/items?eventId=" + eventUuid)
 
 	response.OK(c, map[string]any{
 		"items": items,
@@ -40,33 +41,20 @@ func getItems(c *gin.Context) {
 }
 
 func getItem(c *gin.Context) {
-	eventUuid := c.Param("id")
-	if eventUuid == "" {
-		response.BadRequest(c, "Event ID is required", nil)
-		return
-	}
-
 	itemUuid := c.Param("itemId")
 	if itemUuid == "" {
 		response.BadRequest(c, "Item ID is required", nil)
 		return
 	}
 
-	// verify the event exists
-	var event models.LightEvent
-	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
-		response.NotFound(c, "Event not found")
-		return
-	}
-
 	// verify the item exists
 	var item models.Item
-	if result := database.DB().Preload("Cues").Where("uuid = ? AND light_event_uuid = ?", itemUuid, event.Uuid).First(&item); result.Error != nil {
+	if result := database.DB().Preload("Cues").Where("uuid = ?", itemUuid).First(&item); result.Error != nil {
 		response.NotFound(c, "Item not found")
 		return
 	}
 
-	fmt.Println("API GET /v1/events/:id/items/:itemId")
+	fmt.Println("API GET /v1/items/:itemId")
 
 	response.OK(c, map[string]any{
 		"item": item,
@@ -74,8 +62,22 @@ func getItem(c *gin.Context) {
 }
 
 func createItem(c *gin.Context) {
-	// :id is the parent event's UUID, set by the router
-	eventUuid := c.Param("id")
+	var req models.CreateItemReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(err)
+		response.BadRequest(c, "Invalid request body", map[string]any{
+			"request": req,
+		})
+		return
+	}
+
+	eventUuid := req.EventId
+	if eventUuid == "" {
+		eventUuid = c.Query("eventId")
+	}
+	if eventUuid == "" {
+		eventUuid = c.Param("id")
+	}
 	if eventUuid == "" {
 		response.BadRequest(c, "Event ID is required", nil)
 		return
@@ -85,15 +87,6 @@ func createItem(c *gin.Context) {
 	var event models.LightEvent
 	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
 		response.NotFound(c, "Event not found")
-		return
-	}
-
-	var req models.CreateItemReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		fmt.Println(err)
-		response.BadRequest(c, "Invalid request body", map[string]any{
-			"request": req,
-		})
 		return
 	}
 
@@ -110,7 +103,6 @@ func createItem(c *gin.Context) {
 	item := models.Item{
 		LightEventUuid: event.Uuid,
 		Name:           req.Name,
-		// RawLyrics and Content are intentionally omitted — they default to "" and nil
 	}
 
 	result := database.DB().Create(&item)
@@ -119,7 +111,7 @@ func createItem(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("API POST /v1/events/:id/items")
+	fmt.Println("API POST /v1/items")
 
 	response.OK(c, map[string]any{
 		"item": item,
@@ -127,14 +119,9 @@ func createItem(c *gin.Context) {
 }
 
 func updateItem(c *gin.Context) {
-	eventUuid := c.Param("id")
 	itemUuid := c.Param("itemId")
-
-	// all fields are optional
-	// Verify the event actually exists
-	var event models.LightEvent
-	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
-		response.NotFound(c, "Event not found")
+	if itemUuid == "" {
+		response.BadRequest(c, "Item ID is required", nil)
 		return
 	}
 
@@ -147,8 +134,6 @@ func updateItem(c *gin.Context) {
 		return
 	}
 
-	// Build a map of only the fields that were provided, to avoid GORM
-	// struct-vs-model schema mismatches and accidental zero-value writes.
 	updates := map[string]any{}
 	if req.Name != nil {
 		updates["name"] = *req.Name
@@ -174,150 +159,9 @@ func updateItem(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("API PATCH /v1/events/:id/items/:itemId")
+	fmt.Println("API PATCH /v1/items/:itemId")
 
 	response.OK(c, map[string]any{
 		"item": updatedItem,
-	})
-}
-
-func createCue(c *gin.Context) {
-	// eventUuid := c.Param("id")
-	itemUuid := c.Param("itemId")
-
-	var req models.UpdateCueReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		fmt.Println(err)
-		response.BadRequest(c, "Invalid request body", map[string]any{
-			"request": req,
-		})
-		return
-	}
-
-	comments := ""
-	if req.Comments != nil {
-		comments = *req.Comments
-	}
-
-	assignments := map[string]any{}
-	if req.Assignments != nil {
-		assignments = *req.Assignments
-	}
-
-	assignmentsBytes, err := json.Marshal(assignments)
-	if err != nil {
-		response.BadRequest(c, "Failed to parse assignments JSON", nil)
-		return
-	}
-
-	cue := models.Cue{
-		ItemUuid:    itemUuid,
-		Assignments: datatypes.JSON(assignmentsBytes),
-		Comments:    comments,
-	}
-
-	if result := database.DB().Create(&cue); result.Error != nil {
-		response.InternalError(c, "Failed to create cue")
-		return
-	}
-
-	fmt.Println("API POST /v1/events/:id/items/:itemId/cues")
-
-	response.OK(c, map[string]any{
-		"cue": cue,
-	})
-}
-
-// get the list of cues belonging to this band
-func getCues(c *gin.Context) {
-	eventUuid := c.Param("id")
-	itemUuid := c.Param("itemId")
-
-	// verify the event exists
-	var event models.LightEvent
-	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
-		response.NotFound(c, "Event not found")
-		return
-	}
-
-	// select all items belonging to this event
-	var cues []models.Cue
-	if result := database.DB().Where("item_uuid = ?", itemUuid).Find(&cues); result.Error != nil {
-		response.InternalError(c, "Failed to get cues")
-		return
-	}
-
-	response.OK(c, map[string]any{
-		"cues": cues,
-	})
-}
-
-func updateCue(c *gin.Context) {
-	// itemUuid := c.Param("itemId")
-	cueUuid := c.Param("cueId")
-
-	var cue models.Cue
-	if result := database.DB().Where("uuid = ?", cueUuid).First(&cue); result.Error != nil {
-		response.NotFound(c, "Cue not found")
-		return
-	}
-
-	// update the cue
-	var req models.UpdateCueReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		fmt.Println(err)
-		response.BadRequest(c, "Invalid request body", map[string]any{
-			"request": req,
-		})
-		return
-	}
-
-	updates := map[string]any{}
-	if req.Comments != nil {
-		updates["comments"] = *req.Comments
-	}
-	if req.Assignments != nil {
-		updates["assignments"] = *req.Assignments
-	}
-
-	if len(updates) > 0 {
-		if result := database.DB().Model(&models.Cue{}).Where("uuid = ?", cueUuid).Updates(updates); result.Error != nil {
-			response.InternalError(c, "Failed to update cue")
-			return
-		}
-	}
-
-	// Re-fetch the full cue from DB so the response reflects the persisted state.
-	var updatedCue models.Cue
-	if result := database.DB().Where("uuid = ?", cueUuid).First(&updatedCue); result.Error != nil {
-		response.InternalError(c, "Failed to fetch updated cue")
-		return
-	}
-
-	fmt.Println("API PATCH /v1/events/:id/items/:itemId/cues/:cueId")
-
-	response.OK(c, map[string]any{
-		"cue": updatedCue,
-	})
-}
-
-func deleteCue(c *gin.Context) {
-	cueUuid := c.Param("cueId")
-
-	var cue models.Cue
-	if result := database.DB().Where("uuid = ?", cueUuid).First(&cue); result.Error != nil {
-		response.NotFound(c, "Cue not found")
-		return
-	}
-
-	if result := database.DB().Delete(&cue); result.Error != nil {
-		response.InternalError(c, "Failed to delete cue")
-		return
-	}
-
-	fmt.Println("API DELETE /v1/events/:id/items/:itemId/cues/:cueId")
-
-	response.OK(c, map[string]any{
-		"message": "Cue deleted",
 	})
 }

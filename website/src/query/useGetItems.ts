@@ -4,9 +4,9 @@ import type { GetItemsRes } from "../types/http";
 
 export const useGetItems = ({ eventId }: { eventId: string }) => {
   const query = useQuery({
-    queryKey: ["events", eventId, "items"],
+    queryKey: ["items", eventId],
     queryFn: async () => {
-      const res = await api.get<GetItemsRes>(`/api/v1/events/${eventId}/items`);
+      const res = await api.get<GetItemsRes>(`/api/v1/items?eventId=${eventId}`);
       return res.items;
     },
     enabled: !!eventId && eventId.length === 36,

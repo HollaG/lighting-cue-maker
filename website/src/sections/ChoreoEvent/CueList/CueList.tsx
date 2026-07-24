@@ -5,12 +5,12 @@ import { useGetCues } from "../../../query/useGetCues";
 import { useGetItem } from "../../../query/useGetItem";
 import { useAppStore } from "../../../store/appStore";
 
-export const CueList = memo(({ eventId, itemId }: { eventId?: string; itemId: string }) => {
-  const { cues, isCuesLoading } = useGetCues({ eventId, itemId });
-  const { cueOrder } = useGetItem({ eventId, itemId });
+export const CueList = memo(({ itemId }: { itemId: string }) => {
+  const { cues, isCuesLoading } = useGetCues({ itemId });
+  const { cueOrder } = useGetItem({ itemId });
   const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
-  if (!eventId || !itemId || !cues || !cues.length) return;
+  if (!itemId || !cues || !cues.length) return;
 
   // return <></>;
   return (

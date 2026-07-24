@@ -11,7 +11,6 @@ import type {
 } from "../../types/http";
 import { convertUuidForEmbedding } from "../../utils/convertUuid";
 import type { Cue } from "../../types/cues";
-import type { LightEventConfiguration } from "../../types/types";
 import type { GetCuesRefetchFn } from "../../query/useGetCues";
 import type { GetItemRefetchFn } from "../../query/useGetItem";
 
@@ -22,7 +21,6 @@ export interface CueSlice {
     lineIndex: number,
     wordIndex: number,
     isSpace: boolean,
-    event: LightEventConfiguration | null,
     content: string[][],
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
@@ -30,13 +28,11 @@ export interface CueSlice {
   onDeleteCue: (
     cueId: string,
     rawLyrics: string,
-    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => Promise<void>;
   onUpdateCue: (
     cue: Cue,
-    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => Promise<void>;
@@ -53,16 +49,15 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
     lineIndex: number,
     wordIndex: number,
     isSpace: boolean,
-    event: LightEventConfiguration | null,
     content: string[][],
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => {
     const { activeItemId } = get();
-    if (!event?.id || !activeItemId || !content) return;
+    if (!activeItemId || !content) return;
 
     try {
-      const res = await api.post<CreateCueRes>(`/api/v1/events/${event.id}/items/${activeItemId}/cues`, {});
+      const res = await api.post<CreateCueRes>(`/api/v1/cues`, { itemId: activeItemId });
       const id = res.cue.id;
 
       const updatedContent = [...content.map((line) => [...line])];
@@ -91,7 +86,7 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
       const newRawLyrics = generateRaw(updatedContent);
 
       await api.patch<UpdateItemRes>(
-        `/api/v1/events/${event.id}/items/${activeItemId}`,
+        `/api/v1/items/${activeItemId}`,
         { rawLyrics: newRawLyrics },
       );
 
@@ -102,7 +97,6 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
 
   onUpdateCue: async (
     updatedCue: Cue,
-    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => {
@@ -111,9 +105,9 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
       assignments: updatedCue.assignments,
     };
     const { activeItemId } = get();
-    if (!event?.id || !activeItemId) return;
+    if (!activeItemId) return;
     await api.patch<UpdateCueRes>(
-      `/api/v1/events/${event.id}/items/${activeItemId}/cues/${updatedCue.id}`,
+      `/api/v1/cues/${updatedCue.id}`,
       requestBody,
     );
 
@@ -124,17 +118,16 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
   onDeleteCue: async (
     cueId: string,
     rawLyrics: string,
-    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => {
     const { activeItemId } = get();
-    if (!event?.id || !activeItemId) return;
+    if (!activeItemId) return;
 
     const newRawLyrics = rawLyrics.replace("<cueId=" + convertUuidForEmbedding(cueId) + "=cueId>", "");
 
-    await api.delete<DeleteCuesRes>(`/api/v1/events/${event.id}/items/${activeItemId}/cues/${cueId}`);
-    await api.patch<UpdateItemRes>(`/api/v1/events/${event.id}/items/${activeItemId}`, { rawLyrics: newRawLyrics });
+    await api.delete<DeleteCuesRes>(`/api/v1/cues/${cueId}`);
+    await api.patch<UpdateItemRes>(`/api/v1/items/${activeItemId}`, { rawLyrics: newRawLyrics });
 
     refetchCues();
     refetchItem();

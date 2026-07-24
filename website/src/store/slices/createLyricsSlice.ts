@@ -2,7 +2,7 @@ import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
 import { api } from "../../lib/api";
 import type { UpdateItemRes } from "../../types/http";
-import type { LightEventConfiguration, Option } from "../../types/types";
+import type { Option } from "../../types/types";
 import type { GetItemRefetchFn } from "../../query/useGetItem";
 
 export type InputMode = "raw" | "rich" | "one-shot" | "timing";
@@ -31,7 +31,6 @@ export interface LyricsSlice {
   onBeginAddingLyrics: () => void;
   onFinishAddingLyrics: (
     rawLyrics: string,
-    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
   ) => Promise<void>;
 }
@@ -49,7 +48,6 @@ export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (s
 
   onFinishAddingLyrics: async (
     rawLyrics: string,
-    event: LightEventConfiguration | null,
     refetchItem: GetItemRefetchFn,
   ) => {
     const { activeItemId } = get();
@@ -57,9 +55,9 @@ export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (s
       inputMode: "rich",
     });
 
-    if (event?.id && activeItemId) {
+    if (activeItemId) {
       try {
-        await api.patch<UpdateItemRes>(`/api/v1/events/${event.id}/items/${activeItemId}`, { rawLyrics });
+        await api.patch<UpdateItemRes>(`/api/v1/items/${activeItemId}`, { rawLyrics });
         refetchItem();
       } catch {}
     }

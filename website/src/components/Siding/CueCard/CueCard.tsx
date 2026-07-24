@@ -52,8 +52,8 @@ const CueCardInternal = ({
   const activeItemId = useAppStore((s) => s.activeItemId);
   const { event } = useGetEvent({ code });
 
-  const { item, cueOrder, refetchItem } = useGetItem({ eventId: event?.id, itemId: activeItemId });
-  const { refetchCues, cues } = useGetCues({ eventId: event?.id, itemId: activeItemId });
+  const { item, cueOrder, refetchItem } = useGetItem({ itemId: activeItemId });
+  const { refetchCues, cues } = useGetCues({ itemId: activeItemId });
 
   const onDeleteCue = useAppStore((s) => s.onDeleteCue);
   const onUpdateCue = useAppStore((s) => s.onUpdateCue);
@@ -148,7 +148,7 @@ const CueCardInternal = ({
   // are populated into the DB.
   useEffect(() => {
     const needsInitialSave = !cue.assignments || Object.keys(cue.assignments).length === 0;
-    if (!needsInitialSave || !event?.id) return;
+    if (!needsInitialSave) return;
 
     // Defer initial save to browser idle time so initial render and scrolling stay smooth
     const runSave = () => {
@@ -170,7 +170,7 @@ const CueCardInternal = ({
     try {
       console.log(form.getValues(), "--------------------");
       // convert the form value to API request body
-      await onUpdateCue(form.getValues(), event, refetchItem, refetchCues);
+      await onUpdateCue(form.getValues(), refetchItem, refetchCues);
 
       // transform empty strings to NULLs.
       // because postgres will reject empty strings for VARCHAR
@@ -183,7 +183,7 @@ const CueCardInternal = ({
   const beforeDeleteCue = (cue: Cue) => {
     const result = confirm("Are you sure you want to delete this cue?");
     if (result) {
-      onDeleteCue(cue.id, item?.rawLyrics ?? "", event, refetchItem, refetchCues);
+      onDeleteCue(cue.id, item?.rawLyrics ?? "", refetchItem, refetchCues);
     }
   };
 

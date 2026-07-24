@@ -37,7 +37,7 @@ export const ChoreoEventWrapper = () => {
   const activeItemId = useAppStore((s) => s.activeItemId);
 
   const { items, refetchItems } = useGetItems({ eventId: evt?.id ?? "" });
-  const { item, refetchItem } = useGetItem({ eventId: evt?.id ?? "", itemId: activeItemId ?? undefined });
+  const { item, refetchItem } = useGetItem({ itemId: activeItemId ?? undefined });
 
   const changeActiveItem = useAppStore((s) => s.changeActiveItem);
   const itemName = useAppStore((s) => s.itemName);
@@ -64,7 +64,7 @@ export const ChoreoEventWrapper = () => {
   };
   const onClickFinishAddingLyricsButton = () => {
     // setRawLyrics(internalRawLyrics);
-    onFinishAddingLyrics(internalRawLyrics, evt, refetchItem);
+    onFinishAddingLyrics(internalRawLyrics, refetchItem);
   };
 
   const controls = useMemo(() => {
@@ -130,7 +130,7 @@ export const ChoreoEventWrapper = () => {
                 placeholder="Your item name"
                 rightSectionWidth={"80px"}
                 rightSection={
-                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt, refetchItems)}>
+                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt?.id ?? null, refetchItems)}>
                     Add item
                   </Button>
                 }
@@ -148,7 +148,7 @@ export const ChoreoEventWrapper = () => {
                 placeholder="Your item name"
                 rightSectionWidth={"80px"}
                 rightSection={
-                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt, refetchItems)}>
+                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt?.id ?? null, refetchItems)}>
                     Add item
                   </Button>
                 }
@@ -220,7 +220,7 @@ export const ChoreoEventWrapper = () => {
                   </Button>
                 </Box> */}
               </Group>
-              <CueList eventId={evt?.id} itemId={item.id} />
+              <CueList itemId={item.id} />
             </Stack>
           </SimpleGrid>
         )}

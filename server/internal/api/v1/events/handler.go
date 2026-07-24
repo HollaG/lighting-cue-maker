@@ -119,7 +119,7 @@ func createEvent(c *gin.Context) {
 }
 
 func getEvent(c *gin.Context) {
-	eventId := c.Param("id")
+	eventId := c.Param("eventId")
 
 	if eventId == "" {
 		response.BadRequest(c, "Event ID is required", nil)

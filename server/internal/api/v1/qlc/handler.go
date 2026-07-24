@@ -79,13 +79,16 @@ func convertNumberTo2DigitMinimumString(n int) string {
 }
 
 func getDataForXmlGeneration(c *gin.Context) {
-	var lightEventId = c.Param("lightEventId")
+	eventId := c.Param("eventId")
+	if eventId == "" {
+		eventId = c.Param("lightEventId")
+	}
 	// Get all items of this lightEventUuid, include all cues of the items.
 	// Only fetch items that have raw lyrics, and only preload cues that have assignments.
 	var items []models.Item
 	result := database.DB().
 		Preload("Cues").
-		Where("light_event_uuid = ?", lightEventId).
+		Where("light_event_uuid = ?", eventId).
 		Where("raw_lyrics != ''").
 		Where("EXISTS (SELECT 1 FROM cues WHERE cues.item_uuid = items.uuid AND cues.deleted_at IS NULL)").
 		Find(&items)

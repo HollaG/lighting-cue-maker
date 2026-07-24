@@ -4,14 +4,14 @@ import { generateRich } from "../utils/convertText";
 import { getCueOrder } from "../utils/cueUtils";
 import type { GetItemRes } from "../types/http";
 
-export const useGetItem = ({ eventId, itemId }: { eventId?: string | null; itemId?: string | null }) => {
+export const useGetItem = ({ itemId }: { itemId?: string | null }) => {
   const query = useQuery({
-    queryKey: ["events", eventId, "items", itemId],
+    queryKey: ["items", itemId],
     queryFn: async () => {
-      const res = await api.get<GetItemRes>(`/api/v1/events/${eventId}/items/${itemId}`);
+      const res = await api.get<GetItemRes>(`/api/v1/items/${itemId}`);
       return res.item;
     },
-    enabled: !!eventId && !!itemId,
+    enabled: !!itemId,
     select: (item) => {
       const lyrics = item?.rawLyrics ?? "";
       return {

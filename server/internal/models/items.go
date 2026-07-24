@@ -10,7 +10,8 @@ import (
 
 // Request
 type CreateItemReq struct {
-	Name string `json:"name"`
+	EventId string `json:"eventId"`
+	Name    string `json:"name"`
 }
 
 // same as CreateItemReq except all fields are optional.
@@ -39,8 +40,8 @@ type Item struct {
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }
 
-// Nothing
 type CreateCueReq struct {
+	ItemId string `json:"itemId"`
 }
 
 type UpdateCueReq struct {

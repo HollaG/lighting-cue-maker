@@ -2,7 +2,6 @@ import React, { useCallback } from "react";
 import { Group, Flex, Stack } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
-import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItem } from "../../query/useGetItem";
 import { useGetCues } from "../../query/useGetCues";
 import { RichWord } from "./RichWord";
@@ -12,10 +11,8 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
-  const code = useAppStore((s) => s.code);
-  const { event } = useGetEvent({ code });
-  const { content, refetchItem } = useGetItem({ eventId: event?.id, itemId });
-  const { refetchCues } = useGetCues({ eventId: event?.id, itemId });
+  const { content, refetchItem } = useGetItem({ itemId });
+  const { refetchCues } = useGetCues({ itemId });
 
   const handleContainerClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -34,10 +31,10 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         const wordIndex = Number(target.dataset.wordIndex);
         const isSpace = target.dataset.isSpace === "true";
 
-        onAddCue(lineIndex, wordIndex, isSpace, event, content, refetchItem, refetchCues);
+        onAddCue(lineIndex, wordIndex, isSpace, content, refetchItem, refetchCues);
       }
     },
-    [currentlySelectedCueId, setCurrentlySelectedCueId, onAddCue, event, content, refetchItem, refetchCues],
+    [currentlySelectedCueId, setCurrentlySelectedCueId, onAddCue, content, refetchItem, refetchCues],
   );
 
   return (
