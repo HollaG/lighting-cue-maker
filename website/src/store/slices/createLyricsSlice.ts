@@ -2,14 +2,32 @@ import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
 import { api } from "../../lib/api";
 import type { UpdateItemRes } from "../../types/http";
-import type { LightEventConfiguration } from "../../types/types";
+import type { LightEventConfiguration, Option } from "../../types/types";
 import type { GetItemRefetchFn } from "../../query/useGetItem";
 
-export type LyricMode = "raw" | "rich";
+export type InputMode = "raw" | "rich" | "one-shot" | "timing";
+export const InputModes: Option<InputMode>[] = [
+  {
+    value: "raw",
+    label: "Edit lyrics",
+  },
+  {
+    value: "rich",
+    label: "Edit cues",
+  },
+  {
+    value: "one-shot",
+    label: "Edit one-shot cues",
+  },
+  {
+    value: "timing",
+    label: "Add timing to lyrics",
+  },
+];
 
 export interface LyricsSlice {
-  lyricInputMode: LyricMode;
-  setLyricInputMode: (mode: LyricMode) => void;
+  inputMode: InputMode;
+  setInputMode: (mode: InputMode) => void;
   onBeginAddingLyrics: () => void;
   onFinishAddingLyrics: (
     rawLyrics: string,
@@ -19,20 +37,24 @@ export interface LyricsSlice {
 }
 
 export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set, get) => ({
-  lyricInputMode: "rich",
+  inputMode: "rich",
 
-  setLyricInputMode: (lyricInputMode: LyricMode) => set({ lyricInputMode }),
+  setInputMode: (inputMode: InputMode) => set({ inputMode: inputMode }),
 
   onBeginAddingLyrics: () => {
     set({
-      lyricInputMode: "raw",
+      inputMode: "raw",
     });
   },
 
-  onFinishAddingLyrics: async (rawLyrics: string, event: LightEventConfiguration | null, refetchItem: GetItemRefetchFn) => {
+  onFinishAddingLyrics: async (
+    rawLyrics: string,
+    event: LightEventConfiguration | null,
+    refetchItem: GetItemRefetchFn,
+  ) => {
     const { activeItemId } = get();
     set({
-      lyricInputMode: "rich",
+      inputMode: "rich",
     });
 
     if (event?.id && activeItemId) {

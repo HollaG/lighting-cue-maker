@@ -8,6 +8,10 @@ import {
   Divider,
   FloatingIndicator,
   Group,
+  Input,
+  Menu,
+  SegmentedControl,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -24,6 +28,7 @@ import { CueList } from "./CueList/CueList";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItems } from "../../query/useGetItems";
 import { useGetItem } from "../../query/useGetItem";
+import { InputModes, type InputMode } from "../../store/slices/createLyricsSlice";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -38,8 +43,8 @@ export const ChoreoEventWrapper = () => {
   const itemName = useAppStore((s) => s.itemName);
   const setItemName = useAppStore((s) => s.setItemName);
   const onAddItem = useAppStore((s) => s.onAddItem);
-  const lyricInputMode = useAppStore((s) => s.lyricInputMode);
-  const setLyricInputMode = useAppStore((s) => s.setLyricInputMode);
+  const inputMode = useAppStore((s) => s.inputMode);
+  const setInputMode = useAppStore((s) => s.setInputMode);
   const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
   const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
 
@@ -84,7 +89,7 @@ export const ChoreoEventWrapper = () => {
 
   useEffect(() => {
     if (item?.rawLyrics === "") {
-      setLyricInputMode("raw");
+      setInputMode("raw");
     }
   }, [item?.rawLyrics]);
 
@@ -156,31 +161,38 @@ export const ChoreoEventWrapper = () => {
         {!!item && (
           <SimpleGrid cols={2} px="xl" mt="3rem">
             <Stack>
-              <Group>
+              <Group align="end">
                 <Title order={3} flex={1}>
                   Lyrics
                 </Title>
-                <Box>
-                  {lyricInputMode == "raw" && (
-                    <Group>
-                      <Button size="xs" variant="subtle" color="black" onClick={deleteExtraSpaces}>
-                        Remove extra line breaks
-                      </Button>
-                      <Button size="xs" color="green" onClick={() => onClickFinishAddingLyricsButton()}>
-                        {" "}
-                        Finish adding
-                      </Button>
-                    </Group>
-                  )}
-                  {lyricInputMode == "rich" && (
-                    <Button size="xs" variant="outline" onClick={() => onBeginAddingLyrics()}>
-                      {" "}
-                      Add lyrics{" "}
+                {inputMode == "raw" && (
+                  <Group>
+                    <Button size="xs" variant="subtle" color="black" onClick={deleteExtraSpaces}>
+                      Remove extra line breaks
                     </Button>
-                  )}
-                </Box>
+                  </Group>
+                )}
+                {/* <SegmentedControl value={inputMode} onChange={setInputMode} data={InputModes} /> */}
+
+                {/* <Menu>
+                  <Menu shadow="md" width={200}>
+                    <Menu.Target>
+                      <Button>Change input mode</Button>
+                    </Menu.Target>
+
+                    <Menu.Dropdown>
+                      <Menu.Item onClick={() => setInputMode("raw")}> Edit lyrics</Menu.Item>
+                      <Menu.Item onClick={() => setInputMode("rich")}> Edit cues</Menu.Item>
+                      <Menu.Item onClick={() => setInputMode("one-shot")}> Edit one-shot cues</Menu.Item>
+                      <Menu.Item onClick={() => setInputMode("timing")}> Add timing to lyrics</Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Menu> */}
+                <Input.Wrapper label="Input mode" mx={0}>
+                  <Select data={InputModes} value={inputMode} onChange={(value) => setInputMode(value as InputMode)} />
+                </Input.Wrapper>
               </Group>
-              {lyricInputMode === "raw" && (
+              {inputMode === "raw" && (
                 <Textarea
                   variant="unstyled"
                   autosize
@@ -195,7 +207,7 @@ export const ChoreoEventWrapper = () => {
                 />
               )}
 
-              {lyricInputMode === "rich" && <RichContent itemId={item.id} />}
+              {(inputMode === "rich" || inputMode === "one-shot") && <RichContent itemId={item.id} />}
             </Stack>
             <Stack>
               <Group>

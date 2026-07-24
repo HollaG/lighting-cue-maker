@@ -2,10 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createEventSlice, type EventSlice } from "./slices/createEventSlice";
 import { createItemSlice, type ItemSlice } from "./slices/createItemSlice";
-import { createLyricsSlice, type LyricsSlice, type LyricMode } from "./slices/createLyricsSlice";
+import { createLyricsSlice, type LyricsSlice, type InputMode } from "./slices/createLyricsSlice";
 import { createCueSlice, type CueSlice } from "./slices/createCueSlice";
 
-export type { EventSlice, ItemSlice, LyricsSlice, CueSlice, LyricMode };
+export type { EventSlice, ItemSlice, LyricsSlice, CueSlice, InputMode as LyricMode };
 
 export type AppStore = EventSlice & ItemSlice & LyricsSlice & CueSlice;
 

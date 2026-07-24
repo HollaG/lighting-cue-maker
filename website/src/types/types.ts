@@ -1,9 +1,9 @@
 import type { Cue } from "./cues";
 import type { Content } from "./lyrics";
 
-export type Option = {
+export type Option<T extends string> = {
   label: string;
-  value: string;
+  value: T;
 };
 
 export type FixtureGroupConfiguration = {
