@@ -12,7 +12,7 @@ export const useUpdateCue = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ cueId, itemId, requestBody }: UpdateCueParams) =>
+    mutationFn: ({ cueId, requestBody }: UpdateCueParams) =>
       api.patch<UpdateCueReq, UpdateCueRes>(`/api/v1/cues/${cueId}`, requestBody),
 
     onSuccess: (res, variables) => {
