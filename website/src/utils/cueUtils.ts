@@ -16,7 +16,7 @@ export const insertCueInRichContent = (
   const updatedContent = [...content.map((line) => [...line])];
 
   if (isSpace) {
-    const cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>";
+    const cueId = "<cueId=" + convertUuidForEmbedding(id) + "=cueId>";
     updatedContent[lineIndex][wordIndex] = cueId;
 
     const isLineBreak = updatedContent[lineIndex].length === 1;
@@ -32,7 +32,7 @@ export const insertCueInRichContent = (
       updatedContent.splice(lineIndex, 0, [" "]);
     }
   } else {
-    const cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>" + updatedContent[lineIndex][wordIndex];
+    const cueId = "<cueId=" + convertUuidForEmbedding(id) + "=cueId>" + updatedContent[lineIndex][wordIndex];
     updatedContent[lineIndex][wordIndex] = cueId;
   }
 

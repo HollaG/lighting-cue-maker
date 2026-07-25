@@ -14,7 +14,7 @@ export const insertBumpInRichContent = (
   const updatedContent = [...content.map((line) => [...line])];
 
   if (isSpace) {
-    const bumpId = "<bumpId=" + id.replaceAll("-", "_") + "=bumpId>";
+    const bumpId = "<bumpId=" + convertUuidForEmbedding(id) + "=bumpId>";
     updatedContent[lineIndex][wordIndex] = bumpId;
 
     const isLineBreak = updatedContent[lineIndex].length === 1;
@@ -30,7 +30,7 @@ export const insertBumpInRichContent = (
       updatedContent.splice(lineIndex, 0, [" "]);
     }
   } else {
-    const bumpId = "<bumpId=" + id.replaceAll("-", "_") + "=bumpId>" + updatedContent[lineIndex][wordIndex];
+    const bumpId = "<bumpId=" + convertUuidForEmbedding(id) + "=bumpId>" + updatedContent[lineIndex][wordIndex];
     updatedContent[lineIndex][wordIndex] = bumpId;
   }
 
