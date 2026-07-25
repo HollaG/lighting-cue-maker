@@ -13,7 +13,13 @@ import { useEffect } from "react";
 // When the app loads, if query parameter showId is not present, render a CTA
 // if showId is present, load the Google Doc corresponding to that showId
 
-const client = new QueryClient({});
+const client = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnMount: false,
+    },
+  },
+});
 function App() {
   const setCode = useAppStore((s) => s.setCode);
 

@@ -1,10 +1,47 @@
 import type { ValueAssignment } from "../types/cues";
 import { AttributeTypes } from "../types/types";
-import { convertUuidForDatabase } from "./convertUuid";
+import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
 
 export const CUE_MATCH_REGEX = /<cueId=(.*?)=cueId>/;
 export const CUE_START = "<cueId=";
 export const CUE_END = "=cueId>";
+
+export const insertCueInRichContent = (
+  id: string,
+  lineIndex: number,
+  wordIndex: number,
+  isSpace: boolean,
+  content: string[][],
+): string[][] => {
+  const updatedContent = [...content.map((line) => [...line])];
+
+  if (isSpace) {
+    const cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>";
+    updatedContent[lineIndex][wordIndex] = cueId;
+
+    const isLineBreak = updatedContent[lineIndex].length === 1;
+
+    const line = updatedContent[lineIndex];
+
+    line.splice(wordIndex + 1, 0, " ");
+    line.splice(wordIndex, 0, " ");
+    updatedContent[lineIndex] = line;
+
+    if (isLineBreak) {
+      updatedContent.splice(lineIndex + 1, 0, [" "]);
+      updatedContent.splice(lineIndex, 0, [" "]);
+    }
+  } else {
+    const cueId = "<cueId=" + id.replaceAll("-", "_") + "=cueId>" + updatedContent[lineIndex][wordIndex];
+    updatedContent[lineIndex][wordIndex] = cueId;
+  }
+
+  return updatedContent;
+};
+
+export const removeCueFromRawLyrics = (rawLyrics: string, cueId: string) => {
+  return rawLyrics.replace("<cueId=" + convertUuidForEmbedding(cueId) + "=cueId>", "");
+};
 
 export const getCueOrder = (rawLyrics: string) => {
   const order: string[] = [];

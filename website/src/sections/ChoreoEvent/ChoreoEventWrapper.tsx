@@ -28,6 +28,7 @@ import { useGetItem } from "../../query/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
 import type { CreateItemReq } from "../../types/http";
+import { useUpdateItem } from "../../query/useUpdateItem";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -39,14 +40,13 @@ export const ChoreoEventWrapper = () => {
   const { item, refetchItem } = useGetItem({ itemId: activeItemId ?? undefined });
 
   const { mutate: createItem, isPending: isItemCreating } = useCreateItem();
+  const { mutate: updateItem, isPending: isItemUpdating } = useUpdateItem();
 
   const changeActiveItem = useAppStore((s) => s.changeActiveItem);
   const itemName = useAppStore((s) => s.itemName);
   const setItemName = useAppStore((s) => s.setItemName);
   const inputMode = useAppStore((s) => s.inputMode);
   const setInputMode = useAppStore((s) => s.setInputMode);
-  const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
-  // const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
 
   const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
   const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
@@ -67,8 +67,18 @@ export const ChoreoEventWrapper = () => {
   };
   const onClickFinishAddingLyricsButton = (switchTo: InputMode) => {
     // setRawLyrics(internalRawLyrics);
-    onFinishAddingLyrics(internalRawLyrics, refetchItem);
+    saveUpdatedRawLyrics();
     setInputMode(switchTo);
+  };
+
+  const saveUpdatedRawLyrics = () => {
+    if (!activeItemId) return;
+    updateItem({
+      itemId: activeItemId,
+      requestBody: {
+        rawLyrics: internalRawLyrics,
+      },
+    });
   };
 
   const onAddItem = () => {

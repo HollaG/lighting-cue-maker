@@ -21,7 +21,10 @@ export type CreateItemRes = {
 };
 
 export type CreateCueReq = {};
-export type CreateCueRes = { cue: Cue };
+export type CreateCueRes = {
+  cue: Cue;
+  //  item: Item
+};
 
 export type GetCuesReq = {};
 export type GetCuesRes = { cues: Cue[] };
@@ -33,7 +36,6 @@ export type GetItemsRes = { items: Item[] };
 export type GetItemRes = { item: Item };
 
 export type UpdateItemReq = Partial<Item>;
-
 export type UpdateItemRes = { item: Item };
 
 export type UpdateCueReq = Partial<Cue>;

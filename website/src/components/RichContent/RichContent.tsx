@@ -5,17 +5,22 @@ import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useGetItem } from "../../query/useGetItem";
 import { useGetCues } from "../../query/useGetCues";
 import { RichWord } from "./RichWord";
+import { useCreateCue } from "../../query/useCreateCue";
+import { useUpdateCue } from "../../query/useUpdateCue";
+import { useUpdateItem } from "../../query/useUpdateItem";
+import { insertCueInRichContent } from "../../utils/cueUtils";
+import { generateRaw } from "../../utils/convertText";
 
 export const RichContent = ({ itemId }: { itemId: string }) => {
-  const onAddCue = useAppStore((s) => s.onAddCue);
   const onAddBump = useAppStore((s) => s.onAddBump);
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
   const inputMode = useAppStore((s) => s.inputMode);
   const instantAddBumpMode = useAppStore((s) => s.instantAddBumpMode);
 
-  const { content, refetchItem } = useGetItem({ itemId });
-  const { refetchCues } = useGetCues({ itemId });
+  const { content } = useGetItem({ itemId });
+  const { mutateAsync: createCue } = useCreateCue();
+  const { mutate: updateItem } = useUpdateItem();
 
   const handleContainerClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -35,12 +40,28 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         const isSpace = target.dataset.isSpace === "true";
 
         if (inputMode === "rich") {
-          onAddCue(lineIndex, wordIndex, isSpace, content, refetchItem, refetchCues);
+          createCue({
+            itemId,
+          })
+            .then((res) => {
+              const id = res.cue.id;
+              const updatedContent = insertCueInRichContent(id, lineIndex, wordIndex, isSpace, content);
+              const updatedRawLyrics = generateRaw(updatedContent);
+
+              // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
+              updateItem({
+                itemId,
+                requestBody: {
+                  rawLyrics: updatedRawLyrics,
+                },
+              });
+            })
+            .catch(console.error);
         } else if (inputMode === "bump") {
         }
       }
     },
-    [currentlySelectedCueId, setCurrentlySelectedCueId, onAddCue, content, refetchItem, refetchCues],
+    [currentlySelectedCueId, setCurrentlySelectedCueId, content],
   );
 
   return (

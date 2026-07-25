@@ -36,6 +36,10 @@ import { useDisclosure } from "@mantine/hooks";
 import { useGetEvent } from "../../../query/useGetEvent";
 import { useGetCues } from "../../../query/useGetCues";
 import { useGetItem } from "../../../query/useGetItem";
+import { useUpdateCue } from "../../../query/useUpdateCue";
+import { useDeleteCue } from "../../../query/useDeleteCue";
+import { removeCueFromRawLyrics } from "../../../utils/cueUtils";
+import { useUpdateItem } from "../../../query/useUpdateItem";
 
 type FormData = Cue;
 
@@ -54,9 +58,9 @@ const CueCardInternal = ({
 
   const { item, cueOrder, refetchItem } = useGetItem({ itemId: activeItemId });
   const { refetchCues, cues } = useGetCues({ itemId: activeItemId });
-
-  const onDeleteCue = useAppStore((s) => s.onDeleteCue);
-  const onUpdateCue = useAppStore((s) => s.onUpdateCue);
+  const { mutateAsync: updateCue } = useUpdateCue();
+  const { mutateAsync: deleteCue } = useDeleteCue();
+  const { mutate: updateItem } = useUpdateItem();
   // const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -117,8 +121,6 @@ const CueCardInternal = ({
     },
   });
 
-  console.log("cuecard rendering");
-
   const cueRef = useRef<HTMLDivElement>(null);
 
   const [translateDistance, setTranslateDistance] = useState<string>("0px");
@@ -133,10 +135,8 @@ const CueCardInternal = ({
     const element = document.getElementById(elementId);
     if (!element) return;
     const { offsetTop } = element;
-    console.log({ offsetTop });
 
     const thisElementOffsetTop = cueRef.current?.offsetTop ?? 0;
-    console.log({ thisElementOffsetTop });
 
     const translateDistance = offsetTop - thisElementOffsetTop;
     const thisElementHeight = cueRef.current?.offsetHeight ?? 0;
@@ -149,6 +149,7 @@ const CueCardInternal = ({
   useEffect(() => {
     const needsInitialSave = !cue.assignments || Object.keys(cue.assignments).length === 0;
     if (!needsInitialSave) return;
+    console.info("Cue not initialized, saving default values in DB");
 
     // Defer initial save to browser idle time so initial render and scrolling stay smooth
     const runSave = () => {
@@ -170,20 +171,43 @@ const CueCardInternal = ({
     try {
       console.log(form.getValues(), "--------------------");
       // convert the form value to API request body
-      await onUpdateCue(form.getValues(), refetchItem, refetchCues);
+      // await onUpdateCue(form.getValues(), refetchItem, refetchCues);
 
-      // transform empty strings to NULLs.
-      // because postgres will reject empty strings for VARCHAR
+      await updateCue({
+        cueId: cue.id,
+        itemId: activeItemId,
+        requestBody: form.getValues(),
+      });
     } catch (e) {
+      console.error(e);
     } finally {
       setIsDirty(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteCue({ cueId: cue.id });
+      const updatedRawLyrics = removeCueFromRawLyrics(item.rawLyrics, cue.id);
+
+      // update Item to remove from rawlyrics
+      // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
+
+      updateItem({
+        itemId: activeItemId,
+        requestBody: {
+          rawLyrics: updatedRawLyrics,
+        },
+      });
+    } catch (e) {
+    } finally {
     }
   };
 
   const beforeDeleteCue = (cue: Cue) => {
     const result = confirm("Are you sure you want to delete this cue?");
     if (result) {
-      onDeleteCue(cue.id, item?.rawLyrics ?? "", refetchItem, refetchCues);
+      handleDelete();
     }
   };
 
