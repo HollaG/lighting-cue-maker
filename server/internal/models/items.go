@@ -32,7 +32,8 @@ type Item struct {
 	RawLyrics string         `json:"rawLyrics"` // encode the cue id inside where needed
 	Content   datatypes.JSON `json:"content" gorm:"serializer:json"`
 
-	Cues []Cue `json:"cues" gorm:"foreignKey:ItemUuid;references:Uuid"`
+	Cues  []Cue  `json:"cues" gorm:"foreignKey:ItemUuid;references:Uuid"`
+	Bumps []Bump `json:"bumps" gorm:"foreignKey:ItemUuid;references:Uuid"`
 
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`

@@ -133,6 +133,11 @@ type CreateBumpConfigurationReq struct {
 	Description string `json:"description,omitempty"`
 }
 
+type UpdateBumpConfigurationReq struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
 type BumpConfiguration struct {
 	Uuid           string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	LightEventUuid string         `json:"-" gorm:"type:uuid;not null"`

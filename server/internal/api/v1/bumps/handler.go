@@ -1,52 +1,65 @@
 package bumps
 
 import (
+	"encoding/json"
 	"fmt"
 	"lighting-cue-maker/server/internal/models"
 	"lighting-cue-maker/server/pkg/database"
 	"lighting-cue-maker/server/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
 )
 
+// get the list of bumps belonging to an item
+func getBumps(c *gin.Context) {
+	itemUuid := c.Query("itemId")
+	if itemUuid == "" {
+		response.BadRequest(c, "Item ID is required", nil)
+		return
+	}
+
+	var bumps []models.Bump
+	if result := database.DB().Where("item_uuid = ?", itemUuid).Find(&bumps); result.Error != nil {
+		response.InternalError(c, "Failed to get bumps")
+		return
+	}
+
+	fmt.Println("API GET /v1/bumps?itemId=" + itemUuid)
+
+	response.OK(c, map[string]any{
+		"bumps": bumps,
+	})
+}
+
 func createBump(c *gin.Context) {
-	var req models.CreateBumpConfigurationReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		fmt.Println(err)
-		response.BadRequest(c, "Invalid request body", map[string]any{
-			"request": req,
-		})
+	var createReq models.CreateBumpReq
+	_ = c.ShouldBindJSON(&createReq)
+
+	itemId := createReq.ItemId
+	if itemId == "" {
+		itemId = c.Query("itemId")
+	}
+
+	if itemId == "" {
+		response.BadRequest(c, "Item ID is required", nil)
 		return
 	}
 
-	eventUuid := req.EventId
-	if eventUuid == "" {
-		eventUuid = c.Query("eventId")
-	}
-	if eventUuid == "" {
-		response.BadRequest(c, "Event ID is required", nil)
+	assignmentsBytes, err := json.Marshal(map[string]any{})
+	if err != nil {
+		response.BadRequest(c, "Failed to parse assignments JSON", nil)
 		return
 	}
 
-	if req.Name == "" {
-		response.BadRequest(c, "Name is required", nil)
-		return
-	}
-
-	// Verify event exists
-	var event models.LightEvent
-	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
-		response.NotFound(c, "Event not found")
-		return
-	}
-
-	bump := models.BumpConfiguration{
-		LightEventUuid: event.Uuid,
-		Name:           req.Name,
+	bump := models.Bump{
+		ItemUuid:    itemId,
+		Assignments: datatypes.JSON(assignmentsBytes),
+		Comments:    "",
 	}
 
 	if result := database.DB().Create(&bump); result.Error != nil {
-		response.InternalError(c, "Failed to create bump configuration")
+		response.InternalError(c, "Failed to create bump")
 		return
 	}
 
@@ -57,30 +70,53 @@ func createBump(c *gin.Context) {
 	})
 }
 
-func getBumps(c *gin.Context) {
-	eventUuid := c.Query("eventId")
-	if eventUuid == "" {
-		response.BadRequest(c, "Event ID is required", nil)
+func updateBump(c *gin.Context) {
+	bumpUuid := c.Param("bumpId")
+	if bumpUuid == "" {
+		response.BadRequest(c, "Bump ID is required", nil)
 		return
 	}
 
-	// Verify event exists
-	var event models.LightEvent
-	if result := database.DB().Where("uuid = ?", eventUuid).First(&event); result.Error != nil {
-		response.NotFound(c, "Event not found")
+	var bump models.Bump
+	if result := database.DB().Where("uuid = ?", bumpUuid).First(&bump); result.Error != nil {
+		response.NotFound(c, "Bump not found")
 		return
 	}
 
-	var bumps []models.BumpConfiguration
-	if result := database.DB().Where("light_event_uuid = ?", event.Uuid).Find(&bumps); result.Error != nil {
-		response.InternalError(c, "Failed to get bump configurations")
+	var req models.UpdateBumpReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(err)
+		response.BadRequest(c, "Invalid request body", map[string]any{
+			"request": req,
+		})
 		return
 	}
 
-	fmt.Println("API GET /v1/bumps?eventId=" + eventUuid)
+	updates := map[string]any{}
+	if req.Comments != nil {
+		updates["comments"] = *req.Comments
+	}
+	if req.Assignments != nil {
+		updates["assignments"] = *req.Assignments
+	}
+
+	if len(updates) > 0 {
+		if result := database.DB().Model(&models.Bump{}).Where("uuid = ?", bumpUuid).Updates(updates); result.Error != nil {
+			response.InternalError(c, "Failed to update bump")
+			return
+		}
+	}
+
+	var updatedBump models.Bump
+	if result := database.DB().Where("uuid = ?", bumpUuid).First(&updatedBump); result.Error != nil {
+		response.InternalError(c, "Failed to fetch updated bump")
+		return
+	}
+
+	fmt.Println("API PATCH /v1/bumps/:bumpId")
 
 	response.OK(c, map[string]any{
-		"bumps": bumps,
+		"bump": updatedBump,
 	})
 }
 
@@ -91,20 +127,20 @@ func deleteBump(c *gin.Context) {
 		return
 	}
 
-	var bump models.BumpConfiguration
+	var bump models.Bump
 	if result := database.DB().Where("uuid = ?", bumpUuid).First(&bump); result.Error != nil {
-		response.NotFound(c, "Bump configuration not found")
+		response.NotFound(c, "Bump not found")
 		return
 	}
 
 	if result := database.DB().Delete(&bump); result.Error != nil {
-		response.InternalError(c, "Failed to delete bump configuration")
+		response.InternalError(c, "Failed to delete bump")
 		return
 	}
 
 	fmt.Println("API DELETE /v1/bumps/:bumpId")
 
 	response.OK(c, map[string]any{
-		"message": "Bump configuration deleted",
+		"message": "Bump deleted",
 	})
 }
