@@ -276,8 +276,17 @@ export const ChoreoEventWrapper = () => {
                   ""
                 )}
 
-                {inputMode === "cue" ? "Click on any word or space to add a cue at that point." : ""}
-                {/* {inputMode === "bump" ? `Click on any word or space to add a bump for ${instantBumpMode.name} ` : ""} */}
+                {inputMode === "cue" ? (
+                  <Stack gap="xs">
+                    <span>Click on any word or space to add a cue at that point.</span>
+                    <span>
+                      Tip: need to put a cue on a syllable? Use a hyphen (-) in <Code>Edit lyrics</Code> mode to
+                      separate the syllables.
+                    </span>
+                  </Stack>
+                ) : (
+                  <></>
+                )}
 
                 {inputMode === "bump" ? (
                   <Stack gap="xs">
@@ -288,7 +297,7 @@ export const ChoreoEventWrapper = () => {
                     Click again to remove.
                   </Stack>
                 ) : (
-                  ""
+                  <></>
                 )}
               </Alert>
               {inputMode === "raw" && (

@@ -53,6 +53,7 @@
     border-width: 4px;
     border-style: solid;
 
+
   }
 
   /* Content within a Rich Container should be surrounded with a border */
@@ -62,6 +63,7 @@
     margin: 0rem;
     padding-left: 0.25rem;
     padding-right: 0.25rem;
+    text-align: center;
   }
 
 

@@ -142,7 +142,7 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         let cueCount = 0;
         let bumpCount = 0;
         return content.map((line, index1) => (
-          <Group key={index1} gap="0px">
+          <Group key={index1} gap="0px" align="end">
             {line.map((word, index2) => {
               let cueNumber: number | undefined = 0;
               let bumpNumber: number | undefined = 0;
@@ -167,7 +167,7 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
               const isSelected = !!cueId && currentlySelectedCueId === cueId;
 
               return (
-                <Flex key={index2} style={{ flexDirection: "row" }}>
+                <Flex key={index2}>
                   <RichWord
                     word={word}
                     index1={index1}

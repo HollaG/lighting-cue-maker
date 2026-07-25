@@ -1,5 +1,5 @@
 import React from "react";
-import { Group, Box, Text, Center } from "@mantine/core";
+import { Group, Box, Text, Center, Stack } from "@mantine/core";
 import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
@@ -78,20 +78,20 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
       }
 
       return (
-        <Group
+        <Stack
           id={`ref-${id}`}
           data-action={`select-${idType}`}
           {...{ [`data-${idType}-id`]: id, [`data-bump-name`]: bumpConfigurationName || undefined }}
           gap={0}
           className={clsx(classes["richContainer"], classes[`is-${idType}`], isSelected ? classes["selected"] : "")}
         >
-          <Text variant="lyric" className={clsx(classes["lyric"])}>
-            {textContent}
-          </Text>
           <Box className={classes["indicator"]}>
             <Text>{getDisplayText(idType, order[idType], bumpConfigurationName)}</Text>
           </Box>
-        </Group>
+          <Text variant="lyric" className={clsx(classes["lyric"])}>
+            {textContent}
+          </Text>
+        </Stack>
       );
     } else {
       if (word === " ") {
@@ -130,6 +130,7 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
       data-is-space="false"
       variant="lyric"
       className={clsx(classes["lyric"], classes[`mode-${inputMode}`])}
+      style={{ marginBottom: "4px" }}
     >
       {word}
     </Text>
@@ -228,6 +229,7 @@ const getDisplayText = (inputMode: InputMode, number: number, bumpConfigurationN
   }
 
   if (inputMode === "cue") {
+    // return "ㅤ";
     return `Cue ${number}`;
   }
 };
