@@ -9,6 +9,7 @@ import { createTheme, MantineProvider, Text, TextInput } from "@mantine/core";
 import classes from "./main.module.css";
 
 const theme = createTheme({
+  primaryColor: "lime",
   fontFamily: "Inter, sans-serif",
   fontFamilyMonospace: "JetBrains Mono, monospace",
   headings: {

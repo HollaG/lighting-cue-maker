@@ -2,12 +2,11 @@ import { memo } from "react";
 import { Stack } from "@mantine/core";
 import { CueCard } from "../../../components/Siding/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
-import { useGetItem } from "../../../query/useGetItem";
 import { useAppStore } from "../../../store/appStore";
 
 export const CueList = memo(({ itemId }: { itemId: string }) => {
   const { cues, isCuesLoading } = useGetCues({ itemId });
-  const { cueOrder } = useGetItem({ itemId });
+  const cueOrder = useAppStore((s) => s.cueOrder);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   if (!itemId || !cues || !cues.length) return null;

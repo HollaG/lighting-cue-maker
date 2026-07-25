@@ -54,11 +54,14 @@ export const ChoreoEventWrapper = () => {
 
   const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
   const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
+  const setDerivedLyrics = useAppStore((s) => s.setDerivedLyrics);
 
   const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
 
   useEffect(() => {
-    setInternalRawLyrics(item?.rawLyrics ?? "");
+    const lyrics = item?.rawLyrics ?? "";
+    setInternalRawLyrics(lyrics);
+    setDerivedLyrics(lyrics);
   }, [item?.rawLyrics]);
 
   // for the Item selection
@@ -267,6 +270,7 @@ export const ChoreoEventWrapper = () => {
                     <span>
                       Do not modify the embedded cue/bump data (<Code>{`<cueId=...=cueId>`}</Code>)
                     </span>
+                    <span>Tip: use a hyphen (-) if you need to separate syllables.</span>
                   </Stack>
                 ) : (
                   ""

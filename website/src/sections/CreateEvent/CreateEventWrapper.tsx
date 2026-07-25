@@ -164,7 +164,7 @@ export const CreateEventWrapper = () => {
           </SimpleGrid>
 
           <Center mt={"xl"}>
-            <Button type="submit" size="lg" disabled={isSubmitting}>
+            <Button type="submit" color="teal" size="lg" disabled={isSubmitting}>
               {" "}
               Create Event{" "}
             </Button>

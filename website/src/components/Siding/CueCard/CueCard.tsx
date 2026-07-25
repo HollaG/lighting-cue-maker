@@ -56,7 +56,8 @@ const CueCardInternal = ({
   const activeItemId = useAppStore((s) => s.activeItemId);
   const { event } = useGetEvent({ code });
 
-  const { item, cueOrder } = useGetItem({ itemId: activeItemId });
+  const { item } = useGetItem({ itemId: activeItemId });
+  const cueOrder = useAppStore((s) => s.cueOrder);
   const { cues } = useGetCues({ itemId: activeItemId });
   const { mutateAsync: updateCue } = useUpdateCue();
   const { mutateAsync: deleteCue } = useDeleteCue();
@@ -267,7 +268,7 @@ const CueCardInternal = ({
               <Button color="red" size="xs" variant="transparent" onClick={beforeDeleteCue}>
                 Delete{" "}
               </Button>
-              <Button color="orange" size="xs" disabled={!isDirty} type="submit">
+              <Button variant="light" size="xs" disabled={!isDirty} type="submit">
                 {" "}
                 Save changes{" "}
               </Button>

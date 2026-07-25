@@ -29,7 +29,7 @@
   }
 
   &[data-active] {
-    color: var(--mantine-color-white);
+    color: var(--mantine-color-text);
   }
 }
 
@@ -40,6 +40,7 @@
 }
 
 .indicator {
-  background-color: var(--mantine-primary-color-filled);
+  background-color: var(--mantine-primary-color-light);
+
   border-radius: var(--mantine-radius-md);
 }

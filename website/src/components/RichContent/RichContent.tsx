@@ -17,9 +17,10 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
   const inputMode = useAppStore((s) => s.inputMode);
   const instantAddBumpMode = useAppStore((s) => s.instantAddBumpMode);
+  const content = useAppStore((s) => s.content);
   // const code = useAppStore((s) => s.code);
 
-  const { content, item } = useGetItem({ itemId });
+  const { item } = useGetItem({ itemId });
   // const { event } = useGetEvent({ code });
   const { mutateAsync: createCue } = useCreateCue();
   const { mutateAsync: createBump } = useCreateBump();
