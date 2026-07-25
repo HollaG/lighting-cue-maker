@@ -15,7 +15,7 @@
   transition: all 0.2s ease-in-out;
   cursor: pointer;
 
-  &.mode-rich:hover {
+  &.mode-cue:hover {
     background-color: yellow;
   }
 
@@ -93,7 +93,8 @@
 .is-bump {
 
 
-  lyric .indicator,
+  .lyric,
+  .indicator,
   &.indicator {
     border-color: pink;
   }

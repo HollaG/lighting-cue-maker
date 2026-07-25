@@ -200,7 +200,7 @@ export const ChoreoEventWrapper = () => {
                   </Group>
                 )}
                 {/* <SegmentedControl value={inputMode} onChange={setInputMode} data={InputModes} /> */}
-                {inputMode == "rich" && <Highlight highlight={"cue"}>Click on a word/space to add a cue</Highlight>}
+                {inputMode === "cue" && <Highlight highlight={"cue"}>Click on a word/space to add a cue</Highlight>}
                 {inputMode == "bump" && (
                   <Highlight highlight={`"${instantBumpMode?.name}" bump`} color="pink">
                     {`Click on a word/space to add a "${instantBumpMode?.name}" bump`}
@@ -213,7 +213,7 @@ export const ChoreoEventWrapper = () => {
 
                   <Menu.Dropdown>
                     <Menu.Item onClick={() => setInputMode("raw")}> Edit lyrics</Menu.Item>
-                    <Menu.Item onClick={() => onClickFinishAddingLyricsButton("rich")}> Configure cues</Menu.Item>
+                    <Menu.Item onClick={() => onClickFinishAddingLyricsButton("cue")}> Configure cues</Menu.Item>
                     {evt?.bumpConfigurations && evt.bumpConfigurations.length ? (
                       <Menu.Sub>
                         <Menu.Sub.Target>
@@ -256,7 +256,7 @@ export const ChoreoEventWrapper = () => {
                 />
               )}
 
-              {(inputMode === "rich" || inputMode === "bump") && <RichContent itemId={item.id} />}
+              {(inputMode === "cue" || inputMode === "bump") && <RichContent itemId={item.id} />}
             </Stack>
             <Stack>
               <Group>

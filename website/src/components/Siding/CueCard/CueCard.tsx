@@ -194,7 +194,7 @@ const CueCardInternal = ({
       // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
 
       updateItem({
-        itemId: activeItemId,
+        itemId: item.id,
         requestBody: {
           rawLyrics: updatedRawLyrics,
         },
@@ -471,8 +471,6 @@ function ColourSelect({
       <ColourSelectOption {...item} />
     </Combobox.Option>
   ));
-
-
 
   // watch the saved value
   // @ts-ignore

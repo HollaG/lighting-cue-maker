@@ -3,14 +3,14 @@ import type { AppStore } from "../appStore";
 
 import type { Option } from "../../types/types";
 
-export type InputMode = "raw" | "rich" | "bump" | "timing";
+export type InputMode = "raw" | "cue" | "bump" | "timing";
 export const InputModes: Option<InputMode>[] = [
   {
     value: "raw",
     label: "Edit lyrics",
   },
   {
-    value: "rich",
+    value: "cue",
     label: "Edit cues",
   },
   {
@@ -30,7 +30,7 @@ export interface LyricsSlice {
 }
 
 export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set) => ({
-  inputMode: "rich",
+  inputMode: "cue",
 
   setInputMode: (inputMode: InputMode) => set({ inputMode: inputMode }),
 

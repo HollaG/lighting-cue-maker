@@ -1,3 +1,4 @@
+import type { Bump } from "./bumps";
 import type { Cue } from "./cues";
 import type { Content } from "./lyrics";
 
@@ -91,6 +92,7 @@ export type Item = {
   rawLyrics: string;
   content: Content[];
 
+  bumps: Bump[];
   cues: Cue[];
   id: string;
 };

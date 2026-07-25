@@ -13,12 +13,11 @@ export const useDeleteBump = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ bumpId }: DeleteBumpParams) =>
-      api.delete<void, DeleteBumpRes>(`/api/v1/bumps/${bumpId}`),
+    mutationFn: ({ bumpId }: DeleteBumpParams) => api.delete<void, DeleteBumpRes>(`/api/v1/bumps/${bumpId}`),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bumps"] });
-      queryClient.invalidateQueries({ queryKey: ["item"] });
+      // queryClient.invalidateQueries({ queryKey: ["item"] });
     },
   });
 };
