@@ -9,12 +9,14 @@ import (
 
 // Request DTOs
 type CreateBumpReq struct {
-	ItemId string `json:"itemId"`
+	ItemId              string `json:"itemId"`
+	BumpConfigurationId string `json:"bumpConfigurationId"`
 }
 
 type UpdateBumpReq struct {
-	Assignments *map[string]any `json:"assignments,omitempty"`
-	Comments    *string         `json:"comments,omitempty"`
+	Assignments         *map[string]any `json:"assignments,omitempty"`
+	Comments            *string         `json:"comments,omitempty"`
+	BumpConfigurationId *string         `json:"bumpConfigurationId,omitempty"`
 }
 
 // DB model
@@ -23,6 +25,10 @@ type Bump struct {
 
 	ItemUuid string `json:"-" gorm:"type:uuid;not null"`
 
+	BumpConfigurationUuid string            `json:"bumpConfigurationId" gorm:"type:uuid;not null"`
+	BumpConfiguration     BumpConfiguration `json:"bumpConfiguration,omitempty" gorm:"foreignKey:BumpConfigurationUuid;references:Uuid"`
+
+	// Unused for now
 	Assignments datatypes.JSON `json:"assignments" gorm:"serializer:json"`
 
 	Comments string `json:"comments"`

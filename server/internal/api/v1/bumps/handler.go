@@ -46,6 +46,15 @@ func createBump(c *gin.Context) {
 		return
 	}
 
+	bumpId := createReq.BumpConfigurationId
+	if bumpId == "" {
+		bumpId = c.Query("bumpConfigurationId")
+	}
+	if bumpId == "" {
+		response.BadRequest(c, "Bump ID is required", nil)
+		return
+	}
+
 	assignmentsBytes, err := json.Marshal(map[string]any{})
 	if err != nil {
 		response.BadRequest(c, "Failed to parse assignments JSON", nil)
@@ -53,9 +62,10 @@ func createBump(c *gin.Context) {
 	}
 
 	bump := models.Bump{
-		ItemUuid:    itemId,
-		Assignments: datatypes.JSON(assignmentsBytes),
-		Comments:    "",
+		ItemUuid:              itemId,
+		BumpConfigurationUuid: bumpId,
+		Assignments:           datatypes.JSON(assignmentsBytes),
+		Comments:              "",
 	}
 
 	if result := database.DB().Create(&bump); result.Error != nil {
@@ -98,6 +108,10 @@ func updateBump(c *gin.Context) {
 	}
 	if req.Assignments != nil {
 		updates["assignments"] = *req.Assignments
+	}
+
+	if req.BumpConfigurationId != nil {
+		updates["bump_configuration_uuid"] = *req.BumpConfigurationId
 	}
 
 	if len(updates) > 0 {

@@ -28,7 +28,9 @@ func getItems(c *gin.Context) {
 
 	// select all items belonging to this event
 	var items []models.Item
-	if result := database.DB().Where("light_event_uuid = ?", event.Uuid).Find(&items); result.Error != nil {
+	if result := database.DB().
+		// Preload("Bumps").
+		Where("light_event_uuid = ?", event.Uuid).Find(&items); result.Error != nil {
 		response.InternalError(c, "Failed to get items")
 		return
 	}
@@ -49,7 +51,10 @@ func getItem(c *gin.Context) {
 
 	// verify the item exists
 	var item models.Item
-	if result := database.DB().Preload("Cues").Where("uuid = ?", itemUuid).First(&item); result.Error != nil {
+	if result := database.DB().
+		// .Preload("Cues")
+		Preload("Bumps").
+		Where("uuid = ?", itemUuid).First(&item); result.Error != nil {
 		response.NotFound(c, "Item not found")
 		return
 	}
@@ -154,7 +159,7 @@ func updateItem(c *gin.Context) {
 
 	// Re-fetch the full item from DB so the response reflects the persisted state.
 	var updatedItem models.Item
-	if result := database.DB().Where("uuid = ?", itemUuid).First(&updatedItem); result.Error != nil {
+	if result := database.DB().Preload("Bumps").Where("uuid = ?", itemUuid).First(&updatedItem); result.Error != nil {
 		response.InternalError(c, "Failed to fetch updated item")
 		return
 	}
