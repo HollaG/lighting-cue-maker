@@ -1,8 +1,8 @@
 import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
 
-export const BUMP_MATCH_REGEX = /<bumpId=(.*?)=bumpId>/;
-export const BUMP_START = "<bumpId=";
-export const BUMP_END = "=bumpId>";
+export const BUMP_MATCH_REGEX = /[\{<]bumpId=(.*?)=bumpId[\}>]/;
+export const BUMP_START = "{bumpId=";
+export const BUMP_END = "=bumpId}";
 
 export const insertBumpInRichContent = (
   id: string,
@@ -14,7 +14,7 @@ export const insertBumpInRichContent = (
   const updatedContent = [...content.map((line) => [...line])];
 
   if (isSpace) {
-    const bumpId = "<bumpId=" + convertUuidForEmbedding(id) + "=bumpId>";
+    const bumpId = "{bumpId=" + convertUuidForEmbedding(id) + "=bumpId}";
     updatedContent[lineIndex][wordIndex] = bumpId;
 
     const isLineBreak = updatedContent[lineIndex].length === 1;
@@ -30,7 +30,7 @@ export const insertBumpInRichContent = (
       updatedContent.splice(lineIndex, 0, [" "]);
     }
   } else {
-    const bumpId = "<bumpId=" + convertUuidForEmbedding(id) + "=bumpId>" + updatedContent[lineIndex][wordIndex];
+    const bumpId = "{bumpId=" + convertUuidForEmbedding(id) + "=bumpId}" + updatedContent[lineIndex][wordIndex];
     updatedContent[lineIndex][wordIndex] = bumpId;
   }
 
@@ -38,10 +38,10 @@ export const insertBumpInRichContent = (
 };
 
 export const removeBumpFromRawLyrics = (rawLyrics: string, bumpId: string) => {
-  // TODO @migrate-id: only use new format
-
   return rawLyrics
+    .replace("{bumpId=" + convertUuidForEmbedding(bumpId) + "=bumpId}", "")
     .replace("<bumpId=" + convertUuidForEmbedding(bumpId) + "=bumpId>", "")
+    .replace("{bumpId=" + bumpId.replaceAll("-", "_") + "=bumpId}", "")
     .replace("<bumpId=" + bumpId.replaceAll("-", "_") + "=bumpId>", "");
 };
 
@@ -49,7 +49,7 @@ export const getBumpOrder = (rawLyrics: string) => {
   const order: string[] = [];
   for (const line of rawLyrics.split("\n")) {
     for (const word of line.split(/[ -]/)) {
-      const match = word.match(/<bumpId=(.*?)=bumpId>/);
+      const match = word.match(/[\{<]bumpId=(.*?)=bumpId[\}>]/);
       if (match) order.push(convertUuidForDatabase(match[1]));
     }
   }

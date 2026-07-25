@@ -2,7 +2,15 @@ import DOMPurify from "dompurify";
 
 export const sanitize = (inputStr: string) => {
   console.log({ inputStr });
-  const cleaned = DOMPurify.sanitize(inputStr, {
+
+  // Temporary: convert all <cueId and cueId> to { }
+  const tempStr = inputStr
+    .replaceAll("<cueId=", "{cueId=")
+    .replaceAll("<bumpId=", "{bumpId=")
+    .replaceAll("=cueId>", "=cueId}")
+    .replaceAll("=bumpId>", "=bumpId}");
+
+  const cleaned = DOMPurify.sanitize(tempStr, {
     ALLOWED_TAGS: ["sub", "sup"],
     // ADD_TAGS: ["cueId", "bumpId"],
     CUSTOM_ELEMENT_HANDLING: {
@@ -14,5 +22,5 @@ export const sanitize = (inputStr: string) => {
   });
 
   console.log({ cleaned });
-  return inputStr;
+  return cleaned;
 };

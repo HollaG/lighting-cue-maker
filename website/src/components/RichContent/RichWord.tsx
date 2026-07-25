@@ -36,11 +36,14 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
 
   // Check to see if it's
   for (const idType of richIdentifiers) {
-    if (word.startsWith(`<${idType}Id=`)) {
+    const isTagStart = word.startsWith(`{${idType}Id=`) || word.startsWith(`<${idType}Id=`);
+    if (isTagStart) {
+      const isTagEnd = word.endsWith(`=${idType}Id}`) || word.endsWith(`=${idType}Id>`);
       // stand-alone
-      if (word.endsWith(`=${idType}Id>`)) {
-        // e.g. <cueId=xyz=cudId>
-        const id = convertUuidForDatabase(word.split(`<${idType}Id=`)[1].split(`=${idType}Id>`)[0]);
+      if (isTagEnd) {
+        // e.g. {cueId=xyz=cueId} or <cueId=xyz=cueId>
+        const rawId = word.split(/[\{<]/)[1].split(`=${idType}Id`)[0].replace(`${idType}Id=`, "");
+        const id = convertUuidForDatabase(rawId);
 
         let bumpConfigurationName = "";
         if (idType === "bump") {
@@ -67,8 +70,8 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
         );
       }
 
-      // e.g. <cueId=xyz=cueId>hello
-      const regex = new RegExp(`<${idType}Id=(.*?)=${idType}Id>`);
+      // e.g. {cueId=xyz=cueId}hello
+      const regex = new RegExp(`[\\{<]${idType}Id=(.*?)=${idType}Id[\\}>]`);
       const match = word.match(regex);
       const id = convertUuidForDatabase(match?.[1] || "");
       const textContent = word.replace(regex, "");

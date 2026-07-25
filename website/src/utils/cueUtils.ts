@@ -2,9 +2,9 @@ import type { ValueAssignment } from "../types/cues";
 import { AttributeTypes } from "../types/types";
 import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
 
-export const CUE_MATCH_REGEX = /<cueId=(.*?)=cueId>/;
-export const CUE_START = "<cueId=";
-export const CUE_END = "=cueId>";
+export const CUE_MATCH_REGEX = /[\{<]cueId=(.*?)=cueId[\}>]/;
+export const CUE_START = "{cueId=";
+export const CUE_END = "=cueId}";
 
 export const insertCueInRichContent = (
   id: string,
@@ -16,7 +16,7 @@ export const insertCueInRichContent = (
   const updatedContent = [...content.map((line) => [...line])];
 
   if (isSpace) {
-    const cueId = "<cueId=" + convertUuidForEmbedding(id) + "=cueId>";
+    const cueId = "{cueId=" + convertUuidForEmbedding(id) + "=cueId}";
     updatedContent[lineIndex][wordIndex] = cueId;
 
     const isLineBreak = updatedContent[lineIndex].length === 1;
@@ -32,7 +32,7 @@ export const insertCueInRichContent = (
       updatedContent.splice(lineIndex, 0, [" "]);
     }
   } else {
-    const cueId = "<cueId=" + convertUuidForEmbedding(id) + "=cueId>" + updatedContent[lineIndex][wordIndex];
+    const cueId = "{cueId=" + convertUuidForEmbedding(id) + "=cueId}" + updatedContent[lineIndex][wordIndex];
     updatedContent[lineIndex][wordIndex] = cueId;
   }
 
@@ -40,8 +40,10 @@ export const insertCueInRichContent = (
 };
 
 export const removeCueFromRawLyrics = (rawLyrics: string, cueId: string) => {
-  // support both ids: try removing both the original type and the new type
-  let newRawLyrics = rawLyrics.replace("<cueId=" + convertUuidForEmbedding(cueId) + "=cueId>", "");
+  // support both ids: try removing both the new curly format and legacy angle bracket format
+  let newRawLyrics = rawLyrics.replace("{cueId=" + convertUuidForEmbedding(cueId) + "=cueId}", "");
+  newRawLyrics = newRawLyrics.replace("<cueId=" + convertUuidForEmbedding(cueId) + "=cueId>", "");
+  newRawLyrics = newRawLyrics.replace("{cueId=" + cueId.replaceAll("-", "_") + "=cueId}", "");
   newRawLyrics = newRawLyrics.replace("<cueId=" + cueId.replaceAll("-", "_") + "=cueId>", "");
   return newRawLyrics;
 };
@@ -51,7 +53,7 @@ export const getCueOrder = (rawLyrics: string) => {
   console.log({ rawLyrics });
   for (const line of rawLyrics.split("\n")) {
     for (const word of line.split(/[ -]/)) {
-      const match = word.match(/<cueId=(.*?)=cueId>/);
+      const match = word.match(/[\{<]cueId=(.*?)=cueId[\}>]/);
       if (match) order.push(convertUuidForDatabase(match[1]));
     }
   }

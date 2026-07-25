@@ -151,17 +151,18 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
               let bumpNumber: number | undefined = 0;
               let cueId: string | undefined = undefined;
 
-              if (word.startsWith("<cueId=")) {
+              if (word.startsWith("{cueId=") || word.startsWith("<cueId=")) {
                 cueCount++;
                 cueNumber = cueCount;
-                if (word.endsWith("=cueId>")) {
-                  cueId = convertUuidForDatabase(word.split("<cueId=")[1].split("=cueId>")[0]);
+                if (word.endsWith("=cueId}") || word.endsWith("=cueId>")) {
+                  const rawId = word.split(/[\{<]cueId=/)[1].split(/=cueId[\}>]/)[0];
+                  cueId = convertUuidForDatabase(rawId);
                 } else {
-                  cueId = convertUuidForDatabase(word.match(/<cueId=(.*?)=cueId>/)?.[1] || "");
+                  cueId = convertUuidForDatabase(word.match(/[\{<]cueId=(.*?)=cueId[\}>]/)?.[1] || "");
                 }
               }
 
-              if (word.startsWith("<bumpId=")) {
+              if (word.startsWith("{bumpId=") || word.startsWith("<bumpId=")) {
                 bumpCount++;
                 bumpNumber = bumpCount;
               }

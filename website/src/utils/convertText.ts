@@ -4,9 +4,9 @@
 //       -- string: if happy ever after [did][cue_id=uuid] exist
 //       -- string: if happy every after [cue_id=uuid] did exist
 //    b. in a space
-//       -- string: if happy ever after did <cue id=uuid/>> exist (note the self-closing)
+//       -- string: if happy ever after did {cueId=uuid=cueId} exist
 //  2. bump
-//    same options as cue, but with <bumpId=xxx=bumpId> instead
+//    same options as cue, but with {bumpId=xxx=bumpId} instead
 //  3. comments
 //    -- string: if <comment_id=uuivd> happy ever after </comment_id=uuidv4> did exist
 

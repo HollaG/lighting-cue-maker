@@ -331,7 +331,7 @@ export const ChoreoEventWrapper = () => {
                       configure cues/bumps.{" "}
                     </span>
                     <span>
-                      Do not modify the embedded cue/bump data (<Code>{`<cueId=...=cueId>`}</Code>)
+                      Do not modify the embedded cue/bump data (<Code>{`{cueId=...=cueId}`}</Code>)
                     </span>
                     <span>Tip: use a hyphen (-) if you need to separate syllables.</span>
                   </Stack>
