@@ -4,7 +4,7 @@ import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useAppStore } from "../../store/appStore";
-import { InputModes, type InputMode } from "../../store/slices/lyricsSlice";
+import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItem } from "../../query/useGetItem";
 
@@ -19,7 +19,7 @@ interface RichWordProps {
   isSelected?: boolean;
 }
 
-const richIdentifiers: InputMode[] = ["cue", "bump"];
+const richIdentifiers = ["cue", "bump"] as const;
 
 const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordProps) => {
   const inputMode = useAppStore((s) => s.inputMode);
@@ -39,7 +39,7 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
 
         let bumpConfigurationName = "";
         if (idType === "bump") {
-          const bumpAssignment = item.bumps?.find((b) => b.id === id);
+          const bumpAssignment = item?.bumps?.find((b) => b.id === id);
           if (bumpAssignment) {
             const bumpConfig = event?.bumpConfigurations?.find((b) => b.id === bumpAssignment.bumpConfigurationId);
             bumpConfigurationName = bumpConfig?.name || "";
@@ -56,19 +56,7 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
               classes["indicator"],
               isSelected ? classes["selected"] : "",
             )}
-
-            // style={{
-            //   paddingLeft: "0.5rem",
-            //   paddingRight: "0.5rem",
-            //   height: "stretch",
-            //   backgroundColor: "yellow",
-            //   border: "4px solid yellow",
-            //   cursor: "pointer",
-            // }}
-            // className={clsx(classes["cue"], classes["cue-wrapper"], isSelected ? classes["cue-selected"] : "")}
           >
-            {/* TODO: write a function to name this */}
-            {/* {idType} {order[idType]} */}
             {getDisplayText(idType, order[idType], bumpConfigurationName)}
           </Center>
         );

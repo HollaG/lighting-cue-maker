@@ -10,7 +10,6 @@ import { insertCueInRichContent } from "../../utils/cueUtils";
 import { generateRaw } from "../../utils/convertText";
 import { useCreateBump } from "../../query/useCreateBump";
 import { insertBumpInRichContent, removeBumpFromRawLyrics } from "../../utils/bumpUtils";
-import { useGetEvent } from "../../query/useGetEvent";
 import { useDeleteBump } from "../../query/useDeleteBump";
 
 export const RichContent = ({ itemId }: { itemId: string }) => {
@@ -29,6 +28,7 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
 
   const handleContainerClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!item) return;
       const target = (e.target as HTMLElement).closest<HTMLElement>("[data-action]");
       if (!target) return;
 
@@ -47,6 +47,7 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         // TODO: current action is to delete it.
         // Can change in future
         const bumpId = target.dataset.bumpId;
+        if (!bumpId) return;
         // const bump = item.bumps.find((b) => (b.id = bumpId));
 
         // let bumpName = "";
@@ -61,8 +62,8 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
           deleteBump({
             bumpId,
           })
-            .then((res) => {
-              const updatedRawLyrics = removeBumpFromRawLyrics(item.rawLyrics, bumpId);
+            .then(() => {
+              const updatedRawLyrics = removeBumpFromRawLyrics(item?.rawLyrics, bumpId);
 
               // update Item to remove from rawlyrics
               // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
@@ -100,6 +101,7 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
             })
             .catch(console.error);
         } else if (inputMode === "bump") {
+          if (!instantAddBumpMode) return;
           createBump({
             itemId,
             bumpConfigurationId: instantAddBumpMode.id,
@@ -141,8 +143,8 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         return content.map((line, index1) => (
           <Group key={index1} gap="0px">
             {line.map((word, index2) => {
-              let cueNumber: number | undefined = undefined;
-              let bumpNumber: number | undefined = undefined;
+              let cueNumber: number | undefined = 0;
+              let bumpNumber: number | undefined = 0;
               let cueId: string | undefined = undefined;
 
               if (word.startsWith("<cueId=")) {

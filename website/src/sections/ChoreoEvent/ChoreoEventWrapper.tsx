@@ -10,7 +10,6 @@ import {
   Divider,
   FloatingIndicator,
   Group,
-  Highlight,
   Menu,
   Select,
   SimpleGrid,
@@ -31,7 +30,6 @@ import { useGetItems } from "../../query/useGetItems";
 import { useGetItem } from "../../query/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
-import type { CreateItemReq } from "../../types/http";
 import { useUpdateItem } from "../../query/useUpdateItem";
 import type { BumpConfiguration } from "../../types/types";
 import { IconInfoCircle } from "@tabler/icons-react";
@@ -120,12 +118,11 @@ export const ChoreoEventWrapper = () => {
     }
   }, [item?.rawLyrics]);
 
-  const possibleIndicatorTextOptions = ["Edit lyrics", "Configure cues", `Configure bump: ${instantBumpMode?.name}`];
-  const getIndicatorText = (inputMode: InputMode, bumpDefault?: BumpConfiguration) => {
+  const getIndicatorText = (inputMode: InputMode, bumpDefault?: BumpConfiguration | null) => {
     if (inputMode === "raw") return "Edit lyrics";
     if (inputMode === "cue") return "Configure cues";
     if (inputMode === "bump") {
-      return `Configure bump: ${bumpDefault.name}`;
+      return `Configure bump: ${bumpDefault?.name}`;
     }
   };
 
@@ -222,8 +219,8 @@ export const ChoreoEventWrapper = () => {
                       <Select
                         description="Editor mode"
                         width={"200px"}
-                        data={[getIndicatorText(inputMode, instantBumpMode)]}
-                        value={getIndicatorText(inputMode, instantBumpMode)}
+                        data={[getIndicatorText(inputMode, instantBumpMode) || ""]}
+                        value={getIndicatorText(inputMode, instantBumpMode) || ""}
                         readOnly
                       />
                     </Box>
@@ -281,7 +278,7 @@ export const ChoreoEventWrapper = () => {
                 {inputMode === "bump" ? (
                   <Stack gap="xs">
                     <span>
-                      Click on any word or space to add a bump for <Code>{instantBumpMode.name}</Code> at that point. A
+                      Click on any word or space to add a bump for <Code>{instantBumpMode?.name}</Code> at that point. A
                       bump is an instantaneous effect that will flash only at the point you specify.
                     </span>
                     Click again to remove.

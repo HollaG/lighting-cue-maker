@@ -13,7 +13,7 @@ interface ItemSelectProps {
   refetchItems: (options?: RefetchOptions) => Promise<QueryObserverResult<NoInfer<Item[]>, Error>>;
 }
 
-export const ItemSelect = ({ items, eventId, refetchItems }: ItemSelectProps) => {
+export const ItemSelect = ({ items, eventId }: ItemSelectProps) => {
   const activeItemId = useAppStore((s) => s.activeItemId);
   const changeActiveItem = useAppStore((s) => s.changeActiveItem);
   const itemName = useAppStore((s) => s.itemName);

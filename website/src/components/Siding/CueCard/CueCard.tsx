@@ -168,6 +168,7 @@ const CueCardInternal = ({
   }, []);
 
   const handleSave = async () => {
+    if (!item) return;
     try {
       console.log(form.getValues(), "--------------------");
       // convert the form value to API request body
@@ -175,7 +176,7 @@ const CueCardInternal = ({
 
       await updateCue({
         cueId: cue.id,
-        itemId: activeItemId,
+        itemId: item.id,
         requestBody: form.getValues(),
       });
     } catch (e) {
@@ -187,6 +188,7 @@ const CueCardInternal = ({
 
   const handleDelete = async () => {
     try {
+      if (!item) return;
       await deleteCue({ cueId: cue.id });
       const updatedRawLyrics = removeCueFromRawLyrics(item.rawLyrics, cue.id);
 
