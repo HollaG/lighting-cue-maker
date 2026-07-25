@@ -37,7 +37,7 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected }: RichW
       );
     }
 
-    const textContent = word.replace(/\<cueId=.*=cueId\>/gm, "");
+    const textContent = word.replace(/<cueId=.*=cueId>/g, "");
     const cueId = convertUuidForDatabase(word.match(/<cueId=(.*?)=cueId>/)?.[1] || "");
 
     return (

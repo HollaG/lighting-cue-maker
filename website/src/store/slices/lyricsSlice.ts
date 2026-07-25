@@ -29,7 +29,7 @@ export interface LyricsSlice {
   onBeginAddingLyrics: () => void;
 }
 
-export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set, get) => ({
+export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set) => ({
   inputMode: "rich",
 
   setInputMode: (inputMode: InputMode) => set({ inputMode: inputMode }),

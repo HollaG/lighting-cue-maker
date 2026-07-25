@@ -56,8 +56,8 @@ const CueCardInternal = ({
   const activeItemId = useAppStore((s) => s.activeItemId);
   const { event } = useGetEvent({ code });
 
-  const { item, cueOrder, refetchItem } = useGetItem({ itemId: activeItemId });
-  const { refetchCues, cues } = useGetCues({ itemId: activeItemId });
+  const { item, cueOrder } = useGetItem({ itemId: activeItemId });
+  const { cues } = useGetCues({ itemId: activeItemId });
   const { mutateAsync: updateCue } = useUpdateCue();
   const { mutateAsync: deleteCue } = useDeleteCue();
   const { mutate: updateItem } = useUpdateItem();
@@ -200,11 +200,11 @@ const CueCardInternal = ({
         },
       });
     } catch (e) {
-    } finally {
+      console.error(e);
     }
   };
 
-  const beforeDeleteCue = (cue: Cue) => {
+  const beforeDeleteCue = () => {
     const result = confirm("Are you sure you want to delete this cue?");
     if (result) {
       handleDelete();
@@ -215,7 +215,7 @@ const CueCardInternal = ({
     const cueToCopy = (cues || []).find((c) => c.id === cueId);
     if (cueToCopy) {
       console.log({ cue: cueToCopy });
-      const { id: _, ...cueWithoutId } = cueToCopy;
+      const { id: _id, ...cueWithoutId } = cueToCopy;
       form.setValues(cueWithoutId as Partial<FormData>);
       close();
     } else console.error("No such cue found!");
@@ -262,7 +262,7 @@ const CueCardInternal = ({
                 Copy another cue
               </Button>
               <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
-              <Button color="red" size="xs" variant="transparent" onClick={() => beforeDeleteCue(cue)}>
+              <Button color="red" size="xs" variant="transparent" onClick={beforeDeleteCue}>
                 Delete{" "}
               </Button>
               <Button color="orange" size="xs" disabled={!isDirty} type="submit">
@@ -472,12 +472,7 @@ function ColourSelect({
     </Combobox.Option>
   ));
 
-  useEffect(() => {
-    // ONLY on mount, update the search
-    // This case is applicable when the user has a
-    // saved cue, and because this component is not controlled,
-    // we need to manually set the "default" value loaded from database
-  }, []);
+
 
   // watch the saved value
   // @ts-ignore

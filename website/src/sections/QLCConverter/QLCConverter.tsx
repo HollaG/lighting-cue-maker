@@ -100,9 +100,9 @@ export const QLCConverter = () => {
     const storedValue = window.localStorage.getItem("qlc-mapping");
     if (storedValue) {
       try {
-        form.setValues(JSON.parse(window.localStorage.getItem("qlc-mapping")!));
+        form.setValues(JSON.parse(storedValue));
       } catch (e) {
-        console.log("Failed to parse stored value");
+        console.log("Failed to parse stored value", e);
       }
     }
   }
@@ -132,7 +132,7 @@ export const QLCConverter = () => {
     URL.revokeObjectURL(url);
   }
 
-  if (!event || !activeItemId) return <></>;
+  if (!event || !activeItemId) return null;
 
   return (
     <Container size={"xl"} mt="xl">
@@ -278,7 +278,7 @@ const OptList2 = ({
   groupedFnList: GroupedFnList;
   form: UseFormReturnType<{ [attributeId: string]: string[] }>;
 }) => {
-  if (!isQlcMappable(attribute.type)) return <></>;
+  if (!isQlcMappable(attribute.type)) return null;
 
   switch (attribute.type) {
     case AttributeTypes.BOOLEAN:
@@ -449,7 +449,7 @@ const OptList2 = ({
       );
 
     default:
-      return <></>;
+      return null;
   }
 };
 

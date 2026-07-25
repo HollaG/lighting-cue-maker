@@ -30,7 +30,7 @@ function App() {
     if (code) {
       setCode(code);
     }
-  }, []);
+  }, [setCode]);
 
   return (
     <QueryClientProvider client={client}>

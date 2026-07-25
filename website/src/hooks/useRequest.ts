@@ -24,8 +24,8 @@ export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE"
           body: JSON.stringify(bodyData),
         });
 
+        const result: ApiResponse<U> = await response.json();
         if (!response.ok) {
-          const result: ApiResponse<U> = await response.json();
           const msg = result.error ?? response.statusText ?? "An unknown error occurred.";
           setError(msg);
           notifications.show({
@@ -33,9 +33,9 @@ export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE"
             message: msg,
             color: "red",
           });
+          return;
         }
 
-        const result: ApiResponse<U> = await response.json();
         setData(result.data ?? null);
         return result.data;
       } catch (err) {
@@ -50,7 +50,7 @@ export function useRequest<T, U>(path: string, method: "POST" | "PUT" | "DELETE"
         setIsLoading(false);
       }
     },
-    [url],
+    [url, method],
   );
 
   return { executeRequest, data, isLoading, error };

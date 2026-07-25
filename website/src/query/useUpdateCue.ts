@@ -18,8 +18,10 @@ export const useUpdateCue = () => {
     onSuccess: (res, variables) => {
       const newCue = res.cue;
       const oldCues = queryClient.getQueryData<GetCuesRes>(["cues", variables.itemId]);
-      const replacedCues = oldCues.cues.map((cue) => (cue.id === newCue.id ? newCue : cue));
-      queryClient.setQueryData(["cues", variables.itemId], replacedCues);
+      if (oldCues?.cues) {
+        const replacedCues = oldCues.cues.map((cue) => (cue.id === newCue.id ? newCue : cue));
+        queryClient.setQueryData(["cues", variables.itemId], { ...oldCues, cues: replacedCues });
+      }
 
       // No need to update Item
     },

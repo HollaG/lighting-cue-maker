@@ -47,7 +47,7 @@ export const getCueOrder = (rawLyrics: string) => {
   const order: string[] = [];
   console.log({ rawLyrics });
   for (const line of rawLyrics.split("\n")) {
-    for (const word of line.split(/[\ \-]/)) {
+    for (const word of line.split(/[ -]/)) {
       const match = word.match(/<cueId=(.*?)=cueId>/);
       if (match) order.push(convertUuidForDatabase(match[1]));
     }

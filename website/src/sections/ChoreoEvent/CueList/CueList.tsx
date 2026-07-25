@@ -8,11 +8,11 @@ import { useAppStore } from "../../../store/appStore";
 export const CueList = memo(({ itemId }: { itemId: string }) => {
   const { cues, isCuesLoading } = useGetCues({ itemId });
   const { cueOrder } = useGetItem({ itemId });
-  const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
+  const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
-  if (!itemId || !cues || !cues.length) return;
+  if (!itemId || !cues || !cues.length) return null;
 
-  // return <></>;
+  // return null;
   return (
     <Stack style={{ position: "relative" }}>
       {isCuesLoading
@@ -25,7 +25,7 @@ export const CueList = memo(({ itemId }: { itemId: string }) => {
                 key={cue.id}
                 cue={cue}
                 cueNumber={index + 1}
-                isCueSelected={currrentlySelectedCueId === cue.id}
+                isCueSelected={currentlySelectedCueId === cue.id}
               />
             );
           })}

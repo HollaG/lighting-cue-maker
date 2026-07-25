@@ -3,20 +3,16 @@ import { Group, Flex, Stack } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useGetItem } from "../../query/useGetItem";
-import { useGetCues } from "../../query/useGetCues";
 import { RichWord } from "./RichWord";
 import { useCreateCue } from "../../query/useCreateCue";
-import { useUpdateCue } from "../../query/useUpdateCue";
 import { useUpdateItem } from "../../query/useUpdateItem";
 import { insertCueInRichContent } from "../../utils/cueUtils";
 import { generateRaw } from "../../utils/convertText";
 
 export const RichContent = ({ itemId }: { itemId: string }) => {
-  const onAddBump = useAppStore((s) => s.onAddBump);
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
   const inputMode = useAppStore((s) => s.inputMode);
-  const instantAddBumpMode = useAppStore((s) => s.instantAddBumpMode);
 
   const { content } = useGetItem({ itemId });
   const { mutateAsync: createCue } = useCreateCue();
@@ -57,11 +53,10 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
               });
             })
             .catch(console.error);
-        } else if (inputMode === "bump") {
         }
       }
     },
-    [currentlySelectedCueId, setCurrentlySelectedCueId, content],
+    [currentlySelectedCueId, setCurrentlySelectedCueId, content, createCue, updateItem, itemId, inputMode],
   );
 
   return (

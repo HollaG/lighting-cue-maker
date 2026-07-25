@@ -37,10 +37,10 @@ export const ChoreoEventWrapper = () => {
   const activeItemId = useAppStore((s) => s.activeItemId);
 
   const { items, isItemsLoading } = useGetItems({ eventId: evt?.id ?? "" });
-  const { item, refetchItem } = useGetItem({ itemId: activeItemId ?? undefined });
+  const { item } = useGetItem({ itemId: activeItemId ?? undefined });
 
   const { mutate: createItem, isPending: isItemCreating } = useCreateItem();
-  const { mutate: updateItem, isPending: isItemUpdating } = useUpdateItem();
+  const { mutate: updateItem } = useUpdateItem();
 
   const changeActiveItem = useAppStore((s) => s.changeActiveItem);
   const itemName = useAppStore((s) => s.itemName);
@@ -61,9 +61,8 @@ export const ChoreoEventWrapper = () => {
   const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
   const [controlsRefs, setControlsRefs] = useState<Record<string, HTMLButtonElement | null>>({});
 
-  const setControlRef = (id: string) => (node: HTMLButtonElement) => {
-    controlsRefs[id] = node;
-    setControlsRefs(controlsRefs);
+  const setControlRef = (id: string) => (node: HTMLButtonElement | null) => {
+    setControlsRefs((prev) => ({ ...prev, [id]: node }));
   };
   const onClickFinishAddingLyricsButton = (switchTo: InputMode) => {
     // setRawLyrics(internalRawLyrics);
@@ -234,9 +233,7 @@ export const ChoreoEventWrapper = () => {
                           ))}
                         </Menu.Sub.Dropdown>
                       </Menu.Sub>
-                    ) : (
-                      <></>
-                    )}
+                    ) : null}
                   </Menu.Dropdown>
                 </Menu>
 

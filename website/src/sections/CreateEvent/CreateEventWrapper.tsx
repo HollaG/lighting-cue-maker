@@ -5,7 +5,6 @@ import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInpu
 import { useForm } from "@mantine/form";
 import { useState } from "react";
 import { flatten } from "../../utils/flatten";
-import { useRequest } from "../../hooks/useRequest";
 import type {
   AttributeConfiguration,
   BumpConfiguration,
@@ -13,7 +12,6 @@ import type {
   LightEventConfiguration,
 } from "../../types/types";
 import { useAppStore } from "../../store/appStore";
-import type { CreateEventReq, CreateEventRes } from "../../types/http";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useCreateEvent } from "../../query/useCreateEvent";
 
@@ -35,12 +33,8 @@ export const CreateEventWrapper = () => {
   const [fixtureGroupIds, setFixtureGroupIds] = useState<number[]>([]);
   const code = useAppStore((s) => s.code);
   const { isValidEvent } = useGetEvent({ code });
-  const setCode = useAppStore((s) => s.setCode);
-  // const [isSubmitting, setIsSubmitting] = useState(false);
-  // const { executeRequest } = useRequest<CreateEventReq, CreateEventRes>("/api/v1/events", "POST");
 
   const { isPending: isSubmitting, mutate: createEvent } = useCreateEvent();
-  const setActiveItemId = useAppStore((s) => s.setActiveItemId);
   const form = useForm<FormData>({
     mode: "uncontrolled",
     initialValues: {
@@ -78,7 +72,7 @@ export const CreateEventWrapper = () => {
     createEvent(config);
   };
 
-  if (isValidEvent) return;
+  if (isValidEvent) return null;
   return (
     <Collapse expanded={!isValidEvent}>
       <form onSubmit={form.onSubmit((v) => onFormSubmit(v))}>

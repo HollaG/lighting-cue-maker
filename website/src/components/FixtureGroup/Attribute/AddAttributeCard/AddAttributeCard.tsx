@@ -64,9 +64,11 @@ export const AddAttributeCard = ({
     };
   }, []);
 
-  form.watch(`${baseFieldName}.type`, ({ value }) => {
-    setSelectedAttribute(value);
-  });
+  useEffect(() => {
+    return form.watch(`${baseFieldName}.type`, ({ value }) => {
+      setSelectedAttribute(value);
+    });
+  }, [baseFieldName, form]);
   return (
     <Card py={0}>
       <Group>
