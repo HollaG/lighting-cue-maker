@@ -119,7 +119,16 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         }
       }
     },
-    [currentlySelectedCueId, setCurrentlySelectedCueId, content, createCue, updateItem, itemId, inputMode],
+    [
+      currentlySelectedCueId,
+      setCurrentlySelectedCueId,
+      content,
+      createCue,
+      updateItem,
+      itemId,
+      inputMode,
+      instantAddBumpMode,
+    ],
   );
 
   return (
