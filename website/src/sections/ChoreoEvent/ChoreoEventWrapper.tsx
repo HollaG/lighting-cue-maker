@@ -10,7 +10,9 @@ import {
   Divider,
   FloatingIndicator,
   Group,
+  Kbd,
   Menu,
+  NumberInput,
   Select,
   SimpleGrid,
   Stack,
@@ -33,6 +35,7 @@ import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
 import type { BumpConfiguration } from "../../types/types";
 import { IconInfoCircle } from "@tabler/icons-react";
+import { useHotkeys, type HotkeyItem } from "@mantine/hooks";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -52,11 +55,20 @@ export const ChoreoEventWrapper = () => {
   const inputMode = useAppStore((s) => s.inputMode);
   const setInputMode = useAppStore((s) => s.setInputMode);
 
+  const inputTimingMode = useAppStore((s) => s.inputTimingMode);
+  const setInputTimingMode = useAppStore((s) => s.setInputTimingMode);
+
   const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
   const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
   const setDerivedLyrics = useAppStore((s) => s.setDerivedLyrics);
 
   const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
+
+  const timingIndicatorNumber = useAppStore((s) => s.indicatorNumber);
+  const setIndicatorNumber = useAppStore((s) => s.setIndicatorNumber);
+
+  // Hotkeys for timing indicators
+  useHotkeys([1, 2, 3, 4, 5, 6, 7, 8].map((i): HotkeyItem => [i.toString(), () => setIndicatorNumber(i)]));
 
   useEffect(() => {
     const lyrics = item?.rawLyrics ?? "";
@@ -126,6 +138,9 @@ export const ChoreoEventWrapper = () => {
     if (inputMode === "cue") return "Configure cues";
     if (inputMode === "bump") {
       return `Configure bump: ${bumpDefault?.name}`;
+    }
+    if (inputMode === "timing") {
+      return `Configure ${inputTimingMode} beats`;
     }
   };
 
@@ -214,6 +229,21 @@ export const ChoreoEventWrapper = () => {
                     </Button>
                   </Group>
                 )}
+                {/* {timingIndicatorNumber} */}
+
+                {inputMode === "timing" ? (
+                  <Box style={{ maxWidth: "75px" }}>
+                    <NumberInput
+                      description="Beat to add"
+                      value={timingIndicatorNumber}
+                      onChange={(e) => setIndicatorNumber(Number(e))}
+                      min={0}
+                      max={8}
+                    />
+                  </Box>
+                ) : (
+                  <></>
+                )}
 
                 <Menu shadow="md" width={"200px"} position="bottom-end">
                   <Menu.Target>
@@ -252,6 +282,32 @@ export const ChoreoEventWrapper = () => {
                         </Menu.Sub.Dropdown>
                       </Menu.Sub>
                     ) : null}
+                    <Menu.Sub>
+                      <Menu.Sub.Target>
+                        <Menu.Sub.Item> Configure timing indicators</Menu.Sub.Item>
+                      </Menu.Sub.Target>
+                      <Menu.Sub.Dropdown>
+                        <Menu.Item
+                          onClick={() => {
+                            setInputMode("timing");
+                            setInputTimingMode("main");
+                          }}
+                        >
+                          Main beats
+                        </Menu.Item>
+                        <Menu.Label> Main beats are the 1,2,3,4 of bars</Menu.Label>
+
+                        <Menu.Item
+                          onClick={() => {
+                            setInputMode("timing");
+                            setInputTimingMode("sub");
+                          }}
+                        >
+                          Sub-beats
+                        </Menu.Item>
+                        <Menu.Label> Sub-beats are the divisions between main beats</Menu.Label>
+                      </Menu.Sub.Dropdown>
+                    </Menu.Sub>
                   </Menu.Dropdown>
                 </Menu>
 
@@ -260,7 +316,14 @@ export const ChoreoEventWrapper = () => {
                 </Input.Wrapper> */}
               </Group>
 
-              <Alert variant="light" color="lime" icon={<IconInfoCircle />}>
+              <Alert
+                variant="light"
+                color="lime"
+                icon={<IconInfoCircle />}
+                style={{
+                  transition: "all 0.3s ease",
+                }}
+              >
                 {inputMode === "raw" ? (
                   <Stack gap={"xs"}>
                     <span>
@@ -299,6 +362,22 @@ export const ChoreoEventWrapper = () => {
                 ) : (
                   <></>
                 )}
+
+                {inputMode === "timing" ? (
+                  <Stack gap="xs">
+                    <span>
+                      {" "}
+                      First, set the beat number you want to add by pressing <Kbd>1</Kbd> ... <Kbd>9</Kbd> on your
+                      keyboard, or use the number selector.
+                    </span>
+                    <span>
+                      {" "}
+                      Then, click on any word or space to indicate the <Code>{inputTimingMode} beat</Code>.
+                    </span>
+                  </Stack>
+                ) : (
+                  <></>
+                )}
               </Alert>
               {inputMode === "raw" && (
                 <Textarea
@@ -315,7 +394,9 @@ export const ChoreoEventWrapper = () => {
                 />
               )}
 
-              {(inputMode === "cue" || inputMode === "bump") && <RichContent itemId={item.id} />}
+              {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
+                <RichContent itemId={item.id} />
+              )}
             </Stack>
             <Stack>
               <Group>

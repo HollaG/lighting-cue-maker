@@ -12,7 +12,7 @@ import { useCreateBump } from "../../query/useCreateBump";
 import { insertBumpInRichContent, removeBumpFromRawLyrics } from "../../utils/bumpUtils";
 import { useDeleteBump } from "../../query/useDeleteBump";
 
-export const RichContent = ({ itemId }: { itemId: string }) => {
+const RichContentInternal = ({ itemId }: { itemId: string }) => {
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
   const inputMode = useAppStore((s) => s.inputMode);
@@ -99,6 +99,9 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
                   rawLyrics: updatedRawLyrics,
                 },
               });
+
+              // Set the currently active cue id to this
+              setCurrentlySelectedCueId(id);
             })
             .catch(console.error);
         } else if (inputMode === "bump") {
@@ -187,3 +190,5 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
     </Stack>
   );
 };
+
+export const RichContent = React.memo(RichContentInternal);

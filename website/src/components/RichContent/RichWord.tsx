@@ -1,5 +1,5 @@
 import React from "react";
-import { Group, Box, Text, Center, Stack } from "@mantine/core";
+import { Box, Text, Center, Stack } from "@mantine/core";
 import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
@@ -27,7 +27,12 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
   const code = useAppStore((s) => s.code);
   const { event } = useGetEvent({ code });
   const { item } = useGetItem({ itemId: activeItemId });
-  if (word === "-") return <Text variant="lyric">{word}</Text>;
+  if (word === "-")
+    return (
+      <Text variant="lyric" style={{ marginBottom: "4px" }}>
+        {word}
+      </Text>
+    );
 
   // Check to see if it's
   for (const idType of richIdentifiers) {

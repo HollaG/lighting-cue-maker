@@ -4,6 +4,7 @@ import type { AppStore } from "../appStore";
 import type { Option } from "../../types/types";
 import { generateRich } from "../../utils/convertText";
 import { getCueOrder } from "../../utils/cueUtils";
+import { sanitize } from "../../utils/sanitize";
 
 export type InputMode = "raw" | "cue" | "bump" | "timing";
 export const InputModes: Option<InputMode>[] = [
@@ -43,9 +44,11 @@ export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set) =>
 
   // Only a SINGLE CALL to this is allowed PER react-query query.
   setDerivedLyrics: (rawLyrics: string) => {
+    // Sanitize the input
+    const cleaned = sanitize(rawLyrics);
     set({
-      content: generateRich(rawLyrics),
-      cueOrder: getCueOrder(rawLyrics),
+      content: generateRich(cleaned),
+      cueOrder: getCueOrder(cleaned),
     });
   },
 

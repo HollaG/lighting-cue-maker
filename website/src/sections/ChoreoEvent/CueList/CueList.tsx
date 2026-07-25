@@ -20,12 +20,7 @@ export const CueList = memo(({ itemId }: { itemId: string }) => {
             const cue = cues.find((c) => c.id === cueId);
             if (!cue) return null;
             return (
-              <CueCard
-                key={cue.id}
-                cue={cue}
-                cueNumber={index + 1}
-                isCueSelected={currentlySelectedCueId === cue.id}
-              />
+              <CueCard key={cue.id} cue={cue} cueNumber={index + 1} isCueSelected={currentlySelectedCueId === cue.id} />
             );
           })}
     </Stack>
