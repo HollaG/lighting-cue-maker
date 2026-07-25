@@ -11,6 +11,15 @@ export type CreateEventRes = {
   event: LightEventConfiguration;
 };
 
+export type CreateItemReq = {
+  eventId: string;
+  name: string;
+};
+
+export type CreateItemRes = {
+  item: Item;
+};
+
 export type CreateCueReq = {};
 export type CreateCueRes = { cue: Cue };
 

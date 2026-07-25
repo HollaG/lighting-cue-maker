@@ -26,6 +26,8 @@ import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItems } from "../../query/useGetItems";
 import { useGetItem } from "../../query/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
+import { useCreateItem } from "../../query/useCreateItem";
+import type { CreateItemReq } from "../../types/http";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -33,13 +35,14 @@ export const ChoreoEventWrapper = () => {
   const { event: evt, isValidEvent } = useGetEvent({ code });
   const activeItemId = useAppStore((s) => s.activeItemId);
 
-  const { items, refetchItems } = useGetItems({ eventId: evt?.id ?? "" });
+  const { items, isItemsLoading } = useGetItems({ eventId: evt?.id ?? "" });
   const { item, refetchItem } = useGetItem({ itemId: activeItemId ?? undefined });
+
+  const { mutate: createItem, isPending: isItemCreating } = useCreateItem();
 
   const changeActiveItem = useAppStore((s) => s.changeActiveItem);
   const itemName = useAppStore((s) => s.itemName);
   const setItemName = useAppStore((s) => s.setItemName);
-  const onAddItem = useAppStore((s) => s.onAddItem);
   const inputMode = useAppStore((s) => s.inputMode);
   const setInputMode = useAppStore((s) => s.setInputMode);
   const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
@@ -66,6 +69,14 @@ export const ChoreoEventWrapper = () => {
     // setRawLyrics(internalRawLyrics);
     onFinishAddingLyrics(internalRawLyrics, refetchItem);
     setInputMode(switchTo);
+  };
+
+  const onAddItem = () => {
+    if (!evt?.id || !itemName.trim()) return;
+    createItem({
+      eventId: evt.id,
+      name: itemName,
+    });
   };
 
   const controls = useMemo(() => {
@@ -131,7 +142,13 @@ export const ChoreoEventWrapper = () => {
                 placeholder="Your item name"
                 rightSectionWidth={"80px"}
                 rightSection={
-                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt?.id ?? null, refetchItems)}>
+                  <Button
+                    size="xs"
+                    variant="transparent"
+                    onClick={() => onAddItem()}
+                    disabled={isItemsLoading}
+                    loading={isItemCreating}
+                  >
                     Add item
                   </Button>
                 }
@@ -149,7 +166,7 @@ export const ChoreoEventWrapper = () => {
                 placeholder="Your item name"
                 rightSectionWidth={"80px"}
                 rightSection={
-                  <Button size="xs" variant="transparent" onClick={() => onAddItem(evt?.id ?? null, refetchItems)}>
+                  <Button size="xs" variant="transparent" onClick={() => onAddItem()}>
                     Add item
                   </Button>
                 }

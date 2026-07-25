@@ -5,6 +5,8 @@ import type { Item } from "../../types/types";
 import classes from "./ItemSelect.module.css";
 import type { QueryObserverResult, RefetchOptions } from "@tanstack/react-query";
 
+import { useCreateItem } from "../../query/useCreateItem";
+
 interface ItemSelectProps {
   items: Item[];
   eventId: string | null;
@@ -16,7 +18,12 @@ export const ItemSelect = ({ items, eventId, refetchItems }: ItemSelectProps) =>
   const changeActiveItem = useAppStore((s) => s.changeActiveItem);
   const itemName = useAppStore((s) => s.itemName);
   const setItemName = useAppStore((s) => s.setItemName);
-  const onAddItem = useAppStore((s) => s.onAddItem);
+  const { mutate: createItem } = useCreateItem();
+
+  const handleAddItem = () => {
+    if (!eventId || !itemName.trim()) return;
+    createItem({ eventId, name: itemName });
+  };
 
   const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
   const [controlsRefs, setControlsRefs] = useState<Record<string, HTMLButtonElement | null>>({});
@@ -65,7 +72,7 @@ export const ItemSelect = ({ items, eventId, refetchItems }: ItemSelectProps) =>
             placeholder="Your item name"
             rightSectionWidth={"80px"}
             rightSection={
-              <Button size="xs" variant="transparent" onClick={() => onAddItem(eventId, refetchItems)}>
+              <Button size="xs" variant="transparent" onClick={handleAddItem}>
                 Add item
               </Button>
             }
@@ -86,7 +93,7 @@ export const ItemSelect = ({ items, eventId, refetchItems }: ItemSelectProps) =>
           placeholder="Your item name"
           rightSectionWidth={"80px"}
           rightSection={
-            <Button size="xs" variant="transparent" onClick={() => onAddItem(eventId, refetchItems)}>
+            <Button size="xs" variant="transparent" onClick={handleAddItem}>
               Add item
             </Button>
           }

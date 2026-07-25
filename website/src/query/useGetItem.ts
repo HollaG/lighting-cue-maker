@@ -6,7 +6,7 @@ import type { GetItemRes } from "../types/http";
 
 export const useGetItem = ({ itemId }: { itemId?: string | null }) => {
   const query = useQuery({
-    queryKey: ["items", itemId],
+    queryKey: ["item", itemId],
     queryFn: async () => {
       const res = await api.get<GetItemRes>(`/api/v1/items/${itemId}`);
       return res.item;

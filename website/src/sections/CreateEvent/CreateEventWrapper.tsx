@@ -15,6 +15,7 @@ import type {
 import { useAppStore } from "../../store/appStore";
 import type { CreateEventReq, CreateEventRes } from "../../types/http";
 import { useGetEvent } from "../../query/useGetEvent";
+import { useCreateEvent } from "../../query/useCreateEvent";
 
 type FormData = Omit<LightEventConfiguration, "fixtureGroups" | "id" | "bumpConfigurations"> & {
   fixtureGroups: {
@@ -35,8 +36,10 @@ export const CreateEventWrapper = () => {
   const code = useAppStore((s) => s.code);
   const { isValidEvent } = useGetEvent({ code });
   const setCode = useAppStore((s) => s.setCode);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { executeRequest } = useRequest<CreateEventReq, CreateEventRes>("/api/v1/events", "POST");
+  // const [isSubmitting, setIsSubmitting] = useState(false);
+  // const { executeRequest } = useRequest<CreateEventReq, CreateEventRes>("/api/v1/events", "POST");
+
+  const { isPending: isSubmitting, mutate: createEvent } = useCreateEvent();
   const setActiveItemId = useAppStore((s) => s.setActiveItemId);
   const form = useForm<FormData>({
     mode: "uncontrolled",
@@ -72,19 +75,7 @@ export const CreateEventWrapper = () => {
       return { name: bumpConfiguration } as BumpConfiguration;
     });
 
-    setIsSubmitting(true);
-    try {
-      const result = await executeRequest(config);
-      if (result?.event?.id) {
-        // set this ID as the event
-        setCode(result.event.id);
-        setActiveItemId("");
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSubmitting(false);
-    }
+    createEvent(config);
   };
 
   if (isValidEvent) return;
