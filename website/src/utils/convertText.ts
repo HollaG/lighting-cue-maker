@@ -1,22 +1,12 @@
 // possible embedded rich types:
 //  1. cue (embedded as 2 options:)
 //    a. with lyrics
-//       -- string: if happy ever after <cue id=uuid>did</cue> exist
-//       -- string: if happy every <cue id=uuid>after did</cue> exist
-//    b. in a space
-//       -- string: if happy ever after did <cue id=uuid/>> exist (note the self-closing)
-//  2. one-shot
-//  3. comments
-//    -- string: if <comment id=uuivd> happy ever after </comment> did exist
-
-// possible embedded rich types:
-//  1. cue (embedded as 2 options:)
-//    a. with lyrics
 //       -- string: if happy ever after [did][cue_id=uuid] exist
 //       -- string: if happy every after [cue_id=uuid] did exist
 //    b. in a space
 //       -- string: if happy ever after did <cue id=uuid/>> exist (note the self-closing)
-//  2. one-shot
+//  2. bump
+//    same options as cue, but with <bumpId=xxx=bumpId> instead
 //  3. comments
 //    -- string: if <comment_id=uuivd> happy ever after </comment_id=uuidv4> did exist
 

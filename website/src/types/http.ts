@@ -1,3 +1,4 @@
+import type { Bump } from "./bumps";
 import type { Cue } from "./cues";
 import type { Item, LightEventConfiguration } from "./types";
 
@@ -40,6 +41,9 @@ export type UpdateItemRes = { item: Item };
 
 export type UpdateCueReq = Partial<Cue>;
 export type UpdateCueRes = { cue: Cue };
+
+export type CreateBumpReq = { itemId: string; bumpConfigurationId: string };
+export type CreateBumpRes = { bump: Bump };
 
 export type GenerateQlcCollections = {
   maxFunctionId: number;

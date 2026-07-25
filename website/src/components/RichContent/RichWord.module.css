@@ -51,9 +51,86 @@
 .cue-wrapper {
   transition: all 0.2s ease-in-out;
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0);
+  /* border: "4px solid yellow", */
 }
 
 .cue-selected {
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.15);
   transform: translate(-2px, -2px);
+}
+
+
+.lyric,
+.space,
+.content {
+  font-size: 16px !important;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+
+  /* Lyrics and spaces should never be coloured */
+  background-color: transparent !important;
+  padding: 0;
+}
+
+/* Special: for spaces, expand the space slightly so it's easier to click */
+.space {
+  &:hover {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+
+.richContainer {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0);
+
+  /* Embedded indicators, e.g. Cue 2 or Bump Flash White */
+  .indicator {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+
+    height: stretch;
+    text-align: center;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-width: 4px;
+    border-style: solid;
+
+  }
+
+  /* Content within a Rich Container should be surrounded with a border */
+  .content {
+    border-width: 4px;
+    border-style: solid;
+  }
+
+
+  /* For when the Rich Content is selected */
+  &.selected {
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.15);
+    transform: translate(-2px, -2px);
+  }
+}
+
+.is-cue {
+  background-color: yellow;
+  border-color: yellow;
+
+  .content {
+    border-color: yellow;
+  }
+}
+
+.is-bump {
+  background-color: pink;
+  border-color: pink;
+
+  .content {
+    border-color: pink;
+  }
 }

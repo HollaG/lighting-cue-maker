@@ -8,14 +8,18 @@ import { useCreateCue } from "../../query/useCreateCue";
 import { useUpdateItem } from "../../query/useUpdateItem";
 import { insertCueInRichContent } from "../../utils/cueUtils";
 import { generateRaw } from "../../utils/convertText";
+import { useCreateBump } from "../../query/useCreateBump";
+import { insertBumpInRichContent } from "../../utils/bumpUtils";
 
 export const RichContent = ({ itemId }: { itemId: string }) => {
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
   const inputMode = useAppStore((s) => s.inputMode);
+  const instantAddBumpMode = useAppStore((s) => s.instantAddBumpMode);
 
   const { content } = useGetItem({ itemId });
   const { mutateAsync: createCue } = useCreateCue();
+  const { mutateAsync: createBump } = useCreateBump();
   const { mutate: updateItem } = useUpdateItem();
 
   const handleContainerClick = useCallback(
@@ -45,6 +49,25 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
               const updatedRawLyrics = generateRaw(updatedContent);
 
               // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
+              updateItem({
+                itemId,
+                requestBody: {
+                  rawLyrics: updatedRawLyrics,
+                },
+              });
+            })
+            .catch(console.error);
+        } else if (inputMode === "bump") {
+          createBump({
+            itemId,
+            bumpConfigurationId: instantAddBumpMode.id,
+          })
+            .then((res) => {
+              const id = res.bump.id;
+              const updatedContent = insertBumpInRichContent(id, lineIndex, wordIndex, isSpace, content);
+              const updatedRawLyrics = generateRaw(updatedContent);
+
+              // TODO @combine-updates: can probably calculate insertBumpInRichContent in the backend, so we can save one query
               updateItem({
                 itemId,
                 requestBody: {

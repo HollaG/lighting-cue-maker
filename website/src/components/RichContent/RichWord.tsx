@@ -15,6 +15,7 @@ interface RichWordProps {
 const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected }: RichWordProps) => {
   if (word === "-") return <Text variant="lyric">{word}</Text>;
   if (word.startsWith("<cueId=")) {
+    // stand-alone
     if (word.endsWith("=cueId>")) {
       const cueId = convertUuidForDatabase(word.split("<cueId=")[1].split("=cueId>")[0]);
       return (
@@ -30,7 +31,7 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected }: RichW
             border: "4px solid yellow",
             cursor: "pointer",
           }}
-          className={clsx(classes["cue-wrapper"], isSelected ? classes["cue-selected"] : "")}
+          className={clsx(classes["cue"], classes["cue-wrapper"], isSelected ? classes["cue-selected"] : "")}
         >
           Cue {cueNumber}
         </Center>

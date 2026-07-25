@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { Bumps } from "../types/bumps";
+import type { Bump } from "../types/bumps";
 
 export type UpdateBumpParams = {
   bumpId: string;
@@ -11,7 +11,7 @@ export type UpdateBumpParams = {
 };
 
 export type UpdateBumpRes = {
-  bump: Bumps;
+  bump: Bump;
 };
 
 export const useUpdateBump = () => {

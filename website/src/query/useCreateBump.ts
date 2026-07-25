@@ -1,22 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { Bumps } from "../types/bumps";
-
-export type CreateBumpParams = {
-  itemId: string;
-  bumpId?: string;
-};
-
-export type CreateBumpRes = {
-  bump: Bumps;
-};
+import type { Bump } from "../types/bumps";
+import type { CreateBumpReq, CreateBumpRes } from "../types/http";
 
 export const useCreateBump = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: CreateBumpParams) =>
-      api.post<CreateBumpParams, CreateBumpRes>("/api/v1/bumps", params),
+    mutationFn: (params: CreateBumpReq) => api.post<CreateBumpReq, CreateBumpRes>("/api/v1/bumps", params),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bumps"] });
