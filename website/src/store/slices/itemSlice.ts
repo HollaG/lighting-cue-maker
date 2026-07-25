@@ -13,7 +13,7 @@ export interface ItemSlice {
   onAddItem: (eventId: string | null, refetchItems: GetItemsRefetchFn) => Promise<void>;
 }
 
-export const createItemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, get) => ({
+export const itemSlice: StateCreator<AppStore, [], [], ItemSlice> = (set, get) => ({
   activeItemId: null,
   itemName: "",
 

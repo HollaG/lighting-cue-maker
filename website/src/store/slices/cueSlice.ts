@@ -2,13 +2,7 @@ import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
 import { api } from "../../lib/api";
 import { generateRaw } from "../../utils/convertText";
-import type {
-  CreateCueRes,
-  UpdateItemRes,
-  DeleteCuesRes,
-  UpdateCueReq,
-  UpdateCueRes,
-} from "../../types/http";
+import type { CreateCueRes, UpdateItemRes, DeleteCuesRes, UpdateCueReq, UpdateCueRes } from "../../types/http";
 import { convertUuidForEmbedding } from "../../utils/convertUuid";
 import type { Cue } from "../../types/cues";
 import type { GetCuesRefetchFn } from "../../query/useGetCues";
@@ -31,14 +25,10 @@ export interface CueSlice {
     refetchItem: GetItemRefetchFn,
     refetchCues: GetCuesRefetchFn,
   ) => Promise<void>;
-  onUpdateCue: (
-    cue: Cue,
-    refetchItem: GetItemRefetchFn,
-    refetchCues: GetCuesRefetchFn,
-  ) => Promise<void>;
+  onUpdateCue: (cue: Cue, refetchItem: GetItemRefetchFn, refetchCues: GetCuesRefetchFn) => Promise<void>;
 }
 
-export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, get) => ({
+export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, get) => ({
   currentlySelectedCueId: undefined,
   setCurrentlySelectedCueId: (cueId) => {
     console.log(cueId);
@@ -85,31 +75,21 @@ export const createCueSlice: StateCreator<AppStore, [], [], CueSlice> = (set, ge
 
       const newRawLyrics = generateRaw(updatedContent);
 
-      await api.patch<UpdateItemRes>(
-        `/api/v1/items/${activeItemId}`,
-        { rawLyrics: newRawLyrics },
-      );
+      await api.patch<UpdateItemRes>(`/api/v1/items/${activeItemId}`, { rawLyrics: newRawLyrics });
 
       refetchCues();
       refetchItem();
     } catch (e) {}
   },
 
-  onUpdateCue: async (
-    updatedCue: Cue,
-    refetchItem: GetItemRefetchFn,
-    refetchCues: GetCuesRefetchFn,
-  ) => {
+  onUpdateCue: async (updatedCue: Cue, refetchItem: GetItemRefetchFn, refetchCues: GetCuesRefetchFn) => {
     const requestBody: UpdateCueReq = {
       comments: updatedCue.comments,
       assignments: updatedCue.assignments,
     };
     const { activeItemId } = get();
     if (!activeItemId) return;
-    await api.patch<UpdateCueRes>(
-      `/api/v1/cues/${updatedCue.id}`,
-      requestBody,
-    );
+    await api.patch<UpdateCueRes>(`/api/v1/cues/${updatedCue.id}`, requestBody);
 
     refetchCues();
     refetchItem();

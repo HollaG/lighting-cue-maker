@@ -5,7 +5,7 @@ import type { UpdateItemRes } from "../../types/http";
 import type { Option } from "../../types/types";
 import type { GetItemRefetchFn } from "../../query/useGetItem";
 
-export type InputMode = "raw" | "rich" | "one-shot" | "timing";
+export type InputMode = "raw" | "rich" | "bump" | "timing";
 export const InputModes: Option<InputMode>[] = [
   {
     value: "raw",
@@ -16,8 +16,8 @@ export const InputModes: Option<InputMode>[] = [
     label: "Edit cues",
   },
   {
-    value: "one-shot",
-    label: "Edit one-shot cues",
+    value: "bump",
+    label: "Edit bump cues",
   },
   {
     value: "timing",
@@ -29,13 +29,10 @@ export interface LyricsSlice {
   inputMode: InputMode;
   setInputMode: (mode: InputMode) => void;
   onBeginAddingLyrics: () => void;
-  onFinishAddingLyrics: (
-    rawLyrics: string,
-    refetchItem: GetItemRefetchFn,
-  ) => Promise<void>;
+  onFinishAddingLyrics: (rawLyrics: string, refetchItem: GetItemRefetchFn) => Promise<void>;
 }
 
-export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set, get) => ({
+export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set, get) => ({
   inputMode: "rich",
 
   setInputMode: (inputMode: InputMode) => set({ inputMode: inputMode }),
@@ -46,10 +43,7 @@ export const createLyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (s
     });
   },
 
-  onFinishAddingLyrics: async (
-    rawLyrics: string,
-    refetchItem: GetItemRefetchFn,
-  ) => {
+  onFinishAddingLyrics: async (rawLyrics: string, refetchItem: GetItemRefetchFn) => {
     const { activeItemId } = get();
     set({
       inputMode: "rich",

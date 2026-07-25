@@ -8,8 +8,11 @@ import { RichWord } from "./RichWord";
 
 export const RichContent = ({ itemId }: { itemId: string }) => {
   const onAddCue = useAppStore((s) => s.onAddCue);
+  const onAddBump = useAppStore((s) => s.onAddBump);
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
+  const inputMode = useAppStore((s) => s.inputMode);
+  const instantAddBumpMode = useAppStore((s) => s.instantAddBumpMode);
 
   const { content, refetchItem } = useGetItem({ itemId });
   const { refetchCues } = useGetCues({ itemId });
@@ -26,12 +29,15 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         if (cueId) {
           setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
         }
-      } else if (action === "add-cue") {
+      } else if (action === "add") {
         const lineIndex = Number(target.dataset.lineIndex);
         const wordIndex = Number(target.dataset.wordIndex);
         const isSpace = target.dataset.isSpace === "true";
 
-        onAddCue(lineIndex, wordIndex, isSpace, content, refetchItem, refetchCues);
+        if (inputMode === "rich") {
+          onAddCue(lineIndex, wordIndex, isSpace, content, refetchItem, refetchCues);
+        } else if (inputMode === "bump") {
+        }
       }
     },
     [currentlySelectedCueId, setCurrentlySelectedCueId, onAddCue, content, refetchItem, refetchCues],

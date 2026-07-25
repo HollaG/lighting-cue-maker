@@ -6,7 +6,7 @@ export interface EventSlice {
   setCode: (code: string) => void;
 }
 
-export const createEventSlice: StateCreator<AppStore, [], [], EventSlice> = (set) => ({
+export const eventSlice: StateCreator<AppStore, [], [], EventSlice> = (set) => ({
   code: "",
 
   setCode: (code: string) => {

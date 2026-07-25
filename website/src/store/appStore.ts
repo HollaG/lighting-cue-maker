@@ -1,21 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createEventSlice, type EventSlice } from "./slices/createEventSlice";
-import { createItemSlice, type ItemSlice } from "./slices/createItemSlice";
-import { createLyricsSlice, type LyricsSlice, type InputMode } from "./slices/createLyricsSlice";
-import { createCueSlice, type CueSlice } from "./slices/createCueSlice";
+import { eventSlice, type EventSlice } from "./slices/eventSlice";
+import { itemSlice, type ItemSlice } from "./slices/itemSlice";
+import { lyricsSlice, type LyricsSlice, type InputMode } from "./slices/lyricsSlice";
+import { cueSlice, type CueSlice } from "./slices/cueSlice";
+import { bumpSlice, type BumpSlice } from "./slices/bumpSlice";
 
-export type { EventSlice, ItemSlice, LyricsSlice, CueSlice, InputMode as LyricMode };
+export type { EventSlice, ItemSlice, LyricsSlice, CueSlice, BumpSlice, InputMode as LyricMode };
 
-export type AppStore = EventSlice & ItemSlice & LyricsSlice & CueSlice;
+export type AppStore = EventSlice & ItemSlice & LyricsSlice & CueSlice & BumpSlice;
 
 export const useAppStore = create<AppStore>()(
   persist(
     (...a) => ({
-      ...createEventSlice(...a),
-      ...createItemSlice(...a),
-      ...createLyricsSlice(...a),
-      ...createCueSlice(...a),
+      ...eventSlice(...a),
+      ...itemSlice(...a),
+      ...lyricsSlice(...a),
+      ...cueSlice(...a),
+      ...bumpSlice(...a),
     }),
     {
       name: "code",

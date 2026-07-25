@@ -61,7 +61,7 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected }: RichW
     if (word === " ") {
       return (
         <Box
-          data-action="add-cue"
+          data-action="add"
           data-line-index={index1}
           data-word-index={index2}
           data-is-space="true"
@@ -75,7 +75,7 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected }: RichW
 
     return (
       <Text
-        data-action="add-cue"
+        data-action="add"
         data-line-index={index1}
         data-word-index={index2}
         data-is-space="false"

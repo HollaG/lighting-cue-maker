@@ -1,6 +1,5 @@
 import {
   Anchor,
-  Box,
   Button,
   Center,
   Collapse,
@@ -8,10 +7,8 @@ import {
   Divider,
   FloatingIndicator,
   Group,
-  Input,
+  Highlight,
   Menu,
-  SegmentedControl,
-  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -28,7 +25,7 @@ import { CueList } from "./CueList/CueList";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItems } from "../../query/useGetItems";
 import { useGetItem } from "../../query/useGetItem";
-import { InputModes, type InputMode } from "../../store/slices/createLyricsSlice";
+import { type InputMode } from "../../store/slices/lyricsSlice";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -46,7 +43,10 @@ export const ChoreoEventWrapper = () => {
   const inputMode = useAppStore((s) => s.inputMode);
   const setInputMode = useAppStore((s) => s.setInputMode);
   const onFinishAddingLyrics = useAppStore((s) => s.onFinishAddingLyrics);
-  const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
+  // const onBeginAddingLyrics = useAppStore((s) => s.onBeginAddingLyrics);
+
+  const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
+  const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
 
   const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
 
@@ -62,9 +62,10 @@ export const ChoreoEventWrapper = () => {
     controlsRefs[id] = node;
     setControlsRefs(controlsRefs);
   };
-  const onClickFinishAddingLyricsButton = () => {
+  const onClickFinishAddingLyricsButton = (switchTo: InputMode) => {
     // setRawLyrics(internalRawLyrics);
     onFinishAddingLyrics(internalRawLyrics, refetchItem);
+    setInputMode(switchTo);
   };
 
   const controls = useMemo(() => {
@@ -161,7 +162,7 @@ export const ChoreoEventWrapper = () => {
         {!!item && (
           <SimpleGrid cols={2} px="xl" mt="3rem">
             <Stack>
-              <Group align="end">
+              <Group>
                 <Title order={3} flex={1}>
                   Lyrics
                 </Title>
@@ -173,24 +174,48 @@ export const ChoreoEventWrapper = () => {
                   </Group>
                 )}
                 {/* <SegmentedControl value={inputMode} onChange={setInputMode} data={InputModes} /> */}
+                {inputMode == "rich" && <Highlight highlight={"cue"}>Click on a word/space to add a cue</Highlight>}
+                {inputMode == "bump" && (
+                  <Highlight highlight={`"${instantBumpMode?.name}" bump`} color="pink">
+                    {`Click on a word/space to add a "${instantBumpMode?.name}" bump`}
+                  </Highlight>
+                )}
+                <Menu shadow="md">
+                  <Menu.Target>
+                    <Button>Change input mode</Button>
+                  </Menu.Target>
 
-                {/* <Menu>
-                  <Menu shadow="md" width={200}>
-                    <Menu.Target>
-                      <Button>Change input mode</Button>
-                    </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item onClick={() => setInputMode("raw")}> Edit lyrics</Menu.Item>
+                    <Menu.Item onClick={() => onClickFinishAddingLyricsButton("rich")}> Configure cues</Menu.Item>
+                    {evt?.bumpConfigurations && evt.bumpConfigurations.length ? (
+                      <Menu.Sub>
+                        <Menu.Sub.Target>
+                          <Menu.Sub.Item> Configure bumps</Menu.Sub.Item>
+                        </Menu.Sub.Target>
+                        <Menu.Sub.Dropdown>
+                          {evt.bumpConfigurations.map((bumpConfig) => (
+                            <Menu.Item
+                              onClick={() => {
+                                setInstantBumpMode(bumpConfig);
+                                onClickFinishAddingLyricsButton("bump");
+                              }}
+                              key={bumpConfig.id}
+                            >
+                              {bumpConfig.name}
+                            </Menu.Item>
+                          ))}
+                        </Menu.Sub.Dropdown>
+                      </Menu.Sub>
+                    ) : (
+                      <></>
+                    )}
+                  </Menu.Dropdown>
+                </Menu>
 
-                    <Menu.Dropdown>
-                      <Menu.Item onClick={() => setInputMode("raw")}> Edit lyrics</Menu.Item>
-                      <Menu.Item onClick={() => setInputMode("rich")}> Edit cues</Menu.Item>
-                      <Menu.Item onClick={() => setInputMode("one-shot")}> Edit one-shot cues</Menu.Item>
-                      <Menu.Item onClick={() => setInputMode("timing")}> Add timing to lyrics</Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                </Menu> */}
-                <Input.Wrapper label="Input mode" mx={0}>
+                {/* <Input.Wrapper label="Input mode" mx={0}>
                   <Select data={InputModes} value={inputMode} onChange={(value) => setInputMode(value as InputMode)} />
-                </Input.Wrapper>
+                </Input.Wrapper> */}
               </Group>
               {inputMode === "raw" && (
                 <Textarea
@@ -207,7 +232,7 @@ export const ChoreoEventWrapper = () => {
                 />
               )}
 
-              {(inputMode === "rich" || inputMode === "one-shot") && <RichContent itemId={item.id} />}
+              {(inputMode === "rich" || inputMode === "bump") && <RichContent itemId={item.id} />}
             </Stack>
             <Stack>
               <Group>
