@@ -40,7 +40,10 @@ export const insertCueInRichContent = (
 };
 
 export const removeCueFromRawLyrics = (rawLyrics: string, cueId: string) => {
-  return rawLyrics.replace("<cueId=" + convertUuidForEmbedding(cueId) + "=cueId>", "");
+  // support both ids: try removing both the original type and the new type
+  let newRawLyrics = rawLyrics.replace("<cueId=" + convertUuidForEmbedding(cueId) + "=cueId>", "");
+  newRawLyrics = newRawLyrics.replace("<cueId=" + cueId.replaceAll("-", "_") + "=cueId>", "");
+  return newRawLyrics;
 };
 
 export const getCueOrder = (rawLyrics: string) => {

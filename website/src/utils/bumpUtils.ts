@@ -38,7 +38,11 @@ export const insertBumpInRichContent = (
 };
 
 export const removeBumpFromRawLyrics = (rawLyrics: string, bumpId: string) => {
-  return rawLyrics.replace("<bumpId=" + convertUuidForEmbedding(bumpId) + "=bumpId>", "");
+  // TODO @migrate-id: only use new format
+
+  return rawLyrics
+    .replace("<bumpId=" + convertUuidForEmbedding(bumpId) + "=bumpId>", "")
+    .replace("<bumpId=" + bumpId.replaceAll("-", "_") + "=bumpId>", "");
 };
 
 export const getBumpOrder = (rawLyrics: string) => {

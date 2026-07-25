@@ -1,7 +1,10 @@
 import {
+  Alert,
   Anchor,
+  Box,
   Button,
   Center,
+  Code,
   Collapse,
   Container,
   Divider,
@@ -9,6 +12,7 @@ import {
   Group,
   Highlight,
   Menu,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -29,6 +33,8 @@ import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
 import type { CreateItemReq } from "../../types/http";
 import { useUpdateItem } from "../../query/useUpdateItem";
+import type { BumpConfiguration } from "../../types/types";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -113,6 +119,15 @@ export const ChoreoEventWrapper = () => {
       setInputMode("raw");
     }
   }, [item?.rawLyrics]);
+
+  const possibleIndicatorTextOptions = ["Edit lyrics", "Configure cues", `Configure bump: ${instantBumpMode?.name}`];
+  const getIndicatorText = (inputMode: InputMode, bumpDefault?: BumpConfiguration) => {
+    if (inputMode === "raw") return "Edit lyrics";
+    if (inputMode === "cue") return "Configure cues";
+    if (inputMode === "bump") {
+      return `Configure bump: ${bumpDefault.name}`;
+    }
+  };
 
   return (
     <Collapse expanded={isValidEvent}>
@@ -199,16 +214,19 @@ export const ChoreoEventWrapper = () => {
                     </Button>
                   </Group>
                 )}
-                {/* <SegmentedControl value={inputMode} onChange={setInputMode} data={InputModes} /> */}
-                {inputMode === "cue" && <Highlight highlight={"cue"}>Click on a word/space to add a cue</Highlight>}
-                {inputMode == "bump" && (
-                  <Highlight highlight={`"${instantBumpMode?.name}" bump`} color="pink">
-                    {`Click on a word/space to add a "${instantBumpMode?.name}" bump`}
-                  </Highlight>
-                )}
-                <Menu shadow="md">
+
+                <Menu shadow="md" width={"200px"} position="bottom-end">
                   <Menu.Target>
-                    <Button>Change input mode</Button>
+                    {/* <Button>Change input mode</Button> */}
+                    <Box style={{ width: "250px" }}>
+                      <Select
+                        description="Editor mode"
+                        width={"200px"}
+                        data={[getIndicatorText(inputMode, instantBumpMode)]}
+                        value={getIndicatorText(inputMode, instantBumpMode)}
+                        readOnly
+                      />
+                    </Box>
                   </Menu.Target>
 
                   <Menu.Dropdown>
@@ -241,6 +259,37 @@ export const ChoreoEventWrapper = () => {
                   <Select data={InputModes} value={inputMode} onChange={(value) => setInputMode(value as InputMode)} />
                 </Input.Wrapper> */}
               </Group>
+
+              <Alert variant="light" color="lime" icon={<IconInfoCircle />}>
+                {inputMode === "raw" ? (
+                  <Stack gap={"xs"}>
+                    <span>
+                      You can add any lyrics / spoken word during your set here. Once done, switch the editor mode to
+                      configure cues/bumps.{" "}
+                    </span>
+                    <span>
+                      Do not modify the embedded cue/bump data (<Code>{`<cueId=...=cueId>`}</Code>)
+                    </span>
+                  </Stack>
+                ) : (
+                  ""
+                )}
+
+                {inputMode === "cue" ? "Click on any word or space to add a cue at that point." : ""}
+                {/* {inputMode === "bump" ? `Click on any word or space to add a bump for ${instantBumpMode.name} ` : ""} */}
+
+                {inputMode === "bump" ? (
+                  <Stack gap="xs">
+                    <span>
+                      Click on any word or space to add a bump for <Code>{instantBumpMode.name}</Code> at that point. A
+                      bump is an instantaneous effect that will flash only at the point you specify.
+                    </span>
+                    Click again to remove.
+                  </Stack>
+                ) : (
+                  ""
+                )}
+              </Alert>
               {inputMode === "raw" && (
                 <Textarea
                   variant="unstyled"

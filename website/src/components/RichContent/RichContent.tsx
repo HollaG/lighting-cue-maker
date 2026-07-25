@@ -60,19 +60,21 @@ export const RichContent = ({ itemId }: { itemId: string }) => {
         if (confirmDeleteBump) {
           deleteBump({
             bumpId,
-          }).then((res) => {
-            const updatedRawLyrics = removeBumpFromRawLyrics(item.rawLyrics, bumpId);
+          })
+            .then((res) => {
+              const updatedRawLyrics = removeBumpFromRawLyrics(item.rawLyrics, bumpId);
 
-            // update Item to remove from rawlyrics
-            // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
+              // update Item to remove from rawlyrics
+              // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
 
-            updateItem({
-              itemId: item.id,
-              requestBody: {
-                rawLyrics: updatedRawLyrics,
-              },
-            });
-          });
+              updateItem({
+                itemId: item.id,
+                requestBody: {
+                  rawLyrics: updatedRawLyrics,
+                },
+              });
+            })
+            .catch(console.error);
         }
       } else if (action === "add") {
         const lineIndex = Number(target.dataset.lineIndex);
