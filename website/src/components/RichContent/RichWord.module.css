@@ -1,34 +1,8 @@
-.lyric-input {
-  font-size: 16px !important;
-}
-
-/* Base styles for hoverable items */
-.lyric,
+/* Special: for spaces, expand the space slightly so it's easier to click */
 .space {
-  transition: all 0.2s ease-in-out;
 
-  &:hover {
-    background-color: yellow;
-    cursor: pointer;
-  }
-}
-
-/* Individual item overrides */
-.lyric {
-  background-color: transparent;
-
-  &.in-cue {
-    background-color: transparent;
-    border-radius: 0px;
-    border: 4px solid yellow;
-    margin: 0rem;
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-  }
-}
-
-.space {
-  padding: 0rem;
+  width: calc(1rem / 2);
+  height: stretch;
 
   &:hover {
     padding-left: 0.5rem;
@@ -36,48 +10,25 @@
   }
 }
 
-.cue {
-  background-color: yellow;
-  height: stretch;
-  text-align: center;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.cue-wrapper {
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0);
-  /* border: "4px solid yellow", */
-}
-
-.cue-selected {
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.15);
-  transform: translate(-2px, -2px);
-}
-
-
 .lyric,
-.space,
-.content {
-  font-size: 16px !important;
+.space {
   transition: all 0.2s ease-in-out;
   cursor: pointer;
 
-  /* Lyrics and spaces should never be coloured */
-  background-color: transparent !important;
-  padding: 0;
+  &.mode-rich:hover {
+    background-color: yellow;
+  }
+
+  &.mode-bump:hover {
+    background-color: pink;
+  }
 }
 
-/* Special: for spaces, expand the space slightly so it's easier to click */
-.space {
-  &:hover {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
+/* Reset lyric margin for all lyric types */
+.lyric,
+.cue,
+.bump {
+  margin: 0rem;
 }
 
 
@@ -87,9 +38,10 @@
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0);
 
   /* Embedded indicators, e.g. Cue 2 or Bump Flash White */
+  &.indicator,
   .indicator {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
 
     height: stretch;
     text-align: center;
@@ -104,9 +56,12 @@
   }
 
   /* Content within a Rich Container should be surrounded with a border */
-  .content {
+  .lyric {
     border-width: 4px;
     border-style: solid;
+    margin: 0rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
   }
 
 
@@ -118,19 +73,36 @@
 }
 
 .is-cue {
-  background-color: yellow;
-  border-color: yellow;
 
-  .content {
+
+  .lyric,
+  .indicator,
+  &.indicator {
     border-color: yellow;
   }
+
+  .indicator,
+  &.indicator {
+    background-color: yellow;
+    border-color: yellow;
+
+  }
+
 }
 
 .is-bump {
-  background-color: pink;
-  border-color: pink;
 
-  .content {
+
+  lyric .indicator,
+  &.indicator {
     border-color: pink;
   }
+
+  .indicator,
+  &.indicator {
+    background-color: pink;
+    border-color: pink;
+
+  }
+
 }
