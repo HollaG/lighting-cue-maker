@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, Center, Stack } from "@mantine/core";
+import { Box, Text, Center, Stack, Group } from "@mantine/core";
 import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
@@ -21,15 +21,18 @@ interface RichWordProps {
 
 const richIdentifiers = ["cue", "bump"] as const;
 
+const BOTTOM_GAP = "4px";
+
 const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordProps) => {
   const inputMode = useAppStore((s) => s.inputMode);
   const activeItemId = useAppStore((s) => s.activeItemId);
   const code = useAppStore((s) => s.code);
   const { event } = useGetEvent({ code });
   const { item } = useGetItem({ itemId: activeItemId });
+
   if (word === "-")
     return (
-      <Text variant="lyric" style={{ marginBottom: "4px" }}>
+      <Text variant="lyric" style={{ marginBottom: BOTTOM_GAP }}>
         {word}
       </Text>
     );
@@ -64,9 +67,10 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
               classes["indicator"],
               isSelected ? classes["selected"] : "",
             )}
-          >
-            {getDisplayText(idType, order[idType], bumpConfigurationName)}
-          </Center>
+            dangerouslySetInnerHTML={{
+              __html: `${getDisplayText(idType, order[idType], bumpConfigurationName) as string}`,
+            }}
+          ></Center>
         );
       }
 
@@ -86,20 +90,28 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
       }
 
       return (
-        <Stack
+        <Group
           id={`ref-${id}`}
           data-action={`select-${idType}`}
           {...{ [`data-${idType}-id`]: id, [`data-bump-name`]: bumpConfigurationName || undefined }}
           gap={0}
           className={clsx(classes["richContainer"], classes[`is-${idType}`], isSelected ? classes["selected"] : "")}
         >
+          <Text
+            variant="lyric"
+            className={clsx(classes["lyric"])}
+            dangerouslySetInnerHTML={{
+              __html: textContent,
+            }}
+          ></Text>
           <Box className={classes["indicator"]}>
-            <Text>{getDisplayText(idType, order[idType], bumpConfigurationName)}</Text>
+            <Text
+              dangerouslySetInnerHTML={{
+                __html: `${getDisplayText(idType, order[idType], bumpConfigurationName) as string}`,
+              }}
+            ></Text>
           </Box>
-          <Text variant="lyric" className={clsx(classes["lyric"])}>
-            {textContent}
-          </Text>
-        </Stack>
+        </Group>
       );
     } else {
       if (word === " ") {
@@ -110,6 +122,7 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
             data-word-index={index2}
             data-is-space="true"
             className={clsx(classes["space"], classes[`mode-${inputMode}`])}
+            style={{ marginBottom: BOTTOM_GAP }}
           >
             ㅤ
           </Box>
@@ -138,9 +151,12 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
       data-is-space="false"
       variant="lyric"
       className={clsx(classes["lyric"], classes[`mode-${inputMode}`])}
-      style={{ marginBottom: "4px" }}
+      style={{ marginBottom: BOTTOM_GAP }}
+      dangerouslySetInnerHTML={{
+        __html: word,
+      }}
     >
-      {word}
+      {/* {word} */}
     </Text>
   );
 };
@@ -238,6 +254,6 @@ const getDisplayText = (inputMode: InputMode, number: number, bumpConfigurationN
 
   if (inputMode === "cue") {
     // return "ㅤ";
-    return `Cue ${number}`;
+    return `#${number.toString().padStart(2, "0")}`;
   }
 };
