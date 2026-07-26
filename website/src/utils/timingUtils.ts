@@ -1,7 +1,4 @@
-import { notifications } from "@mantine/notifications";
 import type { IndicatorTimingMode } from "../store/slices/timingSlice";
-import { shortenUUID } from "./convertUuid";
-import { showNotification } from "./notifications";
 import { generateRaw, generateRich } from "./convertText";
 
 const MAIN_INDICATOR = "♩";
@@ -15,17 +12,6 @@ export const insertTimingMarkerInRichContent = (
   isSpace: boolean,
   content: string[][],
 ) => {
-  // a timing marker is raw html:
-  // <sub class='subscript'>{timing}</sub> for type=main
-  // <sup class='superscript'>{timing}</sup> for type=sub
-  // wrap them in a span: <span class='supsub'> ... </span>
-
-  // IMPORTANT: the "sub" type is actually mapped to "superscript"
-
-  // place it after the word, or if it's a space, insert it directly into the space, leave no gaps
-  // generate a random short id
-  const uuid = window.crypto.randomUUID();
-  const shortened = shortenUUID(uuid);
 
   // const marker =
   //   type === "main"

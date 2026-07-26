@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Group, Flex, Stack } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useGetItem } from "../../query/useGetItem";
+import { useGetEvent } from "../../query/useGetEvent";
 import { RichWord } from "./RichWord";
 import { useCreateCue } from "../../query/useCreateCue";
 import { useUpdateItem } from "../../query/useUpdateItem";
@@ -17,13 +18,28 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
   const content = useAppStore((s) => s.content);
+  const code = useAppStore((s) => s.code);
+  const inputMode = useAppStore((s) => s.inputMode);
 
   const { item } = useGetItem({ itemId });
-  // const { event } = useGetEvent({ code });
+  const { event } = useGetEvent({ code });
   const { mutateAsync: createCue } = useCreateCue();
   const { mutateAsync: createBump } = useCreateBump();
   const { mutateAsync: deleteBump } = useDeleteBump();
   const { mutate: updateItem } = useUpdateItem();
+
+  const bumpNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (item?.bumps && event?.bumpConfigurations) {
+      for (const bump of item.bumps) {
+        const config = event.bumpConfigurations.find((c) => c.id === bump.bumpConfigurationId);
+        if (config) {
+          map[bump.id] = config.name;
+        }
+      }
+    }
+    return map;
+  }, [item?.bumps, event?.bumpConfigurations]);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!item) return;
@@ -198,6 +214,8 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
                       bump: bumpNumber,
                     }}
                     isSelected={isSelected}
+                    inputMode={inputMode}
+                    bumpNameMap={bumpNameMap}
                   />
                 </Flex>
               );

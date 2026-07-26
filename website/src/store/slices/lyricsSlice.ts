@@ -4,6 +4,7 @@ import type { AppStore } from "../appStore";
 import type { Option } from "../../types/types";
 import { generateRich } from "../../utils/convertText";
 import { getCueOrder } from "../../utils/cueUtils";
+import { getBumpOrder } from "../../utils/bumpUtils";
 import { sanitize } from "../../utils/sanitize";
 
 export type InputMode = "raw" | "cue" | "bump" | "timing";
@@ -30,6 +31,7 @@ export interface LyricsSlice {
   inputMode: InputMode;
   content: string[][];
   cueOrder: string[];
+  bumpOrder: string[];
   setInputMode: (mode: InputMode) => void;
   setDerivedLyrics: (rawLyrics: string) => void;
   onBeginAddingLyrics: () => void;
@@ -39,6 +41,7 @@ export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set) =>
   inputMode: "cue",
   content: [],
   cueOrder: [],
+  bumpOrder: [],
 
   setInputMode: (inputMode: InputMode) => set({ inputMode: inputMode }),
 
@@ -49,6 +52,7 @@ export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set) =>
     set({
       content: generateRich(cleaned),
       cueOrder: getCueOrder(cleaned),
+      bumpOrder: getBumpOrder(cleaned),
     });
   },
 

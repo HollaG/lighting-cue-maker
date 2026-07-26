@@ -1,7 +1,6 @@
 import {
   Alert,
   Anchor,
-  Box,
   Button,
   Center,
   Code,
@@ -11,9 +10,6 @@ import {
   FloatingIndicator,
   Group,
   Kbd,
-  Menu,
-  NumberInput,
-  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -25,7 +21,7 @@ import {
 import { useAppStore } from "../../store/appStore";
 import classes from "./ChoreoEventWrapper.module.css";
 import { RichContent } from "../../components/RichContent/RichContent";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CueList } from "./CueList/CueList";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItems } from "../../query/useGetItems";
@@ -33,9 +29,10 @@ import { useGetItem } from "../../query/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
-import type { BumpConfiguration } from "../../types/types";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { useHotkeys, type HotkeyItem } from "@mantine/hooks";
+import { sanitize } from "../../utils/sanitize";
+import { ContentControl } from "../../components/ContentControl/ContentControl";
 
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
@@ -56,25 +53,24 @@ export const ChoreoEventWrapper = () => {
   const setInputMode = useAppStore((s) => s.setInputMode);
 
   const inputTimingMode = useAppStore((s) => s.inputTimingMode);
-  const setInputTimingMode = useAppStore((s) => s.setInputTimingMode);
 
   const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
-  const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
   const setDerivedLyrics = useAppStore((s) => s.setDerivedLyrics);
 
   const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
 
-  const timingIndicatorNumber = useAppStore((s) => s.indicatorNumber);
   const setIndicatorNumber = useAppStore((s) => s.setIndicatorNumber);
+
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Hotkeys for timing indicators
   useHotkeys([1, 2, 3, 4, 5, 6, 7, 8].map((i): HotkeyItem => [i.toString(), () => setIndicatorNumber(i)]));
 
   useEffect(() => {
     const lyrics = item?.rawLyrics ?? "";
-    setInternalRawLyrics(lyrics);
-    setDerivedLyrics(lyrics);
-  }, [item?.rawLyrics]);
+    setInternalRawLyrics(sanitize(lyrics));
+    setDerivedLyrics(sanitize(lyrics));
+  }, [item?.rawLyrics, sanitize]);
 
   // for the Item selection
   const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
@@ -123,7 +119,6 @@ export const ChoreoEventWrapper = () => {
   }, [items, activeItemId]);
 
   const deleteExtraSpaces = () => {
-    // setRawLyrics(rawLyrics.replaceAll("\n\n\n", "\n\n"));
     setInternalRawLyrics(internalRawLyrics.replaceAll("\n\n\n", "\n\n"));
   };
 
@@ -132,17 +127,6 @@ export const ChoreoEventWrapper = () => {
       setInputMode("raw");
     }
   }, [item?.rawLyrics]);
-
-  const getIndicatorText = (inputMode: InputMode, bumpDefault?: BumpConfiguration | null) => {
-    if (inputMode === "raw") return "Edit lyrics";
-    if (inputMode === "cue") return "Configure cues";
-    if (inputMode === "bump") {
-      return `Configure bump: ${bumpDefault?.name}`;
-    }
-    if (inputMode === "timing") {
-      return `Configure ${inputTimingMode} beats`;
-    }
-  };
 
   return (
     <Collapse expanded={isValidEvent}>
@@ -217,104 +201,12 @@ export const ChoreoEventWrapper = () => {
       <Container fluid>
         {!!item && (
           <SimpleGrid cols={2} px="xl" mt="3rem">
-            <Stack>
-              <Group>
-                <Title order={3} flex={1}>
-                  Lyrics
-                </Title>
-                {inputMode == "raw" && (
-                  <Group>
-                    <Button size="xs" variant="subtle" color="black" onClick={deleteExtraSpaces}>
-                      Remove extra line breaks
-                    </Button>
-                  </Group>
-                )}
-                {/* {timingIndicatorNumber} */}
-
-                {inputMode === "timing" ? (
-                  <Box style={{ maxWidth: "75px" }}>
-                    <NumberInput
-                      description="Beat to add"
-                      value={timingIndicatorNumber}
-                      onChange={(e) => setIndicatorNumber(Number(e))}
-                      min={0}
-                      max={8}
-                    />
-                  </Box>
-                ) : (
-                  <></>
-                )}
-
-                <Menu shadow="md" width={"200px"} position="bottom-end">
-                  <Menu.Target>
-                    {/* <Button>Change input mode</Button> */}
-                    <Box style={{ width: "250px" }}>
-                      <Select
-                        description="Editor mode"
-                        width={"200px"}
-                        data={[getIndicatorText(inputMode, instantBumpMode) || ""]}
-                        value={getIndicatorText(inputMode, instantBumpMode) || ""}
-                        readOnly
-                      />
-                    </Box>
-                  </Menu.Target>
-
-                  <Menu.Dropdown>
-                    <Menu.Item onClick={() => setInputMode("raw")}> Edit lyrics</Menu.Item>
-                    <Menu.Item onClick={() => onClickFinishAddingLyricsButton("cue")}> Configure cues</Menu.Item>
-                    {evt?.bumpConfigurations && evt.bumpConfigurations.length ? (
-                      <Menu.Sub>
-                        <Menu.Sub.Target>
-                          <Menu.Sub.Item> Configure bumps</Menu.Sub.Item>
-                        </Menu.Sub.Target>
-                        <Menu.Sub.Dropdown>
-                          {evt.bumpConfigurations.map((bumpConfig) => (
-                            <Menu.Item
-                              onClick={() => {
-                                setInstantBumpMode(bumpConfig);
-                                onClickFinishAddingLyricsButton("bump");
-                              }}
-                              key={bumpConfig.id}
-                            >
-                              {bumpConfig.name}
-                            </Menu.Item>
-                          ))}
-                        </Menu.Sub.Dropdown>
-                      </Menu.Sub>
-                    ) : null}
-                    <Menu.Sub>
-                      <Menu.Sub.Target>
-                        <Menu.Sub.Item> Configure timing indicators</Menu.Sub.Item>
-                      </Menu.Sub.Target>
-                      <Menu.Sub.Dropdown>
-                        <Menu.Item
-                          onClick={() => {
-                            setInputMode("timing");
-                            setInputTimingMode("main");
-                          }}
-                        >
-                          Main beats
-                        </Menu.Item>
-                        <Menu.Label> Main beats are the 1,2,3,4 of bars</Menu.Label>
-
-                        <Menu.Item
-                          onClick={() => {
-                            setInputMode("timing");
-                            setInputTimingMode("sub");
-                          }}
-                        >
-                          Sub-beats
-                        </Menu.Item>
-                        <Menu.Label> Sub-beats are the divisions between main beats</Menu.Label>
-                      </Menu.Sub.Dropdown>
-                    </Menu.Sub>
-                  </Menu.Dropdown>
-                </Menu>
-
-                {/* <Input.Wrapper label="Input mode" mx={0}>
-                  <Select data={InputModes} value={inputMode} onChange={(value) => setInputMode(value as InputMode)} />
-                </Input.Wrapper> */}
-              </Group>
+            <Stack style={{ position: "relative" }}>
+              <ContentControl
+                deleteExtraSpaces={deleteExtraSpaces}
+                eventId={evt?.id || ""}
+                onFinishAddingLyrics={onClickFinishAddingLyricsButton}
+              />
 
               <Alert
                 variant="light"
@@ -395,7 +287,9 @@ export const ChoreoEventWrapper = () => {
               )}
 
               {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
-                <RichContent itemId={item.id} />
+                <div ref={contentRef}>
+                  <RichContent itemId={item.id} />
+                </div>
               )}
             </Stack>
             <Stack>

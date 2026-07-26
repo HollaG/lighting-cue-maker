@@ -8,6 +8,9 @@
 
 export const convertUuidForEmbedding = (uuid: string) => {
   // uuid.replaceAll("-", "_");
+  // if already shortened, nvm
+
+  if (uuid.length === SHORT_UUID_LENGTH) return uuid;
   return shortenUUID(uuid);
 };
 export const convertUuidForDatabase = (uuid: string) => {

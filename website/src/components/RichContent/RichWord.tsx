@@ -1,12 +1,9 @@
 import React from "react";
-import { Box, Text, Center, Stack, Group } from "@mantine/core";
+import { Box, Text, Center, Group } from "@mantine/core";
 import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
-import { useAppStore } from "../../store/appStore";
 import { type InputMode } from "../../store/slices/lyricsSlice";
-import { useGetEvent } from "../../query/useGetEvent";
-import { useGetItem } from "../../query/useGetItem";
 
 interface RichWordProps {
   word: string;
@@ -17,19 +14,23 @@ interface RichWordProps {
     bump: number;
   };
   isSelected?: boolean;
+  inputMode: InputMode;
+  bumpNameMap?: Record<string, string>;
 }
 
 const richIdentifiers = ["cue", "bump"] as const;
 
 const BOTTOM_GAP = "4px";
 
-const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordProps) => {
-  const inputMode = useAppStore((s) => s.inputMode);
-  const activeItemId = useAppStore((s) => s.activeItemId);
-  const code = useAppStore((s) => s.code);
-  const { event } = useGetEvent({ code });
-  const { item } = useGetItem({ itemId: activeItemId });
-
+const RichWordInternal = ({
+  word,
+  index1,
+  index2,
+  order,
+  isSelected,
+  inputMode,
+  bumpNameMap,
+}: RichWordProps) => {
   if (word === "-")
     return (
       <Text variant="lyric" style={{ marginBottom: BOTTOM_GAP }}>
@@ -48,14 +49,7 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
         const rawId = word.split(/[\{<]/)[1].split(`=${idType}Id`)[0].replace(`${idType}Id=`, "");
         const id = convertUuidForDatabase(rawId);
 
-        let bumpConfigurationName = "";
-        if (idType === "bump") {
-          const bumpAssignment = item?.bumps?.find((b) => b.id === id);
-          if (bumpAssignment) {
-            const bumpConfig = event?.bumpConfigurations?.find((b) => b.id === bumpAssignment.bumpConfigurationId);
-            bumpConfigurationName = bumpConfig?.name || "";
-          }
-        }
+        const bumpConfigurationName = idType === "bump" ? bumpNameMap?.[id] || "" : "";
         return (
           <Center
             id={`ref-${id}`}
@@ -80,14 +74,7 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected }: RichWordP
       const id = convertUuidForDatabase(match?.[1] || "");
       const textContent = word.replace(regex, "");
 
-      let bumpConfigurationName = "";
-      if (idType === "bump") {
-        const bumpAssignment = item?.bumps?.find((b) => b.id === id);
-        if (bumpAssignment) {
-          const bumpConfig = event?.bumpConfigurations?.find((b) => b.id === bumpAssignment.bumpConfigurationId);
-          bumpConfigurationName = bumpConfig?.name || "";
-        }
-      }
+      const bumpConfigurationName = idType === "bump" ? bumpNameMap?.[id] || "" : "";
 
       return (
         <Group
@@ -239,8 +226,10 @@ export const RichWord = React.memo(RichWordInternal, (prevProps, nextProps) => {
   return (
     prevProps.word === nextProps.word &&
     prevProps.isSelected === nextProps.isSelected &&
+    prevProps.inputMode === nextProps.inputMode &&
     prevProps.order.cue === nextProps.order.cue &&
-    prevProps.order.bump === nextProps.order.bump
+    prevProps.order.bump === nextProps.order.bump &&
+    prevProps.bumpNameMap === nextProps.bumpNameMap
   );
 });
 

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { GetItemRes } from "../types/http";
-import { sanitize } from "../utils/sanitize";
 
 export const useGetItem = ({ itemId }: { itemId?: string | null }) => {
   const query = useQuery({
@@ -13,11 +12,11 @@ export const useGetItem = ({ itemId }: { itemId?: string | null }) => {
     },
     enabled: !!itemId,
 
-    select: (item) => {
-      item.rawLyrics = sanitize(item.rawLyrics);
+    // select: (item) => {
+    //   item.rawLyrics = sanitize(item.rawLyrics);
 
-      return item;
-    },
+    //   return item;
+    // },
   });
 
   return {

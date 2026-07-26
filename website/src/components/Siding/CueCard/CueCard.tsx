@@ -127,7 +127,6 @@ const CueCardInternal = ({
   const [translateDistance, setTranslateDistance] = useState<string>("0px");
 
   useEffect(() => {
-    // Get the reference element's offset-X value
     if (!isCueSelected || !cueRef.current) {
       setTranslateDistance("0px");
       return;
@@ -135,14 +134,18 @@ const CueCardInternal = ({
     const elementId = `ref-${cue.id}`;
     const element = document.getElementById(elementId);
     if (!element) return;
-    const { offsetTop } = element;
 
-    const thisElementOffsetTop = cueRef.current?.offsetTop ?? 0;
+    const targetRect = element.getBoundingClientRect();
+    const cardRect = cueRef.current.getBoundingClientRect();
 
-    const translateDistance = offsetTop - thisElementOffsetTop;
-    const thisElementHeight = cueRef.current?.offsetHeight ?? 0;
+    const currentTranslateY = parseFloat(translateDistance) || 0;
 
-    setTranslateDistance((translateDistance - thisElementHeight / 2).toString() + "px");
+    const targetTopY = targetRect.top + window.scrollY;
+    const cardNaturalTopY = cardRect.top + window.scrollY - currentTranslateY;
+
+    const deltaY = targetTopY - cardNaturalTopY;
+
+    setTranslateDistance(`${deltaY}px`);
   }, [isCueSelected]);
 
   // on the FIRST render, run a "save", so that the correct value assignments
@@ -231,6 +234,8 @@ const CueCardInternal = ({
         style={{
           transform: `translateY(${translateDistance})`,
           transition: "all 0.3s ease",
+          zIndex: isCueSelected ? 100 : 1,
+          position: "relative",
         }}
       >
         <CardBase isActive={false} shadow={isCueSelected ? "lg" : "none"}>
