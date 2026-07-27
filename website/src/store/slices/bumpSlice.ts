@@ -4,7 +4,7 @@ import type { AppStore } from "../appStore";
 
 export interface BumpSlice {
   currentlySelectedBumpId: string | undefined;
-  setCurrentlySelectedBumpId: (cueId: string | undefined) => void;
+  setCurrentlySelectedBumpId: (cueId: string | undefined) => void; // NOT used to highlight any bumps yet
 
   instantAddBumpMode: BumpConfiguration | null;
   setInstantAddBumpMode: (bumpConfiguration: BumpConfiguration) => void;

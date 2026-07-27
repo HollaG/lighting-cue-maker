@@ -38,7 +38,18 @@ export const ContentControlFixed = ({
   const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
   const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
   const setInputTimingMode = useAppStore((s) => s.setInputTimingMode);
+  const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
+  const setCurrentlySelectedBumpId = useAppStore((s) => s.setCurrentlySelectedBumpId);
   const { event: evt } = useGetEvent({ code: eventId });
+
+  const handleMenuItemClick = (action: () => void) => {
+    action();
+    setCurrentlySelectedCueId(undefined);
+    setCurrentlySelectedBumpId(undefined);
+    setTimeout(() => {
+      document.getElementById("focus-trap-lyrics")?.focus({ preventScroll: true });
+    }, 0);
+  };
 
   return (
     <Group>
@@ -87,8 +98,8 @@ export const ContentControlFixed = ({
         </Menu.Target>
 
         <Menu.Dropdown>
-          <Menu.Item onClick={() => setInputMode("raw")}> Edit lyrics</Menu.Item>
-          <Menu.Item onClick={() => onFinishAddingLyrics("cue")}> Configure cues</Menu.Item>
+          <Menu.Item onClick={() => handleMenuItemClick(() => setInputMode("raw"))}> Edit lyrics</Menu.Item>
+          <Menu.Item onClick={() => handleMenuItemClick(() => onFinishAddingLyrics("cue"))}> Configure cues</Menu.Item>
           {evt?.bumpConfigurations && evt.bumpConfigurations.length ? (
             <Menu.Sub>
               <Menu.Sub.Target>
@@ -97,10 +108,12 @@ export const ContentControlFixed = ({
               <Menu.Sub.Dropdown>
                 {evt.bumpConfigurations.map((bumpConfig) => (
                   <Menu.Item
-                    onClick={() => {
-                      setInstantBumpMode(bumpConfig);
-                      onFinishAddingLyrics("bump");
-                    }}
+                    onClick={() =>
+                      handleMenuItemClick(() => {
+                        setInstantBumpMode(bumpConfig);
+                        onFinishAddingLyrics("bump");
+                      })
+                    }
                     key={bumpConfig.id}
                   >
                     {bumpConfig.name}
@@ -115,20 +128,24 @@ export const ContentControlFixed = ({
             </Menu.Sub.Target>
             <Menu.Sub.Dropdown>
               <Menu.Item
-                onClick={() => {
-                  setInputMode("timing");
-                  setInputTimingMode("main");
-                }}
+                onClick={() =>
+                  handleMenuItemClick(() => {
+                    setInputMode("timing");
+                    setInputTimingMode("main");
+                  })
+                }
               >
                 Main beats
               </Menu.Item>
               <Menu.Label> Main beats are the 1,2,3,4 of bars</Menu.Label>
 
               <Menu.Item
-                onClick={() => {
-                  setInputMode("timing");
-                  setInputTimingMode("sub");
-                }}
+                onClick={() =>
+                  handleMenuItemClick(() => {
+                    setInputMode("timing");
+                    setInputTimingMode("sub");
+                  })
+                }
               >
                 Sub-beats
               </Menu.Item>

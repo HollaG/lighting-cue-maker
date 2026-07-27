@@ -3,7 +3,7 @@ import { useAppStore, type InputMode } from "../../store/appStore";
 import { ContentControlFixed } from "./ContentControlFixed";
 import { useState } from "react";
 import { useInViewport } from "@mantine/hooks";
-import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { IconChevronLeft, IconChevronRight, IconPin, IconPinnedOff } from "@tabler/icons-react";
 
 export const ContentControl = ({
   eventId,
@@ -119,7 +119,7 @@ export const ContentControl = ({
                   <ActionIcon variant="light" color="lime" size={"sm"} onClick={onCuePrevious}>
                     <IconChevronLeft width={"1rem"} />
                   </ActionIcon>
-                  <Box w={"90px"}>
+                  <Box w={"110px"}>
                     <Select
                       allowDeselect={false}
                       value={currentlySelectedCueId}
@@ -132,6 +132,7 @@ export const ContentControl = ({
                         label: `Cue ${index + 1}`,
                       }))}
                       size="xs"
+                      placeholder="Select cue"
                     />
                   </Box>
                   <ActionIcon variant="light" color="lime" size="sm" onClick={onCueNext}>
@@ -143,7 +144,7 @@ export const ContentControl = ({
                   <ActionIcon variant="light" color="lime" size={"sm"} onClick={onBumpPrevious}>
                     <IconChevronLeft width={"1rem"} />
                   </ActionIcon>
-                  <Box w={"90px"}>
+                  <Box w={"110px"}>
                     <Select
                       allowDeselect={false}
                       value={currentlySelectedBumpId}
@@ -155,6 +156,7 @@ export const ContentControl = ({
                         value: bumpId,
                         label: `Bump ${index + 1}`,
                       }))}
+                      placeholder="Select bump"
                       size="xs"
                     />
                   </Box>
@@ -173,6 +175,9 @@ export const ContentControl = ({
                 onFinishAddingLyrics={onFinishAddingLyrics}
                 showTitle={false}
               />
+              <ActionIcon ml="xs" size="md" variant="transparent" onClick={() => setAlwaysShow(!alwaysShow)}>
+                {alwaysShow ? <IconPinnedOff width={"2rem"} /> : <IconPin width={"2rem"} />}
+              </ActionIcon>
             </Group>
           </Box>
         )}

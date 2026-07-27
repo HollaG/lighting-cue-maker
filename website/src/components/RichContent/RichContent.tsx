@@ -13,6 +13,7 @@ import { useCreateBump } from "../../query/useCreateBump";
 import { insertBumpInRichContent, removeBumpFromRawLyrics } from "../../utils/bumpUtils";
 import { useDeleteBump } from "../../query/useDeleteBump";
 import { insertTimingMarkerInRichContent, removeTimingMarkerFromContent } from "../../utils/timingUtils";
+import type { IndicatorTimingMode } from "../../store/slices/timingSlice";
 
 const RichContentInternal = ({ itemId }: { itemId: string }) => {
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
@@ -51,9 +52,21 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
     const wordIndex = Number(target.dataset.wordIndex);
     const isSpace = target.dataset.isSpace === "true";
 
-    console.log(target);
+    const {
+      inputMode,
+      instantAddBumpMode,
+      indicatorNumber,
+      inputTimingMode: indicatorTimingMode,
+    } = useAppStore.getState();
 
     if (action === "select-cue") {
+      // ignore if not in Cue mode
+      if (inputMode === "timing") {
+        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, indicatorTimingMode);
+        return;
+      }
+      if (inputMode !== "cue") return;
+
       console.log(target.dataset);
       const cueId = target.dataset.cueId;
       if (cueId) {
@@ -61,17 +74,16 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
         setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
       }
     } else if (action === "select-bump") {
-      // TODO: current action is to delete it.
-      // Can change in future
+      // ignore if not in bump mode
+      if (inputMode === "timing") {
+        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, indicatorTimingMode);
+        return;
+      }
+
+      if (inputMode !== "bump") return;
+
       const bumpId = target.dataset.bumpId;
       if (!bumpId) return;
-      // const bump = item.bumps.find((b) => (b.id = bumpId));
-
-      // let bumpName = "";
-      // if (bump) {
-      //   const bumpConfig = event.bumpConfigurations.find((b) => b.id === bump.bumpConfigurationId);
-      //   bumpName = bumpConfig?.name;
-      // }
 
       const confirmDeleteBump = confirm(`Are you sure you want to delete bump "${target.dataset.bumpName}"?`);
 
@@ -105,9 +117,6 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
         },
       });
     } else if (action === "add") {
-      const { inputMode, instantAddBumpMode, indicatorNumber, inputTimingMode: indicatorTimingMode } =
-        useAppStore.getState();
-
       if (inputMode === "cue") {
         createCue({
           itemId,
@@ -151,25 +160,34 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
           .catch(console.error);
       } else if (inputMode === "timing") {
         // main beats are superscripts, subbeats are subscripts
-
-        const updatedContent = insertTimingMarkerInRichContent(
-          indicatorNumber,
-          indicatorTimingMode,
-          lineIndex,
-          wordIndex,
-          isSpace,
-          content,
-        );
-        const updatedRawLyrics = generateRaw(updatedContent);
-
-        updateItem({
-          itemId,
-          requestBody: {
-            rawLyrics: updatedRawLyrics,
-          },
-        });
+        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, indicatorTimingMode);
       }
     }
+  };
+
+  const toggleTiming = (
+    lineIndex: number,
+    wordIndex: number,
+    isSpace: boolean,
+    indicatorNumber: number,
+    indicatorTimingMode: IndicatorTimingMode,
+  ) => {
+    const updatedContent = insertTimingMarkerInRichContent(
+      indicatorNumber,
+      indicatorTimingMode,
+      lineIndex,
+      wordIndex,
+      isSpace,
+      content,
+    );
+    const updatedRawLyrics = generateRaw(updatedContent);
+
+    updateItem({
+      itemId,
+      requestBody: {
+        rawLyrics: updatedRawLyrics,
+      },
+    });
   };
 
   return (

@@ -22,15 +22,7 @@ const richIdentifiers = ["cue", "bump"] as const;
 
 const BOTTOM_GAP = "4px";
 
-const RichWordInternal = ({
-  word,
-  index1,
-  index2,
-  order,
-  isSelected,
-  inputMode,
-  bumpNameMap,
-}: RichWordProps) => {
+const RichWordInternal = ({ word, index1, index2, order, isSelected, inputMode, bumpNameMap }: RichWordProps) => {
   if (word === "-")
     return (
       <Text variant="lyric" style={{ marginBottom: BOTTOM_GAP }}>
@@ -61,6 +53,8 @@ const RichWordInternal = ({
               classes["indicator"],
               isSelected ? classes["selected"] : "",
             )}
+            data-line-index={index1}
+            data-word-index={index2}
             dangerouslySetInnerHTML={{
               __html: `${getDisplayText(idType, order[idType], bumpConfigurationName) as string}`,
             }}
@@ -83,6 +77,8 @@ const RichWordInternal = ({
           {...{ [`data-${idType}-id`]: id, [`data-bump-name`]: bumpConfigurationName || undefined }}
           gap={0}
           className={clsx(classes["richContainer"], classes[`is-${idType}`], isSelected ? classes["selected"] : "")}
+          data-line-index={index1}
+          data-word-index={index2}
         >
           <Text
             variant="lyric"

@@ -15,6 +15,7 @@ import {
   SimpleGrid,
   Stack,
   Text,
+  Textarea,
   Title,
   useCombobox,
 } from "@mantine/core";
@@ -27,15 +28,14 @@ import {
   type AttributeConfiguration,
   type ColourOption,
   type FixtureGroupConfiguration,
+  type Item,
 } from "../../../types/types";
+import { useQueryClient } from "@tanstack/react-query";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { IconChevronUp } from "@tabler/icons-react";
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
-import { useGetEvent } from "../../../query/useGetEvent";
-import { useGetCues } from "../../../query/useGetCues";
-import { useGetItem } from "../../../query/useGetItem";
 import { useUpdateCue } from "../../../query/useUpdateCue";
 import { useDeleteCue } from "../../../query/useDeleteCue";
 import { removeCueFromRawLyrics } from "../../../utils/cueUtils";
@@ -43,32 +43,25 @@ import { useUpdateItem } from "../../../query/useUpdateItem";
 
 type FormData = Cue;
 
-const CueCardInternal = ({
-  cue,
-  cueNumber,
-  isCueSelected,
-}: {
+interface CueCardProps {
   cue: Cue;
   cueNumber: number;
   isCueSelected: boolean;
-}) => {
-  const code = useAppStore((s) => s.code);
-  const activeItemId = useAppStore((s) => s.activeItemId);
-  const { event } = useGetEvent({ code });
+  fixtureGroups?: FixtureGroupConfiguration[];
+}
 
-  const { item } = useGetItem({ itemId: activeItemId });
+const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: CueCardProps) => {
+  const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
-  const { cues } = useGetCues({ itemId: activeItemId });
+  const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const { mutateAsync: updateCue } = useUpdateCue();
   const { mutateAsync: deleteCue } = useDeleteCue();
   const { mutate: updateItem } = useUpdateItem();
-  // const currrentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
   const [opened, { open, close }] = useDisclosure(false);
-  const fixtureGroups = event?.fixtureGroups ?? [];
 
   const [selectedCopyCue, setSelectedCopyCue] = useState<string>("");
 
@@ -138,6 +131,7 @@ const CueCardInternal = ({
     const targetRect = element.getBoundingClientRect();
     const cardRect = cueRef.current.getBoundingClientRect();
 
+    // there might be a bug here, it is always set as 0
     const currentTranslateY = parseFloat(translateDistance) || 0;
 
     const targetTopY = targetRect.top + window.scrollY;
@@ -147,6 +141,61 @@ const CueCardInternal = ({
 
     setTranslateDistance(`${deltaY}px`);
   }, [isCueSelected]);
+
+  // const [marginPushDownCue, setMarginPushDownCue] = useState<string>("0px");
+  // const [cueRefTop, setCueRefTop] = useState<number>(0);
+  // useEffect(() => {
+  //   // get the inserted cue's top Y-height
+  //   // get this cue's top Y-height
+  //   // if this cue's Y-height is MORE than the inserted cue's Y-height,
+  //   //   set the marginTop to 0px (we accept a card that's lower than expected)
+  //   // if this cue's Y-height is LESS THAN or EQUAL TO the inserted cue's Y-height,
+  //   //   then
+  //   //     (safety check: TODO)
+  //   //   then calculate the margin: `cueYheight - thisYTop`
+  //   //   set the marginTop to that value
+
+  //   if (!cueRef.current) return;
+  //   if (isCueSelected) return; // ignore from layout
+  //   const cardRect = cueRef.current.getBoundingClientRect();
+
+  //   // let marginsSoFar = 0;
+  //   // for (let i = 0; i < cueNumber - 1; i++) {
+  //   //   const elementId = `ref-${cueOrder[i]}`; // x
+  //   //   const element = document.getElementById(elementId);
+  //   //   const cueCardId = `cue-card-${i + 1}`; // y
+  //   //   const cueCardElement = document.getElementById(cueCardId);
+
+  //   //   if (!element || !cueCardElement) return;
+
+  //   //   const delta = element.getBoundingClientRect().top - cueCardElement.getBoundingClientRect().top;
+  //   //   if (delta > 0) marginsSoFar += delta;
+  //   //   // calculate the offset btwn this elementTop and the targetTop
+  //   // }
+
+  //   const elementId = `ref-${cue.id}`;
+  //   const element = document.getElementById(elementId);
+  //   if (!element) return;
+
+  //   const targetRect = element.getBoundingClientRect();
+
+  //   // const currentTranslateY = parseFloat(translateDistance) || 0;
+
+  //   const targetTopY = targetRect.top + window.scrollY;
+  //   const cardNaturalTopY = cardRect.top + window.scrollY;
+
+  //   const deltaY = targetTopY - cardNaturalTopY;
+
+  //   console.log({ element, offset: element.offsetTop });
+
+  //   // setCueRefTop(cardNaturalTopY)
+
+  //   // if (deltaY < 0) return;
+  //   // setMarginPushDownCue(`${deltaY}px`);
+
+  //   // get the top: relative to the cuelist
+  //   setCueRefTop(element.offsetTop);
+  // }, [cueOrder, opened, isCueSelected, cueNumber]);
 
   // on the FIRST render, run a "save", so that the correct value assignments
   // are populated into the DB.
@@ -169,10 +218,21 @@ const CueCardInternal = ({
       const timer = setTimeout(runSave, 100);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [cueRef]);
+
+  const onJumpToCue = () => {
+    setSelectedCueId(cue.id);
+
+    const element = document.getElementById(`ref-${cue.id}`);
+    if (!element) return;
+
+    const y = element.getBoundingClientRect().top + window.scrollY - 128;
+    window.scrollTo({ top: y, behavior: "smooth" });
+  };
 
   const handleSave = async () => {
-    if (!item) return;
+    const activeItemId = useAppStore.getState().activeItemId;
+    if (!activeItemId) return;
     try {
       console.log(form.getValues(), "--------------------");
       // convert the form value to API request body
@@ -180,7 +240,7 @@ const CueCardInternal = ({
 
       await updateCue({
         cueId: cue.id,
-        itemId: item.id,
+        itemId: activeItemId,
         requestBody: form.getValues(),
       });
     } catch (e) {
@@ -192,6 +252,8 @@ const CueCardInternal = ({
 
   const handleDelete = async () => {
     try {
+      const activeItemId = useAppStore.getState().activeItemId;
+      const item = queryClient.getQueryData<Item>(["item", activeItemId]);
       if (!item) return;
       await deleteCue({ cueId: cue.id });
       const updatedRawLyrics = removeCueFromRawLyrics(item.rawLyrics, cue.id);
@@ -218,6 +280,8 @@ const CueCardInternal = ({
   };
 
   const onCopyCue = (cueId: string) => {
+    const activeItemId = useAppStore.getState().activeItemId;
+    const cues = queryClient.getQueryData<Cue[]>(["cues", activeItemId]);
     const cueToCopy = (cues || []).find((c) => c.id === cueId);
     if (cueToCopy) {
       console.log({ cue: cueToCopy });
@@ -230,12 +294,15 @@ const CueCardInternal = ({
   return (
     <form onSubmit={form.onSubmit((_) => handleSave())}>
       <div
+        id={`cue-card-${cueNumber}`}
         ref={cueRef}
         style={{
           transform: `translateY(${translateDistance})`,
           transition: "all 0.3s ease",
           zIndex: isCueSelected ? 100 : 1,
           position: "relative",
+          // marginTop: marginPushDownCue,
+          // top: cueRefTop + 100,
         }}
       >
         <CardBase isActive={false} shadow={isCueSelected ? "lg" : "none"}>
@@ -258,6 +325,9 @@ const CueCardInternal = ({
           <Stack gap={0}>
             <Group mb="md">
               <Title order={4}> Cue {cueNumber} </Title>
+              <Button variant="transparent" size="xs" color="black" onClick={() => onJumpToCue()}>
+                Scroll to cue
+              </Button>
               <Button
                 variant="transparent"
                 size="xs"
@@ -287,13 +357,29 @@ const CueCardInternal = ({
                 />
               </ActionIcon>
             </Group>
+
             <Collapse expanded={!isCollapsed}>
-              <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+              <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
                 {fixtureGroups.map((group, index) => (
                   <FixtureGroupSection key={group.id} group={group} index={index + 1} form={form} />
                 ))}
               </SimpleGrid>
             </Collapse>
+            <Textarea
+              ml="xs"
+              label="Comments"
+              minRows={1}
+              variant="unstyled"
+              autosize
+              maxRows={4}
+              name="comments"
+              key={form.key("comments")}
+              {...form.getInputProps("comments")}
+              placeholder="Write any comments regarding this cue here..."
+              styles={{
+                input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+              }}
+            />
           </Stack>
         </CardBase>
       </div>

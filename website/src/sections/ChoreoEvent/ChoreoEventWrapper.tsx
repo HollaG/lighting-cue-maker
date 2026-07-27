@@ -259,8 +259,8 @@ export const ChoreoEventWrapper = () => {
                   <Stack gap="xs">
                     <span>
                       {" "}
-                      First, set the beat number you want to add by pressing <Kbd>1</Kbd> ... <Kbd>9</Kbd> on your
-                      keyboard, or use the number selector.
+                      First, set the beat number you want to add by pressing <Kbd>1</Kbd> ... <Kbd>8</Kbd> on your
+                      keyboard, or use the "Beat to add" input.
                     </span>
                     <span>
                       {" "}
@@ -287,7 +287,7 @@ export const ChoreoEventWrapper = () => {
               )}
 
               {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
-                <div ref={contentRef}>
+                <div ref={contentRef} id="focus-trap-lyrics" tabIndex={-1} style={{ outline: "none" }}>
                   <RichContent itemId={item.id} />
                 </div>
               )}

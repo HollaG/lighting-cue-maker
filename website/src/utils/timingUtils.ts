@@ -11,8 +11,7 @@ export const insertTimingMarkerInRichContent = (
   wordIndex: number,
   isSpace: boolean,
   content: string[][],
-) => {
-
+): string[][] => {
   // const marker =
   //   type === "main"
   //     ? `<sup class='superscript' id='supsub-${shortened}'>${timing}</sup>`
@@ -60,25 +59,54 @@ export const insertTimingMarkerInRichContent = (
     const existingSup = currentWord.includes("</sup>");
 
     if (existingSub && type === "main") {
-      // showNotification({
-      //   title: "Already exists",
-      //   message: "A main timing marker for this word already exists",
-      //   color: "red",
-      // });
-      // return updatedContent;
+      // if the timing marker in the content (not the indicator) is the same as the new timing marker,
+      // then remove it,
+      // else update it
+      const existingMarkerNumber = parseInt(
+        currentWord
+          .match(/<sub>(.*?)<\/sub>/)?.[1]
+          .replaceAll("(", "")
+          .replaceAll(")", "") || "",
+      );
+      if (Number.isNaN(existingMarkerNumber)) {
+        return updatedContent;
+      }
 
-      return removeTimingMarkerFromContent(content, lineIndex, wordIndex, type);
+      if (existingMarkerNumber === timing) {
+        return removeTimingMarkerFromContent(content, lineIndex, wordIndex, type);
+      } else {
+        // first, remove the timing marker entirely, then replace it exactly
+        const updatedContent = removeTimingMarkerFromContent(content, lineIndex, wordIndex, type);
+        return insertTimingMarkerInRichContent(
+          timing,
+          type,
+          lineIndex,
+          wordIndex,
+          updatedContent[lineIndex][wordIndex] === "",
+          updatedContent,
+        );
+      }
     }
 
     if (existingSup && type === "sub") {
-      // showNotification({
-      //   title: "Already exists",
-      //   message: "A sub timing marker for this word already exists",
-      //   color: "red",
-      // });
-      // return updatedContent;
+      const existingMarkerNumber = parseInt(currentWord.match(/<sup>(.*?)<\/sup>/)?.[1] || "");
+      if (Number.isNaN(existingMarkerNumber)) {
+        return updatedContent;
+      }
 
-      return removeTimingMarkerFromContent(content, lineIndex, wordIndex, type);
+      if (existingMarkerNumber === timing) {
+        return removeTimingMarkerFromContent(content, lineIndex, wordIndex, type);
+      } else {
+        const updatedContent = removeTimingMarkerFromContent(content, lineIndex, wordIndex, type);
+        return insertTimingMarkerInRichContent(
+          timing,
+          type,
+          lineIndex,
+          wordIndex,
+          updatedContent[lineIndex][wordIndex] === "",
+          updatedContent,
+        );
+      }
     }
 
     if (existingSub && type === "sub") {
