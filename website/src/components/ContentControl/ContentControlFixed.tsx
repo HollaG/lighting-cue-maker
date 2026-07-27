@@ -1,4 +1,4 @@
-import { Group, Title, Button, Box, NumberInput, Menu, Select, Flex } from "@mantine/core";
+import { Group, Title, Button, Box, NumberInput, Menu, Select, Flex, Tooltip } from "@mantine/core";
 import { useAppStore, type InputMode } from "../../store/appStore";
 import { useGetEvent } from "../../query/useGetEvent";
 import type { BumpConfiguration } from "../../types/types";
@@ -31,6 +31,7 @@ export const ContentControlFixed = ({
   showTitle: boolean;
 }) => {
   const inputMode = useAppStore((s) => s.inputMode);
+  const previousInputMode = useAppStore((s) => s.previousInputMode);
   const inputTimingMode = useAppStore((s) => s.inputTimingMode);
   const setInputMode = useAppStore((s) => s.setInputMode);
   const timingIndicatorNumber = useAppStore((s) => s.indicatorNumber);
@@ -49,6 +50,11 @@ export const ContentControlFixed = ({
     setTimeout(() => {
       document.getElementById("focus-trap-lyrics")?.focus({ preventScroll: true });
     }, 0);
+  };
+
+  const revert = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setInputMode(previousInputMode);
   };
 
   return (
@@ -88,7 +94,19 @@ export const ContentControlFixed = ({
           {/* <Button>Change input mode</Button> */}
           <Box style={{ width: "250px" }}>
             <Select
-              description="Editor mode"
+              description={
+                <Group gap="xs">
+                  <span style={{ flex: 1 }}>Editor mode</span>
+
+                  <Tooltip
+                    label={`Go back to ${getIndicatorText(inputTimingMode, previousInputMode, instantBumpMode)}`}
+                  >
+                    <Button onClick={revert} size="compact-xs" variant="transparent" color="grey" py={0}>
+                      ⇄ {"  "}recently used
+                    </Button>
+                  </Tooltip>
+                </Group>
+              }
               width={"200px"}
               data={[getIndicatorText(inputTimingMode, inputMode, instantBumpMode) || ""]}
               value={getIndicatorText(inputTimingMode, inputMode, instantBumpMode) || ""}

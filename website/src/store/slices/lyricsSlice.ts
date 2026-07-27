@@ -29,6 +29,7 @@ export const InputModes: Option<InputMode>[] = [
 
 export interface LyricsSlice {
   inputMode: InputMode;
+  previousInputMode: InputMode;
   content: string[][];
   cueOrder: string[];
   bumpOrder: string[];
@@ -39,11 +40,14 @@ export interface LyricsSlice {
 
 export const lyricsSlice: StateCreator<AppStore, [], [], LyricsSlice> = (set) => ({
   inputMode: "cue",
+  previousInputMode: "raw",
   content: [],
   cueOrder: [],
   bumpOrder: [],
 
-  setInputMode: (inputMode: InputMode) => set({ inputMode: inputMode }),
+  setInputMode: (inputMode: InputMode) => {
+    set((s) => ({ previousInputMode: s.inputMode, inputMode: inputMode }));
+  },
 
   // Only a SINGLE CALL to this is allowed PER react-query query.
   setDerivedLyrics: (rawLyrics: string) => {
