@@ -19,9 +19,21 @@ type CreateLightEventReq struct {
 	ExternalLink string `json:"externalLink,omitempty"`
 }
 
+type UpdateLightEventReq struct {
+	Name              *string `json:"name,omitempty"`
+	Description       *string `json:"description,omitempty"`
+	ExternalLink      *string `json:"externalLink,omitempty"`
+	CuesPerBand       *int    `json:"cuesPerBand,omitempty"`
+	UniqueCuesPerBand *int    `json:"uniqueCuesPerBand,omitempty"`
+}
+
 type CreateFixtureGroupConfigurationReq struct {
 	Name       string                            `json:"name"`
 	Attributes []CreateAttributeConfigurationReq `json:"attributes"`
+}
+
+type UpdateFixtureGroupConfigurationReq struct {
+	Name *string `json:"name,omitempty"`
 }
 
 type CreateAttributeConfigurationReq struct {
@@ -29,6 +41,13 @@ type CreateAttributeConfigurationReq struct {
 	Type     AttributeType        `json:"type"`
 	Metadata map[string]any       `json:"metadata"`
 	Options  AttributeTypeOptions `json:"optionPossibleValues"`
+}
+
+type UpdateAttributeConfigurationReq struct {
+	Name     *string               `json:"name,omitempty"`
+	Type     *AttributeType        `json:"type,omitempty"`
+	Metadata *map[string]any       `json:"metadata,omitempty"`
+	Options  *AttributeTypeOptions `json:"optionPossibleValues,omitempty"`
 }
 
 // ------------------------------------------------

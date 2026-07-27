@@ -152,3 +152,80 @@ func getEvent(c *gin.Context) {
 		"event": event,
 	})
 }
+
+func updateEvent(c *gin.Context) {
+	eventId := c.Param("eventId")
+
+	if eventId == "" {
+		response.BadRequest(c, "Event ID is required", nil)
+		return
+	}
+
+	var event models.LightEvent
+	if result := database.DB().Where("uuid = ?", eventId).First(&event); result.Error != nil {
+		response.NotFound(c, "Event not found")
+		return
+	}
+
+	var req models.UpdateLightEventReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(err)
+		response.BadRequest(c, "Invalid request body", map[string]any{
+			"request": req,
+		})
+		return
+	}
+
+	updates := map[string]any{}
+	if req.Name != nil {
+		if *req.Name == "" {
+			response.BadRequest(c, "Event name cannot be empty", nil)
+			return
+		}
+		updates["name"] = *req.Name
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+	if req.ExternalLink != nil {
+		updates["external_link"] = *req.ExternalLink
+	}
+	if req.CuesPerBand != nil {
+		if *req.CuesPerBand < 0 {
+			response.BadRequest(c, "Cue count must be positive", nil)
+			return
+		}
+		updates["cues_per_band"] = *req.CuesPerBand
+	}
+	if req.UniqueCuesPerBand != nil {
+		if *req.UniqueCuesPerBand < 0 {
+			response.BadRequest(c, "Unique cue count must be positive", nil)
+			return
+		}
+		updates["unique_cues_per_band"] = *req.UniqueCuesPerBand
+	}
+
+	if len(updates) > 0 {
+		if result := database.DB().Model(&models.LightEvent{}).Where("uuid = ?", eventId).Updates(updates); result.Error != nil {
+			response.InternalError(c, "Failed to update event")
+			return
+		}
+	}
+
+	var updatedEvent models.LightEvent
+	if result := database.DB().
+		Preload("FixtureGroups").
+		Preload("FixtureGroups.Attributes").
+		Preload("BumpConfigurations").
+		Where("uuid = ?", eventId).First(&updatedEvent); result.Error != nil {
+		response.InternalError(c, "Failed to fetch updated event")
+		return
+	}
+
+	fmt.Println("API PATCH /v1/events/:eventId")
+
+	response.OK(c, map[string]any{
+		"event": updatedEvent,
+	})
+}
+

@@ -4,10 +4,12 @@ import (
 	"time"
 
 	"lighting-cue-maker/server/config"
+	"lighting-cue-maker/server/internal/api/v1/attributeconfigurations"
 	"lighting-cue-maker/server/internal/api/v1/bumpconfigurations"
 	"lighting-cue-maker/server/internal/api/v1/bumps"
 	"lighting-cue-maker/server/internal/api/v1/cues"
 	"lighting-cue-maker/server/internal/api/v1/events"
+	"lighting-cue-maker/server/internal/api/v1/fixturegroupconfigurations"
 	"lighting-cue-maker/server/internal/api/v1/items"
 	"lighting-cue-maker/server/internal/api/v1/ping"
 	"lighting-cue-maker/server/internal/api/v1/qlc"
@@ -42,6 +44,8 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		cues.Register(v1.Group("/cues"))
 		bumpconfigurations.Register(v1.Group("/bump-configurations"))
 		bumps.Register(v1.Group("/bumps"))
+		fixturegroupconfigurations.Register(v1.Group("/fixture-group-config"))
+		attributeconfigurations.Register(v1.Group("/attribute-config"))
 		qlc.Register(v1.Group("/qlc"))
 
 		// Add future entity route groups here:

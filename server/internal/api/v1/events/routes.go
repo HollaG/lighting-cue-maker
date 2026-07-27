@@ -8,4 +8,5 @@ import (
 func Register(rg *gin.RouterGroup) {
 	rg.POST("", createEvent)
 	rg.GET("/:eventId", getEvent)
+	rg.PATCH("/:eventId", updateEvent)
 }
