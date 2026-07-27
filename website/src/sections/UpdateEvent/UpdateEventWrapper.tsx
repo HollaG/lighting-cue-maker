@@ -224,9 +224,14 @@ export const UpdateEventWrapper = () => {
         </Container>
 
         <Center mt={"md"}>
-          <Button color="teal" size="md" onClick={onSaveEventDetails} loading={isSubmittingEvent}>
-            Save event details
-          </Button>
+          <Group>
+            <Button color="teal" size="md" onClick={onSaveEventDetails} loading={isSubmittingEvent}>
+              Save event details
+            </Button>
+            <Button onClick={() => setIsEditing(false)} variant="transparent">
+              Finish editing
+            </Button>
+          </Group>
         </Center>
 
         <Divider my="lg" label="fixture groups" labelPosition="center" />
