@@ -1,6 +1,6 @@
 import type { Bump } from "./bumps";
 import type { Cue } from "./cues";
-import type { Item, LightEventConfiguration } from "./types";
+import type { AttributeConfiguration, Item, LightEventConfiguration } from "./types";
 
 export type GetEventRes = {
   event: LightEventConfiguration;
@@ -44,6 +44,19 @@ export type UpdateCueRes = { cue: Cue };
 
 export type CreateBumpReq = { itemId: string; bumpConfigurationId: string };
 export type CreateBumpRes = { bump: Bump };
+
+export type UpdateEventReq = Pick<
+  LightEventConfiguration,
+  "name" | "uniqueCuesPerBand" | "cuesPerBand" | "description" | "externalLink"
+>;
+export type UpdateEventRes = CreateEventRes;
+
+export type UpdateAttributeConfigReq = Pick<
+  AttributeConfiguration,
+  "metadata" | "name" | "optionPossibleValues" | "type"
+>;
+
+export type UpdateFixtureGroupConfigReq = { name: string };
 
 export type GenerateQlcCollections = {
   maxFunctionId: number;

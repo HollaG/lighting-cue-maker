@@ -63,12 +63,10 @@ export const AddAttributeCard = ({
       form.setFieldValue(`fixtureGroups.${fixtureGroupId}.attributes.${id}`, undefined);
     };
   }, []);
+  form.watch(`${baseFieldName}.type`, ({ value }) => {
+    setSelectedAttribute(value);
+  });
 
-  useEffect(() => {
-    return form.watch(`${baseFieldName}.type`, ({ value }) => {
-      setSelectedAttribute(value);
-    });
-  }, [baseFieldName, form]);
   return (
     <Card py={0}>
       <Group>

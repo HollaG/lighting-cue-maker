@@ -64,6 +64,11 @@ export const CreateEventWrapper = () => {
       });
     });
 
+    config.fixtureGroups = config.fixtureGroups.map((fixtureGroup) => ({
+      ...fixtureGroup,
+      attributes: fixtureGroup.attributes.filter((s) => Object.keys(s).length),
+    }));
+
     // convert BumpConfigurations into array of { name: string }
     config.bumpConfigurations = v.bumpConfigurations.map((bumpConfiguration) => {
       return { name: bumpConfiguration } as BumpConfiguration;

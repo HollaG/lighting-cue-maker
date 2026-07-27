@@ -4,6 +4,7 @@ import { Notifications } from "@mantine/notifications";
 import classes from "./App.module.css";
 import { HomeHeader } from "./sections/HomeHeader/HomeHeader";
 import { CreateEventWrapper } from "./sections/CreateEvent/CreateEventWrapper";
+import { UpdateEventWrapper } from "./sections/UpdateEvent/UpdateEventWrapper";
 import { ChoreoEventWrapper } from "./sections/ChoreoEvent/ChoreoEventWrapper";
 import { QLCConverter } from "./sections/QLCConverter/QLCConverter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -41,6 +42,7 @@ function App() {
         <HomeHeader />
 
         <CreateEventWrapper />
+        <UpdateEventWrapper />
         <ChoreoEventWrapper />
         <QLCConverter />
       </Box>

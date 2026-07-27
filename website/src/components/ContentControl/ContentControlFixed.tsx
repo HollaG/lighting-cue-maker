@@ -95,7 +95,7 @@ export const ContentControlFixed = ({
           <Box style={{ width: "250px" }}>
             <Select
               description={
-                <Group gap="xs">
+                <span style={{ display: "flex" }}>
                   <span style={{ flex: 1 }}>Editor mode</span>
 
                   <Tooltip
@@ -105,7 +105,7 @@ export const ContentControlFixed = ({
                       ⇄ {"  "}recently used
                     </Button>
                   </Tooltip>
-                </Group>
+                </span>
               }
               width={"200px"}
               data={[getIndicatorText(inputTimingMode, inputMode, instantBumpMode) || ""]}

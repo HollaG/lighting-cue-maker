@@ -37,6 +37,7 @@ import { ContentControl } from "../../components/ContentControl/ContentControl";
 export const ChoreoEventWrapper = () => {
   // NOTE: evt is nullable!! remember to check
   const code = useAppStore((s) => s.code);
+  const isEditing = useAppStore((s) => s.isEditing);
   const { event: evt, isValidEvent } = useGetEvent({ code });
   const activeItemId = useAppStore((s) => s.activeItemId);
 
@@ -128,13 +129,22 @@ export const ChoreoEventWrapper = () => {
     }
   }, [item?.rawLyrics]);
 
+  const onEdit = () => {
+    useAppStore.getState().setIsEditing(true);
+  };
+
   return (
-    <Collapse expanded={isValidEvent}>
+    <Collapse expanded={isValidEvent && !isEditing}>
       <Container size={"xl"}>
         <Divider my="lg" label="create your lighting plan" labelPosition="center" />
         <Container my="xl" ml={0}>
           <Stack>
-            <Title>{evt?.name}</Title>
+            <Group gap={0}>
+              <Title>{evt?.name}</Title>
+              <Button onClick={onEdit} variant="transparent" color="lime">
+                Edit event
+              </Button>
+            </Group>
             <Text> {evt?.description}</Text>
             {evt?.externalLink && (
               <Anchor href={evt?.externalLink} target="_blank">
@@ -156,27 +166,34 @@ export const ChoreoEventWrapper = () => {
               />
             </div>
 
-            <Center mt="sm">
-              <Text size="sm"> Please select an item, or add a new item/band/act: </Text>
-              <TextInput
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                ml={"md"}
-                placeholder="Your item name"
-                rightSectionWidth={"80px"}
-                rightSection={
-                  <Button
-                    size="xs"
-                    variant="transparent"
-                    onClick={() => onAddItem()}
-                    disabled={isItemsLoading}
-                    loading={isItemCreating}
-                  >
-                    Add item
-                  </Button>
-                }
-              />
-            </Center>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onAddItem();
+              }}
+            >
+              <Center mt="sm">
+                <Text size="sm"> Please select an item, or add a new item/band/act: </Text>
+                <TextInput
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  ml={"md"}
+                  placeholder="Your item name"
+                  rightSectionWidth={"80px"}
+                  rightSection={
+                    <Button
+                      type="submit"
+                      size="xs"
+                      variant="transparent"
+                      disabled={isItemsLoading}
+                      loading={isItemCreating}
+                    >
+                      Add item
+                    </Button>
+                  }
+                />
+              </Center>
+            </form>
           </>
         ) : (
           <Center mt={"xl"}>
