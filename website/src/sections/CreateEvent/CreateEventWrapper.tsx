@@ -55,7 +55,6 @@ export const CreateEventWrapper = () => {
       v.uniqueCuesPerBand = Number(v.uniqueCuesPerBand);
     const config = flatten(v) as Omit<LightEventConfiguration, "id">;
 
-    console.log({ config });
     // convert all ID fields into String
     config.fixtureGroups.forEach((fixtureGroup) => {
       delete (fixtureGroup as { id?: string }).id;

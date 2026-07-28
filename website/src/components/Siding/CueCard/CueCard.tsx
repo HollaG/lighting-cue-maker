@@ -108,9 +108,7 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
     mode: "uncontrolled",
     initialValues,
 
-    onValuesChange: (v) => {
-      console.log(v);
-
+    onValuesChange: () => {
       setIsDirty(true);
     },
   });
@@ -234,7 +232,6 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
     const activeItemId = useAppStore.getState().activeItemId;
     if (!activeItemId) return;
     try {
-      console.log(form.getValues(), "--------------------");
       // convert the form value to API request body
       // await onUpdateCue(form.getValues(), refetchItem, refetchCues);
 
@@ -284,7 +281,6 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
     const cues = queryClient.getQueryData<Cue[]>(["cues", activeItemId]);
     const cueToCopy = (cues || []).find((c) => c.id === cueId);
     if (cueToCopy) {
-      console.log({ cue: cueToCopy });
       const { id: _id, ...cueWithoutId } = cueToCopy;
       form.setValues(cueWithoutId as Partial<FormData>);
       close();
@@ -365,21 +361,26 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
                 ))}
               </SimpleGrid>
             </Collapse>
-            <Textarea
-              ml="xs"
-              label="Comments"
-              minRows={1}
-              variant="unstyled"
-              autosize
-              maxRows={4}
-              name="comments"
-              key={form.key("comments")}
-              {...form.getInputProps("comments")}
-              placeholder="Write any comments regarding this cue here..."
-              styles={{
-                input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
-              }}
-            />
+            <Stack>
+              {/* <Collapse expanded={isCollapsed}>
+                <Text>{generateOneLineCue(cue)}</Text>
+              </Collapse> */}
+              <Textarea
+                ml="xs"
+                label="Comments"
+                minRows={1}
+                variant="unstyled"
+                autosize
+                maxRows={4}
+                name="comments"
+                key={form.key("comments")}
+                {...form.getInputProps("comments")}
+                placeholder="Write any comments regarding this cue here..."
+                styles={{
+                  input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+                }}
+              />
+            </Stack>
           </Stack>
         </CardBase>
       </div>

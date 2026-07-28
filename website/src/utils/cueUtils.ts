@@ -1,5 +1,5 @@
-import type { ValueAssignment } from "../types/cues";
-import { AttributeTypes } from "../types/types";
+import type { Cue, ValueAssignment } from "../types/cues";
+import { AttributeTypes, type FixtureGroupConfiguration } from "../types/types";
 import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
 
 export const CUE_MATCH_REGEX = /[\{<]cueId=(.*?)=cueId[\}>]/;
@@ -50,7 +50,6 @@ export const removeCueFromRawLyrics = (rawLyrics: string, cueId: string) => {
 
 export const getCueOrder = (rawLyrics: string) => {
   const order: string[] = [];
-  console.log({ rawLyrics });
   for (const line of rawLyrics.split("\n")) {
     for (const word of line.split(/[ -]/)) {
       const match = word.match(/[\{<]cueId=(.*?)=cueId[\}>]/);
@@ -114,7 +113,7 @@ export const hasAValue = (type: AttributeTypes, value: ValueAssignment) => {
         return false;
       }
       const v = value.select;
-      return v === "";
+      return v !== "";
     }
     case AttributeTypes.MULTISELECT: {
       if (!value || Object.keys(value).length === 0) {
@@ -122,7 +121,7 @@ export const hasAValue = (type: AttributeTypes, value: ValueAssignment) => {
         return false;
       }
       const v = value.multiselect;
-      return v && v.length === 0;
+      return v && v.length !== 0;
     }
     case AttributeTypes.COLOUR: {
       if (!value || Object.keys(value).length === 0) {
@@ -130,7 +129,7 @@ export const hasAValue = (type: AttributeTypes, value: ValueAssignment) => {
         return false;
       }
       const v = value.colour.hex;
-      return v === "";
+      return v !== "";
     }
 
     case AttributeTypes.TEXT:
@@ -141,4 +140,50 @@ export const hasAValue = (type: AttributeTypes, value: ValueAssignment) => {
     default:
       return false;
   }
+};
+
+/**
+ * Simplifies the cue to a one-line string.
+ * Follow the style of [AttributeName]: [AttributeValue];
+ *
+ * @param cue The cue to generate
+ */
+export const generateOneLineCue = (cue: Cue, fixtureGroups: FixtureGroupConfiguration[]): string => {
+  if (!cue || !cue.assignments) return "";
+
+  const fixtureGroupIdMap: Record<string, FixtureGroupConfiguration> = {};
+  for (const group of fixtureGroups) {
+    fixtureGroupIdMap[group.id] = group;
+  }
+
+  const parts: string[] = [];
+
+  for (const [fixtureGroupId, group] of Object.entries(cue.assignments)) {
+    if (!group?.assignment) continue;
+    const fixtureGroup = fixtureGroupIdMap[fixtureGroupId];
+    if (!fixtureGroup) continue;
+
+    for (const attr of Object.values(group.assignment)) {
+      if (!attr || attr.type === AttributeTypes.NONE) continue;
+      if (!hasAValue(attr.type, attr.value)) {
+        parts.push(`${fixtureGroup.name}/${attr.name}: Not selected`);
+      }
+
+      const val = getValueFromValueAssignment(attr.type, attr.value);
+      let valStr = "";
+
+      if (Array.isArray(val)) {
+        valStr = val.join(", ");
+      } else if (val !== null && val !== undefined) {
+        valStr = String(val);
+      }
+
+      if (valStr.trim() !== "") {
+        parts.push(`${fixtureGroup.name}/${attr.name}: ${valStr}`);
+      }
+    }
+  }
+
+  if (parts.length === 0) return "";
+  return parts.join("; ");
 };

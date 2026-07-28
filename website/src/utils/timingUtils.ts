@@ -156,9 +156,7 @@ export const removeTimingMarkerFromContent = (
   const updatedContent = [...content.map((line) => [...line])];
   if (type === "main") {
     // remove <sub>.*?</sub>
-    console.log("removing", updatedContent[lineIndex][wordIndex]);
     const replaced = updatedContent[lineIndex][wordIndex].replace(/<sub>.*?<\/sub>/, "");
-    console.log("removed", replaced);
 
     if (replaced === MAIN_INDICATOR || replaced === SUB_INDICATOR) {
       // if only the indicator is left, means there's nothing else in the item,

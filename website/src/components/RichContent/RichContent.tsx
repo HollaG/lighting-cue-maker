@@ -67,10 +67,8 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
       }
       if (inputMode !== "cue") return;
 
-      console.log(target.dataset);
       const cueId = target.dataset.cueId;
       if (cueId) {
-        console.log(cueId);
         setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
       }
     } else if (action === "select-bump") {

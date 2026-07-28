@@ -1,5 +1,5 @@
-import { Card, Group, Select, TagsInput, Box, Stack, ColorInput, Radio, Flex, Button, Center } from "@mantine/core";
-import { AttributeTypes, BooleanOptions, type AttributeConfiguration, type Option } from "../../../../types/types";
+import { Card, Group, Select, TagsInput, Box, Stack, ColorInput, Radio, Button, Center } from "@mantine/core";
+import { AttributeTypes, type Option } from "../../../../types/types";
 import { useMemo, useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";
@@ -210,13 +210,7 @@ const EditColourOptionsHandler = ({
   );
 };
 
-const EditBooleanOptionsHandler = ({
-  opvFieldName,
-  form,
-}: {
-  opvFieldName: string;
-  form: UseFormReturnType<any>;
-}) => {
+const EditBooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; form: UseFormReturnType<any> }) => {
   opvFieldName = `${opvFieldName}.${AttributeTypes.BOOLEAN}`;
 
   return (

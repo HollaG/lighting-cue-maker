@@ -9,7 +9,6 @@ export interface CueSlice {
 export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set) => ({
   currentlySelectedCueId: undefined,
   setCurrentlySelectedCueId: (cueId) => {
-    console.log(cueId);
     set({ currentlySelectedCueId: cueId });
   },
 });

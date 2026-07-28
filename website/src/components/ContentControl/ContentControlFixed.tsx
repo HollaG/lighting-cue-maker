@@ -54,7 +54,12 @@ export const ContentControlFixed = ({
 
   const revert = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    setInputMode(previousInputMode);
+    if (inputMode === "raw") {
+      onFinishAddingLyrics(previousInputMode);
+    } else {
+      // save
+      setInputMode(previousInputMode);
+    }
   };
 
   return (

@@ -3,7 +3,7 @@
   background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
   /* width: fit-content; */
   border-radius: var(--mantine-radius-md);
-  padding: 5px;
+  padding: 8px;
   border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 
   display: flex;

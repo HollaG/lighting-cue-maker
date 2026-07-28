@@ -22,7 +22,6 @@ export const FixtureGroupCard = ({
   // init the field value for this fixture group
   useEffect(() => {
     // ID will never change
-    console.log("setting field value");
     form.setFieldValue(`fixtureGroups.${id}`, {
       name: "",
       attributes: {}, // instead of a [], we use an Object
@@ -63,7 +62,6 @@ export const FixtureGroupCard = ({
             form={form}
             index={index}
             onDeleteAttribute={(id) => {
-              console.log({ attributeIds, id });
               setAttributeIds((prev) => prev.filter((prevId) => prevId !== id));
             }}
           />

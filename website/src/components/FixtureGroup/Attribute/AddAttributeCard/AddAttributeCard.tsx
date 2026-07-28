@@ -274,8 +274,6 @@ const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
 const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; form: UseFormReturnType<any> }) => {
   opvFieldName = `${opvFieldName}.${AttributeTypes.BOOLEAN}`;
 
-  console.log("BOOLEAN field name: ", opvFieldName);
-
   return (
     <Radio.Group
       name={opvFieldName}
