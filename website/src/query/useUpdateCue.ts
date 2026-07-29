@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { GetCuesRes, UpdateCueReq, UpdateCueRes } from "../types/http";
+import type { UpdateCueReq, UpdateCueRes } from "../types/http";
+import type { Cue } from "../types/cues";
 
 export type UpdateCueParams = {
   cueId: string;
@@ -17,10 +18,10 @@ export const useUpdateCue = () => {
 
     onSuccess: (res, variables) => {
       const newCue = res.cue;
-      const oldCues = queryClient.getQueryData<GetCuesRes>(["cues", variables.itemId]);
-      if (oldCues?.cues) {
-        const replacedCues = oldCues.cues.map((cue) => (cue.id === newCue.id ? newCue : cue));
-        queryClient.setQueryData(["cues", variables.itemId], { ...oldCues, cues: replacedCues });
+      const oldCues = queryClient.getQueryData<Cue[]>(["cues", variables.itemId]);
+      if (oldCues) {
+        const replacedCues = oldCues.map((cue) => (cue.id === newCue.id ? newCue : cue));
+        queryClient.setQueryData(["cues", variables.itemId], replacedCues);
       }
 
       // No need to update Item

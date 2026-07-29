@@ -95,6 +95,10 @@ export const EditFixtureGroupCard = ({
         ))}
 
         <Center>
+          {/* <Button variant="transparent" size="sm" mr="md">
+            {" "}
+            Add attribute{" "}
+          </Button> */}
           <Button size="sm" color="teal" onClick={onSave} loading={isSaving}>
             Save light group
           </Button>

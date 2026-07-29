@@ -33,7 +33,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { IconChevronUp } from "@tabler/icons-react";
+import { IconCaretDown, IconChevronUp } from "@tabler/icons-react";
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
@@ -139,6 +139,11 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
 
     setTranslateDistance(`${deltaY}px`);
   }, [isCueSelected]);
+
+  // This is required to set the z-index of the card that has the Combobox dropdown (colour select) open,
+  // so that the dropdown is not hidden behind the next card.
+  // this is a hack, see https://share.gemini.google/Od39OwKe7Hnw
+  const [isAtLeastOneComboboxOpened, setAtLeastOneComboboxOpened] = useState<boolean>(false);
 
   // const [marginPushDownCue, setMarginPushDownCue] = useState<string>("0px");
   // const [cueRefTop, setCueRefTop] = useState<number>(0);
@@ -295,7 +300,7 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
         style={{
           transform: `translateY(${translateDistance})`,
           transition: "all 0.3s ease",
-          zIndex: isCueSelected ? 100 : 1,
+          zIndex: isCueSelected || isAtLeastOneComboboxOpened ? 100 : undefined,
           position: "relative",
           // marginTop: marginPushDownCue,
           // top: cueRefTop + 100,
@@ -357,7 +362,13 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
             <Collapse expanded={!isCollapsed}>
               <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
                 {fixtureGroups.map((group, index) => (
-                  <FixtureGroupSection key={group.id} group={group} index={index + 1} form={form} />
+                  <FixtureGroupSection
+                    key={group.id}
+                    group={group}
+                    index={index + 1}
+                    form={form}
+                    setIsAtLeastOneComboboxOpened={setAtLeastOneComboboxOpened}
+                  />
                 ))}
               </SimpleGrid>
             </Collapse>
@@ -392,10 +403,14 @@ const FixtureGroupSection = ({
   group,
   index,
   form,
+
+  setIsAtLeastOneComboboxOpened,
 }: {
   group: FixtureGroupConfiguration;
   index: number;
   form: UseFormReturnType<FormData>;
+
+  setIsAtLeastOneComboboxOpened: (value: boolean) => void;
 }) => {
   // Configure the FormData to include this FixtureGroup.
   // Only on init.
@@ -411,7 +426,14 @@ const FixtureGroupSection = ({
     <Fieldset legend={`Group ${index}: ${group.name}`}>
       <Stack gap="xs">
         {group.attributes.map((attr, attrIndex) => (
-          <AttributeDisplay groupId={group.id} form={form} key={attrIndex} attribute={attr} index={attrIndex} />
+          <AttributeDisplay
+            groupId={group.id}
+            form={form}
+            key={attrIndex}
+            attribute={attr}
+            index={attrIndex}
+            setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+          />
         ))}
       </Stack>
     </Fieldset>
@@ -423,11 +445,15 @@ const AttributeDisplay = ({
   index: _index,
   form,
   groupId,
+
+  setIsAtLeastOneComboboxOpened,
 }: {
   attribute: AttributeConfiguration;
   index: number;
   form: UseFormReturnType<FormData>;
   groupId: string;
+
+  setIsAtLeastOneComboboxOpened: (value: boolean) => void;
 }) => {
   const { name, type, optionPossibleValues } = attribute;
 
@@ -491,6 +517,9 @@ const AttributeDisplay = ({
           name={`${baseFieldName}.${AttributeTypes.SELECT}`}
           key={form.key(`${baseFieldName}.${AttributeTypes.SELECT}`)}
           {...form.getInputProps(`${baseFieldName}.${AttributeTypes.SELECT}`)}
+          clearable
+          rightSection={<IconCaretDown width={"0.75rem"} />}
+          clearSectionMode="clear"
         />
       );
 
@@ -517,6 +546,7 @@ const AttributeDisplay = ({
           defaultValue={
             form.getInitialValues().assignments[groupId].assignment[attribute.id].value[AttributeTypes.COLOUR]
           }
+          setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
         />
       );
 
@@ -539,20 +569,28 @@ function ColourSelect({
   fieldName,
   form,
   defaultValue,
+
+  setIsAtLeastOneComboboxOpened,
 }: {
   name: string;
   colourOptions: ColourOption[];
   fieldName: string;
   form: UseFormReturnType<FormData>;
   defaultValue: ColourOption;
+
+  setIsAtLeastOneComboboxOpened: (value: boolean) => void;
 }) {
   const combobox = useCombobox({
-    onDropdownClose: () => combobox.resetSelectedOption(),
+    onDropdownClose: () => {
+      combobox.resetSelectedOption();
+      setIsAtLeastOneComboboxOpened(false);
+    },
+    onDropdownOpen: () => setIsAtLeastOneComboboxOpened(true),
   });
 
   // `search` is transient UI state — it controls the input text for dropdown filtering.
   // The actual committed value (a ColourOption object) lives in the form.
-  const [search, setSearch] = useState(defaultValue.name);
+  const [search, setSearch] = useState(defaultValue?.name || "");
 
   const formPath = `${fieldName}` as const;
 
@@ -586,68 +624,88 @@ function ColourSelect({
         setSearch(val);
         combobox.closeDropdown();
       }}
+      styles={{
+        dropdown: {
+          zIndex: 99,
+        },
+      }}
     >
-      <Combobox.Target>
-        <InputBase
-          label={name}
-          rightSection={<Combobox.Chevron />}
-          value={search}
-          onChange={(event) => {
-            combobox.openDropdown();
-            combobox.updateSelectedOptionIndex();
-            setSearch(event.currentTarget.value);
-          }}
-          onClick={() => {
-            combobox.openDropdown();
-            setSearch("");
-          }}
-          onFocus={() => {
-            combobox.openDropdown();
-            setSearch("");
-          }}
-          onBlur={() => {
-            combobox.closeDropdown();
-            // Restore display to whatever the form currently holds (in case the user typed but didn't select).
-            const committed = formPath
-              .split(".")
-              .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-              | ColourOption
-              | undefined;
+      <Combobox.Target targetType="input">
+        <div>
+          <InputBase
+            label={name}
+            rightSection={<Combobox.Chevron />}
+            value={search}
+            onChange={(event) => {
+              combobox.openDropdown();
+              combobox.updateSelectedOptionIndex();
+              setSearch(event.currentTarget.value);
+            }}
+            onClick={() => {
+              combobox.openDropdown();
+              setSearch("");
+            }}
+            onFocus={() => {
+              combobox.openDropdown();
+              setSearch("");
+            }}
+            onBlur={() => {
+              combobox.closeDropdown();
+              // Restore display to whatever the form currently holds (in case the user typed but didn't select).
+              const committed = formPath
+                .split(".")
+                .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
+                | ColourOption
+                | undefined;
 
-            // const committed = form.getValues()[formPath.[0]][] as ColourOption | undefined;
-            setSearch(committed?.name ?? "");
-          }}
-          placeholder="Search value"
-          rightSectionPointerEvents="none"
-          leftSection={
-            <Box
-              style={{
-                width: "1rem",
-                height: "1rem",
-                borderRadius: "4px",
-                backgroundColor: (
-                  formPath
-                    .split(".")
-                    .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-                    | ColourOption
-                    | undefined
-                )?.hex,
-
-                // TODO @nightmode
-                border:
-                  (
+              // const committed = form.getValues()[formPath.[0]][] as ColourOption | undefined;
+              setSearch(committed?.name ?? "");
+            }}
+            placeholder="Search value"
+            rightSectionPointerEvents="none"
+            leftSection={
+              <Box
+                style={{
+                  width: "1rem",
+                  height: "1rem",
+                  borderRadius: "4px",
+                  backgroundColor: (
                     formPath
                       .split(".")
                       .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
                       | ColourOption
                       | undefined
-                  )?.hex === "#ffffff"
-                    ? "2px solid black"
-                    : "",
-              }}
-            />
-          }
-        />
+                  )?.hex,
+
+                  // TODO @nightmode
+                  border:
+                    (
+                      formPath
+                        .split(".")
+                        .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
+                        | ColourOption
+                        | undefined
+                    )?.hex === "#ffffff"
+                      ? "2px solid black"
+                      : "",
+                }}
+              />
+            }
+          />
+          <Button
+            size="xs"
+            variant="transparent"
+            color="gray"
+            onClick={() => {
+              setSearch("");
+
+              // clear the form
+              form.setFieldValue(formPath, { hex: "", name: "" });
+            }}
+          >
+            Clear
+          </Button>
+        </div>
       </Combobox.Target>
 
       <Combobox.Dropdown>

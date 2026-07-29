@@ -45,6 +45,7 @@ export const QLCConverter = () => {
   const { event } = useGetEvent({ code });
   const activeItemId = useAppStore((s) => s.activeItemId);
   const [file, setFile] = useState<File | null>(null);
+  const [fileXml, setFileXml] = useState<string | null>(null);
 
   const [functionList, setFunctionList] = useState<{ [fnId: string]: QLCFunction }>({});
   const [groupedFnList, setGroupedFnList] = useState<GroupedFnList>();
@@ -71,6 +72,7 @@ export const QLCConverter = () => {
   useEffect(() => {
     if (!file) return;
     file.text().then((xml) => {
+      setFileXml(xml);
       const fnList = extractQLCFunctionsToJSON(xml);
       setFunctionList(
         fnList.reduce((acc, fn) => (fn.ID ? { ...acc, [fn.ID]: fn } : acc), {} as { [fnId: string]: QLCFunction }),
@@ -143,7 +145,7 @@ export const QLCConverter = () => {
   // }
 
   async function exportPreviewToQlc() {
-    if (!file) {
+    if (!fileXml) {
       notifications.show({
         title: "No QLC+ file selected",
         message: "Please upload a QLC+ file",
@@ -157,7 +159,7 @@ export const QLCConverter = () => {
       .map(Number)
       .reduce((a, b) => Math.max(a, b), 0);
 
-    const fileStr = await file!.text();
+    const fileStr = fileXml;
     const resultXml = generateAndInsertPreviewCollections(fileStr, preview, res?.items ?? [], highestFnId + 1);
 
     if (!resultXml) {
@@ -169,13 +171,13 @@ export const QLCConverter = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${file!.name.replace(".qxw", "")}-preview-${Date.now()}.qxw`;
+    a.download = `${file?.name.replace(".qxw", "") ?? "workspace"}-preview-${Date.now()}.qxw`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
   const onGeneratePreview = async () => {
-    if (!file) return;
+    if (!fileXml) return;
     const values = form.getValues();
     const res = await executeRequest({});
 
@@ -492,7 +494,7 @@ const OptList2 = ({
     case AttributeTypes.MULTISELECT:
       return (
         <>
-          {attribute.optionPossibleValues[AttributeTypes.MULTISELECT].map((val, index) => (
+          {(attribute.optionPossibleValues[AttributeTypes.MULTISELECT] || []).map((val, index) => (
             <Fragment key={val}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>

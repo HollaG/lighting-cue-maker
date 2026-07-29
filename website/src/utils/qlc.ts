@@ -436,14 +436,31 @@ export function generatePreview(
 
         const selectedValue = getValueFromValueAssignment(attr.type, attr.value);
         const values = Array.isArray(selectedValue) ? selectedValue : [selectedValue];
+
+        let addLast = [];
         for (const v of values) {
           const keyString = `${attrId}|${v}`;
           const qlcFunctionIds = mapping[keyString];
           if (qlcFunctionIds) {
-            for (const qlcFnId of qlcFunctionIds) {
-              addFnById(qlcFnId);
+            // TODO: special case for checkbox for now..
+            // we need to find a better way for this
+            // If it's value is `true` (aka checkbox Yes selected)
+            // then randomly assign one of the fn ids
+            // This will also be a "dynamic" cue, so we NEED to add this LAST.
+            if (attr.type === AttributeTypes.BOOLEAN) {
+              const randomFnId = qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)];
+              // addFnById(randomFnId);
+              addLast.push(randomFnId);
+            } else {
+              for (const qlcFnId of qlcFunctionIds) {
+                addFnById(qlcFnId);
+              }
             }
           }
+        }
+
+        if (addLast.length > 0) {
+          addLast.forEach(addFnById);
         }
       }
 

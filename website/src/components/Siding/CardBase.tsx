@@ -7,7 +7,7 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
   shadow,
 }) => {
   return (
-    <Card withBorder={!isActive} shadow={shadow || "sm"}>
+    <Card withBorder={!isActive} shadow={shadow || "sm"} style={{ overflow: "visible" }}>
       {children}
     </Card>
   );
