@@ -9,7 +9,9 @@ export const ContentControl = ({
   eventId,
   deleteExtraSpaces,
   onFinishAddingLyrics,
+  showCues,
 }: {
+  showCues: boolean;
   eventId: string;
   deleteExtraSpaces: () => void;
   onFinishAddingLyrics: (switchTo: InputMode) => void;
@@ -101,10 +103,12 @@ export const ContentControl = ({
           <Box
             pos="fixed"
             bottom={"32px"}
-            right={"55%"}
+            right={showCues ? "55%" : "64px"}
             style={{
               ...styles,
-              width: "40%",
+              width: showCues ? "40%" : "calc(100% - 128px)",
+              marginLeft: "auto",
+              marginRight: "auto",
               backgroundColor: "var(--mantine-color-white)",
               boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
               borderRadius: "1rem",
@@ -116,8 +120,8 @@ export const ContentControl = ({
             <Group gap="xs">
               {inputMode === "cue" ? (
                 <Group gap="xs">
-                  <ActionIcon variant="light" color="lime" size={"sm"} onClick={onCuePrevious}>
-                    <IconChevronLeft width={"1rem"} />
+                  <ActionIcon variant="light" color="lime" size={"lg"} onClick={onCuePrevious}>
+                    <IconChevronLeft width={"1.25rem"} />
                   </ActionIcon>
                   <Box w={"110px"}>
                     <Select
@@ -131,18 +135,18 @@ export const ContentControl = ({
                         value: cueId,
                         label: `Cue ${index + 1}`,
                       }))}
-                      size="xs"
+                      size="sm"
                       placeholder="Select cue"
                     />
                   </Box>
-                  <ActionIcon variant="light" color="lime" size="sm" onClick={onCueNext}>
-                    <IconChevronRight width={"1rem"} />
+                  <ActionIcon variant="light" color="lime" size="lg" onClick={onCueNext}>
+                    <IconChevronRight width={"1.25rem"} />
                   </ActionIcon>
                 </Group>
               ) : inputMode === "bump" ? (
                 <Group gap="xs">
-                  <ActionIcon variant="light" color="lime" size={"sm"} onClick={onBumpPrevious}>
-                    <IconChevronLeft width={"1rem"} />
+                  <ActionIcon variant="light" color="lime" size={"xl"} onClick={onBumpPrevious}>
+                    <IconChevronLeft width={"1.25rem"} />
                   </ActionIcon>
                   <Box w={"110px"}>
                     <Select
@@ -160,8 +164,8 @@ export const ContentControl = ({
                       size="xs"
                     />
                   </Box>
-                  <ActionIcon variant="light" color="lime" size="sm" onClick={onBumpNext}>
-                    <IconChevronRight width={"1rem"} />
+                  <ActionIcon variant="light" color="lime" size="lg" onClick={onBumpNext}>
+                    <IconChevronRight width={"1.25rem"} />
                   </ActionIcon>
                 </Group>
               ) : (

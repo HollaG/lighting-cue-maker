@@ -1,12 +1,14 @@
 import {
   Alert,
   Anchor,
+  Box,
   Button,
   Center,
   Code,
   Collapse,
   Container,
   Divider,
+  Flex,
   FloatingIndicator,
   Group,
   Kbd,
@@ -40,6 +42,7 @@ export const ChoreoEventWrapper = () => {
   const isEditing = useAppStore((s) => s.isEditing);
   const { event: evt, isValidEvent } = useGetEvent({ code });
   const activeItemId = useAppStore((s) => s.activeItemId);
+  const [showCues, setShowCues] = useState(true);
 
   const { items, isItemsLoading } = useGetItems({ eventId: evt?.id ?? "" });
   const { item } = useGetItem({ itemId: activeItemId ?? undefined });
@@ -215,16 +218,26 @@ export const ChoreoEventWrapper = () => {
           </Center>
         )}
       </Container>
-      <Container fluid>
+      <Container fluid={showCues} size={!showCues ? "xl" : undefined}>
         {!!item && (
-          <SimpleGrid cols={2} px="xl" mt="3rem" style={{ position: "relative" }}>
+          <SimpleGrid cols={showCues ? 2 : 1} px="xl" mt="3rem" style={{ position: "relative" }}>
             <Stack>
-              <ContentControl
-                deleteExtraSpaces={deleteExtraSpaces}
-                eventId={evt?.id || ""}
-                onFinishAddingLyrics={onClickFinishAddingLyricsButton}
-              />
+              <Group>
+                <Flex flex={1}>
+                  <ContentControl
+                    showCues={showCues}
+                    deleteExtraSpaces={deleteExtraSpaces}
+                    eventId={evt?.id || ""}
+                    onFinishAddingLyrics={onClickFinishAddingLyricsButton}
+                  />
+                </Flex>
 
+                <Box>
+                  <Button size="xs" variant="outline" onClick={() => setShowCues((prev) => !prev)}>
+                    {showCues ? "Hide " : "Show "}cues
+                  </Button>
+                </Box>
+              </Group>
               <Alert
                 variant="light"
                 color="lime"
@@ -309,19 +322,18 @@ export const ChoreoEventWrapper = () => {
                 </div>
               )}
             </Stack>
-            <Stack>
-              <Group>
-                <Title order={3} flex={1}>
-                  Cues
-                </Title>
-                {/* <Box>
-                  <Button size="xs" variant="outline" onClick={() => onBeginAddingLyrics()}>
-                    Save all
-                  </Button>
-                </Box> */}
-              </Group>
-              <CueList itemId={item.id} />
-            </Stack>
+            {showCues ? (
+              <Stack>
+                <Group>
+                  <Title order={3} flex={1}>
+                    Cues
+                  </Title>
+                </Group>
+                <CueList itemId={item.id} />
+              </Stack>
+            ) : (
+              <></>
+            )}
           </SimpleGrid>
         )}
       </Container>
