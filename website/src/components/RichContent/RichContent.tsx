@@ -189,7 +189,7 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
   };
 
   return (
-    <Stack gap={0} onClick={handleContainerClick} style={{ position: "relative" }}>
+    <Stack gap={0} onClick={handleContainerClick}>
       {(() => {
         let cueCount = 0;
         let bumpCount = 0;

@@ -11,6 +11,7 @@ import {
   InputBase,
   Modal,
   MultiSelect,
+  px,
   Select,
   SimpleGrid,
   Stack,
@@ -48,12 +49,15 @@ interface CueCardProps {
   cueNumber: number;
   isCueSelected: boolean;
   fixtureGroups?: FixtureGroupConfiguration[];
+
+  setOffset: React.Dispatch<React.SetStateAction<number>>; // translate the WHOLE cue cards up
 }
 
-const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: CueCardProps) => {
+const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], setOffset }: CueCardProps) => {
   const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
+
   const { mutateAsync: updateCue } = useUpdateCue();
   const { mutateAsync: deleteCue } = useDeleteCue();
   const { mutate: updateItem } = useUpdateItem();
@@ -126,18 +130,23 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    const targetRect = element.getBoundingClientRect();
-    const cardRect = cueRef.current.getBoundingClientRect();
+    const targetTopY = element.offsetTop;
+    const cardNaturalTopY = cueRef.current.offsetTop;
 
-    // there might be a bug here, it is always set as 0
-    const currentTranslateY = parseFloat(translateDistance) || 0;
+    console.log({
+      targetTopY,
+      cardNaturalTopY,
+    });
 
-    const targetTopY = targetRect.top + window.scrollY;
-    const cardNaturalTopY = cardRect.top + window.scrollY - currentTranslateY;
+    // 2.375rem convert to px
+    const pxOffset = px("3.375rem");
+    const deltaY = targetTopY - cardNaturalTopY - Number(pxOffset);
 
-    const deltaY = targetTopY - cardNaturalTopY;
+    // setTranslateDistance(`${deltaY}px`);
+    // console.log("setting offset to ", deltaY);
+    setOffset(deltaY);
 
-    setTranslateDistance(`${deltaY}px`);
+    // return () => setOffset(0);
   }, [isCueSelected]);
 
   // This is required to set the z-index of the card that has the Combobox dropdown (colour select) open,
@@ -301,7 +310,7 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
           transform: `translateY(${translateDistance})`,
           transition: "all 0.3s ease",
           zIndex: isCueSelected || isAtLeastOneComboboxOpened ? 100 : undefined,
-          position: "relative",
+          // position: "relative",
           // marginTop: marginPushDownCue,
           // top: cueRefTop + 100,
         }}
@@ -325,7 +334,10 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [] }: 
           </Modal>
           <Stack gap={0}>
             <Group mb="md">
-              <Title order={4}> Cue {cueNumber} </Title>
+              <Title order={4} style={{ backgroundColor: isCueSelected ? "yellow" : "transparent" }}>
+                {" "}
+                Cue {cueNumber}{" "}
+              </Title>
               <Button variant="transparent" size="xs" color="black" onClick={() => onJumpToCue()}>
                 Scroll to cue
               </Button>

@@ -217,8 +217,8 @@ export const ChoreoEventWrapper = () => {
       </Container>
       <Container fluid>
         {!!item && (
-          <SimpleGrid cols={2} px="xl" mt="3rem">
-            <Stack style={{ position: "relative" }}>
+          <SimpleGrid cols={2} px="xl" mt="3rem" style={{ position: "relative" }}>
+            <Stack>
               <ContentControl
                 deleteExtraSpaces={deleteExtraSpaces}
                 eventId={evt?.id || ""}

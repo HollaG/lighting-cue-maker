@@ -58,6 +58,11 @@ export type UpdateAttributeConfigReq = Pick<
 
 export type UpdateFixtureGroupConfigReq = { name: string };
 
+export type CreateAttributeConfigReq = {
+  fixtureGroupId: string;
+  name: string;
+};
+
 export type GenerateQlcCollections = {
   maxFunctionId: number;
   attributeValueToFunctionMap: { [valueId: string]: string[] };

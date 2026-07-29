@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Stack } from "@mantine/core";
 import { CueCard } from "../../../components/Siding/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
@@ -12,11 +12,20 @@ export const CueList = memo(({ itemId }: { itemId: string }) => {
   const cueOrder = useAppStore((s) => s.cueOrder);
   const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
+  const [offset, setOffset] = useState(0);
+  const calculatedOffset = currentlySelectedCueId ? offset : 0;
+  console.log({ calculatedOffset });
+
   if (!itemId || !cues || !cues.length) return null;
 
   // return null;
   return (
-    <Stack style={{ position: "relative" }}>
+    <Stack
+      style={{
+        transition: "all 0.3s ease-in-out",
+        transform: `translateY(${calculatedOffset}px)`,
+      }}
+    >
       {isCuesLoading
         ? "Loading cues..."
         : cueOrder.map((cueId, index) => {
@@ -29,6 +38,7 @@ export const CueList = memo(({ itemId }: { itemId: string }) => {
                 cueNumber={index + 1}
                 isCueSelected={currentlySelectedCueId === cue.id}
                 fixtureGroups={event?.fixtureGroups}
+                setOffset={setOffset}
               />
             );
           })}

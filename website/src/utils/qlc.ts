@@ -517,6 +517,8 @@ export function generatePreview(
         }
       };
 
+      const addLastFnIds: string[] = [];
+
       // iterate over all the attributes and find the matching [attrId, QLCFnId] in the mapping
       for (const [attrId, attr] of Object.entries(completeAttributeMap)) {
         if (!QLC_MAPPABLE_TYPES.has(attr.type)) continue;
@@ -538,7 +540,6 @@ export function generatePreview(
         const selectedValue = getValueFromValueAssignment(attr.type, attr.value);
         const values = Array.isArray(selectedValue) ? selectedValue : [selectedValue];
 
-        let addLast = [];
         for (const v of values) {
           const keyString = `${attrId}|${v}`;
           const qlcFunctionIds = mapping[keyString];
@@ -550,8 +551,7 @@ export function generatePreview(
             // This will also be a "dynamic" cue, so we NEED to add this LAST.
             if (attr.type === AttributeTypes.BOOLEAN) {
               const randomFnId = qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)];
-              // addFnById(randomFnId);
-              addLast.push(randomFnId);
+              addLastFnIds.push(randomFnId);
             } else {
               for (const qlcFnId of qlcFunctionIds) {
                 addFnById(qlcFnId);
@@ -559,10 +559,10 @@ export function generatePreview(
             }
           }
         }
+      }
 
-        if (addLast.length > 0) {
-          addLast.forEach(addFnById);
-        }
+      if (addLastFnIds.length > 0) {
+        addLastFnIds.forEach(addFnById);
       }
 
       result[item.id].push({
