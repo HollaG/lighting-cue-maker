@@ -278,9 +278,9 @@ export function generateAndInsertCollections(
     }
   }
 
-  // ── Serialize ─────────────────────────────────────────────────────────────
+  // ── Insert Chasers & Serialize ──────────────────────────────────────────────
 
-  return new XMLSerializer().serializeToString(workspaceDoc);
+  return generateAndInsertChasers(workspaceDoc, items, fnIdCounter);
 }
 
 /**
@@ -357,7 +357,108 @@ export function generateAndInsertPreviewCollections(
     }
   }
 
-  // ── Serialize ─────────────────────────────────────────────────────────────
+  // ── Insert Chasers & Serialize ──────────────────────────────────────────────
+
+  return generateAndInsertChasers(workspaceDoc, items, fnIdCounter);
+}
+
+/**
+ * Generates and inserts QLC+ Chaser functions into the workspace XML (or Document) for each item.
+ * Each Chaser is populated with steps corresponding to the generated Collections for that item.
+ *
+ * @param workspaceXmlOrDoc The XML string or parsed Document containing workspace data and generated collections
+ * @param items List of items
+ * @param startingFnId The initial starting function ID for new chaser functions
+ * @returns Serialized XML string with inserted Chasers
+ */
+export function generateAndInsertChasers(
+  workspaceXmlOrDoc: string | Document,
+  items: Item[],
+  startingFnId: number,
+): string | undefined {
+  let workspaceDoc: Document;
+  if (typeof workspaceXmlOrDoc === "string") {
+    const parser = new DOMParser();
+    workspaceDoc = parser.parseFromString(workspaceXmlOrDoc, "application/xml");
+    if (workspaceDoc.querySelector("parsererror")) {
+      console.error("[generateAndInsertChasers] Failed to parse workspace XML");
+      return undefined;
+    }
+  } else {
+    workspaceDoc = workspaceXmlOrDoc;
+  }
+
+  const engineNode = workspaceDoc.querySelector("Engine");
+  if (!engineNode) {
+    console.error("[generateAndInsertChasers] No <Engine> node found");
+    return undefined;
+  }
+
+  let maxId = startingFnId;
+  workspaceDoc.querySelectorAll("Function").forEach((el) => {
+    const id = Number(el.getAttribute("ID"));
+    if (!isNaN(id) && id >= maxId) {
+      maxId = id + 1;
+    }
+  });
+  let fnIdCounter = maxId;
+
+  const existingFunctions = Array.from(engineNode.children).filter((el) => el.tagName === "Function");
+  const insertionAnchor =
+    existingFunctions.length > 0 ? existingFunctions[existingFunctions.length - 1].nextSibling : null;
+
+  for (const item of items) {
+    const itemName = item.name ?? "Item";
+
+    // Find all collections generated for this item (Path="Generated/${itemName}")
+    const collectionNodes = Array.from(engineNode.querySelectorAll("Function")).filter(
+      (el) => el.getAttribute("Type") === "Collection" && el.getAttribute("Path") === `Generated/${itemName}`,
+    );
+
+    if (collectionNodes.length === 0) continue;
+
+    const fnEl = workspaceDoc.createElement("Function");
+    fnEl.setAttribute("ID", String(fnIdCounter));
+    fnEl.setAttribute("Type", "Chaser");
+    fnEl.setAttribute("Name", itemName);
+    fnEl.setAttribute("Path", `Generated/Chasers`);
+    fnIdCounter++;
+
+    const speedEl = workspaceDoc.createElement("Speed");
+    speedEl.setAttribute("FadeIn", "0");
+    speedEl.setAttribute("FadeOut", "0");
+    speedEl.setAttribute("Duration", "4294967294");
+    fnEl.appendChild(speedEl);
+
+    const directionEl = workspaceDoc.createElement("Direction");
+    directionEl.textContent = "Forward";
+    fnEl.appendChild(directionEl);
+
+    const runOrderEl = workspaceDoc.createElement("RunOrder");
+    runOrderEl.textContent = "Loop";
+    fnEl.appendChild(runOrderEl);
+
+    const speedModesEl = workspaceDoc.createElement("SpeedModes");
+    speedModesEl.setAttribute("FadeIn", "Default");
+    speedModesEl.setAttribute("FadeOut", "Default");
+    speedModesEl.setAttribute("Duration", "Common");
+    fnEl.appendChild(speedModesEl);
+
+    collectionNodes.forEach((colNode, i) => {
+      const colId = colNode.getAttribute("ID");
+      if (!colId) return;
+
+      const stepEl = workspaceDoc.createElement("Step");
+      stepEl.setAttribute("Number", String(i));
+      stepEl.setAttribute("FadeIn", "0");
+      stepEl.setAttribute("Hold", "4294967294");
+      stepEl.setAttribute("FadeOut", "0");
+      stepEl.textContent = colId;
+      fnEl.appendChild(stepEl);
+    });
+
+    engineNode.insertBefore(fnEl, insertionAnchor);
+  }
 
   return new XMLSerializer().serializeToString(workspaceDoc);
 }
