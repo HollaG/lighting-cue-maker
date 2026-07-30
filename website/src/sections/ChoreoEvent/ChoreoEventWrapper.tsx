@@ -42,7 +42,8 @@ export const ChoreoEventWrapper = () => {
   const isEditing = useAppStore((s) => s.isEditing);
   const { event: evt, isValidEvent } = useGetEvent({ code });
   const activeItemId = useAppStore((s) => s.activeItemId);
-  const [showCues, setShowCues] = useState(true);
+  const showCues = useAppStore((s) => s.showCues);
+  const toggleShowCues = useAppStore((s) => s.toggleShowCues);
 
   const { items, isItemsLoading } = useGetItems({ eventId: evt?.id ?? "" });
   const { item } = useGetItem({ itemId: activeItemId ?? undefined });
@@ -233,7 +234,7 @@ export const ChoreoEventWrapper = () => {
                 </Flex>
 
                 <Box>
-                  <Button size="xs" variant="outline" onClick={() => setShowCues((prev) => !prev)}>
+                  <Button size="xs" variant="outline" onClick={toggleShowCues}>
                     {showCues ? "Hide " : "Show "}cues
                   </Button>
                 </Box>

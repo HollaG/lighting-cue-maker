@@ -21,6 +21,7 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
   const content = useAppStore((s) => s.content);
   const code = useAppStore((s) => s.code);
   const inputMode = useAppStore((s) => s.inputMode);
+  const showCues = useAppStore((s) => s.showCues);
 
   const { item } = useGetItem({ itemId });
   const { event } = useGetEvent({ code });
@@ -43,6 +44,7 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
   }, [item?.bumps, event?.bumpConfigurations]);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!showCues) return;
     if (!item) return;
     const target = (e.target as HTMLElement).closest<HTMLElement>("[data-action]");
     if (!target) return;

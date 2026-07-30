@@ -88,7 +88,7 @@ export const ContentControl = ({
   };
 
   return (
-    <Box>
+    <Box style={{ width: "100%" }}>
       <Box ref={defaultControlRef}>
         <ContentControlFixed
           eventId={eventId}
@@ -98,7 +98,12 @@ export const ContentControl = ({
         />
       </Box>
 
-      <Transition mounted={!inViewport || alwaysShow} transition="fade-up" duration={250} timingFunction="ease-in-out">
+      <Transition
+        mounted={(!inViewport || alwaysShow) && showCues}
+        transition="fade-up"
+        duration={250}
+        timingFunction="ease-in-out"
+      >
         {(styles) => (
           <Box
             pos="fixed"

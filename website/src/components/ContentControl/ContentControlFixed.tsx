@@ -69,8 +69,10 @@ export const ContentControlFixed = ({
           Lyrics
         </Title>
       ) : (
-        <Flex flex={1}></Flex>
+        <></>
       )}
+
+      <Flex flex={1} />
       {inputMode == "raw" && (
         <Group>
           <Button size="xs" variant="subtle" color="black" onClick={deleteExtraSpaces}>
