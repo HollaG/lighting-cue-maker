@@ -37,10 +37,11 @@ type UpdateFixtureGroupConfigurationReq struct {
 }
 
 type CreateAttributeConfigurationReq struct {
-	Name     string               `json:"name"`
-	Type     AttributeType        `json:"type"`
-	Metadata map[string]any       `json:"metadata"`
-	Options  AttributeTypeOptions `json:"optionPossibleValues"`
+	FixtureGroupId string               `json:"fixtureGroupId,omitempty"`
+	Name           string               `json:"name"`
+	Type           AttributeType        `json:"type"`
+	Metadata       map[string]any       `json:"metadata"`
+	Options        AttributeTypeOptions `json:"optionPossibleValues"`
 }
 
 type UpdateAttributeConfigurationReq struct {

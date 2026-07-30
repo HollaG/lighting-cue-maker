@@ -10,6 +10,68 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func createAttributeConfiguration(c *gin.Context) {
+	var req models.CreateAttributeConfigurationReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(err)
+		response.BadRequest(c, "Invalid request body", map[string]any{
+			"request": req,
+		})
+		return
+	}
+
+	fixtureGroupId := req.FixtureGroupId
+	if fixtureGroupId == "" {
+		fixtureGroupId = c.Query("fixtureGroupId")
+	}
+	if fixtureGroupId == "" {
+		fixtureGroupId = c.Query("fixtureGroupConfigId")
+	}
+	if fixtureGroupId == "" {
+		response.BadRequest(c, "Fixture Group ID is required", nil)
+		return
+	}
+
+	if req.Name == "" {
+		response.BadRequest(c, "Attribute name cannot be empty", nil)
+		return
+	}
+
+	// Verify the fixture group configuration actually exists
+	var fg models.FixtureGroupConfiguration
+	if result := database.DB().Where("uuid = ?", fixtureGroupId).First(&fg); result.Error != nil {
+		response.NotFound(c, "Fixture group configuration not found")
+		return
+	}
+
+	attributeOption := models.AttributeTypeOptions{
+		Select:      req.Options.Select,
+		Multiselect: req.Options.Multiselect,
+		Colour:      req.Options.Colour,
+		Slider:      req.Options.Slider,
+		Boolean:     req.Options.Boolean,
+	}
+
+	attr := models.AttributeConfiguration{
+		FixtureGroupConfigurationUuid: fg.Uuid,
+		Name:                          req.Name,
+		Type:                          req.Type,
+		Metadata:                      req.Metadata,
+		Options:                       attributeOption,
+	}
+
+	if result := database.DB().Create(&attr); result.Error != nil {
+		response.InternalError(c, "Failed to create attribute configuration")
+		return
+	}
+
+	fmt.Println("API POST /v1/attribute-config")
+
+	response.OK(c, map[string]any{
+		"attribute": attr,
+	})
+}
+
 func updateAttributeConfiguration(c *gin.Context) {
 	attributeId := c.Param("attributeId")
 	if attributeId == "" {
