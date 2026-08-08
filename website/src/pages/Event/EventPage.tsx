@@ -7,6 +7,7 @@ import {
   Code,
   Container,
   Divider,
+  Drawer,
   Flex,
   FloatingIndicator,
   Group,
@@ -31,12 +32,13 @@ import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
 import { IconArrowLeft, IconInfoCircle } from "@tabler/icons-react";
-import { useHotkeys, type HotkeyItem } from "@mantine/hooks";
+import { useDisclosure, useHotkeys, type HotkeyItem } from "@mantine/hooks";
 import { sanitize } from "../../utils/sanitize";
 import { ContentControl } from "../../components/ContentControl/ContentControl";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { saveRecentEvent } from "../../utils/recentEvents";
 import { CueList } from "../../sections/ChoreoEvent/CueList/CueList";
+import { QLCConverter } from "../../sections/QLCConverter/QLCConverter";
 
 export const EventPage = () => {
   // NOTE: evt is nullable!! remember to check
@@ -159,6 +161,9 @@ export const EventPage = () => {
 
   const navigate = useNavigate();
 
+  // QLC+ export controls
+  const [openedQlcExport, { open: openQlcExport, close: closeQlcExport }] = useDisclosure(false);
+
   return (
     <>
       <Container size={"xl"}>
@@ -175,7 +180,7 @@ export const EventPage = () => {
           <Button onClick={onEdit} variant="transparent" color="lime">
             Edit event
           </Button>
-          <Button onClick={onEdit} variant="light">
+          <Button onClick={openQlcExport} variant="light">
             Export
           </Button>
         </Group>
@@ -377,6 +382,17 @@ export const EventPage = () => {
           </SimpleGrid>
         )}
       </Container>
+
+      <Drawer
+        keepMounted
+        position="right"
+        size={"full"}
+        opened={openedQlcExport}
+        onClose={closeQlcExport}
+        title="QLC+ export"
+      >
+        {evt && <QLCConverter event={evt} />}
+      </Drawer>
     </>
   );
 };

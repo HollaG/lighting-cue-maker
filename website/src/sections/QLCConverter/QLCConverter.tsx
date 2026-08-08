@@ -17,7 +17,7 @@ import {
 } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import { Fragment, useEffect, useState } from "react";
-import { AttributeTypes, type AttributeConfiguration } from "../../types/types";
+import { AttributeTypes, type AttributeConfiguration, type LightEventConfiguration } from "../../types/types";
 import { IconArrowRightBar, IconDownload } from "@tabler/icons-react";
 import type { QLCEventJson, QLCFunction } from "../../types/qlc";
 import {
@@ -40,9 +40,7 @@ export type GroupedFnList = {
   group: string;
   items: { value: string; label: string }[]; // Function ID
 }[];
-export const QLCConverter = () => {
-  const code = useAppStore((s) => s.code);
-  const { event } = useGetEvent({ eventId: code });
+export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
   const activeItemId = useAppStore((s) => s.activeItemId);
   const [file, setFile] = useState<File | null>(null);
   const [fileXml, setFileXml] = useState<string | null>(null);
@@ -118,31 +116,6 @@ export const QLCConverter = () => {
       }
     }
   }
-
-  // async function exportToQlc() {
-  //   const values = form.getValues();
-  //   const res = await executeRequest({});
-
-  //   const highestFnId = Object.keys(functionList)
-  //     .map(Number)
-  //     .reduce((a, b) => Math.max(a, b), 0);
-
-  //   const fileStr = await file!.text();
-  //   const resultXml = generateAndInsertCollections(fileStr, (res?.items ?? []) as any, values, highestFnId + 1);
-
-  //   if (!resultXml) {
-  //     console.error("[exportToQlc] XML generation failed — check console for details");
-  //     return;
-  //   }
-
-  //   const blob = new Blob([resultXml], { type: "application/xml" });
-  //   const url = URL.createObjectURL(blob);
-  //   const a = document.createElement("a");
-  //   a.href = url;
-  //   a.download = `${file!.name.replace(".qxw", "")}-generated-${Date.now()}.qxw`;
-  //   a.click();
-  //   URL.revokeObjectURL(url);
-  // }
 
   async function exportPreviewToQlc() {
     if (!fileXml) {
@@ -240,158 +213,115 @@ export const QLCConverter = () => {
 
   return (
     <>
-      <Container size={"xl"} mt="xl">
-        <Divider
-          my="lg"
-          label={
-            <Group gap="xs">
-              <div>configure this event for QLC+ export</div>
-              <TextButton size="xs" onClick={() => setShowExport((prev) => !prev)}>
-                for LDs, click here
-              </TextButton>
-            </Group>
-          }
-          labelPosition="center"
-        />
-      </Container>
-      <Collapse expanded={showExport}>
-        <Container size={"xl"}>
-          <Stack gap="xs">
-            <Title order={3}>This app supports direct export to QLC+!</Title>
-            <Text>
-              Assign each attribute to one or more QLC+ functions. The app will then create QLC+ Collections
-              corresponding to each cue, and fill the Collection with the QLC+ Function that you've selected.
-            </Text>
-            <Text>
-              For example, if a Cue 1 in ItemName has Wash→Intensity→100%, mapped to "QLC Dimmer 1" and Wash→Colour→Red,
-              mapped to "QLC Colour 1", the exported cue "ItemName 01" will contain "QLC Dimmer 1" and "QLC Colour 1".
-            </Text>
-          </Stack>
-          <Stack my="lg">
-            <Group>
-              <FileButton onChange={setFile} accept=".qxw">
-                {(props) => (
-                  <Button size="sm" {...props} color="green">
-                    Upload .qxw file
-                  </Button>
-                )}
-              </FileButton>
-              {file && <Text>Selected: {file.name}</Text>}
-              {!file && <Text> Please select a QLC+ file!</Text>}
-            </Group>
-          </Stack>
-        </Container>
+      {/* <Container size={"xl"} mt="xl"></Container> */}
 
-        <Container fluid>
-          <SimpleGrid cols={2} spacing={"lg"} px="xl">
-            <Grid>
-              <form>
-                <Grid.Col span={12}>
-                  <Flex gap="md">
-                    <Title order={3} flex={1}>
-                      Mappings
-                    </Title>
-                    <Button
-                      disabled={!file}
-                      ml={"auto"}
-                      size="xs"
-                      color="gray"
-                      variant="light"
-                      onClick={loadFromLocalstorage}
-                    >
-                      Reload saved data
-                    </Button>
-                  </Flex>
-                  <Stack>
-                    <Grid columns={12}>
-                      {event?.fixtureGroups.map((fixtureGroup, index) => (
-                        <Fragment key={fixtureGroup.id}>
-                          <Grid.Col span={12} mt={"lg"}>
-                            <Stack>
-                              <Text>
-                                Group {index + 1}: {fixtureGroup.name}
-                              </Text>
-                              <Divider />
-                            </Stack>
-                          </Grid.Col>
-                          {fixtureGroup.attributes
-                            .filter((v) => isQlcMappable(v.type))
-                            .map((attribute) => (
-                              <OptList2
-                                key={attribute.id}
-                                attribute={attribute}
-                                groupedFnList={groupedFnList ?? []}
-                                form={form}
-                              />
-                            ))}
-                        </Fragment>
-                      ))}
-                    </Grid>
-                  </Stack>
-                </Grid.Col>
-              </form>
-              {/* <Grid.Col span={12}>
-              <Center>
-                <Box>
-                  <Button disabled={!file} onClick={exportToQlc}>
-                    Export
-                  </Button>
-                </Box>
-              </Center>
-            </Grid.Col> */}
-              {/* <Stack>
-          <Stack gap={0}>
-            <Text> Available QLC+ functions </Text>
-            <Text>
-              {" "}
-              For each possible attribute value, select a corresponding QLC+ function. For example, for Spots--
-              {">Intensity>100"}, select the function that sets the Spots fixture group's intensity to full
-            </Text>
-          </Stack>
-        </Stack> */}
-              {/* <Grid.Col span={4}>
-          <Stack>
-            <Stack gap={0}>
-              <Text> Output in QLC </Text>
-              <Text>
-                Preview the output of each cue in QLC+. Each cue will be saved as a collection of applicable functions.
-              </Text>
-            </Stack>
-          </Stack>
-        </Grid.Col> */}
-            </Grid>
-            <Stack>
-              <Group>
-                <Title order={3} flex={1}>
-                  Preview
-                </Title>
-                <Button size="xs" variant="light" color="lime" onClick={onGeneratePreview}>
-                  Generate preview
+      <Container size={"xl"}>
+        <Stack gap="xs">
+          <Title order={3}>This app supports direct export to QLC+!</Title>
+          <Text>
+            Assign each attribute to one or more QLC+ functions. The app will then create QLC+ Collections corresponding
+            to each cue, and fill the Collection with the QLC+ Function that you've selected.
+          </Text>
+          <Text>
+            For example, if a Cue 1 in ItemName has Wash→Intensity→100%, mapped to "QLC Dimmer 1" and Wash→Colour→Red,
+            mapped to "QLC Colour 1", the exported cue "ItemName 01" will contain "QLC Dimmer 1" and "QLC Colour 1".
+          </Text>
+        </Stack>
+        <Stack my="lg">
+          <Group>
+            <FileButton onChange={setFile} accept=".qxw">
+              {(props) => (
+                <Button size="sm" {...props} color="green">
+                  Upload .qxw file
                 </Button>
-              </Group>
-              <Stack>
-                <QLCEventPreview
-                  code={code}
-                  qlcEvent={preview}
-                  groupedFnList={groupedFnList || []}
-                  removeFunctionFromCue={removeFunctionFromCue}
-                  addFunctionsToCue={addFunctionsToCue}
-                />
-                <Center>
+              )}
+            </FileButton>
+            {file && <Text>Selected: {file.name}</Text>}
+            {!file && <Text> Please select a QLC+ file!</Text>}
+          </Group>
+        </Stack>
+      </Container>
+
+      <Container fluid>
+        <SimpleGrid cols={2} spacing={"lg"} px="xl">
+          <Grid>
+            <form>
+              <Grid.Col span={12}>
+                <Flex gap="md">
+                  <Title order={3} flex={1}>
+                    Mappings
+                  </Title>
                   <Button
-                    color="green"
-                    rightSection={<IconDownload width={"1rem"} />}
-                    onClick={() => exportPreviewToQlc()}
+                    disabled={!file}
+                    ml={"auto"}
+                    size="xs"
+                    color="gray"
+                    variant="light"
+                    onClick={loadFromLocalstorage}
                   >
-                    {" "}
-                    Export{" "}
+                    Reload saved data
                   </Button>
-                </Center>
-              </Stack>
+                </Flex>
+                <Stack>
+                  <Grid columns={12}>
+                    {event?.fixtureGroups.map((fixtureGroup, index) => (
+                      <Fragment key={fixtureGroup.id}>
+                        <Grid.Col span={12} mt={"lg"}>
+                          <Stack>
+                            <Text>
+                              Group {index + 1}: {fixtureGroup.name}
+                            </Text>
+                            <Divider />
+                          </Stack>
+                        </Grid.Col>
+                        {fixtureGroup.attributes
+                          .filter((v) => isQlcMappable(v.type))
+                          .map((attribute) => (
+                            <OptList2
+                              key={attribute.id}
+                              attribute={attribute}
+                              groupedFnList={groupedFnList ?? []}
+                              form={form}
+                            />
+                          ))}
+                      </Fragment>
+                    ))}
+                  </Grid>
+                </Stack>
+              </Grid.Col>
+            </form>
+          </Grid>
+          <Stack>
+            <Group>
+              <Title order={3} flex={1}>
+                Preview
+              </Title>
+              <Button size="xs" variant="light" color="lime" onClick={onGeneratePreview}>
+                Generate preview
+              </Button>
+            </Group>
+            <Stack>
+              <QLCEventPreview
+                code={event.id}
+                qlcEvent={preview}
+                groupedFnList={groupedFnList || []}
+                removeFunctionFromCue={removeFunctionFromCue}
+                addFunctionsToCue={addFunctionsToCue}
+              />
+              <Center>
+                <Button
+                  color="green"
+                  rightSection={<IconDownload width={"1rem"} />}
+                  onClick={() => exportPreviewToQlc()}
+                >
+                  {" "}
+                  Export{" "}
+                </Button>
+              </Center>
             </Stack>
-          </SimpleGrid>
-        </Container>
-      </Collapse>
+          </Stack>
+        </SimpleGrid>
+      </Container>
     </>
   );
 };
