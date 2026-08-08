@@ -42,7 +42,7 @@ export type GroupedFnList = {
 }[];
 export const QLCConverter = () => {
   const code = useAppStore((s) => s.code);
-  const { event } = useGetEvent({ code });
+  const { event } = useGetEvent({ eventId: code });
   const activeItemId = useAppStore((s) => s.activeItemId);
   const [file, setFile] = useState<File | null>(null);
   const [fileXml, setFileXml] = useState<string | null>(null);

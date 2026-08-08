@@ -24,7 +24,7 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
   const showCues = useAppStore((s) => s.showCues);
 
   const { item } = useGetItem({ itemId });
-  const { event } = useGetEvent({ code });
+  const { event } = useGetEvent({ eventId: code });
   const { mutateAsync: createCue } = useCreateCue();
   const { mutateAsync: createBump } = useCreateBump();
   const { mutateAsync: deleteBump } = useDeleteBump();

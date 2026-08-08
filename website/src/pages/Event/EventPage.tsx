@@ -1,5 +1,3 @@
-// deprecated
-
 import {
   Alert,
   Anchor,
@@ -7,7 +5,6 @@ import {
   Button,
   Center,
   Code,
-  Collapse,
   Container,
   Divider,
   Flex,
@@ -23,32 +20,53 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
-import classes from "./ChoreoEventWrapper.module.css";
+import classes from "./EventPage.module.css";
 import { RichContent } from "../../components/RichContent/RichContent";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CueList } from "./CueList/CueList";
+// import { CueList } from "./CueList/CueList";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItems } from "../../query/useGetItems";
 import { useGetItem } from "../../query/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
-import { IconInfoCircle } from "@tabler/icons-react";
+import { IconArrowLeft, IconInfoCircle } from "@tabler/icons-react";
 import { useHotkeys, type HotkeyItem } from "@mantine/hooks";
 import { sanitize } from "../../utils/sanitize";
 import { ContentControl } from "../../components/ContentControl/ContentControl";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { saveRecentEvent } from "../../utils/recentEvents";
+import { CueList } from "../../sections/ChoreoEvent/CueList/CueList";
 
-export const ChoreoEventWrapper = () => {
+export const EventPage = () => {
   // NOTE: evt is nullable!! remember to check
-  const code = useAppStore((s) => s.code);
-  const isEditing = useAppStore((s) => s.isEditing);
-  const { event: evt, isValidEvent } = useGetEvent({ eventId: code });
+
+  const { eventId } = useParams({
+    from: "/events/$eventId/",
+  });
+
+  const { event: evt, isValidEvent, isFetching: isFetchingEvent } = useGetEvent({ eventId });
+  const loadedEventId = evt?.id;
+  const loadedEventName = evt?.name;
+
+  useEffect(() => {
+    if (!loadedEventId || !loadedEventName) return;
+
+    saveRecentEvent({
+      eventId: loadedEventId,
+      eventName: loadedEventName,
+    });
+  }, [loadedEventId, loadedEventName]);
+
   const activeItemId = useAppStore((s) => s.activeItemId);
   const showCues = useAppStore((s) => s.showCues);
   const toggleShowCues = useAppStore((s) => s.toggleShowCues);
 
-  const { items, isItemsLoading } = useGetItems({ eventId: evt?.id ?? "" });
-  const { item } = useGetItem({ itemId: activeItemId ?? undefined });
+  const { items, isItemsLoading } = useGetItems({ eventId });
+
+  const validActiveItemId = items.some((item) => item.id === activeItemId) ? activeItemId : undefined;
+
+  const { item } = useGetItem({ itemId: validActiveItemId ?? undefined });
 
   const { mutate: createItem, isPending: isItemCreating } = useCreateItem();
   const { mutate: updateItem } = useUpdateItem();
@@ -139,17 +157,36 @@ export const ChoreoEventWrapper = () => {
     useAppStore.getState().setIsEditing(true);
   };
 
+  const navigate = useNavigate();
+
   return (
-    <Collapse expanded={isValidEvent && !isEditing}>
+    <>
       <Container size={"xl"}>
-        <Divider my="lg" label="create your lighting plan" labelPosition="center" />
+        <Group mb="2rem">
+          <Button
+            type="button"
+            leftSection={<IconArrowLeft width="1rem" />}
+            variant="transparent"
+            onClick={() => navigate({ to: "/" })}
+          >
+            Back to home
+          </Button>
+          <Flex flex={1} />
+          <Button onClick={onEdit} variant="transparent" color="lime">
+            Edit event
+          </Button>
+          <Button onClick={onEdit} variant="light">
+            Export
+          </Button>
+        </Group>
+
         <Container my="xl" ml={0}>
           <Stack>
             <Group gap={0}>
               <Title>{evt?.name}</Title>
-              <Button onClick={onEdit} variant="transparent" color="lime">
+              {/* <Button onClick={onEdit} variant="transparent" color="lime">
                 Edit event
-              </Button>
+              </Button> */}
             </Group>
             <Text> {evt?.description}</Text>
             {evt?.externalLink && (
@@ -325,14 +362,14 @@ export const ChoreoEventWrapper = () => {
                 </div>
               )}
             </Stack>
-            {showCues ? (
+            {showCues && evt ? (
               <Stack>
                 <Group>
                   <Title order={3} flex={1}>
                     Cues
                   </Title>
                 </Group>
-                {/* <CueList itemId={item.id} /> */}
+                <CueList itemId={item.id} fixtureGroups={evt?.fixtureGroups ?? []} />
               </Stack>
             ) : (
               <></>
@@ -340,6 +377,6 @@ export const ChoreoEventWrapper = () => {
           </SimpleGrid>
         )}
       </Container>
-    </Collapse>
+    </>
   );
 };

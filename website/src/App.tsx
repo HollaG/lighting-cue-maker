@@ -1,3 +1,5 @@
+// Deprecated
+
 import { Box } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 

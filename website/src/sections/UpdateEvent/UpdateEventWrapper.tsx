@@ -83,7 +83,7 @@ export const UpdateEventWrapper = () => {
   const code = useAppStore((s) => s.code);
   const isEditing = useAppStore((s) => s.isEditing);
   const setIsEditing = useAppStore((s) => s.setIsEditing);
-  const { event, isValidEvent } = useGetEvent({ code });
+  const { event, isValidEvent } = useGetEvent({ eventId: code });
 
   const { mutate: updateEvent, isPending: isSubmittingEvent } = useUpdateEvent();
 

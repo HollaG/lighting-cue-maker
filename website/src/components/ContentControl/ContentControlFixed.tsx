@@ -41,7 +41,7 @@ export const ContentControlFixed = ({
   const setInputTimingMode = useAppStore((s) => s.setInputTimingMode);
   const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const setCurrentlySelectedBumpId = useAppStore((s) => s.setCurrentlySelectedBumpId);
-  const { event: evt } = useGetEvent({ code: eventId });
+  const { event: evt } = useGetEvent({ eventId: eventId });
 
   const handleMenuItemClick = (action: () => void) => {
     action();

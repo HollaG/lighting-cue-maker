@@ -25,7 +25,7 @@ export const QLCFunctionListPreview = ({
 }) => {
   const code = useAppStore((s) => s.code);
   const [selectedFunctionIds, setSelectedFunctionIds] = useState<string[]>([]);
-  const { event } = useGetEvent({ code });
+  const { event } = useGetEvent({ eventId: code });
 
   const handleAdd = () => {
     if (selectedFunctionIds.length === 0) return;

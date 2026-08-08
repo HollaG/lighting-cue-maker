@@ -1,3 +1,5 @@
+// Deprecated
+
 import { Collapse, Divider } from "@mantine/core";
 import { EventForm } from "../../components/EventForm/EventForm";
 import { eventFormValuesToCreateRequest } from "../../components/EventForm/eventFormModel";
@@ -7,7 +9,7 @@ import { useAppStore } from "../../store/appStore";
 
 export const CreateEventWrapper = () => {
   const code = useAppStore((state) => state.code);
-  const { isValidEvent } = useGetEvent({ code });
+  const { isValidEvent } = useGetEvent({ eventId: code });
   const { isPending, mutate: createEvent } = useCreateEvent();
 
   if (isValidEvent) return null;

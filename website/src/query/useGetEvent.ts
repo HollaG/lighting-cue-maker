@@ -2,14 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { GetEventRes } from "../types/http";
 
-export const useGetEvent = ({ code }: { code: string }) => {
+export const useGetEvent = ({ eventId }: { eventId: string }) => {
   const query = useQuery({
-    queryKey: ["events", code],
+    queryKey: ["events", eventId],
     queryFn: async () => {
-      const res = await api.get<GetEventRes>(`/api/v1/events/${code}`);
+      const res = await api.get<GetEventRes>(`/api/v1/events/${eventId}`);
       return res.event;
     },
-    enabled: !!code && code.length === 36,
+    enabled: !!eventId && eventId.length === 36,
   });
 
   const event = query.data ?? null;
