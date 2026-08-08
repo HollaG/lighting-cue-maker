@@ -1,6 +1,19 @@
-import { Card, Group, Button, Select, TagsInput, Center, Box, Stack, ColorInput, Radio, Flex } from "@mantine/core";
-import { AttributeTypes, type Option } from "../../../../types/types";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Card,
+  Group,
+  Button,
+  Select,
+  TagsInput,
+  Center,
+  Box,
+  Stack,
+  ColorInput,
+  Radio,
+  Flex,
+  Tooltip,
+} from "@mantine/core";
+import { AttributeTypes, BooleanOptions, type ColourOption, type Option } from "../../../../types/types";
+import { useEffect, useRef, useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";
 import type { EventFormKey, EventFormValues } from "../../../EventForm/eventFormModel";
@@ -26,12 +39,14 @@ export const AddAttributeCard = ({
   form,
   fixtureGroupClientId,
   index,
+  deleteDisabled = false,
   onDeleteAttribute,
 }: {
   attributeClientId: EventFormKey;
   form: UseFormReturnType<EventFormValues>;
   fixtureGroupClientId: EventFormKey;
   index: number;
+  deleteDisabled?: boolean;
   onDeleteAttribute: () => void;
 }) => {
   // Not related to form data. Used to determine which type of input that the user can do for
@@ -40,6 +55,10 @@ export const AddAttributeCard = ({
   const baseFieldName = `fixtureGroups.${fixtureGroupClientId}.attributes.${attributeClientId}`;
   const opvFieldName = `${baseFieldName}.optionPossibleValues`;
   const initialType = form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].type;
+  const initialColourOptions =
+    form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].optionPossibleValues[
+      AttributeTypes.COLOUR
+    ] ?? [];
   const [selectedAttribute, setSelectedAttribute] = useState<AttributeTypes | null>(
     initialType === AttributeTypes.NONE ? null : initialType,
   );
@@ -64,9 +83,20 @@ export const AddAttributeCard = ({
           />
         </Box>
         <Flex mt={"md"} justify={"end"} style={{ flexShrink: 1 }}>
-          <Button type="button" variant="transparent" size="xs" color="red" onClick={onDeleteAttribute}>
-            Remove attribute
-          </Button>
+          <Tooltip label="Deleting existing attributes is not supported yet." disabled={!deleteDisabled}>
+            <span>
+              <Button
+                type="button"
+                variant="transparent"
+                size="xs"
+                color="red"
+                disabled={deleteDisabled}
+                onClick={onDeleteAttribute}
+              >
+                Remove attribute
+              </Button>
+            </span>
+          </Tooltip>
         </Flex>
       </Group>
 
@@ -98,11 +128,11 @@ export const AddAttributeCard = ({
           }}
         >
           {(selectedAttribute === AttributeTypes.MULTISELECT || selectedAttribute === AttributeTypes.SELECT) && (
-            <SelectOptionsHandler opvFieldName={opvFieldName} form={form} />
+            <SelectOptionsHandler optionType={selectedAttribute} opvFieldName={opvFieldName} form={form} />
           )}
 
           {selectedAttribute === AttributeTypes.COLOUR && (
-            <ColourOptionsHandler opvFieldName={opvFieldName} form={form} />
+            <ColourOptionsHandler initialColours={initialColourOptions} opvFieldName={opvFieldName} form={form} />
           )}
 
           {selectedAttribute === AttributeTypes.BOOLEAN && (
@@ -138,8 +168,16 @@ export const AddAttributeCard = ({
   );
 };
 
-const SelectOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; form: UseFormReturnType<any> }) => {
-  opvFieldName = `${opvFieldName}.${AttributeTypes.SELECT}`;
+const SelectOptionsHandler = ({
+  optionType,
+  opvFieldName,
+  form,
+}: {
+  optionType: typeof AttributeTypes.SELECT | typeof AttributeTypes.MULTISELECT;
+  opvFieldName: string;
+  form: UseFormReturnType<any>;
+}) => {
+  opvFieldName = `${opvFieldName}.${optionType}`;
 
   return (
     <TagsInput
@@ -153,26 +191,34 @@ const SelectOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
 };
 
 // need to specify hex code
-const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; form: UseFormReturnType<any> }) => {
+const ColourOptionsHandler = ({
+  initialColours,
+  opvFieldName,
+  form,
+}: {
+  initialColours: ColourOption[];
+  opvFieldName: string;
+  form: UseFormReturnType<any>;
+}) => {
   // list of colours
   opvFieldName = `${opvFieldName}.${AttributeTypes.COLOUR}`;
 
-  const initialColorInput = useMemo(() => Date.now().toString(), []); // there should already be one input ready
-
-  // const [colorInputIds, setColorInputIds] = useState<string[]>([initialColorInput]); // IDs for Colours are String.
-  const [colorInputIds, setColorInputIds] = useState<string[]>([initialColorInput]);
+  const [colorInputIds, setColorInputIds] = useState<string[]>(() =>
+      initialColours.length > 0
+        ? initialColours.map((_, index) => `existing-colour-${index}`)
+        : [Date.now().toString()],
+  );
+  const initializedEmptyColour = useRef(false);
 
   useEffect(() => {
-    // init the field value for this colour
+    if (initialColours.length > 0 || initializedEmptyColour.current) return;
+    initializedEmptyColour.current = true;
+
     form.setFieldValue(`${opvFieldName}.0`, {
       hex: "",
       name: "",
     });
-
-    // return () => {
-    //   form.removeListItem(`${opvFieldName}`, initialColorInput);
-    // };
-  }, []);
+  }, [form, initialColours.length, opvFieldName]);
 
   const onAddNewColourOption = (index: number) => {
     const id = Date.now().toString();
@@ -229,7 +275,7 @@ const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
             />
           </Box>
           <Box flex={1}>
-            <Button variant="transparent" size="xs" color="red" onClick={() => onDeleteColourOption(index)}>
+            <Button type="button" variant="transparent" size="xs" color="red" onClick={() => onDeleteColourOption(index)}>
               {" "}
               Remove option
             </Button>
@@ -237,7 +283,7 @@ const ColourOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; fo
         </Group>
       ))}
       <Center>
-        <Button variant="subtle" size="xs" onClick={() => onAddNewColourOption(colorInputIds.length)}>
+        <Button type="button" variant="subtle" size="xs" onClick={() => onAddNewColourOption(colorInputIds.length)}>
           {" "}
           Add another colour
         </Button>
@@ -259,8 +305,8 @@ const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; f
       withAsterisk
     >
       <Group mt="xs">
-        <Radio value="unchecked" label="Unchecked" />
-        <Radio value="checked" label="Checked" />
+        <Radio value={BooleanOptions.UNCHECKED} label="Unchecked" />
+        <Radio value={BooleanOptions.CHECKED} label="Checked" />
       </Group>
     </Radio.Group>
   );

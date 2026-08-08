@@ -1,7 +1,11 @@
-import { Box, Button, Card, Center, Flex, Group, Stack } from "@mantine/core";
+import { Box, Button, Card, Center, Flex, Group, Stack, Tooltip } from "@mantine/core";
 import type { UseFormReturnType } from "@mantine/form";
 import { useState } from "react";
-import { createEmptyEventFormAttribute, type EventFormKey, type EventFormValues } from "../EventForm/eventFormModel";
+import {
+  createEmptyEventFormAttribute,
+  type EventFormKey,
+  type EventFormValues,
+} from "../EventForm/eventFormModel";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
 
@@ -20,6 +24,7 @@ export const FixtureGroupCard = ({
   const attributesPath = `${fixtureGroupPath}.attributes`;
   const attributeOrderPath = `${fixtureGroupPath}.attributeOrder`;
   const fixtureGroup = form.getValues().fixtureGroups[formKey];
+  const fixtureGroupDeleteDisabled = Boolean(fixtureGroup.id);
   const [attributeOrder, setAttributeOrder] = useState<EventFormKey[]>(fixtureGroup.attributeOrder);
 
   const setAttributeOrderInStateAndForm = (nextOrder: EventFormKey[]) => {
@@ -57,9 +62,23 @@ export const FixtureGroupCard = ({
           </Box>
 
           <Flex mt="md" justify="end" style={{ flexShrink: 1 }}>
-            <Button type="button" variant="transparent" size="xs" color="red" onClick={onDeleteFixtureGroup}>
-              Remove group
-            </Button>
+            <Tooltip
+              label="Deleting existing fixture groups is not supported yet."
+              disabled={!fixtureGroupDeleteDisabled}
+            >
+              <span>
+                <Button
+                  type="button"
+                  variant="transparent"
+                  size="xs"
+                  color="red"
+                  disabled={fixtureGroupDeleteDisabled}
+                  onClick={onDeleteFixtureGroup}
+                >
+                  Remove group
+                </Button>
+              </span>
+            </Tooltip>
           </Flex>
         </Group>
 
@@ -70,6 +89,7 @@ export const FixtureGroupCard = ({
             fixtureGroupClientId={formKey}
             form={form}
             index={attributeIndex}
+            deleteDisabled={Boolean(fixtureGroup.attributes[attributeClientId].id)}
             onDeleteAttribute={() => removeAttribute(attributeClientId)}
           />
         ))}

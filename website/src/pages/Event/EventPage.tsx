@@ -155,11 +155,12 @@ export const EventPage = () => {
     }
   }, [item?.rawLyrics]);
 
-  const onEdit = () => {
-    useAppStore.getState().setIsEditing(true);
-  };
-
   const navigate = useNavigate();
+  const onEdit = () =>
+    navigate({
+      to: "/events/$eventId/edit",
+      params: { eventId },
+    });
 
   // QLC+ export controls
   const [openedQlcExport, { open: openQlcExport, close: closeQlcExport }] = useDisclosure(false);

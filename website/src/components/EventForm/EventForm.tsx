@@ -121,7 +121,7 @@ export const EventForm = ({
               />
             ))}
 
-            <AddFixtureGroupButton type="button" onClick={addFixtureGroup} />
+            {<AddFixtureGroupButton type="button" onClick={addFixtureGroup} />}
           </SimpleGrid>
 
           <Center mt="xl">

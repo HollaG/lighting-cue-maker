@@ -1,5 +1,5 @@
 import { AttributeTypes, BooleanOptions } from "../../types/types";
-import type { CreateEventReq } from "../../types/http";
+import type { CreateEventReq, UpdateEventReq } from "../../types/http";
 import type {
   AttributeConfiguration,
   BumpConfiguration,
@@ -109,18 +109,32 @@ export const eventToEventFormValues = (event: LightEventConfiguration): EventFor
   const fixtureGroups: Record<EventFormKey, EventFormFixtureGroup> = {};
   const fixtureGroupOrder: EventFormKey[] = [];
 
-  for (const fixtureGroup of event.fixtureGroups) {
+  const orderedFixtureGroups = [...event.fixtureGroups].sort((a, b) => a.order - b.order);
+
+  for (const fixtureGroup of orderedFixtureGroups) {
     const fixtureGroupClientId = createEventFormKey();
     const attributes: Record<EventFormKey, EventFormAttribute> = {};
     const attributeOrder: EventFormKey[] = [];
 
-    for (const attribute of fixtureGroup.attributes) {
+    const orderedAttributes = [...fixtureGroup.attributes].sort((a, b) => a.order - b.order);
+
+    for (const attribute of orderedAttributes) {
       const attributeClientId = createEventFormKey();
       attributeOrder.push(attributeClientId);
       attributes[attributeClientId] = {
         ...attribute,
         clientId: attributeClientId,
         id: attribute.id,
+        optionPossibleValues: {
+          [AttributeTypes.SELECT]: attribute.optionPossibleValues?.[AttributeTypes.SELECT] ?? [],
+          [AttributeTypes.MULTISELECT]: attribute.optionPossibleValues?.[AttributeTypes.MULTISELECT] ?? [],
+          [AttributeTypes.COLOUR]: attribute.optionPossibleValues?.[AttributeTypes.COLOUR] ?? [],
+          [AttributeTypes.SLIDER]: attribute.optionPossibleValues?.[AttributeTypes.SLIDER] ?? { min: 0, max: 100 },
+          [AttributeTypes.BOOLEAN]:
+            attribute.optionPossibleValues?.[AttributeTypes.BOOLEAN] ?? BooleanOptions.UNCHECKED,
+          [AttributeTypes.TEXT]: attribute.optionPossibleValues?.[AttributeTypes.TEXT] ?? "",
+          [AttributeTypes.NONE]: null,
+        },
       };
     }
 
@@ -168,6 +182,42 @@ export const eventFormValuesToCreateRequest = (values: EventFormValues): CreateE
         return attribute;
       }),
       order: fixtureGroup.order,
+    };
+  }),
+});
+
+/**
+ * Produces the aggregate event PATCH payload. Backend IDs are retained for
+ * existing records and omitted for records that only exist in the form.
+ */
+export const eventFormValuesToUpdateRequest = (values: EventFormValues): UpdateEventReq => ({
+  name: values.name,
+  description: values.description,
+  externalLink: values.externalLink,
+  cuesPerBand: values.cuesPerBand === undefined || values.cuesPerBand === "" ? undefined : Number(values.cuesPerBand),
+  uniqueCuesPerBand:
+    values.uniqueCuesPerBand === undefined || values.uniqueCuesPerBand === ""
+      ? undefined
+      : Number(values.uniqueCuesPerBand),
+  fixtureGroups: values.fixtureGroupOrder.map((fixtureGroupClientId, fixtureGroupIndex) => {
+    const fixtureGroup = values.fixtureGroups[fixtureGroupClientId];
+
+    return {
+      ...(fixtureGroup.id ? { id: fixtureGroup.id } : {}),
+      name: fixtureGroup.name,
+      order: fixtureGroupIndex,
+      attributes: fixtureGroup.attributeOrder.map((attributeClientId, attributeIndex) => {
+        const attribute = fixtureGroup.attributes[attributeClientId];
+
+        return {
+          ...(attribute.id ? { id: attribute.id } : {}),
+          name: attribute.name,
+          type: attribute.type,
+          metadata: attribute.metadata,
+          optionPossibleValues: attribute.optionPossibleValues,
+          order: attributeIndex,
+        };
+      }),
     };
   }),
 });

@@ -57,22 +57,39 @@ export type UpdateCueRes = { cue: Cue };
 export type CreateBumpReq = { itemId: string; bumpConfigurationId: string };
 export type CreateBumpRes = { bump: Bump };
 
-export type UpdateEventReq = Pick<
-  LightEventConfiguration,
-  "name" | "uniqueCuesPerBand" | "cuesPerBand" | "description" | "externalLink"
->;
+export type UpsertEventAttributeReq = Omit<AttributeConfiguration, "id"> & {
+  id?: string;
+};
+
+export type UpsertEventFixtureGroupReq = Pick<FixtureGroupConfiguration, "name" | "order"> & {
+  id?: string;
+  attributes: UpsertEventAttributeReq[];
+};
+
+export type UpdateEventReq = Partial<
+  Pick<LightEventConfiguration, "name" | "uniqueCuesPerBand" | "cuesPerBand" | "description" | "externalLink">
+> & {
+  fixtureGroups?: UpsertEventFixtureGroupReq[];
+  deletedFixtureGroupIds?: string[];
+  deletedAttributeIds?: string[];
+};
 export type UpdateEventRes = CreateEventRes;
 
-export type UpdateAttributeConfigReq = Pick<
-  AttributeConfiguration,
-  "metadata" | "name" | "optionPossibleValues" | "type"
+export type UpdateAttributeConfigReq = Partial<
+  Pick<AttributeConfiguration, "metadata" | "name" | "optionPossibleValues" | "type" | "order">
 >;
 
-export type UpdateFixtureGroupConfigReq = { name: string };
+export type UpdateFixtureGroupConfigReq = Partial<Pick<FixtureGroupConfiguration, "name" | "order">>;
 
-export type CreateAttributeConfigReq = {
+export type CreateAttributeConfigReq = Pick<
+  AttributeConfiguration,
+  "metadata" | "name" | "optionPossibleValues" | "type" | "order"
+> & {
   fixtureGroupId: string;
-  name: string;
+};
+
+export type CreateAttributeConfigRes = {
+  attribute: AttributeConfiguration;
 };
 
 export type GenerateQlcCollections = {

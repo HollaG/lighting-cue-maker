@@ -25,15 +25,42 @@ type UpdateLightEventReq struct {
 	ExternalLink      *string `json:"externalLink,omitempty"`
 	CuesPerBand       *int    `json:"cuesPerBand,omitempty"`
 	UniqueCuesPerBand *int    `json:"uniqueCuesPerBand,omitempty"`
+
+	// FixtureGroups contains fixture groups and attributes to create or update.
+	// Existing records have an ID; new records omit it.
+	FixtureGroups *[]UpsertFixtureGroupConfigurationReq `json:"fixtureGroups,omitempty"`
+
+	// Deletions are explicit so omitting a record from FixtureGroups does not
+	// accidentally delete it.
+	DeletedFixtureGroupIDs []string `json:"deletedFixtureGroupIds,omitempty"`
+	DeletedAttributeIDs    []string `json:"deletedAttributeIds,omitempty"`
+}
+
+type UpsertFixtureGroupConfigurationReq struct {
+	ID         *string                           `json:"id,omitempty"`
+	Name       string                            `json:"name"`
+	Attributes []UpsertAttributeConfigurationReq `json:"attributes"`
+	Order      int                               `json:"order"`
+}
+
+type UpsertAttributeConfigurationReq struct {
+	ID       *string              `json:"id,omitempty"`
+	Name     string               `json:"name"`
+	Type     AttributeType        `json:"type"`
+	Metadata map[string]any       `json:"metadata"`
+	Options  AttributeTypeOptions `json:"optionPossibleValues"`
+	Order    int                  `json:"order"`
 }
 
 type CreateFixtureGroupConfigurationReq struct {
 	Name       string                            `json:"name"`
 	Attributes []CreateAttributeConfigurationReq `json:"attributes"`
+	Order      int                               `json:"order,omitempty"`
 }
 
 type UpdateFixtureGroupConfigurationReq struct {
-	Name *string `json:"name,omitempty"`
+	Name  *string `json:"name,omitempty"`
+	Order *int    `json:"order,omitempty"`
 }
 
 type CreateAttributeConfigurationReq struct {
@@ -42,6 +69,7 @@ type CreateAttributeConfigurationReq struct {
 	Type           AttributeType        `json:"type"`
 	Metadata       map[string]any       `json:"metadata"`
 	Options        AttributeTypeOptions `json:"optionPossibleValues"`
+	Order          int                  `json:"order,omitempty"`
 }
 
 type UpdateAttributeConfigurationReq struct {
@@ -49,6 +77,7 @@ type UpdateAttributeConfigurationReq struct {
 	Type     *AttributeType        `json:"type,omitempty"`
 	Metadata *map[string]any       `json:"metadata,omitempty"`
 	Options  *AttributeTypeOptions `json:"optionPossibleValues,omitempty"`
+	Order    *int                  `json:"order,omitempty"`
 }
 
 // ------------------------------------------------
@@ -77,6 +106,8 @@ type FixtureGroupConfiguration struct {
 	LightEventUuid string                   `json:"-" gorm:"type:uuid;not null"`
 	Name           string                   `json:"name"`
 	Attributes     []AttributeConfiguration `json:"attributes" gorm:"foreignKey:FixtureGroupConfigurationUuid;references:Uuid"`
+
+	Order int `json:"order" gorm:"default:0"`
 
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
@@ -141,6 +172,8 @@ type AttributeConfiguration struct {
 	Type                          AttributeType        `json:"type"`
 	Metadata                      map[string]any       `json:"metadata" gorm:"serializer:json"`
 	Options                       AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
+
+	Order int `json:"order" gorm:"default:0"`
 
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
