@@ -178,6 +178,11 @@ export const EventPage = () => {
             Back to home
           </Button>
           <Flex flex={1} />
+          <Box>
+            <Button size="xs" variant="outline" onClick={toggleShowCues}>
+              {showCues ? "Hide " : "Show "}cues
+            </Button>
+          </Box>
           <Button onClick={onEdit} variant="transparent" color="lime">
             Edit event
           </Button>
@@ -277,12 +282,6 @@ export const EventPage = () => {
                     onFinishAddingLyrics={onClickFinishAddingLyricsButton}
                   />
                 </Flex>
-
-                <Box>
-                  <Button size="xs" variant="outline" onClick={toggleShowCues}>
-                    {showCues ? "Hide " : "Show "}cues
-                  </Button>
-                </Box>
               </Group>
               <Alert
                 variant="light"

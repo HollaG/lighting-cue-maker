@@ -18,6 +18,7 @@ import {
   Text,
   Textarea,
   Title,
+  Tooltip,
   useCombobox,
 } from "@mantine/core";
 import { CardBase } from "../CardBase";
@@ -36,7 +37,7 @@ import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { IconCaretDown, IconChevronUp } from "@tabler/icons-react";
 import { useForm, type UseFormReturnType } from "@mantine/form";
-import { useDisclosure } from "@mantine/hooks";
+import { useDebouncedCallback, useDisclosure } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
 import { useDeleteCue } from "../../../query/useDeleteCue";
 import { removeCueFromRawLyrics } from "../../../utils/cueUtils";
@@ -108,12 +109,37 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     }),
     [cue, fixtureGroups],
   );
+
+  async function handleSave() {
+    const activeItemId = useAppStore.getState().activeItemId;
+    if (!activeItemId) return;
+    try {
+      // convert the form value to API request body
+      // await onUpdateCue(form.getValues(), refetchItem, refetchCues);
+
+      await updateCue({
+        cueId: cue.id,
+        itemId: activeItemId,
+        requestBody: form.getValues(),
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsDirty(false);
+    }
+  }
+
+  const debouncedSave = useDebouncedCallback(() => {
+    void handleSave();
+  }, 500);
+
   const form = useForm<FormData>({
     mode: "uncontrolled",
     initialValues,
 
     onValuesChange: () => {
       setIsDirty(true);
+      debouncedSave();
     },
   });
 
@@ -242,25 +268,6 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     window.scrollTo({ top: y, behavior: "smooth" });
   };
 
-  const handleSave = async () => {
-    const activeItemId = useAppStore.getState().activeItemId;
-    if (!activeItemId) return;
-    try {
-      // convert the form value to API request body
-      // await onUpdateCue(form.getValues(), refetchItem, refetchCues);
-
-      await updateCue({
-        cueId: cue.id,
-        itemId: activeItemId,
-        requestBody: form.getValues(),
-      });
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsDirty(false);
-    }
-  };
-
   const handleDelete = async () => {
     try {
       const activeItemId = useAppStore.getState().activeItemId;
@@ -302,7 +309,7 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
   };
 
   return (
-    <form onSubmit={form.onSubmit((_) => handleSave())}>
+    <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
       <div
         id={`cue-card-${cueNumber}`}
         ref={cueRef}
@@ -336,8 +343,13 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
             <Group mb="md">
               <Title order={4} style={{ backgroundColor: isCueSelected ? "yellow" : "transparent" }}>
                 {" "}
-                Cue {cueNumber}{" "}
+                Cue {cueNumber}
               </Title>
+              <Tooltip label={`Cue ID: ${cue.id}`}>
+                <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
+                  {cue.id.slice(0, 4)}
+                </Text>
+              </Tooltip>
               <Button variant="transparent" size="xs" color="black" onClick={() => onJumpToCue()}>
                 Scroll to cue
               </Button>
@@ -356,10 +368,12 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
               <Button color="red" size="xs" variant="transparent" onClick={beforeDeleteCue}>
                 Delete{" "}
               </Button>
-              <Button variant="light" size="xs" disabled={!isDirty} type="submit">
-                {" "}
-                Save changes{" "}
-              </Button>
+              <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
+                <Button variant="light" size="xs" disabled={!isDirty} type="submit">
+                  {" "}
+                  Save changes{" "}
+                </Button>
+              </Tooltip>
               <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
                 <IconChevronUp
                   style={{
@@ -667,8 +681,7 @@ function ColourSelect({
               const committed = formPath
                 .split(".")
                 .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-                | ColourOption
-                | undefined;
+                ColourOption | undefined;
 
               // const committed = form.getValues()[formPath.[0]][] as ColourOption | undefined;
               setSearch(committed?.name ?? "");
@@ -685,8 +698,7 @@ function ColourSelect({
                     formPath
                       .split(".")
                       .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-                      | ColourOption
-                      | undefined
+                      ColourOption | undefined
                   )?.hex,
 
                   // TODO @nightmode
@@ -695,8 +707,7 @@ function ColourSelect({
                       formPath
                         .split(".")
                         .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-                        | ColourOption
-                        | undefined
+                        ColourOption | undefined
                     )?.hex === "#ffffff"
                       ? "2px solid black"
                       : "",

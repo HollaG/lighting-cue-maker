@@ -145,145 +145,6 @@ export const QLC_MAPPABLE_TYPES = new Set<AttributeTypes>([
 export const isQlcMappable = (type: AttributeTypes) => QLC_MAPPABLE_TYPES.has(type);
 
 /**
- * Generates QLC+ Collection Function elements from the cue data and the
- * user's attribute→function mapping, then inserts them into the <Engine>
- * node of the provided workspace XML.
- *
- * Uses DOM APIs throughout — no manual string concatenation.
- *
- * @param workspaceXml   Raw .qxw file content
- * @param items          Items with preloaded cues (from /api/v1/qlc/:id/generate)
- * @param mapping        Form values: `attributeId|value` → QLC+ function ID array
- * @param startingFnId   ID to assign to the first generated Function element
- * @returns Updated workspace XML string, or undefined on parse error
- */
-export function generateAndInsertCollections(
-  workspaceXml: string,
-  items: Item[],
-  mapping: Record<string, string[]>,
-  startingFnId: number,
-): string | undefined {
-  const parser = new DOMParser();
-
-  // ── Parse the workspace ───────────────────────────────────────────────────
-
-  const workspaceDoc = parser.parseFromString(workspaceXml, "application/xml");
-  if (workspaceDoc.querySelector("parsererror")) {
-    console.error("[generateAndInsertCollections] Failed to parse workspace XML");
-    return undefined;
-  }
-
-  const engineNode = workspaceDoc.querySelector("Engine");
-  if (!engineNode) {
-    console.error("[generateAndInsertCollections] No <Engine> node found");
-    return undefined;
-  }
-
-  // Determine the insertion anchor: right after the last existing <Function>
-  // child of <Engine>.  null means appendChild (end of Engine).
-  const existingFunctions = Array.from(engineNode.children).filter((el) => el.tagName === "Function");
-  const insertionAnchor =
-    existingFunctions.length > 0 ? existingFunctions[existingFunctions.length - 1].nextSibling : null;
-
-  // ── Generate and insert one Collection per cue ───────────────────────────
-
-  let fnIdCounter = startingFnId;
-
-  for (const item of items) {
-    const { name, rawLyrics, cues } = item;
-
-    if (!rawLyrics) continue;
-    if (!cues || cues.length === 0) continue;
-
-    const cueOrder = getCueOrder(rawLyrics);
-
-    for (const [cueIndex, cueId] of cueOrder.entries()) {
-      const cue = cues.find((c) => c.id === cueId);
-      if (!cue) {
-        console.error(`[generateAndInsertCollections] Cue ${cueId} in cueOrder but not in cue list`);
-        continue;
-      }
-
-      // Create <Function ID="…" Type="Collection" Path="…" Name="…">
-      const fnEl = workspaceDoc.createElement("Function");
-      fnEl.setAttribute("ID", String(fnIdCounter));
-      fnEl.setAttribute("Type", "Collection");
-      fnEl.setAttribute("Path", `Generated/${name}`);
-      fnEl.setAttribute("Name", `${name} ${convertNumberToMinimally2Digits(cueIndex + 1)}`);
-      fnIdCounter++;
-
-      // Flatten all group assignments into a single attribute map
-      const completeAttributeMap = Object.values(cue.assignments ?? {}).reduce(
-        (acc, group) => ({ ...acc, ...group.assignment }),
-        {} as Record<string, { type: AttributeTypes; value: any; name: string }>,
-      );
-
-      let stepNumber = 0;
-
-      for (const [attrId, attr] of Object.entries(completeAttributeMap)) {
-        if (!QLC_MAPPABLE_TYPES.has(attr.type)) continue;
-
-        const isNotSelected = hasAValue(attr.type, attr.value);
-
-        if (isNotSelected) {
-          // this attribute is NOT selected
-          console.info(`[generateAndInsertCollection] empty attribute`);
-          const keyString = `${attrId}|not-selected`;
-          const qlcFunctionIds = mapping[keyString];
-
-          if (!qlcFunctionIds || qlcFunctionIds.length === 0) {
-            console.warn(`[generateAndInsertCollections] No QLC+ function mapped for "${keyString}"`);
-            continue;
-          }
-
-          // One <Step> per mapped QLC+ function ID
-          for (const qlcFnId of qlcFunctionIds) {
-            const stepEl = workspaceDoc.createElement("Step");
-            stepEl.setAttribute("Number", String(stepNumber));
-            stepEl.textContent = qlcFnId;
-            fnEl.appendChild(stepEl);
-            stepNumber++;
-          }
-
-          continue;
-        }
-
-        const selectedValue = getValueFromValueAssignment(attr.type, attr.value);
-
-        // Normalise: multi-select returns string[], everything else returns a single value.
-        // Wrap scalars in an array so the loop below is uniform.
-        const values = Array.isArray(selectedValue) ? selectedValue : [selectedValue];
-
-        for (const v of values) {
-          const keyString = `${attrId}|${v}`;
-          const qlcFunctionIds = mapping[keyString];
-
-          if (!qlcFunctionIds || qlcFunctionIds.length === 0) {
-            console.warn(`[generateAndInsertCollections] No QLC+ function mapped for "${keyString}"`);
-            continue;
-          }
-
-          // One <Step> per mapped QLC+ function ID
-          for (const qlcFnId of qlcFunctionIds) {
-            const stepEl = workspaceDoc.createElement("Step");
-            stepEl.setAttribute("Number", String(stepNumber));
-            stepEl.textContent = qlcFnId;
-            fnEl.appendChild(stepEl);
-            stepNumber++;
-          }
-        }
-      }
-
-      engineNode.insertBefore(fnEl, insertionAnchor);
-    }
-  }
-
-  // ── Insert Chasers & Serialize ──────────────────────────────────────────────
-
-  return generateAndInsertChasers(workspaceDoc, items, fnIdCounter);
-}
-
-/**
  * Generates QLC+ Collection Function elements from a QLCEventJson preview
  * and inserts them into the <Engine> node of the provided workspace XML.
  *
@@ -339,7 +200,10 @@ export function generateAndInsertPreviewCollections(
       fnEl.setAttribute("ID", String(fnIdCounter));
       fnEl.setAttribute("Type", "Collection");
       fnEl.setAttribute("Path", `Generated/${itemName}`);
-      fnEl.setAttribute("Name", `${itemName} ${convertNumberToMinimally2Digits(cueIndex + 1)}`);
+      fnEl.setAttribute(
+        "Name",
+        `${itemName} ${convertNumberToMinimally2Digits(cueIndex + 1)} ${cuePreview.cue.id.slice(0, 4)}`,
+      );
       fnIdCounter++;
 
       let stepNumber = 0;
@@ -394,14 +258,14 @@ export function generateAndInsertChasers(
     return undefined;
   }
 
-  let maxId = startingFnId;
-  workspaceDoc.querySelectorAll("Function").forEach((el) => {
-    const id = Number(el.getAttribute("ID"));
-    if (!isNaN(id) && id >= maxId) {
-      maxId = id + 1;
-    }
-  });
-  let fnIdCounter = maxId;
+  // let maxId = startingFnId;
+  // workspaceDoc.querySelectorAll("Function").forEach((el) => {
+  //   const id = Number(el.getAttribute("ID"));
+  //   if (!isNaN(id) && id >= maxId) {
+  //     maxId = id + 1;
+  //   }
+  // });
+  let fnIdCounter = startingFnId;
 
   const existingFunctions = Array.from(engineNode.children).filter((el) => el.tagName === "Function");
   const insertionAnchor =

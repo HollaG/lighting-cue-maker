@@ -22,6 +22,7 @@ export const CueList = memo(
         style={{
           transition: "all 0.3s ease-in-out",
           transform: `translateY(${calculatedOffset}px)`,
+          zIndex: 10,
         }}
       >
         {isCuesLoading
