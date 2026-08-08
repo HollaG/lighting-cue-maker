@@ -1,36 +1,45 @@
 import { Box, Button, Card, Center, Flex, Group, Stack } from "@mantine/core";
-import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
-import { useEffect, useState } from "react";
-import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
 import type { UseFormReturnType } from "@mantine/form";
+import { useState } from "react";
+import { createEmptyEventFormAttribute, type EventFormKey, type EventFormValues } from "../EventForm/eventFormModel";
+import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
+import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
 
 export const FixtureGroupCard = ({
-  editable: _editable,
-  id,
+  formKey,
   form,
   index,
   onDeleteFixtureGroup,
 }: {
-  editable: boolean;
-  id: number;
-  form: UseFormReturnType<any>;
+  formKey: EventFormKey;
+  form: UseFormReturnType<EventFormValues>;
   index: number;
-  onDeleteFixtureGroup: (id: number) => void;
+  onDeleteFixtureGroup: () => void;
 }) => {
-  const [attributeIds, setAttributeIds] = useState<number[]>([]);
+  const fixtureGroupPath = `fixtureGroups.${formKey}`;
+  const attributesPath = `${fixtureGroupPath}.attributes`;
+  const attributeOrderPath = `${fixtureGroupPath}.attributeOrder`;
+  const fixtureGroup = form.getValues().fixtureGroups[formKey];
+  const [attributeOrder, setAttributeOrder] = useState<EventFormKey[]>(fixtureGroup.attributeOrder);
 
-  // init the field value for this fixture group
-  useEffect(() => {
-    // ID will never change
-    form.setFieldValue(`fixtureGroups.${id}`, {
-      name: "",
-      attributes: {}, // instead of a [], we use an Object
-    });
+  const setAttributeOrderInStateAndForm = (nextOrder: EventFormKey[]) => {
+    setAttributeOrder(nextOrder);
+    form.setFieldValue(attributeOrderPath, nextOrder);
+  };
 
-    return () => {
-      form.setFieldValue(`fixtureGroups.${id}`, undefined);
-    };
-  }, []);
+  const addAttribute = () => {
+    const attribute = createEmptyEventFormAttribute(attributeOrder.length);
+    form.setFieldValue(`${attributesPath}.${attribute.clientId}`, attribute);
+    setAttributeOrderInStateAndForm([...attributeOrder, attribute.clientId]);
+  };
+
+  const removeAttribute = (attributeClientId: EventFormKey) => {
+    const nextAttributes = { ...form.getValues().fixtureGroups[formKey].attributes };
+    delete nextAttributes[attributeClientId];
+
+    form.setFieldValue(attributesPath, nextAttributes);
+    setAttributeOrderInStateAndForm(attributeOrder.filter((clientId) => clientId !== attributeClientId));
+  };
 
   return (
     <Card withBorder>
@@ -41,53 +50,33 @@ export const FixtureGroupCard = ({
               withAsterisk
               label={`Light group ${index + 1} name`}
               placeholder="Enter a name..."
-              name={`fixtureGroups.${id}.name`}
-              key={form.key(`fixtureGroups.${id}.name`)}
-              {...form.getInputProps(`fixtureGroups.${id}.name`)}
+              name={`${fixtureGroupPath}.name`}
+              key={form.key(`${fixtureGroupPath}.name`)}
+              {...form.getInputProps(`${fixtureGroupPath}.name`)}
             />
           </Box>
 
-          <Flex mt={"md"} justify={"end"} style={{ flexShrink: 1 }}>
-            <Button variant="transparent" size="xs" color="red" onClick={() => onDeleteFixtureGroup(id)}>
+          <Flex mt="md" justify="end" style={{ flexShrink: 1 }}>
+            <Button type="button" variant="transparent" size="xs" color="red" onClick={onDeleteFixtureGroup}>
               Remove group
             </Button>
           </Flex>
         </Group>
 
-        {attributeIds.map((attributeId, index) => (
+        {attributeOrder.map((attributeClientId, attributeIndex) => (
           <AddAttributeCard
-            key={attributeId}
-            id={attributeId}
-            fixtureGroupId={id}
+            key={attributeClientId}
+            attributeClientId={attributeClientId}
+            fixtureGroupClientId={formKey}
             form={form}
-            index={index}
-            onDeleteAttribute={(id) => {
-              setAttributeIds((prev) => prev.filter((prevId) => prevId !== id));
-            }}
+            index={attributeIndex}
+            onDeleteAttribute={() => removeAttribute(attributeClientId)}
           />
         ))}
-        {/* <AddAttributeCard /> */}
 
-        {/* <Select
-        label="Attribute 1"
-        placeholder="Pick an attribute"
-        data={ATTRIBUTE_OPTIONS}
-      />
-      <MultiSelect
-        label="Possible options"
-        placeholder="Pick all options user can select"
-        data={COLOUR_OPTIONS}
-      /> */}
         <Center>
-          <Button
-            variant="subtle"
-            size="xs"
-            onClick={() => {
-              setAttributeIds((prev) => [...prev, Date.now()]);
-            }}
-          >
-            {" "}
-            Add an attribute{" "}
+          <Button type="button" variant="subtle" size="xs" onClick={addAttribute}>
+            Add an attribute
           </Button>
         </Center>
       </Stack>

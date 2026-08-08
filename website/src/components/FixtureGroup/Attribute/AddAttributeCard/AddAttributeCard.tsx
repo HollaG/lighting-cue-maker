@@ -1,8 +1,9 @@
 import { Card, Group, Button, Select, TagsInput, Center, Box, Stack, ColorInput, Radio, Flex } from "@mantine/core";
-import { AttributeTypes, BooleanOptions, type AttributeConfiguration, type Option } from "../../../../types/types";
+import { AttributeTypes, type Option } from "../../../../types/types";
 import { useEffect, useMemo, useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";
+import type { EventFormKey, EventFormValues } from "../../../EventForm/eventFormModel";
 const ATTRIBUTE_OPTIONS: Option<AttributeTypes>[] = [
   { label: "Text", value: AttributeTypes.TEXT },
   { label: "Select one", value: AttributeTypes.SELECT },
@@ -21,50 +22,31 @@ const ATTRIBUTE_OPTIONS: Option<AttributeTypes>[] = [
  * @returns
  */
 export const AddAttributeCard = ({
-  id,
+  attributeClientId,
   form,
-  fixtureGroupId,
+  fixtureGroupClientId,
   index,
   onDeleteAttribute,
 }: {
-  id: number;
-  form: UseFormReturnType<any>;
-  fixtureGroupId: number;
+  attributeClientId: EventFormKey;
+  form: UseFormReturnType<EventFormValues>;
+  fixtureGroupClientId: EventFormKey;
   index: number;
-  onDeleteAttribute: (id: number) => void;
+  onDeleteAttribute: () => void;
 }) => {
   // Not related to form data. Used to determine which type of input that the user can do for
   // the attribute type selected.
   // we cannot use a controlled component here because the form is in uncontrolled mode.
-  const [selectedAttribute, setSelectedAttribute] = useState<AttributeTypes | null>(null);
-  const baseFieldName = `fixtureGroups.${fixtureGroupId}.attributes.${id}`;
+  const baseFieldName = `fixtureGroups.${fixtureGroupClientId}.attributes.${attributeClientId}`;
   const opvFieldName = `${baseFieldName}.optionPossibleValues`;
-  useEffect(() => {
-    form.setFieldValue(baseFieldName, {
-      name: "",
-      type: AttributeTypes.NONE,
-      metadata: new Map<string, any>(),
-      optionPossibleValues: {
-        [AttributeTypes.SELECT]: [],
-        [AttributeTypes.MULTISELECT]: [],
-        [AttributeTypes.COLOUR]: [],
-        // For select and Multiselect, they link this value directly into the input itself, so it has to be an array.
-        // for Colour, we have to have a type { hex: string, name: string }, so we use an object here, as we cannot use
-        // and array when deleting items
-        [AttributeTypes.SLIDER]: { min: 0, max: 100 },
-        [AttributeTypes.BOOLEAN]: BooleanOptions.UNCHECKED,
-        [AttributeTypes.TEXT]: null,
-        [AttributeTypes.NONE]: null,
-      },
-    } as unknown as Omit<AttributeConfiguration, "id">); // ID only for database
+  const initialType = form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].type;
+  const [selectedAttribute, setSelectedAttribute] = useState<AttributeTypes | null>(
+    initialType === AttributeTypes.NONE ? null : initialType,
+  );
 
-    return () => {
-      // form.removeListItem(`fixtureGroups.${fixtureGroupId}.attributes`, index);
-      form.setFieldValue(`fixtureGroups.${fixtureGroupId}.attributes.${id}`, undefined);
-    };
-  }, []);
   form.watch(`${baseFieldName}.type`, ({ value }) => {
-    setSelectedAttribute(value);
+    const nextValue = value as unknown as AttributeTypes | undefined;
+    setSelectedAttribute(nextValue === undefined || nextValue === AttributeTypes.NONE ? null : nextValue);
   });
 
   return (
@@ -82,7 +64,7 @@ export const AddAttributeCard = ({
           />
         </Box>
         <Flex mt={"md"} justify={"end"} style={{ flexShrink: 1 }}>
-          <Button variant="transparent" size="xs" color="red" onClick={() => onDeleteAttribute(id)}>
+          <Button type="button" variant="transparent" size="xs" color="red" onClick={onDeleteAttribute}>
             Remove attribute
           </Button>
         </Flex>
@@ -100,12 +82,6 @@ export const AddAttributeCard = ({
             label="Input type"
             placeholder="Pick an attribute"
             data={ATTRIBUTE_OPTIONS}
-            defaultValue={AttributeTypes.SELECT}
-            // value={selectedAttribute}
-            // onChange={(value) => {
-            //   console.log({ value });
-            //   setSelectedAttribute(value.value);
-            // }}
             allowDeselect={false}
             name={`${baseFieldName}.type`}
             key={form.key(`${baseFieldName}.type`)}

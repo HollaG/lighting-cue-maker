@@ -11,6 +11,7 @@ export type FixtureGroupConfiguration = {
   id: string; // stable
   name: string;
   attributes: AttributeConfiguration[];
+  order: number;
 };
 
 export type BumpConfiguration = {
@@ -25,6 +26,7 @@ export type AttributeConfiguration = {
   type: AttributeTypes;
   metadata: Record<string, any>;
   optionPossibleValues: AttributeTypesOptions;
+  order: number;
 };
 
 export const AttributeTypes = {

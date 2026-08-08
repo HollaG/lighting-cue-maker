@@ -11,10 +11,10 @@ export const useCreateEvent = () => {
     mutationFn: (event: CreateEventReq) => api.post<CreateEventReq, CreateEventRes>("/api/v1/events", event),
 
     onSuccess: (res) => {
-      if (res?.event?.id) {
-        setCode(res.event.id);
-        setActiveItemId("");
-      }
+      // if (res?.event?.id) {
+      //   setCode(res.event.id);
+      //   setActiveItemId("");
+      // }
     },
   });
 };

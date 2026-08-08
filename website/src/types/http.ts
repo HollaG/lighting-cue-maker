@@ -1,12 +1,24 @@
 import type { Bump } from "./bumps";
 import type { Cue } from "./cues";
-import type { AttributeConfiguration, Item, LightEventConfiguration } from "./types";
+import type {
+  AttributeConfiguration,
+  FixtureGroupConfiguration,
+  Item,
+  LightEventConfiguration,
+} from "./types";
 
 export type GetEventRes = {
   event: LightEventConfiguration;
 };
 
-export type CreateEventReq = Omit<LightEventConfiguration, "id">;
+export type CreateEventReq = Omit<LightEventConfiguration, "id" | "fixtureGroups" | "bumpConfigurations"> & {
+  fixtureGroups: Array<
+    Omit<FixtureGroupConfiguration, "id" | "attributes"> & {
+      attributes: Array<Omit<AttributeConfiguration, "id">>;
+    }
+  >;
+  bumpConfigurations: Array<{ name: string }>;
+};
 
 export type CreateEventRes = {
   event: LightEventConfiguration;
