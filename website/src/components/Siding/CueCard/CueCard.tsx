@@ -8,12 +8,14 @@ import {
   Fieldset,
   Flex,
   Group,
+  Input,
   InputBase,
   Modal,
   MultiSelect,
   px,
   Select,
   SimpleGrid,
+  Slider,
   Stack,
   Text,
   Textarea,
@@ -40,7 +42,7 @@ import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useDebouncedCallback, useDisclosure } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
 import { useDeleteCue } from "../../../query/useDeleteCue";
-import { removeCueFromRawLyrics } from "../../../utils/cueUtils";
+import { createDefaultValueAssignment, reconcileCueAssignments, removeCueFromRawLyrics } from "../../../utils/cueUtils";
 import { useUpdateItem } from "../../../query/useUpdateItem";
 
 type FormData = Cue;
@@ -79,7 +81,11 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
       deletedAt: cue.deletedAt,
 
       assignments: (cue && cue.assignments && Object.keys(cue.assignments).length != 0
-        ? cue.assignments
+        ? // TODO(editing): we need to figure out a way to reconcile the values:
+          //                example: we add a new attribute when editing. However,
+          //                because cue.assignments (which contains the old set of possible attribute & their assignments)
+          //                doesn't have the new attributeId, we need to somehow add it in.
+          reconcileCueAssignments(cue, fixtureGroups).assignments
         : Object.fromEntries(
             fixtureGroups.map((group) => [
               group.id,
@@ -91,15 +97,18 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
                     {
                       name: attribute.name,
                       type: attribute.type,
-                      value: {
-                        [AttributeTypes.TEXT]: "",
-                        [AttributeTypes.SELECT]: "",
-                        [AttributeTypes.MULTISELECT]: [],
-                        [AttributeTypes.COLOUR]: { hex: "", name: "" },
-                        [AttributeTypes.SLIDER]: 0,
-                        [AttributeTypes.BOOLEAN]: false,
-                        [AttributeTypes.NONE]: null,
-                      },
+                      value: createDefaultValueAssignment(attribute),
+                      // value: {
+                      //   // TODO: check `metadata` instead for default values
+                      //   // [AttributeTypes.TEXT]: "",
+                      //   // [AttributeTypes.SELECT]: "",
+                      //   // [AttributeTypes.MULTISELECT]: [],
+                      //   // [AttributeTypes.COLOUR]: { hex: "", name: "" },
+                      //   // [AttributeTypes.SLIDER]: 0,
+                      //   [AttributeTypes.BOOLEAN]:
+                      //     attribute.optionPossibleValues[AttributeTypes.BOOLEAN] === "checkedDefault",
+                      //   // [AttributeTypes.NONE]: null,
+                      // },
                     },
                   ]),
                 ),
@@ -119,8 +128,17 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     const activeItemId = useAppStore.getState().activeItemId;
     if (!activeItemId) return;
     try {
-      // convert the form value to API request body
-      // await onUpdateCue(form.getValues(), refetchItem, refetchCues);
+      // Remove all unncessary ValueAssignments from the attributes
+      const formValues = form.getValues();
+      Object.entries(formValues.assignments).forEach(([groupId, assignment]) => {
+        Object.entries(assignment.assignment).forEach(([attributeId, attributeAssignment]) => {
+          const type = attributeAssignment.type;
+          const value = attributeAssignment.value[type];
+
+          // only keep that value
+          attributeAssignment.value = { [type]: value };
+        });
+      });
 
       await updateCue({
         cueId: cue.id,
@@ -521,9 +539,9 @@ const AttributeDisplay = ({
           fieldName={`${baseFieldName}.${AttributeTypes.COLOUR}`}
           form={form}
           name={name}
-          colourOptions={optionPossibleValues[AttributeTypes.COLOUR]}
+          colourOptions={optionPossibleValues[AttributeTypes.COLOUR] || []}
           defaultValue={
-            form.getInitialValues().assignments[groupId].assignment[attribute.id].value[AttributeTypes.COLOUR]
+            form.getInitialValues().assignments[groupId].assignment?.[attribute.id]?.value[AttributeTypes.COLOUR]
           }
           setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
           required={attribute.metadata.required}
@@ -536,7 +554,18 @@ const AttributeDisplay = ({
           name={name}
           fieldName={`${baseFieldName}.${AttributeTypes.BOOLEAN}`}
           form={form}
-          defaultValue={optionPossibleValues[AttributeTypes.BOOLEAN]}
+          defaultValue={optionPossibleValues[AttributeTypes.BOOLEAN]!}
+          required={attribute.metadata.required}
+        />
+      );
+
+    case AttributeTypes.SLIDER_PRESETS:
+      return (
+        <SliderPresetInput
+          name={name}
+          fieldName={`${baseFieldName}.${AttributeTypes.SLIDER_PRESETS}`}
+          form={form}
+          marks={optionPossibleValues[AttributeTypes.SLIDER_PRESETS]!}
           required={attribute.metadata.required}
         />
       );
@@ -558,7 +587,7 @@ function ColourSelect({
   colourOptions: ColourOption[];
   fieldName: string;
   form: UseFormReturnType<FormData>;
-  defaultValue: ColourOption;
+  defaultValue?: ColourOption;
   required?: boolean;
 
   setIsAtLeastOneComboboxOpened: (value: boolean) => void;
@@ -736,6 +765,42 @@ function BooleanSelect({
       key={form.key(fieldName)}
       {...form.getInputProps(fieldName, { type: "checkbox" })}
     />
+  );
+}
+
+function SliderPresetInput({
+  name,
+  fieldName,
+  form,
+  marks,
+  required = false,
+}: {
+  name: string;
+  fieldName: string;
+  form: UseFormReturnType<FormData>;
+  marks: number[];
+  required?: boolean;
+}) {
+  console.log({ name });
+  // validation: if no marks, return nothing
+  if (!marks || marks.length === 0) {
+    return (
+      <Text c="dimmed" size="sm">
+        {" "}
+        No values available for selection{" "}
+      </Text>
+    );
+  }
+  return (
+    <Input.Wrapper label={name} required={required}>
+      <Slider
+        key={form.key(fieldName)}
+        {...form.getInputProps(fieldName)}
+        mb="md"
+        restrictToMarks
+        marks={marks.map((mark) => ({ value: mark, label: mark.toString() }))}
+      />
+    </Input.Wrapper>
   );
 }
 

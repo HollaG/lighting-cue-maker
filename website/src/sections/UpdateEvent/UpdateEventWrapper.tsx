@@ -55,6 +55,7 @@ function eventToFormData(event: LightEventConfiguration): EditFormData {
         [AttributeTypes.MULTISELECT]: attr.optionPossibleValues?.[AttributeTypes.MULTISELECT] ?? [],
         [AttributeTypes.COLOUR]: attr.optionPossibleValues?.[AttributeTypes.COLOUR] ?? [],
         [AttributeTypes.SLIDER]: attr.optionPossibleValues?.[AttributeTypes.SLIDER] ?? { min: 0, max: 100 },
+        [AttributeTypes.SLIDER_PRESETS]: attr.optionPossibleValues?.[AttributeTypes.SLIDER_PRESETS] ?? [],
         [AttributeTypes.BOOLEAN]: attr.optionPossibleValues?.[AttributeTypes.BOOLEAN] ?? BooleanOptions.UNCHECKED,
         [AttributeTypes.TEXT]: attr.optionPossibleValues?.[AttributeTypes.TEXT] ?? "",
         [AttributeTypes.NONE]: attr.optionPossibleValues?.[AttributeTypes.NONE] ?? null,

@@ -3,6 +3,14 @@ import type { QLCCollection, QLCEventJson, QLCFunction } from "../types/qlc";
 import { getCueOrder, getValueFromValueAssignment, hasAValue } from "./cueUtils";
 import type { ValueAssignment } from "../types/cues";
 
+export const ADV_MAP_KEY = `mapping-type`;
+export const ADV_MAP_ALL_VALUE = `map-all`;
+export const ADV_MAP_ONE_VALUE = `map-one`;
+export const ADV_ORDER_KEY = `function-priority`;
+export const ADV_ORDER_FIRST_VALUE = `order-first`;
+export const ADV_ORDER_LAST_VALUE = `order-last`;
+export const ADV_ORDER_ANY_VALUE = `order-any`;
+
 /**
  * Converts a QLC+ Workspace XML string into a JSON array of QLCFunction objects.
  * It strictly targets the <Function> nodes within the <Engine> section.
@@ -140,6 +148,7 @@ export const QLC_MAPPABLE_TYPES = new Set<AttributeTypes>([
   AttributeTypes.COLOUR,
   AttributeTypes.MULTISELECT,
   AttributeTypes.SELECT,
+  AttributeTypes.SLIDER_PRESETS,
 ]);
 
 export const isQlcMappable = (type: AttributeTypes) => QLC_MAPPABLE_TYPES.has(type);
@@ -336,9 +345,10 @@ export function generateAndInsertChasers(
  */
 export function generatePreview(
   items: Item[],
-  mapping: Record<string, string[]>,
+  mapping: Record<string, string[] | string>,
   qlcFunctionMap: { [fnId: string]: QLCFunction },
 ): QLCEventJson {
+  console.log({ mapping });
   const result: QLCEventJson = {};
   // for each item
   for (const item of items) {
@@ -381,10 +391,14 @@ export function generatePreview(
         }
       };
 
+      // ----- Special controls for Advanced Options -----
       const addLastFnIds: string[] = [];
+      const addAnyFnIds: string[] = [];
+      const addFirstFnIds: string[] = [];
 
-      // iterate over all the attributes and find the matching [attrId, QLCFnId] in the mapping
+      // iterate over all the attributes and find the matching [key:attrId, value:QLCFnId[]] in the mapping
       for (const [attrId, attr] of Object.entries(completeAttributeMap)) {
+        console.log(`Iteration: attrId=${attrId}, attr.type=${attr.type}`);
         if (!QLC_MAPPABLE_TYPES.has(attr.type)) continue;
 
         const isSelected = hasAValue(attr.type, attr.value);
@@ -394,11 +408,35 @@ export function generatePreview(
           const keyString = `${attrId}|not-selected`;
           const qlcFunctionIds = mapping[keyString];
           if (qlcFunctionIds) {
-            for (const qlcFnId of qlcFunctionIds) {
-              addFnById(qlcFnId);
+            // if mapping exists
+            // check pick one or pick all
+            const mapType = mapping[`${keyString}|${ADV_MAP_KEY}`];
+
+            const isMapAll = mapType === ADV_MAP_ALL_VALUE;
+            const isMapOne = mapType === ADV_MAP_ONE_VALUE;
+
+            let fns: string[] = [];
+            if (isMapOne) {
+              fns = [qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)]];
+            } else if (isMapAll) {
+              fns = qlcFunctionIds as string[];
+            } else {
+              fns = qlcFunctionIds as string[]; // default to all if no special mapping is specified
             }
+
+            // Check special controls
+            const keyStringOrderFirst = `${attrId}|not-selected|${ADV_ORDER_FIRST_VALUE}`;
+            const keyStringOrderLast = `${attrId}|not-selected|${ADV_ORDER_LAST_VALUE}`;
+
+            if (mapping[keyStringOrderFirst] !== undefined) {
+              addFirstFnIds.push(...fns);
+            } else if (mapping[keyStringOrderLast] !== undefined) {
+              addLastFnIds.push(...fns);
+            } else {
+              addAnyFnIds.push(...fns);
+            }
+            continue;
           }
-          continue;
         }
 
         const selectedValue = getValueFromValueAssignment(attr.type, attr.value);
@@ -408,21 +446,49 @@ export function generatePreview(
           const keyString = `${attrId}|${v}`;
           const qlcFunctionIds = mapping[keyString];
           if (qlcFunctionIds) {
-            // TODO: special case for checkbox for now..
-            // we need to find a better way for this
-            // If it's value is `true` (aka checkbox Yes selected)
-            // then randomly assign one of the fn ids
-            // This will also be a "dynamic" cue, so we NEED to add this LAST.
-            if (attr.type === AttributeTypes.BOOLEAN) {
-              const randomFnId = qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)];
-              addLastFnIds.push(randomFnId);
+            // check pick one or pick all
+            const mapType = mapping[`${keyString}|${ADV_MAP_KEY}`];
+            const isMapAll = mapType === ADV_MAP_ALL_VALUE;
+            const isMapOne = mapType === ADV_MAP_ONE_VALUE;
+
+            let fns: string[] = [];
+            if (isMapOne) {
+              fns = [qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)]];
+            } else if (isMapAll) {
+              fns = qlcFunctionIds as string[];
             } else {
-              for (const qlcFnId of qlcFunctionIds) {
-                addFnById(qlcFnId);
-              }
+              fns = qlcFunctionIds as string[]; // default to all if no special mapping is specified
             }
+
+            // Check special controls
+            const keyStringOrderFirst = `${attrId}|${v}|${ADV_ORDER_FIRST_VALUE}`;
+            const keyStringOrderLast = `${attrId}|${v}|${ADV_ORDER_LAST_VALUE}`;
+
+            if (mapping[keyStringOrderFirst] !== undefined) {
+              addFirstFnIds.push(...fns);
+            } else if (mapping[keyStringOrderLast] !== undefined) {
+              addLastFnIds.push(...fns);
+            } else {
+              addAnyFnIds.push(...fns);
+            }
+
+            // if (attr.type === AttributeTypes.BOOLEAN) {
+            //   const randomFnId = qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)];
+            //   addLastFnIds.push(randomFnId);
+            // } else {
+            //   for (const qlcFnId of qlcFunctionIds) {
+            //     addFnById(qlcFnId);
+            //   }
+            // }
           }
         }
+      }
+
+      if (addFirstFnIds.length > 0) {
+        addFirstFnIds.forEach(addFnById);
+      }
+      if (addAnyFnIds.length > 0) {
+        addAnyFnIds.forEach(addFnById);
       }
 
       if (addLastFnIds.length > 0) {

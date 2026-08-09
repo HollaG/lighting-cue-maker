@@ -2,6 +2,7 @@ import { AttributeTypes, BooleanOptions } from "../../types/types";
 import type { CreateEventReq, UpdateEventReq } from "../../types/http";
 import type {
   AttributeConfiguration,
+  AttributeTypesOptions,
   BumpConfiguration,
   ColourOption,
   FixtureGroupConfiguration,
@@ -11,11 +12,20 @@ import type {
 export type EventFormMode = "create" | "edit";
 export type EventFormKey = string;
 
-export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata"> & {
+// For any types that differ from the Form and the Backend
+// This may occur due to a different way of configuring the BE values:
+//   for example, configuring number values in the BE may require string values in the FE Form.
+export type EventFormAttributeOptions = Omit<AttributeTypesOptions, typeof AttributeTypes.SLIDER_PRESETS> & {
+  [AttributeTypes.SLIDER_PRESETS]: string[];
+};
+
+export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" | "optionPossibleValues"> & {
   /** Stable frontend identity. Always generated locally. */
   clientId: EventFormKey;
   /** Backend ID. Undefined when this attribute only exists in the form. */
   id?: string;
+  /** Values shaped for form controls, which can differ from the persisted domain types. */
+  optionPossibleValues: EventFormAttributeOptions;
   metadata: {
     placeholder?: string;
     required?: "true" | "false"; // STRING!!
@@ -89,6 +99,7 @@ export const createEmptyEventFormAttribute = (attributeCount: number): EventForm
       [AttributeTypes.MULTISELECT]: [],
       [AttributeTypes.COLOUR]: [],
       [AttributeTypes.SLIDER]: { min: 0, max: 100 },
+      [AttributeTypes.SLIDER_PRESETS]: [],
       [AttributeTypes.BOOLEAN]: BooleanOptions.UNCHECKED,
       [AttributeTypes.TEXT]: "",
       [AttributeTypes.NONE]: null,
@@ -131,16 +142,7 @@ export const eventToEventFormValues = (event: LightEventConfiguration): EventFor
         ...attribute,
         clientId: attributeClientId,
         id: attribute.id,
-        optionPossibleValues: {
-          [AttributeTypes.SELECT]: attribute.optionPossibleValues?.[AttributeTypes.SELECT] ?? [],
-          [AttributeTypes.MULTISELECT]: attribute.optionPossibleValues?.[AttributeTypes.MULTISELECT] ?? [],
-          [AttributeTypes.COLOUR]: attribute.optionPossibleValues?.[AttributeTypes.COLOUR] ?? [],
-          [AttributeTypes.SLIDER]: attribute.optionPossibleValues?.[AttributeTypes.SLIDER] ?? { min: 0, max: 100 },
-          [AttributeTypes.BOOLEAN]:
-            attribute.optionPossibleValues?.[AttributeTypes.BOOLEAN] ?? BooleanOptions.UNCHECKED,
-          [AttributeTypes.TEXT]: attribute.optionPossibleValues?.[AttributeTypes.TEXT] ?? "",
-          [AttributeTypes.NONE]: null,
-        },
+        optionPossibleValues: attributeOptionsToFormAttributeOptions(attribute.optionPossibleValues),
         metadata: attributeMetadataToFormAttributeMetadata(attribute.metadata),
       };
     }
@@ -188,10 +190,17 @@ export const eventFormValuesToCreateRequest = (values: EventFormValues): CreateE
     return {
       name: fixtureGroup.name,
       attributes: fixtureGroup.attributeOrder.map((attributeClientId) => {
-        const { clientId: _clientId, id: _id, metadata, ...attribute } = fixtureGroup.attributes[attributeClientId];
+        const {
+          clientId: _clientId,
+          id: _id,
+          metadata,
+          optionPossibleValues,
+          ...attribute
+        } = fixtureGroup.attributes[attributeClientId];
         return {
           ...attribute,
           metadata: formAttributeMetadataToAttributeMetadata(metadata),
+          optionPossibleValues: formAttributeOptionsToAttributeOptions(attribute.type, optionPossibleValues),
         };
       }),
 
@@ -228,7 +237,7 @@ export const eventFormValuesToUpdateRequest = (values: EventFormValues): UpdateE
           name: attribute.name,
           type: attribute.type,
           metadata: formAttributeMetadataToAttributeMetadata(attribute.metadata),
-          optionPossibleValues: attribute.optionPossibleValues,
+          optionPossibleValues: formAttributeOptionsToAttributeOptions(attribute.type, attribute.optionPossibleValues),
           order: attributeIndex,
         };
       }),
@@ -242,6 +251,39 @@ const formAttributeMetadataToAttributeMetadata = (
   placeholder: metadata.placeholder,
   required: metadata.required === "true",
   defaultValue: metadata.defaultValue,
+});
+
+/** Keeps only the option supported by the selected attribute type. */
+const formAttributeOptionsToAttributeOptions = (
+  type: AttributeConfiguration["type"],
+  options: EventFormAttributeOptions,
+): AttributeTypesOptions => {
+  switch (type) {
+    case AttributeTypes.SELECT:
+      return { [AttributeTypes.SELECT]: options[AttributeTypes.SELECT] ?? [] };
+    case AttributeTypes.MULTISELECT:
+      return { [AttributeTypes.MULTISELECT]: options[AttributeTypes.MULTISELECT] ?? [] };
+    case AttributeTypes.COLOUR:
+      return { [AttributeTypes.COLOUR]: options[AttributeTypes.COLOUR] ?? [] };
+    case AttributeTypes.SLIDER:
+      return { [AttributeTypes.SLIDER]: options[AttributeTypes.SLIDER] ?? { min: 0, max: 100 } };
+    case AttributeTypes.SLIDER_PRESETS:
+      return {
+        [AttributeTypes.SLIDER_PRESETS]: options[AttributeTypes.SLIDER_PRESETS]
+          .map(Number)
+          .sort((a, b) => a - b),
+      };
+    case AttributeTypes.BOOLEAN:
+      return { [AttributeTypes.BOOLEAN]: options[AttributeTypes.BOOLEAN] ?? BooleanOptions.UNCHECKED };
+    case AttributeTypes.TEXT:
+    case AttributeTypes.NONE:
+      return {};
+  }
+};
+
+const attributeOptionsToFormAttributeOptions = (options: AttributeTypesOptions): EventFormAttributeOptions => ({
+  ...options,
+  [AttributeTypes.SLIDER_PRESETS]: (options[AttributeTypes.SLIDER_PRESETS] ?? []).map(String),
 });
 
 const attributeMetadataToFormAttributeMetadata = (

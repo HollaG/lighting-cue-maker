@@ -41,6 +41,7 @@ export const AttributeTypes = {
   MULTISELECT: "multiselect",
   COLOUR: "colour",
   SLIDER: "slider",
+  SLIDER_PRESETS: "sliderPresets",
   BOOLEAN: "boolean",
   NONE: "none", // Illegal type!
 } as const;
@@ -54,19 +55,17 @@ export type AttributeTypes = (typeof AttributeTypes)[keyof typeof AttributeTypes
  * For example, if type=Select, then read Option[], which is a list of Select options.
  *              if type=Colour, then read ColourOption[], which tells us the hex code and the name of the colour.
  *
- * Important note for the future:
- * This schema doesn't really support the idea of a "DEFAULT_VALUE".
- * We can either (a) extend the schema
- *               (b) duplicate the schema in another field like `optionDefaultValues`
+ *
  */
 export type AttributeTypesOptions = {
-  [AttributeTypes.TEXT]: string;
-  [AttributeTypes.SELECT]: string[];
-  [AttributeTypes.MULTISELECT]: string[];
-  [AttributeTypes.COLOUR]: ColourOption[];
-  [AttributeTypes.SLIDER]: { min: number; max: number };
-  [AttributeTypes.BOOLEAN]: BooleanOptions;
-  [AttributeTypes.NONE]: null;
+  [AttributeTypes.TEXT]?: string;
+  [AttributeTypes.SELECT]?: string[];
+  [AttributeTypes.MULTISELECT]?: string[];
+  [AttributeTypes.COLOUR]?: ColourOption[];
+  [AttributeTypes.SLIDER]?: { min: number; max: number };
+  [AttributeTypes.SLIDER_PRESETS]?: number[];
+  [AttributeTypes.BOOLEAN]?: BooleanOptions;
+  [AttributeTypes.NONE]?: null;
 };
 
 export type ColourOption = {

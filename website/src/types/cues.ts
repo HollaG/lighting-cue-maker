@@ -27,21 +27,23 @@ type FixtureGroupAssignment = {
 };
 
 export type ValueAssignment = {
-  [AttributeTypes.TEXT]: string;
-  [AttributeTypes.SELECT]: string; // value
-  [AttributeTypes.MULTISELECT]: string[]; // value
-  [AttributeTypes.COLOUR]: ColourOption;
-  [AttributeTypes.SLIDER]: number; // value
-  [AttributeTypes.BOOLEAN]: boolean; // True = checked, false = not checked
-  [AttributeTypes.NONE]: null;
+  [AttributeTypes.TEXT]?: string;
+  [AttributeTypes.SELECT]?: string; // value
+  [AttributeTypes.MULTISELECT]?: string[]; // value
+  [AttributeTypes.COLOUR]?: ColourOption;
+  [AttributeTypes.SLIDER]?: number; // value
+  [AttributeTypes.BOOLEAN]?: boolean; // True = checked, false = not checked
+  [AttributeTypes.NONE]?: null;
+  [AttributeTypes.SLIDER_PRESETS]?: number; // value
 };
 
-export const DEFAULT_VALUE_ASSIGNMENT: ValueAssignment = {
-  [AttributeTypes.TEXT]: "",
-  [AttributeTypes.SELECT]: "", // value
-  [AttributeTypes.MULTISELECT]: [], // value
-  [AttributeTypes.COLOUR]: { hex: "", name: "" },
-  [AttributeTypes.SLIDER]: 0, // value
-  [AttributeTypes.BOOLEAN]: false, // True = checked, false = not checked
-  [AttributeTypes.NONE]: null,
-};
+// export const DEFAULT_VALUE_ASSIGNMENT: ValueAssignment = {
+//   [AttributeTypes.TEXT]: "",
+//   [AttributeTypes.SELECT]: "", // value
+//   [AttributeTypes.MULTISELECT]: [], // value
+//   [AttributeTypes.COLOUR]: { hex: "", name: "" },
+//   [AttributeTypes.SLIDER]: 0, // value
+//   [AttributeTypes.BOOLEAN]: false, // True = checked, false = not checked
+//   [AttributeTypes.NONE]: null,
+//   [AttributeTypes.SLIDER_PRESETS]: 0, // value
+// };

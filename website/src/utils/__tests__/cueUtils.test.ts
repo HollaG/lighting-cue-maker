@@ -5,7 +5,10 @@ import {
   removeCueFromRawLyrics,
   CUE_START,
   CUE_END,
+  reconcileCueAssignments,
 } from "../cueUtils";
+import type { Cue } from "../../types/cues";
+import { AttributeTypes, BooleanOptions, type FixtureGroupConfiguration } from "../../types/types";
 
 describe("cueUtils", () => {
   it("constants use curly braces", () => {
@@ -49,5 +52,129 @@ describe("cueUtils", () => {
 
     expect(removeCueFromRawLyrics(rawWithCurly, testId)).toBe("Hello world");
     expect(removeCueFromRawLyrics(rawWithAngle, testId)).toBe("Hello world");
+  });
+
+  it("reconciles saved cue values with the current fixture-group structure", () => {
+    const cue: Cue = {
+      id: "cue-id",
+      comments: "Keep me",
+      assignments: {
+        "group-1": {
+          name: "Old group name",
+          assignment: {
+            "attribute-1": {
+              name: "Old attribute name",
+              type: AttributeTypes.TEXT,
+              value: { [AttributeTypes.TEXT]: "Saved value" },
+            },
+            "deleted-attribute": {
+              name: "Deleted",
+              type: AttributeTypes.TEXT,
+              value: { [AttributeTypes.TEXT]: "Remove me" },
+            },
+          },
+        },
+        "deleted-group": { name: "Deleted group", assignment: {} },
+      },
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-02"),
+      deletedAt: new Date("2026-01-03"),
+    };
+    const fixtureGroups: FixtureGroupConfiguration[] = [
+      {
+        id: "group-1",
+        name: "Current group name",
+        order: 0,
+        attributes: [
+          {
+            id: "attribute-1",
+            name: "Current attribute name",
+            type: AttributeTypes.TEXT,
+            metadata: {},
+            optionPossibleValues: {},
+            order: 0,
+          },
+          {
+            id: "attribute-2",
+            name: "New checkbox",
+            type: AttributeTypes.BOOLEAN,
+            metadata: {},
+            optionPossibleValues: { [AttributeTypes.BOOLEAN]: BooleanOptions.CHECKED },
+            order: 1,
+          },
+        ],
+      },
+      { id: "group-2", name: "Empty group", order: 1, attributes: [] },
+    ];
+
+    const result = reconcileCueAssignments(cue, fixtureGroups);
+
+    expect(result.comments).toBe("Keep me");
+    expect(result.assignments).toEqual({
+      "group-1": {
+        name: "Current group name",
+        assignment: {
+          "attribute-1": {
+            name: "Current attribute name",
+            type: AttributeTypes.TEXT,
+            value: { [AttributeTypes.TEXT]: "Saved value" },
+          },
+          "attribute-2": {
+            name: "New checkbox",
+            type: AttributeTypes.BOOLEAN,
+            value: { [AttributeTypes.BOOLEAN]: true },
+          },
+        },
+      },
+      "group-2": { name: "Empty group", assignment: {} },
+    });
+    expect(cue.assignments["group-1"].assignment).toHaveProperty("deleted-attribute");
+  });
+
+  it("resets an existing assignment when its attribute type changes", () => {
+    const cue: Cue = {
+      id: "cue-id",
+      comments: "",
+      assignments: {
+        group: {
+          name: "Group",
+          assignment: {
+            attribute: {
+              name: "Attribute",
+              type: AttributeTypes.TEXT,
+              value: { [AttributeTypes.TEXT]: "Old text" },
+            },
+          },
+        },
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: new Date(),
+    };
+    const fixtureGroups: FixtureGroupConfiguration[] = [
+      {
+        id: "group",
+        name: "Group",
+        order: 0,
+        attributes: [
+          {
+            id: "attribute",
+            name: "Attribute",
+            type: AttributeTypes.SELECT,
+            metadata: { defaultValue: "Default option" },
+            optionPossibleValues: { [AttributeTypes.SELECT]: ["Default option"] },
+            order: 0,
+          },
+        ],
+      },
+    ];
+
+    const result = reconcileCueAssignments(cue, fixtureGroups);
+
+    expect(result.assignments.group.assignment.attribute).toEqual({
+      name: "Attribute",
+      type: AttributeTypes.SELECT,
+      value: { [AttributeTypes.SELECT]: "Default option" },
+    });
   });
 });

@@ -25,6 +25,7 @@ const ATTRIBUTE_OPTIONS: Option<AttributeTypes>[] = [
   { label: "Select many", value: AttributeTypes.MULTISELECT },
   { label: "Colour select", value: AttributeTypes.COLOUR },
   { label: "Slider", value: AttributeTypes.SLIDER },
+  { label: "Slider with presets", value: AttributeTypes.SLIDER_PRESETS },
   { label: "Checkbox", value: AttributeTypes.BOOLEAN },
 ];
 /**
@@ -142,7 +143,9 @@ export const AddAttributeCard = ({
           {selectedAttribute === AttributeTypes.BOOLEAN && (
             <BooleanOptionsHandler opvFieldName={opvFieldName} form={form} />
           )}
-
+          {selectedAttribute === AttributeTypes.SLIDER_PRESETS && (
+            <SliderPresetsOptionsHandler opvFieldName={opvFieldName} form={form} />
+          )}
           {/* {selectedAttribute === AttributeTypes.MULTISELECT ||
             (selectedAttribute === AttributeTypes.SELECT && (
               <TagsInput {...tagInputAttributes} label="Options" placeholder="Press enter to add" />
@@ -355,5 +358,38 @@ const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; f
         <Radio value={BooleanOptions.CHECKED} label="Checked" />
       </Group>
     </Radio.Group>
+  );
+};
+
+const SliderPresetsOptionsHandler = ({
+  opvFieldName,
+  form,
+}: {
+  opvFieldName: string;
+  form: UseFormReturnType<any>;
+}) => {
+  opvFieldName = `${opvFieldName}.${AttributeTypes.SLIDER_PRESETS}`;
+
+  return (
+    <TagsInput
+      required
+      name={opvFieldName}
+      type="number"
+      key={form.key(opvFieldName)}
+      {...form.getInputProps(opvFieldName)}
+      label="Options"
+      description="Only numbers are allowed"
+      placeholder="Press enter to add (numbers only)"
+
+      // onChange={(value) => {
+      //   console.log({ value });
+      //   // Filter out non-numeric values and sort them
+      //   const numericValues = value
+      //     .filter((v) => !isNaN(Number(v)))
+      //     .map(Number)
+      //     .sort((a, b) => a - b);
+      //   form.setFieldValue(opvFieldName, numericValues);
+      // }}
+    />
   );
 };

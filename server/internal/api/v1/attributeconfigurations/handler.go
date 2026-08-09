@@ -45,11 +45,12 @@ func createAttributeConfiguration(c *gin.Context) {
 	}
 
 	attributeOption := models.AttributeTypeOptions{
-		Select:      req.Options.Select,
-		Multiselect: req.Options.Multiselect,
-		Colour:      req.Options.Colour,
-		Slider:      req.Options.Slider,
-		Boolean:     req.Options.Boolean,
+		Select:        req.Options.Select,
+		Multiselect:   req.Options.Multiselect,
+		Colour:        req.Options.Colour,
+		Slider:        req.Options.Slider,
+		SliderPresets: req.Options.SliderPresets,
+		Boolean:       req.Options.Boolean,
 	}
 
 	attr := models.AttributeConfiguration{
@@ -115,11 +116,12 @@ func updateAttributeConfiguration(c *gin.Context) {
 	}
 	if req.Options != nil {
 		attributeOption := models.AttributeTypeOptions{
-			Select:      req.Options.Select,
-			Multiselect: req.Options.Multiselect,
-			Colour:      req.Options.Colour,
-			Slider:      req.Options.Slider,
-			Boolean:     req.Options.Boolean,
+			Select:        req.Options.Select,
+			Multiselect:   req.Options.Multiselect,
+			Colour:        req.Options.Colour,
+			Slider:        req.Options.Slider,
+			SliderPresets: req.Options.SliderPresets,
+			Boolean:       req.Options.Boolean,
 		}
 		attr.Options = attributeOption
 		changed = true

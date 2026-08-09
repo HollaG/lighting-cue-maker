@@ -26,3 +26,5 @@ export interface QLCEventJson {
     qlcFunctions: QLCFunction[];
   }[];
 }
+
+// ─── QLC Advanced Options Configuration ───────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@ import { AttributeTypes, BooleanOptions, type LightEventConfiguration } from "..
 import {
   createEmptyEventFormAttribute,
   createEmptyEventFormFixtureGroup,
+  createEmptyEventFormValues,
+  eventFormValuesToCreateRequest,
   eventFormValuesToUpdateRequest,
   eventToEventFormValues,
 } from "./eventFormModel";
@@ -31,6 +33,7 @@ describe("eventToEventFormValues", () => {
                 [AttributeTypes.MULTISELECT]: [],
                 [AttributeTypes.COLOUR]: [{ hex: "#ffffff", name: "White" }],
                 [AttributeTypes.SLIDER]: { min: 0, max: 100 },
+                [AttributeTypes.SLIDER_PRESETS]: [0, 50, 100],
                 [AttributeTypes.BOOLEAN]: BooleanOptions.UNCHECKED,
                 [AttributeTypes.TEXT]: "",
                 [AttributeTypes.NONE]: null,
@@ -55,6 +58,7 @@ describe("eventToEventFormValues", () => {
     expect(attribute.clientId).toBe(attributeClientId);
     expect(attribute.id).toBe("attribute-id");
     expect(attribute.optionPossibleValues.colour).toEqual([{ hex: "#ffffff", name: "White" }]);
+    expect(attribute.optionPossibleValues.sliderPresets).toEqual(["0", "50", "100"]);
   });
 
   it("serializes existing and new records for the aggregate event PATCH", () => {
@@ -82,6 +86,7 @@ describe("eventToEventFormValues", () => {
                 [AttributeTypes.MULTISELECT]: [],
                 [AttributeTypes.COLOUR]: [],
                 [AttributeTypes.SLIDER]: { min: 0, max: 100 },
+                [AttributeTypes.SLIDER_PRESETS]: [0, 50, 100],
                 [AttributeTypes.BOOLEAN]: BooleanOptions.UNCHECKED,
                 [AttributeTypes.TEXT]: "",
                 [AttributeTypes.NONE]: null,
@@ -119,6 +124,9 @@ describe("eventToEventFormValues", () => {
       name: "Intensity",
       order: 0,
     });
+    expect(request.fixtureGroups?.[0].attributes[0].optionPossibleValues).toEqual({
+      [AttributeTypes.SLIDER]: { min: 0, max: 100 },
+    });
     expect(request.fixtureGroups?.[0].attributes[1]).toMatchObject({
       name: "Colour",
       order: 1,
@@ -131,5 +139,44 @@ describe("eventToEventFormValues", () => {
     });
     expect(request.fixtureGroups?.[1]).not.toHaveProperty("id");
     expect(JSON.stringify(request)).not.toContain("clientId");
+  });
+
+  it("converts slider preset strings to numbers in create requests", () => {
+    const values = createEmptyEventFormValues();
+    const fixtureGroup = createEmptyEventFormFixtureGroup(0);
+    const attribute = createEmptyEventFormAttribute(0);
+
+    attribute.name = "Intensity preset";
+    attribute.type = AttributeTypes.SLIDER_PRESETS;
+    attribute.optionPossibleValues.sliderPresets = ["0", "50.5", "100"];
+    fixtureGroup.attributes[attribute.clientId] = attribute;
+    fixtureGroup.attributeOrder.push(attribute.clientId);
+    values.fixtureGroups[fixtureGroup.clientId] = fixtureGroup;
+    values.fixtureGroupOrder.push(fixtureGroup.clientId);
+
+    const request = eventFormValuesToCreateRequest(values);
+
+    expect(request.fixtureGroups[0].attributes[0].optionPossibleValues).toEqual({
+      [AttributeTypes.SLIDER_PRESETS]: [0, 50.5, 100],
+    });
+  });
+
+  it("converts slider preset strings to numbers in update requests", () => {
+    const values = createEmptyEventFormValues();
+    const fixtureGroup = createEmptyEventFormFixtureGroup(0);
+    const attribute = createEmptyEventFormAttribute(0);
+
+    attribute.type = AttributeTypes.SLIDER_PRESETS;
+    attribute.optionPossibleValues.sliderPresets = ["25", "75"];
+    fixtureGroup.attributes[attribute.clientId] = attribute;
+    fixtureGroup.attributeOrder.push(attribute.clientId);
+    values.fixtureGroups[fixtureGroup.clientId] = fixtureGroup;
+    values.fixtureGroupOrder.push(fixtureGroup.clientId);
+
+    const request = eventFormValuesToUpdateRequest(values);
+
+    expect(request.fixtureGroups?.[0].attributes[0].optionPossibleValues).toEqual({
+      [AttributeTypes.SLIDER_PRESETS]: [25, 75],
+    });
   });
 });

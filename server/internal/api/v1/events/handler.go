@@ -87,11 +87,12 @@ func createEvent(c *gin.Context) {
 		attributes := []models.AttributeConfiguration{}
 		for _, attribute := range group.Attributes {
 			attributeOption := models.AttributeTypeOptions{
-				Select:      attribute.Options.Select,
-				Multiselect: attribute.Options.Multiselect,
-				Colour:      attribute.Options.Colour,
-				Slider:      attribute.Options.Slider,
-				Boolean:     attribute.Options.Boolean,
+				Select:        attribute.Options.Select,
+				Multiselect:   attribute.Options.Multiselect,
+				Colour:        attribute.Options.Colour,
+				Slider:        attribute.Options.Slider,
+				SliderPresets: attribute.Options.SliderPresets,
+				Boolean:       attribute.Options.Boolean,
 			}
 
 			attribute := models.AttributeConfiguration{

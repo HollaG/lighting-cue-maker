@@ -9,6 +9,7 @@ import {
   Flex,
   Grid,
   Group,
+  Menu,
   MultiSelect,
   SimpleGrid,
   Stack,
@@ -21,6 +22,13 @@ import { AttributeTypes, type AttributeConfiguration, type LightEventConfigurati
 import { IconArrowRightBar, IconDownload } from "@tabler/icons-react";
 import type { QLCEventJson, QLCFunction } from "../../types/qlc";
 import {
+  ADV_MAP_ALL_VALUE,
+  ADV_MAP_KEY,
+  ADV_MAP_ONE_VALUE,
+  ADV_ORDER_ANY_VALUE,
+  ADV_ORDER_FIRST_VALUE,
+  ADV_ORDER_KEY,
+  ADV_ORDER_LAST_VALUE,
   extractQLCFunctionsToJSON,
   generateAndInsertPreviewCollections,
   generatePreview,
@@ -34,7 +42,7 @@ import { notifications } from "../../utils/notifications";
 import { QLCEventPreview } from "./QLCEventPreview";
 import { useLocalStorage } from "@mantine/hooks";
 
-const COLUMN_SPANS = [2, 3, 1, 6];
+const COLUMN_SPANS = [2, 3, 1, 4, 2];
 
 export type GroupedFnList = {
   group: string;
@@ -53,7 +61,6 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
     key: "qlc-preview",
   });
 
-  const [showExport, setShowExport] = useState(false);
   const form = useForm<{
     [attributeId: string]: string[]; // function IDs
   }>({
@@ -152,6 +159,8 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
   const onGeneratePreview = async () => {
     if (!fileXml) return;
     const values = form.getValues();
+
+    console.log({ values });
     const res = await executeRequest({});
 
     if (!res) {
@@ -371,6 +380,9 @@ const OptList2 = ({
           <Grid.Col span={COLUMN_SPANS[3]}>
             <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|true`} />
           </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[4]}>
+            <AdvancedMappingMenu attributeId={attribute.id} value="true" form={form} />
+          </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[0]}>
             <Text>{}</Text>
           </Grid.Col>
@@ -383,12 +395,15 @@ const OptList2 = ({
           <Grid.Col span={COLUMN_SPANS[3]}>
             <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|false`} />
           </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[4]}>
+            <AdvancedMappingMenu attributeId={attribute.id} value="false" form={form} />
+          </Grid.Col>
         </>
       );
     case AttributeTypes.SELECT:
       return (
         <>
-          {attribute.optionPossibleValues[AttributeTypes.SELECT].map((val, index) => (
+          {attribute.optionPossibleValues[AttributeTypes.SELECT]?.map((val, index) => (
             <Fragment key={val}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
@@ -401,6 +416,9 @@ const OptList2 = ({
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[3]}>
                 <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[4]}>
+                <AdvancedMappingMenu attributeId={attribute.id} value={val} form={form} />
               </Grid.Col>
             </Fragment>
           ))}
@@ -417,6 +435,9 @@ const OptList2 = ({
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
             <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[4]}>
+            <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
           </Grid.Col>
         </>
       );
@@ -438,6 +459,9 @@ const OptList2 = ({
               <Grid.Col span={COLUMN_SPANS[3]}>
                 <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
               </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[4]}>
+                <AdvancedMappingMenu attributeId={attribute.id} value={val} form={form} />
+              </Grid.Col>
             </Fragment>
           ))}
           {/* For none selected option */}
@@ -453,13 +477,16 @@ const OptList2 = ({
           <Grid.Col span={COLUMN_SPANS[3]}>
             <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
           </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[4]}>
+            <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
+          </Grid.Col>
         </>
       );
 
     case AttributeTypes.COLOUR:
       return (
         <>
-          {attribute.optionPossibleValues[AttributeTypes.COLOUR].map((colourOption, index) => (
+          {attribute.optionPossibleValues[AttributeTypes.COLOUR]?.map((colourOption, index) => (
             <Fragment key={colourOption.hex}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
@@ -489,6 +516,9 @@ const OptList2 = ({
                   inputId={`${attribute.id}|${colourOption.hex}`}
                 />
               </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[4]}>
+                <AdvancedMappingMenu attributeId={attribute.id} value={colourOption.hex} form={form} />
+              </Grid.Col>
             </Fragment>
           ))}
           {/* For none selected option */}
@@ -503,6 +533,9 @@ const OptList2 = ({
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
             <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[4]}>
+            <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
           </Grid.Col>
         </>
         // <Group>
@@ -522,9 +555,87 @@ const OptList2 = ({
         // </Group>
       );
 
+    case AttributeTypes.SLIDER_PRESETS: {
+      return (
+        <>
+          {attribute.optionPossibleValues[AttributeTypes.SLIDER_PRESETS]?.map((val, index) => (
+            <Fragment key={val}>
+              <Grid.Col span={COLUMN_SPANS[0]}>
+                <Text>{index === 0 ? attribute.name : ""}</Text>
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[1]}>
+                <Text>{val}</Text>
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[2]}>
+                <IconArrowRightBar width={"1rem"} />
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[3]}>
+                <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[4]}>
+                <AdvancedMappingMenu attributeId={attribute.id} value={val} form={form} />
+              </Grid.Col>
+            </Fragment>
+          ))}
+          {/* For none selected option */}
+          <Grid.Col span={COLUMN_SPANS[0]}>
+            <Text></Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[1]}>
+            <Text>Not selected</Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[2]}>
+            <IconArrowRightBar width={"1rem"} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[3]}>
+            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[4]}>
+            <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
+          </Grid.Col>
+        </>
+      );
+    }
     default:
       return null;
   }
+};
+
+const AdvancedMappingMenu = ({
+  attributeId,
+  value,
+  form,
+}: {
+  attributeId: string;
+  value: string | number;
+  form: UseFormReturnType<{ [attributeId: string]: string[] }>;
+}) => {
+  const keyPrefix = `${attributeId}|${value}`;
+  const mappingTypeKey = `${keyPrefix}|${ADV_MAP_KEY}`;
+  const functionPriorityKey = `${keyPrefix}|${ADV_ORDER_KEY}`;
+
+  return (
+    <Menu shadow="md" width={220} closeOnItemClick={false}>
+      <Menu.Target>
+        <Button variant="outline">Advanced</Button>
+      </Menu.Target>
+
+      <Menu.Dropdown>
+        <Menu.Label>Mapping type</Menu.Label>
+        <Menu.RadioGroup key={form.key(mappingTypeKey)} {...form.getInputProps(mappingTypeKey)}>
+          <Menu.RadioItem value={ADV_MAP_ALL_VALUE}>Map to all selected functions</Menu.RadioItem>
+          <Menu.RadioItem value={ADV_MAP_ONE_VALUE}>Map to one random function</Menu.RadioItem>
+        </Menu.RadioGroup>
+        <Menu.Divider />
+        <Menu.Label>Function priority</Menu.Label>
+        <Menu.RadioGroup key={form.key(functionPriorityKey)} {...form.getInputProps(functionPriorityKey)}>
+          <Menu.RadioItem value={ADV_ORDER_ANY_VALUE}>No specific priority</Menu.RadioItem>
+          <Menu.RadioItem value={ADV_ORDER_FIRST_VALUE}>Always lowest</Menu.RadioItem>
+          <Menu.RadioItem value={ADV_ORDER_LAST_VALUE}>Always highest</Menu.RadioItem>
+        </Menu.RadioGroup>
+      </Menu.Dropdown>
+    </Menu>
+  );
 };
 
 export const FunctionSelect = ({
