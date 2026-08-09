@@ -44,6 +44,15 @@ import { useLocalStorage } from "@mantine/hooks";
 
 const COLUMN_SPANS = [2, 3, 1, 4, 2];
 
+export type QlcFormType = {
+  mappings: {
+    [attributeIdAndValue: string]: string[];
+  };
+  advancedOptions: {
+    [attributeIdAndValueAndOptionKey: string]: string;
+  };
+};
+
 export type GroupedFnList = {
   group: string;
   items: { value: string; label: string }[]; // Function ID
@@ -61,11 +70,12 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
     key: "qlc-preview",
   });
 
-  const form = useForm<{
-    [attributeId: string]: string[]; // function IDs
-  }>({
+  const form = useForm<QlcFormType>({
     mode: "uncontrolled",
-    initialValues: {},
+    initialValues: {
+      mappings: {},
+      advancedOptions: {},
+    },
     onValuesChange: (values) => {
       window.localStorage.setItem("qlc-mapping", JSON.stringify(values));
     },
@@ -172,7 +182,7 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
       });
       return;
     }
-    const json = generatePreview(res.items, values, functionList);
+    const json = generatePreview(res.items, values.mappings, values.advancedOptions, functionList);
     setPreview(json);
   };
 
@@ -286,7 +296,7 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
                         {fixtureGroup.attributes
                           .filter((v) => isQlcMappable(v.type))
                           .map((attribute) => (
-                            <OptList2
+                            <OptList
                               key={attribute.id}
                               attribute={attribute}
                               groupedFnList={groupedFnList ?? []}
@@ -335,31 +345,14 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
   );
 };
 
-// /**
-//  *
-//  * @param option the Function ID as a string
-//  * @returns
-//  */
-// const renderMultiSelectOption: MultiSelectProps['renderOption'] = ({ option }) => (
-//   <Group gap="sm">
-//     <Avatar src={usersData[option.value].image} size={36} radius="xl" />
-//     <div>
-//       <Text size="sm">{option.value}</Text>
-//       <Text size="xs" opacity={0.5}>
-//         {usersData[option.value].email}
-//       </Text>
-//     </div>
-//   </Group>
-// );
-
-const OptList2 = ({
+const OptList = ({
   attribute,
   groupedFnList,
   form,
 }: {
   attribute: AttributeConfiguration;
   groupedFnList: GroupedFnList;
-  form: UseFormReturnType<{ [attributeId: string]: string[] }>;
+  form: UseFormReturnType<QlcFormType>;
 }) => {
   if (!isQlcMappable(attribute.type)) return null;
 
@@ -378,7 +371,7 @@ const OptList2 = ({
             <IconArrowRightBar width={"1rem"} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
-            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|true`} />
+            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`mappings.${attribute.id}|true`} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[4]}>
             <AdvancedMappingMenu attributeId={attribute.id} value="true" form={form} />
@@ -393,7 +386,7 @@ const OptList2 = ({
             <IconArrowRightBar width={"1rem"} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
-            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|false`} />
+            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`mappings.${attribute.id}|false`} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[4]}>
             <AdvancedMappingMenu attributeId={attribute.id} value="false" form={form} />
@@ -415,7 +408,7 @@ const OptList2 = ({
                 <IconArrowRightBar width={"1rem"} />
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[3]}>
-                <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
+                <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`mappings.${attribute.id}|${val}`} />
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[4]}>
                 <AdvancedMappingMenu attributeId={attribute.id} value={val} form={form} />
@@ -434,7 +427,11 @@ const OptList2 = ({
             <IconArrowRightBar width={"1rem"} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
-            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+            <FunctionSelect
+              groupedFnList={groupedFnList}
+              form={form}
+              inputId={`mappings.${attribute.id}|${"not-selected"}`}
+            />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[4]}>
             <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
@@ -457,7 +454,7 @@ const OptList2 = ({
                 <IconArrowRightBar width={"1rem"} />
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[3]}>
-                <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
+                <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`mappings.${attribute.id}|${val}`} />
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[4]}>
                 <AdvancedMappingMenu attributeId={attribute.id} value={val} form={form} />
@@ -475,7 +472,11 @@ const OptList2 = ({
             <IconArrowRightBar width={"1rem"} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
-            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+            <FunctionSelect
+              groupedFnList={groupedFnList}
+              form={form}
+              inputId={`mappings.${attribute.id}|${"not-selected"}`}
+            />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[4]}>
             <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
@@ -513,7 +514,7 @@ const OptList2 = ({
                 <FunctionSelect
                   groupedFnList={groupedFnList}
                   form={form}
-                  inputId={`${attribute.id}|${colourOption.hex}`}
+                  inputId={`mappings.${attribute.id}|${colourOption.hex}`}
                 />
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[4]}>
@@ -532,7 +533,11 @@ const OptList2 = ({
             <IconArrowRightBar width={"1rem"} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
-            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+            <FunctionSelect
+              groupedFnList={groupedFnList}
+              form={form}
+              inputId={`mappings.${attribute.id}|${"not-selected"}`}
+            />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[4]}>
             <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
@@ -570,7 +575,7 @@ const OptList2 = ({
                 <IconArrowRightBar width={"1rem"} />
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[3]}>
-                <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${val}`} />
+                <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`mappings.${attribute.id}|${val}`} />
               </Grid.Col>
               <Grid.Col span={COLUMN_SPANS[4]}>
                 <AdvancedMappingMenu attributeId={attribute.id} value={val} form={form} />
@@ -588,7 +593,11 @@ const OptList2 = ({
             <IconArrowRightBar width={"1rem"} />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[3]}>
-            <FunctionSelect groupedFnList={groupedFnList} form={form} inputId={`${attribute.id}|${"not-selected"}`} />
+            <FunctionSelect
+              groupedFnList={groupedFnList}
+              form={form}
+              inputId={`mappings.${attribute.id}|${"not-selected"}`}
+            />
           </Grid.Col>
           <Grid.Col span={COLUMN_SPANS[4]}>
             <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
@@ -608,33 +617,54 @@ const AdvancedMappingMenu = ({
 }: {
   attributeId: string;
   value: string | number;
-  form: UseFormReturnType<{ [attributeId: string]: string[] }>;
+  form: UseFormReturnType<QlcFormType>;
 }) => {
-  const keyPrefix = `${attributeId}|${value}`;
+  const keyPrefix = `advancedOptions.${attributeId}|${value}`;
   const mappingTypeKey = `${keyPrefix}|${ADV_MAP_KEY}`;
   const functionPriorityKey = `${keyPrefix}|${ADV_ORDER_KEY}`;
 
-  return (
-    <Menu shadow="md" width={220} closeOnItemClick={false}>
-      <Menu.Target>
-        <Button variant="outline">Advanced</Button>
-      </Menu.Target>
+  const [isMapTypeEnabled, setIsMapTypeEnabled] = useState<boolean>(false);
+  const [isFunctionPriorityEnabled, setIsFunctionPriorityEnabled] = useState<boolean>(false);
 
-      <Menu.Dropdown>
-        <Menu.Label>Mapping type</Menu.Label>
-        <Menu.RadioGroup key={form.key(mappingTypeKey)} {...form.getInputProps(mappingTypeKey)}>
-          <Menu.RadioItem value={ADV_MAP_ALL_VALUE}>Map to all selected functions</Menu.RadioItem>
-          <Menu.RadioItem value={ADV_MAP_ONE_VALUE}>Map to one random function</Menu.RadioItem>
-        </Menu.RadioGroup>
-        <Menu.Divider />
-        <Menu.Label>Function priority</Menu.Label>
-        <Menu.RadioGroup key={form.key(functionPriorityKey)} {...form.getInputProps(functionPriorityKey)}>
-          <Menu.RadioItem value={ADV_ORDER_ANY_VALUE}>No specific priority</Menu.RadioItem>
-          <Menu.RadioItem value={ADV_ORDER_FIRST_VALUE}>Always lowest</Menu.RadioItem>
-          <Menu.RadioItem value={ADV_ORDER_LAST_VALUE}>Always highest</Menu.RadioItem>
-        </Menu.RadioGroup>
-      </Menu.Dropdown>
-    </Menu>
+  // Advanced options is "enabled" whenever it exists
+  form.watch(mappingTypeKey, ({ value }) => {
+    setIsMapTypeEnabled(true);
+  });
+  form.watch(functionPriorityKey, ({ value }) => {
+    setIsFunctionPriorityEnabled(true);
+  });
+
+  const isAdvancedOptionsEnabled = isMapTypeEnabled || isFunctionPriorityEnabled;
+
+  return (
+    <Box>
+      <Menu shadow="md" width={325} closeOnItemClick={false}>
+        <Menu.Target>
+          <Button
+            fullWidth
+            variant={isAdvancedOptionsEnabled ? "light" : "subtle"}
+            color={isAdvancedOptionsEnabled ? "lime" : "gray"}
+          >
+            Advanced
+          </Button>
+        </Menu.Target>
+
+        <Menu.Dropdown>
+          <Menu.Label>Mapping type</Menu.Label>
+          <Menu.RadioGroup key={form.key(mappingTypeKey)} {...form.getInputProps(mappingTypeKey)}>
+            <Menu.RadioItem value={ADV_MAP_ALL_VALUE}>Map to all selected functions (default)</Menu.RadioItem>
+            <Menu.RadioItem value={ADV_MAP_ONE_VALUE}>Map to one random function</Menu.RadioItem>
+          </Menu.RadioGroup>
+          <Menu.Divider />
+          <Menu.Label>Function priority</Menu.Label>
+          <Menu.RadioGroup key={form.key(functionPriorityKey)} {...form.getInputProps(functionPriorityKey)}>
+            <Menu.RadioItem value={ADV_ORDER_ANY_VALUE}>No specific priority (default)</Menu.RadioItem>
+            <Menu.RadioItem value={ADV_ORDER_FIRST_VALUE}>Always lowest</Menu.RadioItem>
+            <Menu.RadioItem value={ADV_ORDER_LAST_VALUE}>Always highest</Menu.RadioItem>
+          </Menu.RadioGroup>
+        </Menu.Dropdown>
+      </Menu>
+    </Box>
   );
 };
 
@@ -644,16 +674,25 @@ export const FunctionSelect = ({
   inputId,
 }: {
   groupedFnList: GroupedFnList;
-  form: UseFormReturnType<{ [attributeId: string]: string[] }>;
+  form: UseFormReturnType<QlcFormType>;
   inputId: string;
 }) => {
+  // useEffect(() => {
+  //   // if the attribute is not in the form, add it with default values
+  //   form.setFieldValue(inputId, {
+  //     advancedOptions: {},
+  //     fnIds: [],
+  //   });
+  // }, []);
+
+  const key = `${inputId}`;
   return (
     <MultiSelect
       searchable
       data={groupedFnList}
       width={"100%"}
-      {...form.getInputProps(inputId)}
-      key={form.key(inputId)}
+      {...form.getInputProps(key)}
+      key={form.key(key)}
       placeholder="Select one or more QLC+ functions..."
     />
   );

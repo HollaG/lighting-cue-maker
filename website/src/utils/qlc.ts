@@ -2,6 +2,7 @@ import { AttributeTypes, type Item } from "../types/types";
 import type { QLCCollection, QLCEventJson, QLCFunction } from "../types/qlc";
 import { getCueOrder, getValueFromValueAssignment, hasAValue } from "./cueUtils";
 import type { ValueAssignment } from "../types/cues";
+import type { QlcFormType } from "../sections/QLCConverter/QLCConverter";
 
 export const ADV_MAP_KEY = `mapping-type`;
 export const ADV_MAP_ALL_VALUE = `map-all`;
@@ -345,7 +346,8 @@ export function generateAndInsertChasers(
  */
 export function generatePreview(
   items: Item[],
-  mapping: Record<string, string[] | string>,
+  mapping: QlcFormType["mappings"],
+  advancedOptions: QlcFormType["advancedOptions"],
   qlcFunctionMap: { [fnId: string]: QLCFunction },
 ): QLCEventJson {
   console.log({ mapping });
@@ -406,35 +408,37 @@ export function generatePreview(
         // special case when the user didn't select anything in dropdown
         if (!isSelected) {
           const keyString = `${attrId}|not-selected`;
-          const qlcFunctionIds = mapping[keyString];
-          if (qlcFunctionIds) {
+          const fnIds = mapping[keyString];
+          if (fnIds) {
             // if mapping exists
             // check pick one or pick all
-            const mapType = mapping[`${keyString}|${ADV_MAP_KEY}`];
 
+            const mapType = advancedOptions[`${keyString}|${ADV_MAP_KEY}`];
             const isMapAll = mapType === ADV_MAP_ALL_VALUE;
             const isMapOne = mapType === ADV_MAP_ONE_VALUE;
 
             let fns: string[] = [];
             if (isMapOne) {
-              fns = [qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)]];
+              fns = [fnIds[Math.floor(Math.random() * fnIds.length)]];
             } else if (isMapAll) {
-              fns = qlcFunctionIds as string[];
+              fns = fnIds;
             } else {
-              fns = qlcFunctionIds as string[]; // default to all if no special mapping is specified
+              fns = fnIds; // default to all if no special mapping is specified
             }
 
             // Check special controls
-            const keyStringOrderFirst = `${attrId}|not-selected|${ADV_ORDER_FIRST_VALUE}`;
-            const keyStringOrderLast = `${attrId}|not-selected|${ADV_ORDER_LAST_VALUE}`;
+            const priority = advancedOptions[`${keyString}|${ADV_ORDER_KEY}`];
+            const isFirst = priority === ADV_ORDER_FIRST_VALUE;
+            const isLast = priority === ADV_ORDER_LAST_VALUE;
 
-            if (mapping[keyStringOrderFirst] !== undefined) {
+            if (isFirst) {
               addFirstFnIds.push(...fns);
-            } else if (mapping[keyStringOrderLast] !== undefined) {
+            } else if (isLast) {
               addLastFnIds.push(...fns);
             } else {
               addAnyFnIds.push(...fns);
             }
+
             continue;
           }
         }
@@ -444,42 +448,34 @@ export function generatePreview(
 
         for (const v of values) {
           const keyString = `${attrId}|${v}`;
-          const qlcFunctionIds = mapping[keyString];
-          if (qlcFunctionIds) {
-            // check pick one or pick all
-            const mapType = mapping[`${keyString}|${ADV_MAP_KEY}`];
+          const fnIds = mapping[keyString];
+
+          if (fnIds) {
+            const mapType = advancedOptions[`${keyString}|${ADV_MAP_KEY}`];
             const isMapAll = mapType === ADV_MAP_ALL_VALUE;
             const isMapOne = mapType === ADV_MAP_ONE_VALUE;
 
             let fns: string[] = [];
             if (isMapOne) {
-              fns = [qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)]];
+              fns = [fnIds[Math.floor(Math.random() * fnIds.length)]];
             } else if (isMapAll) {
-              fns = qlcFunctionIds as string[];
+              fns = fnIds;
             } else {
-              fns = qlcFunctionIds as string[]; // default to all if no special mapping is specified
+              fns = fnIds; // default to all if no special mapping is specified
             }
 
             // Check special controls
-            const keyStringOrderFirst = `${attrId}|${v}|${ADV_ORDER_FIRST_VALUE}`;
-            const keyStringOrderLast = `${attrId}|${v}|${ADV_ORDER_LAST_VALUE}`;
+            const priority = advancedOptions[`${keyString}|${ADV_ORDER_KEY}`];
+            const isFirst = priority === ADV_ORDER_FIRST_VALUE;
+            const isLast = priority === ADV_ORDER_LAST_VALUE;
 
-            if (mapping[keyStringOrderFirst] !== undefined) {
+            if (isFirst) {
               addFirstFnIds.push(...fns);
-            } else if (mapping[keyStringOrderLast] !== undefined) {
+            } else if (isLast) {
               addLastFnIds.push(...fns);
             } else {
               addAnyFnIds.push(...fns);
             }
-
-            // if (attr.type === AttributeTypes.BOOLEAN) {
-            //   const randomFnId = qlcFunctionIds[Math.floor(Math.random() * qlcFunctionIds.length)];
-            //   addLastFnIds.push(randomFnId);
-            // } else {
-            //   for (const qlcFnId of qlcFunctionIds) {
-            //     addFnById(qlcFnId);
-            //   }
-            // }
           }
         }
       }
