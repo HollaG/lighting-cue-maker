@@ -318,9 +318,15 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
                   {cue.id.slice(0, 4)}
                 </Text>
               </Tooltip>
-              <Button variant="transparent" size="xs" color="black" onClick={() => onJumpToCue()}>
-                Scroll to cue
-              </Button>
+              {isCueSelected ? (
+                <Button size="xs" variant="transparent" onClick={() => setSelectedCueId(undefined)}>
+                  Reset view
+                </Button>
+              ) : (
+                <Button variant="transparent" size="xs" color="black" onClick={() => onJumpToCue()}>
+                  Scroll to cue
+                </Button>
+              )}
               <Button
                 variant="transparent"
                 size="xs"
