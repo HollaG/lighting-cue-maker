@@ -1,3 +1,5 @@
+// Deprecated
+
 import { Box, Button, Card, Center, Group, Stack } from "@mantine/core";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";

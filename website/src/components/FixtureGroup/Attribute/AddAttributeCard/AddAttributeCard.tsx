@@ -11,6 +11,8 @@ import {
   Radio,
   Flex,
   Tooltip,
+  Text,
+  Accordion,
 } from "@mantine/core";
 import { AttributeTypes, BooleanOptions, type ColourOption, type Option } from "../../../../types/types";
 import { useEffect, useRef, useState } from "react";
@@ -54,6 +56,7 @@ export const AddAttributeCard = ({
   // we cannot use a controlled component here because the form is in uncontrolled mode.
   const baseFieldName = `fixtureGroups.${fixtureGroupClientId}.attributes.${attributeClientId}`;
   const opvFieldName = `${baseFieldName}.optionPossibleValues`;
+  const metadataFieldName = `${baseFieldName}.metadata`;
   const initialType = form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].type;
   const initialColourOptions =
     form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].optionPossibleValues[
@@ -80,6 +83,7 @@ export const AddAttributeCard = ({
             name={`${baseFieldName}.name`}
             key={form.key(`${baseFieldName}.name`)}
             {...form.getInputProps(`${baseFieldName}.name`)}
+            required
           />
         </Box>
         <Flex mt={"md"} justify={"end"} style={{ flexShrink: 1 }}>
@@ -161,6 +165,43 @@ export const AddAttributeCard = ({
         </Box>
       </Group>
 
+      <Box>
+        <Group>
+          {/* <Text fw="bold" fz="sm" flex={1}>
+            Advanced options{" "}
+          </Text> */}
+        </Group>
+
+        <Accordion variant="unstyled">
+          <Accordion.Item key="required" value="required">
+            <Accordion.Control px={0}>
+              <Text fw="600" fz="sm">
+                {" "}
+                Advanced options
+              </Text>
+            </Accordion.Control>
+            <Accordion.Panel>
+              <Radio.Group
+                name={`${metadataFieldName}.required`}
+                key={form.key(`${metadataFieldName}.required`)}
+                {...form.getInputProps(`${metadataFieldName}.required`)}
+                label="Is required"
+                withAsterisk
+                // defaultValue={"false"}
+                // onChange={(value) => {
+                //   form.setFieldValue(`${metadataFieldName}.required`, value === "true");
+                // }}
+              >
+                <Group mt="xs">
+                  <Radio value={"false"} label="Optional" />
+                  <Radio style={{ cursor: "pointer" }} value={"true"} label="Required" />
+                </Group>
+              </Radio.Group>
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion>
+      </Box>
+
       {/* {selectedAttribute === 'slider' && <MultiSelectCreatable />}
     {selectedAttribute === 'boolean' && <MultiSelectCreatable />}
     {selectedAttribute === 'text' && <MultiSelectCreatable />} */}
@@ -181,6 +222,7 @@ const SelectOptionsHandler = ({
 
   return (
     <TagsInput
+      required
       name={opvFieldName}
       key={form.key(opvFieldName)}
       {...form.getInputProps(opvFieldName)}
@@ -204,9 +246,7 @@ const ColourOptionsHandler = ({
   opvFieldName = `${opvFieldName}.${AttributeTypes.COLOUR}`;
 
   const [colorInputIds, setColorInputIds] = useState<string[]>(() =>
-      initialColours.length > 0
-        ? initialColours.map((_, index) => `existing-colour-${index}`)
-        : [Date.now().toString()],
+    initialColours.length > 0 ? initialColours.map((_, index) => `existing-colour-${index}`) : [Date.now().toString()],
   );
   const initializedEmptyColour = useRef(false);
 
@@ -275,7 +315,13 @@ const ColourOptionsHandler = ({
             />
           </Box>
           <Box flex={1}>
-            <Button type="button" variant="transparent" size="xs" color="red" onClick={() => onDeleteColourOption(index)}>
+            <Button
+              type="button"
+              variant="transparent"
+              size="xs"
+              color="red"
+              onClick={() => onDeleteColourOption(index)}
+            >
               {" "}
               Remove option
             </Button>

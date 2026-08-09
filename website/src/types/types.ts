@@ -24,9 +24,15 @@ export type AttributeConfiguration = {
   id: string; // stable
   name: string;
   type: AttributeTypes;
-  metadata: Record<string, any>;
+  metadata: AttributeMetadata;
   optionPossibleValues: AttributeTypesOptions;
   order: number;
+};
+
+export type AttributeMetadata = {
+  placeholder?: string; // default: undefined
+  required?: boolean; // default: FALSE
+  defaultValue?: string | string[] | ColourOption | boolean | number; // default: undefined
 };
 
 export const AttributeTypes = {

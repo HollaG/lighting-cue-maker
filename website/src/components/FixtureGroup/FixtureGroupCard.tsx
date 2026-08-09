@@ -1,11 +1,7 @@
-import { Box, Button, Card, Center, Flex, Group, Stack, Tooltip } from "@mantine/core";
+import { Box, Button, Card, Center, Divider, Flex, Group, Stack, Tooltip } from "@mantine/core";
 import type { UseFormReturnType } from "@mantine/form";
 import { useState } from "react";
-import {
-  createEmptyEventFormAttribute,
-  type EventFormKey,
-  type EventFormValues,
-} from "../EventForm/eventFormModel";
+import { createEmptyEventFormAttribute, type EventFormKey, type EventFormValues } from "../EventForm/eventFormModel";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
 
@@ -83,15 +79,18 @@ export const FixtureGroupCard = ({
         </Group>
 
         {attributeOrder.map((attributeClientId, attributeIndex) => (
-          <AddAttributeCard
-            key={attributeClientId}
-            attributeClientId={attributeClientId}
-            fixtureGroupClientId={formKey}
-            form={form}
-            index={attributeIndex}
-            deleteDisabled={Boolean(fixtureGroup.attributes[attributeClientId].id)}
-            onDeleteAttribute={() => removeAttribute(attributeClientId)}
-          />
+          <div key={attributeClientId}>
+            <AddAttributeCard
+              key={attributeClientId}
+              attributeClientId={attributeClientId}
+              fixtureGroupClientId={formKey}
+              form={form}
+              index={attributeIndex}
+              deleteDisabled={Boolean(fixtureGroup.attributes[attributeClientId].id)}
+              onDeleteAttribute={() => removeAttribute(attributeClientId)}
+            />
+            <Divider my="sm" />
+          </div>
         ))}
 
         <Center>

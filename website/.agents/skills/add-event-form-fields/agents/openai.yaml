@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Event Form Fields"
+  short_description: "Keep event form fields synchronized end to end"
+  default_prompt: "Use $add-event-form-fields to add a field to the shared event form and keep create/edit conversions synchronized."

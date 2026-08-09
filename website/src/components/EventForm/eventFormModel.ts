@@ -3,6 +3,7 @@ import type { CreateEventReq, UpdateEventReq } from "../../types/http";
 import type {
   AttributeConfiguration,
   BumpConfiguration,
+  ColourOption,
   FixtureGroupConfiguration,
   LightEventConfiguration,
 } from "../../types/types";
@@ -10,11 +11,16 @@ import type {
 export type EventFormMode = "create" | "edit";
 export type EventFormKey = string;
 
-export type EventFormAttribute = Omit<AttributeConfiguration, "id"> & {
+export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata"> & {
   /** Stable frontend identity. Always generated locally. */
   clientId: EventFormKey;
   /** Backend ID. Undefined when this attribute only exists in the form. */
   id?: string;
+  metadata: {
+    placeholder?: string;
+    required?: "true" | "false"; // STRING!!
+    defaultValue?: string | string[] | ColourOption | boolean | number;
+  };
 };
 
 export type EventFormFixtureGroup = Omit<FixtureGroupConfiguration, "id" | "attributes"> & {
@@ -135,6 +141,7 @@ export const eventToEventFormValues = (event: LightEventConfiguration): EventFor
           [AttributeTypes.TEXT]: attribute.optionPossibleValues?.[AttributeTypes.TEXT] ?? "",
           [AttributeTypes.NONE]: null,
         },
+        metadata: attributeMetadataToFormAttributeMetadata(attribute.metadata),
       };
     }
 
@@ -149,7 +156,7 @@ export const eventToEventFormValues = (event: LightEventConfiguration): EventFor
     };
   }
 
-  return {
+  const result = {
     name: event.name,
     cuesPerBand: event.cuesPerBand,
     uniqueCuesPerBand: event.uniqueCuesPerBand,
@@ -159,6 +166,9 @@ export const eventToEventFormValues = (event: LightEventConfiguration): EventFor
     fixtureGroupOrder,
     fixtureGroups,
   };
+
+  console.log("eventToEventFormValues", { event, result });
+  return result;
 };
 
 /** Removes frontend-only identity and produces the create-event API payload. */
@@ -178,9 +188,13 @@ export const eventFormValuesToCreateRequest = (values: EventFormValues): CreateE
     return {
       name: fixtureGroup.name,
       attributes: fixtureGroup.attributeOrder.map((attributeClientId) => {
-        const { clientId: _clientId, id: _id, ...attribute } = fixtureGroup.attributes[attributeClientId];
-        return attribute;
+        const { clientId: _clientId, id: _id, metadata, ...attribute } = fixtureGroup.attributes[attributeClientId];
+        return {
+          ...attribute,
+          metadata: formAttributeMetadataToAttributeMetadata(metadata),
+        };
       }),
+
       order: fixtureGroup.order,
     };
   }),
@@ -213,11 +227,27 @@ export const eventFormValuesToUpdateRequest = (values: EventFormValues): UpdateE
           ...(attribute.id ? { id: attribute.id } : {}),
           name: attribute.name,
           type: attribute.type,
-          metadata: attribute.metadata,
+          metadata: formAttributeMetadataToAttributeMetadata(attribute.metadata),
           optionPossibleValues: attribute.optionPossibleValues,
           order: attributeIndex,
         };
       }),
     };
   }),
+});
+
+const formAttributeMetadataToAttributeMetadata = (
+  metadata: EventFormAttribute["metadata"],
+): AttributeConfiguration["metadata"] => ({
+  placeholder: metadata.placeholder,
+  required: metadata.required === "true",
+  defaultValue: metadata.defaultValue,
+});
+
+const attributeMetadataToFormAttributeMetadata = (
+  metadata: AttributeConfiguration["metadata"],
+): EventFormAttribute["metadata"] => ({
+  placeholder: metadata.placeholder,
+  required: metadata.required ? "true" : "false",
+  defaultValue: metadata.defaultValue,
 });

@@ -110,7 +110,12 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     [cue, fixtureGroups],
   );
 
-  async function handleSave() {
+  async function handleSave(manualSave = false) {
+    // first, validate the form
+    const validationResult = form.validate();
+
+    console.log({ validationResult });
+
     const activeItemId = useAppStore.getState().activeItemId;
     if (!activeItemId) return;
     try {
@@ -179,61 +184,6 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
   // so that the dropdown is not hidden behind the next card.
   // this is a hack, see https://share.gemini.google/Od39OwKe7Hnw
   const [isAtLeastOneComboboxOpened, setAtLeastOneComboboxOpened] = useState<boolean>(false);
-
-  // const [marginPushDownCue, setMarginPushDownCue] = useState<string>("0px");
-  // const [cueRefTop, setCueRefTop] = useState<number>(0);
-  // useEffect(() => {
-  //   // get the inserted cue's top Y-height
-  //   // get this cue's top Y-height
-  //   // if this cue's Y-height is MORE than the inserted cue's Y-height,
-  //   //   set the marginTop to 0px (we accept a card that's lower than expected)
-  //   // if this cue's Y-height is LESS THAN or EQUAL TO the inserted cue's Y-height,
-  //   //   then
-  //   //     (safety check: TODO)
-  //   //   then calculate the margin: `cueYheight - thisYTop`
-  //   //   set the marginTop to that value
-
-  //   if (!cueRef.current) return;
-  //   if (isCueSelected) return; // ignore from layout
-  //   const cardRect = cueRef.current.getBoundingClientRect();
-
-  //   // let marginsSoFar = 0;
-  //   // for (let i = 0; i < cueNumber - 1; i++) {
-  //   //   const elementId = `ref-${cueOrder[i]}`; // x
-  //   //   const element = document.getElementById(elementId);
-  //   //   const cueCardId = `cue-card-${i + 1}`; // y
-  //   //   const cueCardElement = document.getElementById(cueCardId);
-
-  //   //   if (!element || !cueCardElement) return;
-
-  //   //   const delta = element.getBoundingClientRect().top - cueCardElement.getBoundingClientRect().top;
-  //   //   if (delta > 0) marginsSoFar += delta;
-  //   //   // calculate the offset btwn this elementTop and the targetTop
-  //   // }
-
-  //   const elementId = `ref-${cue.id}`;
-  //   const element = document.getElementById(elementId);
-  //   if (!element) return;
-
-  //   const targetRect = element.getBoundingClientRect();
-
-  //   // const currentTranslateY = parseFloat(translateDistance) || 0;
-
-  //   const targetTopY = targetRect.top + window.scrollY;
-  //   const cardNaturalTopY = cardRect.top + window.scrollY;
-
-  //   const deltaY = targetTopY - cardNaturalTopY;
-
-  //   console.log({ element, offset: element.offsetTop });
-
-  //   // setCueRefTop(cardNaturalTopY)
-
-  //   // if (deltaY < 0) return;
-  //   // setMarginPushDownCue(`${deltaY}px`);
-
-  //   // get the top: relative to the cuelist
-  //   setCueRefTop(element.offsetTop);
-  // }, [cueOrder, opened, isCueSelected, cueNumber]);
 
   // on the FIRST render, run a "save", so that the correct value assignments
   // are populated into the DB.
@@ -530,6 +480,7 @@ const AttributeDisplay = ({
           name={`${baseFieldName}.${AttributeTypes.TEXT}`}
           key={form.key(`${baseFieldName}.${AttributeTypes.TEXT}`)}
           {...form.getInputProps(`${baseFieldName}.${AttributeTypes.TEXT}`)}
+          required={attribute.metadata.required}
         />
       );
 
@@ -546,6 +497,7 @@ const AttributeDisplay = ({
           clearable
           rightSection={<IconCaretDown width={"0.75rem"} />}
           clearSectionMode="clear"
+          required={attribute.metadata.required}
         />
       );
 
@@ -559,6 +511,7 @@ const AttributeDisplay = ({
           name={`${baseFieldName}.${AttributeTypes.MULTISELECT}`}
           key={form.key(`${baseFieldName}.${AttributeTypes.MULTISELECT}`)}
           {...form.getInputProps(`${baseFieldName}.${AttributeTypes.MULTISELECT}`)}
+          required={attribute.metadata.required}
         />
       );
 
@@ -573,6 +526,7 @@ const AttributeDisplay = ({
             form.getInitialValues().assignments[groupId].assignment[attribute.id].value[AttributeTypes.COLOUR]
           }
           setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+          required={attribute.metadata.required}
         />
       );
 
@@ -583,6 +537,7 @@ const AttributeDisplay = ({
           fieldName={`${baseFieldName}.${AttributeTypes.BOOLEAN}`}
           form={form}
           defaultValue={optionPossibleValues[AttributeTypes.BOOLEAN]}
+          required={attribute.metadata.required}
         />
       );
   }
@@ -595,6 +550,7 @@ function ColourSelect({
   fieldName,
   form,
   defaultValue,
+  required = false,
 
   setIsAtLeastOneComboboxOpened,
 }: {
@@ -603,6 +559,7 @@ function ColourSelect({
   fieldName: string;
   form: UseFormReturnType<FormData>;
   defaultValue: ColourOption;
+  required?: boolean;
 
   setIsAtLeastOneComboboxOpened: (value: boolean) => void;
 }) {
@@ -659,6 +616,7 @@ function ColourSelect({
       <Combobox.Target targetType="input">
         <div>
           <InputBase
+            required={required}
             label={name}
             rightSection={<Combobox.Chevron />}
             value={search}
@@ -763,13 +721,22 @@ function BooleanSelect({
   name,
   fieldName,
   form,
+  required = false,
 }: {
   defaultValue: BooleanOptions;
   name: string;
   fieldName: string;
+  required?: boolean;
   form: UseFormReturnType<FormData>;
 }) {
-  return <Checkbox label={name} key={form.key(fieldName)} {...form.getInputProps(fieldName, { type: "checkbox" })} />;
+  return (
+    <Checkbox
+      required={required}
+      label={name}
+      key={form.key(fieldName)}
+      {...form.getInputProps(fieldName, { type: "checkbox" })}
+    />
+  );
 }
 
 // re-render if cue.updatedAt is different OR isCueSelected is false

@@ -167,11 +167,17 @@ type AttributeTypeOptions struct {
 type AttributeConfiguration struct {
 	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
-	FixtureGroupConfigurationUuid string               `json:"-" gorm:"type:uuid;not null"`
-	Name                          string               `json:"name"`
-	Type                          AttributeType        `json:"type"`
-	Metadata                      map[string]any       `json:"metadata" gorm:"serializer:json"`
-	Options                       AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
+	FixtureGroupConfigurationUuid string        `json:"-" gorm:"type:uuid;not null"`
+	Name                          string        `json:"name"`
+	Type                          AttributeType `json:"type"`
+
+	Metadata map[string]any `json:"metadata" gorm:"serializer:json"`
+	// Metadata possible values:
+	// required?: boolean,
+	// defaultValue?: unknown, // must match the type of the attribute
+	//
+
+	Options AttributeTypeOptions `json:"optionPossibleValues" gorm:"serializer:json"`
 
 	Order int `json:"order" gorm:"default:0"`
 

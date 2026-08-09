@@ -1,3 +1,5 @@
+// Deprecated
+
 import { Button, Center, Collapse, Container, Divider, Group, SimpleGrid, TagsInput, Textarea } from "@mantine/core";
 import { EditFixtureGroupCard } from "../../components/FixtureGroup/EditFixtureGroupCard";
 import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
