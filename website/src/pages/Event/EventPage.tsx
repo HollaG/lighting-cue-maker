@@ -6,7 +6,6 @@ import {
   Center,
   Code,
   Container,
-  Divider,
   Drawer,
   Flex,
   FloatingIndicator,
@@ -51,7 +50,7 @@ export const EventPage = () => {
     from: "/events/$eventId/",
   });
 
-  const { event: evt, isValidEvent, isFetching: isFetchingEvent } = useGetEvent({ eventId });
+  const { event: evt } = useGetEvent({ eventId });
   const loadedEventId = evt?.id;
   const loadedEventName = evt?.name;
 

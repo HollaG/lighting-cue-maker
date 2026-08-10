@@ -11,7 +11,6 @@ import {
   Input,
   InputBase,
   Menu,
-  Modal,
   MultiSelect,
   Popover,
   px,
@@ -41,7 +40,7 @@ import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { IconCaretDown, IconChevronUp } from "@tabler/icons-react";
 import { useForm, type FormErrors, type UseFormReturnType } from "@mantine/form";
-import { useDebouncedCallback, useDisclosure } from "@mantine/hooks";
+import { useDebouncedCallback } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
 import { useDeleteCue } from "../../../query/useDeleteCue";
 import { createDefaultValueAssignment, reconcileCueAssignments, removeCueFromRawLyrics } from "../../../utils/cueUtils";
@@ -136,8 +135,8 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     try {
       // Remove all unncessary ValueAssignments from the attributes
       const formValues = form.getValues();
-      Object.entries(formValues.assignments).forEach(([groupId, assignment]) => {
-        Object.entries(assignment.assignment).forEach(([attributeId, attributeAssignment]) => {
+      Object.values(formValues.assignments).forEach((assignment) => {
+        Object.values(assignment.assignment).forEach((attributeAssignment) => {
           const type = attributeAssignment.type;
           const value = attributeAssignment.value[type];
 

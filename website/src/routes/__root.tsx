@@ -1,13 +1,12 @@
-import * as React from 'react'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Box } from '@mantine/core'
-import { Notifications } from '@mantine/notifications'
-import { HomeHeader } from '../sections/HomeHeader/HomeHeader'
+import * as React from "react";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Box } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 
 export const Route = createRootRoute({
   component: RootComponent,
-})
+});
 const client = new QueryClient({
   defaultOptions: {
     queries: {
@@ -15,7 +14,6 @@ const client = new QueryClient({
     },
   },
 });
-
 
 function RootComponent() {
   return (
@@ -29,12 +27,9 @@ function RootComponent() {
             <Button variant="light">Night mode</Button>
             </Box> */}
 
-
-
           <Outlet />
         </Box>
       </QueryClientProvider>
-
     </React.Fragment>
-  )
+  );
 }

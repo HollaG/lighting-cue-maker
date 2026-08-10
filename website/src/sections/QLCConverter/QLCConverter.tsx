@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Center,
-  Collapse,
   Container,
   Divider,
   FileButton,
@@ -36,8 +35,6 @@ import {
 } from "../../utils/qlc";
 import { useForm, type UseFormReturnType } from "@mantine/form";
 import { useRequest } from "../../hooks/useRequest";
-import TextButton from "../../components/TextButton/TextButton";
-import { useGetEvent } from "../../query/useGetEvent";
 import { notifications } from "../../utils/notifications";
 import { QLCEventPreview } from "./QLCEventPreview";
 import { useLocalStorage } from "@mantine/hooks";
@@ -627,10 +624,10 @@ const AdvancedMappingMenu = ({
   const [isFunctionPriorityEnabled, setIsFunctionPriorityEnabled] = useState<boolean>(false);
 
   // Advanced options is "enabled" whenever it exists
-  form.watch(mappingTypeKey, ({ value }) => {
+  form.watch(mappingTypeKey, () => {
     setIsMapTypeEnabled(true);
   });
-  form.watch(functionPriorityKey, ({ value }) => {
+  form.watch(functionPriorityKey, () => {
     setIsFunctionPriorityEnabled(true);
   });
 
