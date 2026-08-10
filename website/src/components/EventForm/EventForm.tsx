@@ -131,7 +131,7 @@ export const EventForm = ({
                   Cancel
                 </Button>
               )}
-              <Button type="submit" color="teal" size="lg" loading={isSubmitting}>
+              <Button type="submit" color="lime.9" size="md" loading={isSubmitting}>
                 {submitLabel}
               </Button>
             </Group>

@@ -10,8 +10,10 @@ import {
   Group,
   Input,
   InputBase,
+  Menu,
   Modal,
   MultiSelect,
+  Popover,
   px,
   Select,
   SimpleGrid,
@@ -38,12 +40,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { IconCaretDown, IconChevronUp } from "@tabler/icons-react";
-import { useForm, type UseFormReturnType } from "@mantine/form";
+import { useForm, type FormErrors, type UseFormReturnType } from "@mantine/form";
 import { useDebouncedCallback, useDisclosure } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
 import { useDeleteCue } from "../../../query/useDeleteCue";
 import { createDefaultValueAssignment, reconcileCueAssignments, removeCueFromRawLyrics } from "../../../utils/cueUtils";
 import { useUpdateItem } from "../../../query/useUpdateItem";
+import { notifications } from "../../../utils/notifications";
 
 type FormData = Cue;
 
@@ -68,9 +71,7 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  const [opened, { open, close }] = useDisclosure(false);
-
-  const [selectedCopyCue, setSelectedCopyCue] = useState<string>("");
+  // --- Form ---------
 
   const initialValues: FormData = useMemo(
     () => ({
@@ -119,12 +120,17 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     [cue, fixtureGroups],
   );
 
-  async function handleSave(manualSave = false) {
+  async function handleSave() {
     // first, validate the form
     const validationResult = form.validate();
 
-    console.log({ validationResult });
-
+    if (validationResult.hasErrors) {
+      // notifications.show({
+      //   title: "Cannot save cue",
+      //   message: "Please fix the errors in the cue before saving.",
+      // });
+      return;
+    }
     const activeItemId = useAppStore.getState().activeItemId;
     if (!activeItemId) return;
     try {
@@ -156,6 +162,30 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     void handleSave();
   }, 500);
 
+  const validateCue = (values: FormData): FormErrors => {
+    const errors: FormErrors = {};
+
+    for (const group of fixtureGroups) {
+      for (const attribute of group.attributes) {
+        if (!attribute.metadata.required) continue;
+
+        const assignment = values.assignments[group.id]?.assignment[attribute.id];
+
+        const value = assignment?.value[attribute.type];
+        const isEmpty =
+          value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
+
+        if (isEmpty) {
+          const path = `assignments.${group.id}.assignment.${attribute.id}.value.${attribute.type}`;
+
+          errors[path] = `${attribute.name} is required`;
+        }
+      }
+    }
+
+    return errors;
+  };
+
   const form = useForm<FormData>({
     mode: "uncontrolled",
     initialValues,
@@ -164,7 +194,11 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
       setIsDirty(true);
       debouncedSave();
     },
+
+    validate: validateCue,
   });
+
+  // --- Handle Cue cards translation up / down when clicked ---------
 
   const cueRef = useRef<HTMLDivElement>(null);
 
@@ -203,29 +237,6 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
   // this is a hack, see https://share.gemini.google/Od39OwKe7Hnw
   const [isAtLeastOneComboboxOpened, setAtLeastOneComboboxOpened] = useState<boolean>(false);
 
-  // on the FIRST render, run a "save", so that the correct value assignments
-  // are populated into the DB.
-  useEffect(() => {
-    const needsInitialSave = !cue.assignments || Object.keys(cue.assignments).length === 0;
-    if (!needsInitialSave) return;
-    console.info("Cue not initialized, saving default values in DB");
-
-    // Defer initial save to browser idle time so initial render and scrolling stay smooth
-    const runSave = () => {
-      // NOTE: Passing refetchItem / refetchCues here for now to ensure query sync,
-      // but in the future we can save silently without refetching to prevent re-render cascades.
-      handleSave();
-    };
-
-    if (typeof requestIdleCallback !== "undefined") {
-      const handle = requestIdleCallback(runSave);
-      return () => cancelIdleCallback(handle);
-    } else {
-      const timer = setTimeout(runSave, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [cueRef]);
-
   const onJumpToCue = () => {
     setSelectedCueId(cue.id);
 
@@ -236,6 +247,33 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     window.scrollTo({ top: y, behavior: "smooth" });
   };
 
+  // --- Handle initial save of cue if it has no assignments (a new cue) ---------
+
+  // on the FIRST render, run a "save", so that the correct value assignments
+  // are populated into the DB.
+  // useEffect(() => {
+  //   const needsInitialSave = !cue.assignments || Object.keys(cue.assignments).length === 0;
+  //   if (!needsInitialSave) return;
+  //   console.info("Cue not initialized, saving default values in DB");
+
+  //   // Defer initial save to browser idle time so initial render and scrolling stay smooth
+  //   const runSave = () => {
+  //     // NOTE: Passing refetchItem / refetchCues here for now to ensure query sync,
+  //     // but in the future we can save silently without refetching to prevent re-render cascades.
+  //     handleSave();
+  //   };
+
+  //   if (typeof requestIdleCallback !== "undefined") {
+  //     const handle = requestIdleCallback(runSave);
+  //     return () => cancelIdleCallback(handle);
+  //   } else {
+  //     const timer = setTimeout(runSave, 100);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [cueRef]);
+
+  // --- Deletion of cue ---------
+  const [isDeletePopoverOpen, setDeletePopoverOpen] = useState(false);
   const handleDelete = async () => {
     try {
       const activeItemId = useAppStore.getState().activeItemId;
@@ -258,23 +296,57 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     }
   };
 
-  const beforeDeleteCue = () => {
-    const result = confirm("Are you sure you want to delete this cue?");
-    if (result) {
-      handleDelete();
-    }
-  };
+  // --- Copy cue ---------
 
-  const onCopyCue = (cueId: string) => {
+  const onCopyCue = (cueId: string, fixtureGroupIds: string[], cueNumberCopied: number) => {
     const activeItemId = useAppStore.getState().activeItemId;
     const cues = queryClient.getQueryData<Cue[]>(["cues", activeItemId]);
     const cueToCopy = (cues || []).find((c) => c.id === cueId);
     if (cueToCopy) {
       const { id: _id, ...cueWithoutId } = cueToCopy;
-      form.setValues(cueWithoutId as Partial<FormData>);
-      close();
+
+      if (fixtureGroupIds.length > 0) {
+        // only copy those specific assignments for those fixture groups
+        cueWithoutId.assignments = Object.fromEntries(
+          Object.entries(cueWithoutId.assignments).filter(([groupId]) => fixtureGroupIds.includes(groupId)),
+        );
+
+        // these assignments should override the current assignments in the form
+        const currentAssigments = form.getValues().assignments;
+        form.setValues({
+          ...form.getValues(),
+          assignments: {
+            ...currentAssigments,
+            ...cueWithoutId.assignments,
+          },
+        } as Partial<FormData>);
+
+        notifications.show({
+          title: `Copied cue ${cueNumberCopied}!`,
+          message: ``,
+        });
+      } else {
+        notifications.show({
+          title: "No fixture groups selected",
+          message: "At least one fixture group to copy must be selected ",
+          color: "red",
+        });
+      }
     } else console.error("No such cue found!");
   };
+
+  const [query, setQuery] = useState("");
+  const [copyFixtureGroupIds, setCopyFixtureGroupIds] = useState<string[]>(fixtureGroups.map((group) => group.id));
+  // ALWAYS map first, so we preserve the numbering of cues (Cue 1, cue 2, cue 3...)
+  let cuesIdsOtherThanThisList = cueOrder
+    .map((cueId, index) => ({ value: cueId, label: `Cue ${index + 1}` }))
+    .filter((c) => c.value !== cue.id);
+  if (query.length > 0) {
+    // show the indexes-1 that match:
+    //   search "1" --> show 0, 10,
+    //   search "22" --> show 21,
+    cuesIdsOtherThanThisList = cuesIdsOtherThanThisList.filter((cue) => cue.label.includes(query));
+  }
 
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
@@ -290,23 +362,7 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
           // top: cueRefTop + 100,
         }}
       >
-        <CardBase isActive={false} shadow={isCueSelected ? "lg" : "none"}>
-          <Modal opened={opened} onClose={close} title={`Copy a cue to cue ${cueNumber}`} centered>
-            <Stack>
-              <Select
-                value={selectedCopyCue}
-                onChange={(value) => setSelectedCopyCue(value ?? "")}
-                data={cueOrder
-                  .map((cId) => (cId !== cue.id ? cId : ""))
-
-                  .map((cueId, index) => ({ value: cueId, label: `Cue ${index + 1}` }))
-                  .filter((opt) => opt.value !== "")}
-              />
-              <Flex justify={"end"}>
-                <Button onClick={() => onCopyCue(selectedCopyCue)}> Copy </Button>
-              </Flex>
-            </Stack>
-          </Modal>
+        <CardBase isActive={isCueSelected} shadow={isCueSelected ? "lg" : "none"}>
           <Stack gap={0}>
             <Group mb="md">
               <Title order={4} style={{ backgroundColor: isCueSelected ? "yellow" : "transparent" }}>
@@ -327,7 +383,8 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
                   Scroll to cue
                 </Button>
               )}
-              <Button
+
+              {/* <Button
                 variant="transparent"
                 size="xs"
                 // style={{
@@ -337,11 +394,98 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
                 onClick={open}
               >
                 Copy another cue
-              </Button>
+              </Button> */}
+
+              <Menu shadow="md">
+                <Menu.Target>
+                  <Button
+                    variant="transparent"
+                    size="xs"
+                    // style={{
+                    //   textDecoration: "underline dotted",
+                    // }}
+                    color="black"
+                    // onClick={open}
+                  >
+                    Copy another cue
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
+                  <Menu.Search
+                    value={query}
+                    onChange={(event) => setQuery(event.currentTarget.value)}
+                    placeholder="Search cues"
+                  />
+                  <Menu.Label>Copy settings for:</Menu.Label>
+                  <Menu.CheckboxGroup value={copyFixtureGroupIds} onChange={setCopyFixtureGroupIds}>
+                    {fixtureGroups.map((group) => (
+                      <Menu.CheckboxItem key={group.id} value={group.id}>
+                        {group.name}
+                      </Menu.CheckboxItem>
+                    ))}
+                  </Menu.CheckboxGroup>
+                  <Menu.Divider />
+                  {cuesIdsOtherThanThisList.length > 0 ? (
+                    cuesIdsOtherThanThisList.map((cue) => (
+                      <Menu.Item
+                        key={cue.value}
+                        onClick={() => onCopyCue(cue.value, copyFixtureGroupIds, Number(cue.label.split(" ")[1]))}
+                      >
+                        <Group>
+                          {cue.label}
+                          <Text c="dimmed" fz="sm">
+                            {" "}
+                            {cue.value.slice(0, 4)}{" "}
+                          </Text>
+                        </Group>
+                      </Menu.Item>
+                    ))
+                  ) : (
+                    <Menu.Item>
+                      <Text c="dimmed" size="sm" ta="center" py="xs">
+                        No cues found
+                      </Text>
+                    </Menu.Item>
+                  )}
+                </Menu.Dropdown>
+              </Menu>
+
               <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
-              <Button color="red" size="xs" variant="transparent" onClick={beforeDeleteCue}>
-                Delete{" "}
-              </Button>
+              <Popover
+                shadow="sm"
+                withArrow
+                position="top"
+                withOverlay
+                opened={isDeletePopoverOpen}
+                trapFocus
+                onDismiss={() => setDeletePopoverOpen(false)}
+              >
+                <Popover.Target>
+                  <Button color="red" size="xs" variant="transparent" onClick={() => setDeletePopoverOpen(true)}>
+                    Delete{" "}
+                  </Button>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <Stack>
+                    <Text> Are you sure you want to delete this cue?</Text>
+                    <Flex justify={"end"} gap="sm">
+                      <Button
+                        data-autofocus
+                        variant="transparent"
+                        color="black"
+                        onClick={() => setDeletePopoverOpen(false)}
+                        size="xs"
+                      >
+                        Cancel
+                      </Button>
+                      <Button color="red" size="xs" variant="light" onClick={handleDelete}>
+                        Delete
+                      </Button>
+                    </Flex>
+                  </Stack>
+                </Popover.Dropdown>
+              </Popover>
+
               <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
                 <Button variant="light" size="xs" disabled={!isDirty} type="submit">
                   {" "}
@@ -423,7 +567,13 @@ const FixtureGroupSection = ({
   // }, []);
 
   return (
-    <Fieldset legend={`Group ${index}: ${group.name}`}>
+    <Fieldset
+      legend={`Group ${index}: ${group.name}`}
+      style={{
+        backgroundColor: "var(--mantine-color-gray-0)",
+        // backgroundClip
+      }}
+    >
       <Stack gap="xs">
         {group.attributes.map((attr, attrIndex) => (
           <AttributeDisplay

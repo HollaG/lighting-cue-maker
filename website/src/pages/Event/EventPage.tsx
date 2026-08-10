@@ -11,7 +11,9 @@ import {
   Flex,
   FloatingIndicator,
   Group,
+  Image,
   Kbd,
+  Menu,
   SimpleGrid,
   Stack,
   Text,
@@ -31,7 +33,7 @@ import { useGetItem } from "../../query/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
-import { IconArrowLeft, IconInfoCircle } from "@tabler/icons-react";
+import { IconArrowLeft, IconFileSpreadsheet, IconInfoCircle } from "@tabler/icons-react";
 import { useDisclosure, useHotkeys, type HotkeyItem } from "@mantine/hooks";
 import { sanitize } from "../../utils/sanitize";
 import { ContentControl } from "../../components/ContentControl/ContentControl";
@@ -39,6 +41,8 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { saveRecentEvent } from "../../utils/recentEvents";
 import { CueList } from "../../sections/ChoreoEvent/CueList/CueList";
 import { QLCConverter } from "../../sections/QLCConverter/QLCConverter";
+
+import QlcLogo from "../../assets/qlc_logo.svg";
 
 export const EventPage = () => {
   // NOTE: evt is nullable!! remember to check
@@ -167,7 +171,7 @@ export const EventPage = () => {
 
   return (
     <>
-      <Container size={"xl"}>
+      <Container size={"xl"} mt="4rem">
         <Group mb="2rem">
           <Button
             type="button"
@@ -186,9 +190,21 @@ export const EventPage = () => {
           <Button onClick={onEdit} variant="transparent" color="lime">
             Edit event
           </Button>
-          <Button onClick={openQlcExport} variant="light">
+          <Menu shadow={"sm"} withArrow position="bottom">
+            <Menu.Target>
+              <Button variant="light">Export</Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Export options</Menu.Label>
+              <Menu.Item leftSection={<Image src={QlcLogo} width={16} height={16} />} onClick={openQlcExport}>
+                QLC+ export
+              </Menu.Item>
+              <Menu.Item leftSection={<IconFileSpreadsheet width={"1rem"} />}>.xlsx sheet (WIP)</Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          {/* <Button onClick={openQlcExport} variant="light">
             Export
-          </Button>
+          </Button> */}
         </Group>
 
         <Container my="xl" ml={0}>

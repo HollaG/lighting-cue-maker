@@ -7,7 +7,14 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
   shadow,
 }) => {
   return (
-    <Card withBorder={!isActive} shadow={shadow || "sm"} style={{ overflow: "visible" }}>
+    <Card
+      withBorder
+      shadow={shadow || "sm"}
+      style={{
+        backgroundColor: isActive ? "var(--mantine-color-lime-0)" : "var(--mantine-color-white)",
+        overflow: "visible",
+      }}
+    >
       {children}
     </Card>
   );
