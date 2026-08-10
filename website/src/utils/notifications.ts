@@ -9,6 +9,8 @@ export const showNotification = (options: NotificationData) => {
   return mantineNotifications.show({
     autoClose: DEFAULT_AUTO_CLOSE,
     ...options,
+
+    position: options.position ?? "top-center",
   });
 };
 

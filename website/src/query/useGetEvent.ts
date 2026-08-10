@@ -9,7 +9,7 @@ export const useGetEvent = ({ eventId }: { eventId: string }) => {
       const res = await api.get<GetEventRes>(`/api/v1/events/${eventId}`);
       return res.event;
     },
-    enabled: !!eventId && eventId.length === 36,
+    enabled: !!eventId,
   });
 
   const event = query.data ?? null;
@@ -22,5 +22,6 @@ export const useGetEvent = ({ eventId }: { eventId: string }) => {
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     error: query.error,
+    fetcher: query.refetch,
   };
 };

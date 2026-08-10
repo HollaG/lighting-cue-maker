@@ -16,7 +16,7 @@ export type EventFormKey = string;
 // This may occur due to a different way of configuring the BE values:
 //   for example, configuring number values in the BE may require string values in the FE Form.
 export type EventFormAttributeOptions = Omit<AttributeTypesOptions, typeof AttributeTypes.SLIDER_PRESETS> & {
-  [AttributeTypes.SLIDER_PRESETS]: string[];
+  [AttributeTypes.SLIDER_PRESETS]?: string[];
 };
 
 export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" | "optionPossibleValues"> & {
@@ -270,8 +270,8 @@ const formAttributeOptionsToAttributeOptions = (
     case AttributeTypes.SLIDER_PRESETS:
       return {
         [AttributeTypes.SLIDER_PRESETS]: options[AttributeTypes.SLIDER_PRESETS]
-          .map(Number)
-          .sort((a, b) => a - b),
+          ? options[AttributeTypes.SLIDER_PRESETS]!.map(Number).sort((a, b) => a - b)
+          : [],
       };
     case AttributeTypes.BOOLEAN:
       return { [AttributeTypes.BOOLEAN]: options[AttributeTypes.BOOLEAN] ?? BooleanOptions.UNCHECKED };

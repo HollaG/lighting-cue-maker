@@ -5,6 +5,14 @@ import { createEmptyEventFormAttribute, type EventFormKey, type EventFormValues 
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
 
+/**
+ *
+ * @param formKey - The key of the fixture group in the form's fixtureGroups object.
+ * @param form - The form object returned by useForm.
+ * @param index - The index of the fixture group in the fixtureGroupOrder array, used for display "Group 1", "Group 2", etc.
+ * @param onDeleteFixtureGroup - A callback function to be called when the fixture group is deleted.
+ * @returns
+ */
 export const FixtureGroupCard = ({
   formKey,
   form,
