@@ -12,6 +12,10 @@ export type FixtureGroupConfiguration = {
   name: string;
   attributes: AttributeConfiguration[];
   order: number;
+
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
 };
 
 export type BumpConfiguration = {
@@ -27,6 +31,10 @@ export type AttributeConfiguration = {
   metadata: AttributeMetadata;
   optionPossibleValues: AttributeTypesOptions;
   order: number;
+
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
 };
 
 export type AttributeMetadata = {

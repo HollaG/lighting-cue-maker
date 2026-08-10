@@ -4,7 +4,7 @@ export type RecentEvent = {
   lastOpenedAt: number;
 };
 
-const STORAGE_KEY = "lighting-cue-maker:recent-events:v1";
+export const STORAGE_KEY = "lighting-cue-maker:recent-events:v1";
 const MAX_RECENT_EVENTS = 5;
 
 export const getRecentEvents = (): RecentEvent[] => {
@@ -46,5 +46,21 @@ export const saveRecentEvent = (event: Pick<RecentEvent, "eventId" | "eventName"
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEvents));
   } catch {
     // Recent-event history is optional and should never prevent the editor from loading.
+  }
+};
+
+export const formatDate = (timestamp: number): string => {
+  // return today, yesterday, or the date in a human-readable format
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  if (diff < oneDay) {
+    return "Today";
+  } else if (diff < 2 * oneDay) {
+    return "Yesterday";
+  } else {
+    return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   }
 };
