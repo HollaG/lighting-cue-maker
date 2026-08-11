@@ -23,6 +23,7 @@ import {
   Title,
   Tooltip,
   useCombobox,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { CardBase } from "../CardBase";
 import type { Cue } from "../../../types/cues";
@@ -364,7 +365,12 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
         <CardBase isActive={isCueSelected} shadow={isCueSelected ? "lg" : "none"}>
           <Stack gap={0}>
             <Group mb="md">
-              <Title order={4} style={{ backgroundColor: isCueSelected ? "yellow" : "transparent" }}>
+              <Title
+                order={4}
+                style={{
+                  backgroundColor: isCueSelected ? "light-dark(yellow, var(--mantine-color-yellow-9))" : "transparent",
+                }}
+              >
                 {" "}
                 Cue {cueNumber}
               </Title>
@@ -378,7 +384,12 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
                   Reset view
                 </Button>
               ) : (
-                <Button variant="transparent" size="xs" color="black" onClick={() => onJumpToCue()}>
+                <Button
+                  variant="transparent"
+                  size="xs"
+
+                  onClick={() => onJumpToCue()}
+                >
                   Scroll to cue
                 </Button>
               )}
@@ -403,7 +414,6 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
                     // style={{
                     //   textDecoration: "underline dotted",
                     // }}
-                    color="black"
                     // onClick={open}
                   >
                     Copy another cue
@@ -569,7 +579,7 @@ const FixtureGroupSection = ({
     <Fieldset
       legend={`Group ${index}: ${group.name}`}
       style={{
-        backgroundColor: "var(--mantine-color-gray-0)",
+        backgroundColor: "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
         // backgroundClip
       }}
     >

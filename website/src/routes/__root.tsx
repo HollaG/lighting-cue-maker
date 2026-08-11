@@ -1,8 +1,10 @@
 import * as React from "react";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Box } from "@mantine/core";
+import { ActionIcon, Box, useMantineColorScheme } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
+import { IconMoon, IconSun } from "@tabler/icons-react";
+import classes from "./__root.module.css";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -16,6 +18,7 @@ const client = new QueryClient({
 });
 
 function RootComponent() {
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   return (
     <React.Fragment>
       {/* <div>Hello "__root"!</div> */}
@@ -30,6 +33,12 @@ function RootComponent() {
           <Outlet />
         </Box>
       </QueryClientProvider>
+
+      <Box className={classes.colorSchemeToggle}>
+        <ActionIcon variant="light" onClick={toggleColorScheme} size="xl" radius="xl">
+          {colorScheme === "dark" ? <IconSun width="1.25rem" /> : <IconMoon width="1.25rem" />}
+        </ActionIcon>
+      </Box>
     </React.Fragment>
   );
 }

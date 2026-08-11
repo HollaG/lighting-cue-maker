@@ -1,4 +1,15 @@
-import { Group, Title, Button, Box, NumberInput, Menu, Select, Flex, Tooltip } from "@mantine/core";
+import {
+  Group,
+  Title,
+  Button,
+  Box,
+  NumberInput,
+  Menu,
+  Select,
+  Flex,
+  Tooltip,
+  useMantineColorScheme,
+} from "@mantine/core";
 import { useAppStore, type InputMode } from "../../store/appStore";
 import { useGetEvent } from "../../query/useGetEvent";
 import type { BumpConfiguration } from "../../types/types";
@@ -62,6 +73,8 @@ export const ContentControlFixed = ({
     }
   };
 
+  const { colorScheme } = useMantineColorScheme();
+
   return (
     <Group>
       {showTitle ? (
@@ -75,7 +88,12 @@ export const ContentControlFixed = ({
       <Flex flex={1} />
       {inputMode == "raw" && (
         <Group>
-          <Button size="xs" variant="subtle" color="black" onClick={deleteExtraSpaces}>
+          <Button
+            size="xs"
+            variant="subtle"
+            color={colorScheme === "dark" ? "white" : "black"}
+            onClick={deleteExtraSpaces}
+          >
             Remove extra line breaks
           </Button>
         </Group>

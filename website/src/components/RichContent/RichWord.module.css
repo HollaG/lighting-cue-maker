@@ -16,15 +16,15 @@
   cursor: pointer;
 
   &.mode-cue:hover {
-    background-color: yellow;
+    background-color: light-dark(yellow, var(--dark-yellow));
   }
 
   &.mode-bump:hover {
-    background-color: pink;
+    background-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
   }
 
   &.mode-timing:hover {
-    background-color: var(--mantine-color-grape-2);
+    background-color: light-dark(var(--mantine-color-grape-2), var(--mantine-color-grape-9));
   }
 }
 
@@ -84,13 +84,13 @@
   .lyric,
   .indicator,
   &.indicator {
-    border-color: yellow;
+    border-color: light-dark(yellow, var(--dark-yellow));
   }
 
   .indicator,
   &.indicator {
-    background-color: yellow;
-    border-color: yellow;
+    background-color: light-dark(yellow, var(--dark-yellow));
+    border-color: light-dark(yellow, var(--dark-yellow));
 
   }
 
@@ -102,13 +102,13 @@
   .lyric,
   .indicator,
   &.indicator {
-    border-color: pink;
+    border-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
   }
 
   .indicator,
   &.indicator {
-    background-color: pink;
-    border-color: pink;
+    background-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
+    border-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
 
   }
 

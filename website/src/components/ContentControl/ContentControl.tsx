@@ -114,10 +114,10 @@ export const ContentControl = ({
               width: showCues ? "40%" : "calc(100% - 128px)",
               marginLeft: "auto",
               marginRight: "auto",
-              backgroundColor: "var(--mantine-color-white)",
+              backgroundColor: "light-dark(var(--mantine-color-white), var(--mantine-color-dark-6))",
               boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
               borderRadius: "1rem",
-              border: "1px solid var(--mantine-color-lime-3)",
+              border: "1px solid light-dark(var(--mantine-color-lime-3), var(--mantine-color-dark-4))",
               padding: "1rem",
               zIndex: 99,
             }}
@@ -128,7 +128,7 @@ export const ContentControl = ({
                   <ActionIcon variant="light" color="lime" size={"lg"} onClick={onCuePrevious}>
                     <IconChevronLeft width={"1.25rem"} />
                   </ActionIcon>
-                  <Box w={"110px"}>
+                  <Box w={"130px"}>
                     <Select
                       allowDeselect={false}
                       value={currentlySelectedCueId}
@@ -153,7 +153,7 @@ export const ContentControl = ({
                   <ActionIcon variant="light" color="lime" size={"xl"} onClick={onBumpPrevious}>
                     <IconChevronLeft width={"1.25rem"} />
                   </ActionIcon>
-                  <Box w={"110px"}>
+                  <Box w={"130px"}>
                     <Select
                       allowDeselect={false}
                       value={currentlySelectedBumpId}

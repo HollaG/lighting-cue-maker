@@ -1,4 +1,15 @@
-import { Box, Button, Center, Container, Group, Popover, Stack, Text, Title } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Center,
+  Container,
+  Group,
+  Popover,
+  Stack,
+  Text,
+  Title,
+  useMantineColorScheme,
+} from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { IconArrowRight, IconPlus } from "@tabler/icons-react";
 import { useState } from "react";
@@ -31,10 +42,12 @@ export const HomePage = () => {
     });
   };
 
+  const { colorScheme } = useMantineColorScheme();
+
   return (
     <>
-      <Container mt="6rem" size="lg" mb="3rem">
-        <Stack gap="3rem" align="center">
+      <Container size="lg" mb="3rem">
+        <Stack gap="3rem" align="center" style={{ minHeight: "70vh", justifyContent: "center" }}>
           <Center>
             <Title fz="4rem" className={classes.header} order={1} fw="900">
               Lighting Cue Maker
@@ -48,19 +61,19 @@ export const HomePage = () => {
           </Center>
 
           <Center>
-            <Group gap={0} wrap="nowrap">
+            <Stack gap={"0.5rem"}>
               <Button
                 leftSection={<IconPlus width="2rem" />}
                 color="lime.9"
                 onClick={() => navigate({ to: "/events/create" })}
                 mr="md"
-                size="xl"
+                size="lg"
               >
                 Create new event
               </Button>
               <Popover position="bottom" withArrow shadow="md" withOverlay width={500}>
                 <Popover.Target>
-                  <Button variant="transparent" size="xl">
+                  <Button variant="transparent" size="lg">
                     Have a code?
                   </Button>
                 </Popover.Target>
@@ -82,7 +95,7 @@ export const HomePage = () => {
                             onChange={(event) => setCode(event.target.value)}
                           />
                         </Box>
-                        <Button variant="subtle" type="submit">
+                        <Button variant="light" color="lime" type="submit">
                           Enter
                         </Button>
                       </Group>
@@ -91,28 +104,32 @@ export const HomePage = () => {
                     <Text fz="sm" fw="600">
                       Past events
                     </Text>
-                    {recentEvents.map((event) => (
-                      <Button
-                        key={event.eventId}
-                        display="flex"
-                        style={{ height: "fit-content" }}
-                        styles={{ inner: { width: "stretch", justifyContent: "space-between" } }}
-                        w="full"
-                        variant="white"
-                        color="black"
-                        rightSection={<IconArrowRight width="1rem" />}
-                        onClick={() => navigate({ to: "/events/$eventId", params: { eventId: event.eventId } })}
-                      >
-                        <Stack align="start" flex={1} style={{ width: "100%" }} gap={0}>
-                          <Text fw="600">{event.eventName}</Text>
-                          <Text c="dimmed">{formatDate(event.lastOpenedAt)}</Text>
-                        </Stack>
-                      </Button>
-                    ))}
+                    <Stack gap={0}>
+                      {recentEvents.map((event) => (
+                        <Button
+                          key={event.eventId}
+                          display="flex"
+                          style={{ height: "fit-content" }}
+                          styles={{ inner: { width: "stretch", justifyContent: "space-between" } }}
+                          w="full"
+                          // variant="white"
+                          color={colorScheme !== "dark" ? "black" : "white"}
+
+                          variant="subtle"
+                          rightSection={<IconArrowRight width="1rem" />}
+                          onClick={() => navigate({ to: "/events/$eventId", params: { eventId: event.eventId } })}
+                        >
+                          <Stack align="start" flex={1} style={{ width: "100%" }} py="md" gap={0}>
+                            <Text fw="600">{event.eventName}</Text>
+                            <Text c="dimmed">{formatDate(event.lastOpenedAt)}</Text>
+                          </Stack>
+                        </Button>
+                      ))}
+                    </Stack>
                   </Stack>
                 </Popover.Dropdown>
               </Popover>
-            </Group>
+            </Stack>
           </Center>
         </Stack>
       </Container>

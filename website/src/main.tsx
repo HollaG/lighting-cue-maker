@@ -2,7 +2,14 @@ import { StrictMode } from "react";
 import "./index.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import { createTheme, MantineProvider, Text, TextInput } from "@mantine/core";
+import {
+  ColorSchemeScript,
+  createTheme,
+  MantineProvider,
+  Text,
+  TextInput,
+  type CSSVariablesResolver,
+} from "@mantine/core";
 import classes from "./main.module.css";
 import ReactDOM from "react-dom/client";
 // Import the generated route tree
@@ -21,6 +28,7 @@ declare module "@tanstack/react-router" {
 
 const theme = createTheme({
   primaryColor: "lime",
+
   fontFamily: "Inter, sans-serif",
   fontFamilyMonospace: "JetBrains Mono, monospace",
   headings: {
@@ -46,14 +54,23 @@ const theme = createTheme({
   },
 });
 
+const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: {},
+  dark: {
+    "--mantine-color-text": "#f8f9fa",
+  },
+});
+
 // Render the app
 const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <MantineProvider theme={theme}>
+      <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver}>
         <RouterProvider router={router} />
+        <ColorSchemeScript />
       </MantineProvider>
     </StrictMode>,
   );

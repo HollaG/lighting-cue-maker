@@ -17,9 +17,13 @@ body,
 body {
   font-family: 'Inter', sans-serif;
   /* Very light grey base */
-  background-color: #f5f5f5;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
 
   /* Radial dot pattern using a subtle slightly-darker grey */
-  background-image: radial-gradient(circle, #d0d0d0 1px, transparent 1px);
+  background-image: radial-gradient(circle, light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4)) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+:root {
+  --dark-yellow: var(--mantine-color-yellow-9);
 }
