@@ -130,6 +130,7 @@ export const ContentControl = ({
                   </ActionIcon>
                   <Box w={"130px"}>
                     <Select
+                      comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
                       allowDeselect={false}
                       value={currentlySelectedCueId}
                       onChange={(value) => {
@@ -155,6 +156,7 @@ export const ContentControl = ({
                   </ActionIcon>
                   <Box w={"130px"}>
                     <Select
+                      comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
                       allowDeselect={false}
                       value={currentlySelectedBumpId}
                       onChange={(value) => {

@@ -102,9 +102,15 @@ export const FixtureGroupCard = ({
         ))}
 
         <Center>
-          <Button type="button" variant="subtle" size="xs" onClick={addAttribute}>
-            Add an attribute
-          </Button>
+          <Tooltip
+            multiline
+            w={350}
+            label="An attribute is a characteristic of a lighting fixture, such as its colour, intensity, or position."
+          >
+            <Button type="button" variant="subtle" size="xs" onClick={addAttribute}>
+              Add an attribute
+            </Button>
+          </Tooltip>
         </Center>
       </Stack>
     </Card>

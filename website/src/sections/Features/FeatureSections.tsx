@@ -107,6 +107,7 @@ export const CreateSection = () => {
       <Text>Configure your venue's lighting groups, and specify the capabilities of each group.</Text>
       <Center my="lg">
         <Select
+          comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
           allowDeselect={false}
           label="Light Group"
           value={lightGroup}

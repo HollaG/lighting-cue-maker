@@ -126,6 +126,10 @@ const (
 	AttributeTypeBoolean       AttributeType = "boolean"
 	AttributeTypeNone          AttributeType = "none" // Illegal type!
 	AttributeTypeSliderPresets AttributeType = "sliderPresets"
+
+	// Prests
+	AttributeTypePresetIntensity AttributeType = "presetIntensity"
+	AttributeTypePresetColour    AttributeType = "presetColour"
 )
 
 // Option is a single select / multiselect choice.
@@ -156,12 +160,14 @@ type SliderOption struct {
 
 // Please note that the key of the map MUST be from `type AttributeType`.
 type AttributeTypeOptions struct {
-	Select        []string       `json:"select,omitempty"`
-	Multiselect   []string       `json:"multiselect,omitempty"`
-	Colour        []ColourOption `json:"colour,omitempty"`
-	Slider        *SliderOption  `json:"slider,omitempty"`
-	SliderPresets []float64      `json:"sliderPresets,omitempty"`
-	Boolean       *BooleanOption `json:"boolean,omitempty"`
+	Select          []string       `json:"select,omitempty"`
+	Multiselect     []string       `json:"multiselect,omitempty"`
+	Colour          []ColourOption `json:"colour,omitempty"`
+	Slider          *SliderOption  `json:"slider,omitempty"`
+	SliderPresets   []float64      `json:"sliderPresets,omitempty"`
+	Boolean         *BooleanOption `json:"boolean,omitempty"`
+	PresetIntensity []float64      `json:"presetIntensity,omitempty"`
+	PresetColour    []ColourOption `json:"presetColour,omitempty"`
 	// Text and None have no options (null in TS), so no field needed.
 }
 

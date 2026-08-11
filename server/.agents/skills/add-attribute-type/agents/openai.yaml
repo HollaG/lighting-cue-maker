@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Attribute Type"
+  short_description: "Add a lighting attribute type end to end"
+  default_prompt: "Use -attribute-type to add a new lighting attribute type safely."

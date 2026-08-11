@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Center, Container, Group, SimpleGrid, Stack, TagsInput, Textarea } from "@mantine/core";
+import { Box, Button, Center, Container, Group, SimpleGrid, Stack, TagsInput, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { AddFixtureGroupButton } from "../FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
@@ -52,92 +52,98 @@ export const EventForm = ({
 
   return (
     <form onSubmit={form.onSubmit(onSubmit)}>
-      <Container size="xl">
-        <Stack gap="md">
-          <CustomTextInput
-            placeholder="Type your event name here..."
-            size="xxl"
-            name="name"
-            key={form.key("name")}
-            {...form.getInputProps("name")}
-          />
+      <Stack gap="md">
+        <Container size="xl" w="100%">
+          <Stack w="stretch">
+            <CustomTextInput
+              placeholder="Type your event name here..."
+              size="xxl"
+              name="name"
+              key={form.key("name")}
+              {...form.getInputProps("name")}
+            />
 
-          <Textarea
-            minRows={3}
-            variant="unstyled"
-            autosize
-            name="description"
-            key={form.key("description")}
-            {...form.getInputProps("description")}
-            placeholder="Type a brief description e.g. rules/remarks that choreographers can see."
-            styles={{ input: { fontSize: "16px" } }}
-          />
+            <Textarea
+              minRows={3}
+              variant="unstyled"
+              autosize
+              name="description"
+              key={form.key("description")}
+              {...form.getInputProps("description")}
+              placeholder="Type a brief description e.g. rules/remarks that choreographers can see."
+              styles={{ input: { fontSize: "16px" } }}
+            />
 
-          <CustomTextInput
-            label="Google Docs / OneDrive / Link"
-            placeholder="Paste a link to more information, if necessary"
-            name="externalLink"
-            key={form.key("externalLink")}
-            {...form.getInputProps("externalLink")}
-          />
+            <CustomTextInput
+              label="Google Docs / OneDrive / Link"
+              placeholder="Paste a link to more information, if necessary"
+              name="externalLink"
+              key={form.key("externalLink")}
+              {...form.getInputProps("externalLink")}
+            />
 
-          <CustomTextInput
-            label="How many cues per band? (optional)"
-            placeholder="Enter a number..."
-            name="cuesPerBand"
-            type="number"
-            key={form.key("cuesPerBand")}
-            {...form.getInputProps("cuesPerBand")}
-          />
+            <CustomTextInput
+              label="How many cues per band? (optional)"
+              placeholder="Enter a number..."
+              name="cuesPerBand"
+              type="number"
+              key={form.key("cuesPerBand")}
+              {...form.getInputProps("cuesPerBand")}
+            />
 
-          <CustomTextInput
-            label="How many unique cues per band? (optional)"
-            placeholder="Enter a number..."
-            name="uniqueCuesPerBand"
-            type="number"
-            key={form.key("uniqueCuesPerBand")}
-            {...form.getInputProps("uniqueCuesPerBand")}
-          />
+            <CustomTextInput
+              label="How many unique cues per band? (optional)"
+              placeholder="Enter a number..."
+              name="uniqueCuesPerBand"
+              type="number"
+              key={form.key("uniqueCuesPerBand")}
+              {...form.getInputProps("uniqueCuesPerBand")}
+            />
 
-          <TagsInput
-            name="bumpConfigurations"
-            key={form.key("bumpConfigurations")}
-            {...form.getInputProps("bumpConfigurations")}
-            label="Define bump options"
-            description="These are possible bumps (instantaneous changes in lighting) that you can do"
-            placeholder="Type a name, then press enter to add"
-            variant="unstyled"
-            readOnly={bumpConfigurationsReadOnly}
-          />
+            <TagsInput
+              name="bumpConfigurations"
+              key={form.key("bumpConfigurations")}
+              {...form.getInputProps("bumpConfigurations")}
+              label="Define bump options"
+              description="These are possible bumps (instantaneous changes in lighting) that you can do"
+              placeholder="Type a name, then press enter to add"
+              variant="unstyled"
+              readOnly={bumpConfigurationsReadOnly}
+            />
+          </Stack>
+        </Container>
 
-          <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
-            {fixtureGroupOrder.map((formKey, index) => (
-              <FixtureGroupCard
-                key={formKey}
-                form={form}
-                formKey={formKey}
-                index={index}
-                onDeleteFixtureGroup={() => removeFixtureGroup(formKey)}
-              />
-            ))}
+        <Box w="100%" px="6rem">
+          <Stack>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
+              {fixtureGroupOrder.map((formKey, index) => (
+                <FixtureGroupCard
+                  key={formKey}
+                  form={form}
+                  formKey={formKey}
+                  index={index}
+                  onDeleteFixtureGroup={() => removeFixtureGroup(formKey)}
+                />
+              ))}
 
-            {<AddFixtureGroupButton type="button" onClick={addFixtureGroup} />}
-          </SimpleGrid>
+              {<AddFixtureGroupButton type="button" onClick={addFixtureGroup} />}
+            </SimpleGrid>
 
-          <Center mt="xl">
-            <Group>
-              {onCancel && (
-                <Button type="button" variant="subtle" color="gray" onClick={onCancel}>
-                  Cancel
+            <Center mt="xl">
+              <Group>
+                {onCancel && (
+                  <Button type="button" variant="subtle" color="gray" onClick={onCancel}>
+                    Cancel
+                  </Button>
+                )}
+                <Button type="submit" color="lime.9" size="md" loading={isSubmitting}>
+                  {submitLabel}
                 </Button>
-              )}
-              <Button type="submit" color="lime.9" size="md" loading={isSubmitting}>
-                {submitLabel}
-              </Button>
-            </Group>
-          </Center>
-        </Stack>
-      </Container>
+              </Group>
+            </Center>
+          </Stack>
+        </Box>
+      </Stack>
     </form>
   );
 };

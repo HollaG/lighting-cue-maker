@@ -12,17 +12,19 @@ export const CreateEventPage = () => {
   const { mutateAsync: createEvent } = useCreateEvent();
 
   return (
-    <Container size="xl" mt="4rem">
-      <Group mb="2rem">
-        <Button
-          type="button"
-          leftSection={<IconArrowLeft width="1rem" />}
-          variant="transparent"
-          onClick={() => navigate({ to: "/" })}
-        >
-          Back to home
-        </Button>
-      </Group>
+    <Container size="full" mt="4rem">
+      <Container size="xl">
+        <Group mb="2rem">
+          <Button
+            type="button"
+            leftSection={<IconArrowLeft width="1rem" />}
+            variant="transparent"
+            onClick={() => navigate({ to: "/" })}
+          >
+            Back to home
+          </Button>
+        </Group>
+      </Container>
 
       <EventForm
         mode="create"

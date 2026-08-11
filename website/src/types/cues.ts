@@ -35,6 +35,10 @@ export type ValueAssignment = {
   [AttributeTypes.BOOLEAN]?: boolean; // True = checked, false = not checked
   [AttributeTypes.NONE]?: null;
   [AttributeTypes.SLIDER_PRESETS]?: number; // value
+
+  // Presets
+  [AttributeTypes.PRESET_INTENSITY]?: number; // value
+  [AttributeTypes.PRESET_COLOUR]?: ColourOption;
 };
 
 // export const DEFAULT_VALUE_ASSIGNMENT: ValueAssignment = {

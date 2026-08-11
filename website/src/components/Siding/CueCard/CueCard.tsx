@@ -23,7 +23,6 @@ import {
   Title,
   Tooltip,
   useCombobox,
-  useMantineColorScheme,
 } from "@mantine/core";
 import { CardBase } from "../CardBase";
 import type { Cue } from "../../../types/cues";
@@ -380,7 +379,7 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
                 </Text>
               </Tooltip>
               {isCueSelected ? (
-                <Button size="xs" variant="transparent" onClick={() => setSelectedCueId(undefined)}>
+                <Button size="xs" variant="light" onClick={() => setSelectedCueId(undefined)}>
                   Reset view
                 </Button>
               ) : (
@@ -670,6 +669,7 @@ const AttributeDisplay = ({
     case AttributeTypes.SELECT:
       return (
         <Select
+          comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
           searchable
           label={name}
           data={optionPossibleValues[AttributeTypes.SELECT]}
@@ -713,6 +713,21 @@ const AttributeDisplay = ({
         />
       );
 
+    case AttributeTypes.PRESET_COLOUR:
+      return (
+        <ColourSelect
+          fieldName={`${baseFieldName}.${AttributeTypes.PRESET_COLOUR}`}
+          form={form}
+          name={name}
+          colourOptions={optionPossibleValues[AttributeTypes.PRESET_COLOUR] || []}
+          defaultValue={
+            form.getInitialValues().assignments[groupId].assignment?.[attribute.id]?.value[AttributeTypes.PRESET_COLOUR]
+          }
+          setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+          required={attribute.metadata.required}
+        />
+      );
+
     case AttributeTypes.BOOLEAN:
       return (
         <BooleanSelect
@@ -731,6 +746,17 @@ const AttributeDisplay = ({
           fieldName={`${baseFieldName}.${AttributeTypes.SLIDER_PRESETS}`}
           form={form}
           marks={optionPossibleValues[AttributeTypes.SLIDER_PRESETS]!}
+          required={attribute.metadata.required}
+        />
+      );
+
+    case AttributeTypes.PRESET_INTENSITY:
+      return (
+        <SliderPresetInput
+          name={name}
+          fieldName={`${baseFieldName}.${AttributeTypes.PRESET_INTENSITY}`}
+          form={form}
+          marks={optionPossibleValues[AttributeTypes.PRESET_INTENSITY]!}
           required={attribute.metadata.required}
         />
       );
@@ -853,7 +879,6 @@ function ColourSelect({
                       ColourOption | undefined
                   )?.hex,
 
-                  // TODO @nightmode
                   border:
                     (
                       formPath
@@ -861,7 +886,7 @@ function ColourSelect({
                         .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
                         ColourOption | undefined
                     )?.hex === "#ffffff"
-                      ? "2px solid black"
+                      ? "2px solid light-dark(black, transparent)"
                       : "",
                 }}
               />
@@ -899,8 +924,7 @@ function ColourSelectOption({ hex, name }: ColourOption) {
         style={{
           backgroundColor: hex,
 
-          // TODO @nightmode
-          border: hex === "#ffffff" ? "2px solid black" : "",
+          border: hex === "#ffffff" ? "2px solid light-dark(black, transparent)" : "",
           width: "20px",
           height: "20px",
           borderRadius: "4px",

@@ -162,6 +162,7 @@ const DemoAttributeInput = ({
     case AttributeTypes.SELECT:
       return (
         <Select
+          comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
           {...commonProps}
           searchable
           clearable
@@ -339,7 +340,7 @@ const ColourSwatch = ({ colour }: { colour?: ColourOption }) => (
       height: "1rem",
       borderRadius: "4px",
       backgroundColor: colour?.hex,
-      border: colour?.hex === "#ffffff" ? "2px solid black" : undefined,
+      border: colour?.hex === "#ffffff" ? "2px solid light-dark(black, transparent)" : undefined,
     }}
   />
 );

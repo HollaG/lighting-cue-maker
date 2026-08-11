@@ -266,8 +266,13 @@ export const createDefaultValueAssignment = (attribute: AttributeConfiguration):
             ? [...defaultValue]
             : [],
       };
+
     case AttributeTypes.COLOUR:
       return { [AttributeTypes.COLOUR]: isColourOption(defaultValue) ? { ...defaultValue } : { hex: "", name: "" } };
+    case AttributeTypes.PRESET_COLOUR:
+      return {
+        [AttributeTypes.PRESET_COLOUR]: isColourOption(defaultValue) ? { ...defaultValue } : { hex: "", name: "" },
+      };
     case AttributeTypes.SLIDER:
       return {
         [AttributeTypes.SLIDER]:
@@ -275,12 +280,21 @@ export const createDefaultValueAssignment = (attribute: AttributeConfiguration):
             ? defaultValue
             : (attribute.optionPossibleValues[AttributeTypes.SLIDER]?.min ?? 0),
       };
+
     case AttributeTypes.SLIDER_PRESETS:
       return {
         [AttributeTypes.SLIDER_PRESETS]:
           typeof defaultValue === "number"
             ? defaultValue
             : attribute.optionPossibleValues[AttributeTypes.SLIDER_PRESETS]?.[0],
+      };
+
+    case AttributeTypes.PRESET_INTENSITY:
+      return {
+        [AttributeTypes.PRESET_INTENSITY]:
+          typeof defaultValue === "number"
+            ? defaultValue
+            : attribute.optionPossibleValues[AttributeTypes.PRESET_INTENSITY]?.[0],
       };
     case AttributeTypes.BOOLEAN:
       return {
@@ -289,6 +303,7 @@ export const createDefaultValueAssignment = (attribute: AttributeConfiguration):
             ? defaultValue
             : attribute.optionPossibleValues[AttributeTypes.BOOLEAN] === BooleanOptions.CHECKED,
       };
+
     case AttributeTypes.NONE:
       return { [AttributeTypes.NONE]: null };
   }

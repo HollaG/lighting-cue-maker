@@ -9,7 +9,7 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
   const { colorScheme } = useMantineColorScheme();
   let backgroundColour;
   if (colorScheme === "dark") {
-    backgroundColour = isActive ? "var(--mantine-primary-color-light)" : "var(--mantine-color-dark-7)";
+    backgroundColour = isActive ? "var(--mantine-color-dark-7)" : "var(--mantine-color-dark-7)";
   }
   if (colorScheme === "light") {
     backgroundColour = isActive ? "var(--mantine-color-lime-0)" : "var(--mantine-color-white)";
@@ -22,6 +22,7 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
       style={{
         backgroundColor: backgroundColour,
         overflow: "visible",
+        borderColor: isActive ? "light-dark(var(--mantine-color-lime-0), var(--mantine-color-lime-5))" : undefined,
       }}
     >
       {children}

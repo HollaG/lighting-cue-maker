@@ -15,8 +15,12 @@ export type EventFormKey = string;
 // For any types that differ from the Form and the Backend
 // This may occur due to a different way of configuring the BE values:
 //   for example, configuring number values in the BE may require string values in the FE Form.
-export type EventFormAttributeOptions = Omit<AttributeTypesOptions, typeof AttributeTypes.SLIDER_PRESETS> & {
+export type EventFormAttributeOptions = Omit<
+  AttributeTypesOptions,
+  typeof AttributeTypes.SLIDER_PRESETS | typeof AttributeTypes.PRESET_INTENSITY
+> & {
   [AttributeTypes.SLIDER_PRESETS]?: string[];
+  [AttributeTypes.PRESET_INTENSITY]?: string[];
 };
 
 export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" | "optionPossibleValues"> & {
@@ -101,6 +105,8 @@ export const createEmptyEventFormAttribute = (attributeCount: number): EventForm
       [AttributeTypes.SLIDER]: { min: 0, max: 100 },
       [AttributeTypes.SLIDER_PRESETS]: [],
       [AttributeTypes.BOOLEAN]: BooleanOptions.UNCHECKED,
+      [AttributeTypes.PRESET_INTENSITY]: [],
+      [AttributeTypes.PRESET_COLOUR]: [],
       [AttributeTypes.TEXT]: "",
       [AttributeTypes.NONE]: null,
     },
@@ -275,6 +281,15 @@ const formAttributeOptionsToAttributeOptions = (
       };
     case AttributeTypes.BOOLEAN:
       return { [AttributeTypes.BOOLEAN]: options[AttributeTypes.BOOLEAN] ?? BooleanOptions.UNCHECKED };
+
+    case AttributeTypes.PRESET_INTENSITY:
+      return {
+        [AttributeTypes.PRESET_INTENSITY]: options[AttributeTypes.PRESET_INTENSITY]
+          ? options[AttributeTypes.PRESET_INTENSITY]!.map(Number).sort((a, b) => a - b)
+          : [],
+      };
+    case AttributeTypes.PRESET_COLOUR:
+      return { [AttributeTypes.PRESET_COLOUR]: options[AttributeTypes.PRESET_COLOUR] ?? [] };
     case AttributeTypes.TEXT:
     case AttributeTypes.NONE:
       return {};
@@ -284,6 +299,7 @@ const formAttributeOptionsToAttributeOptions = (
 const attributeOptionsToFormAttributeOptions = (options: AttributeTypesOptions): EventFormAttributeOptions => ({
   ...options,
   [AttributeTypes.SLIDER_PRESETS]: (options[AttributeTypes.SLIDER_PRESETS] ?? []).map(String),
+  [AttributeTypes.PRESET_INTENSITY]: (options[AttributeTypes.PRESET_INTENSITY] ?? []).map(String),
 });
 
 const attributeMetadataToFormAttributeMetadata = (

@@ -52,6 +52,10 @@ export const AttributeTypes = {
   SLIDER_PRESETS: "sliderPresets",
   BOOLEAN: "boolean",
   NONE: "none", // Illegal type!
+
+  // Preset types
+  PRESET_INTENSITY: "presetIntensity",
+  PRESET_COLOUR: "presetColour",
 } as const;
 
 export type AttributeTypes = (typeof AttributeTypes)[keyof typeof AttributeTypes];
@@ -74,6 +78,10 @@ export type AttributeTypesOptions = {
   [AttributeTypes.SLIDER_PRESETS]?: number[];
   [AttributeTypes.BOOLEAN]?: BooleanOptions;
   [AttributeTypes.NONE]?: null;
+
+  // Presets
+  [AttributeTypes.PRESET_INTENSITY]?: number[];
+  [AttributeTypes.PRESET_COLOUR]?: ColourOption[];
 };
 
 export type ColourOption = {

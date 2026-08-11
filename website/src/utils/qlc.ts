@@ -150,6 +150,9 @@ export const QLC_MAPPABLE_TYPES = new Set<AttributeTypes>([
   AttributeTypes.MULTISELECT,
   AttributeTypes.SELECT,
   AttributeTypes.SLIDER_PRESETS,
+
+  AttributeTypes.PRESET_COLOUR,
+  AttributeTypes.PRESET_INTENSITY,
 ]);
 
 export const isQlcMappable = (type: AttributeTypes) => QLC_MAPPABLE_TYPES.has(type);

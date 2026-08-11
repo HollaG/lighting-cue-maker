@@ -1,33 +1,45 @@
-import {
-  Card,
-  Group,
-  Button,
-  Select,
-  TagsInput,
-  Center,
-  Box,
-  Stack,
-  ColorInput,
-  Radio,
-  Flex,
-  Tooltip,
-  Text,
-  Accordion,
-} from "@mantine/core";
-import { AttributeTypes, BooleanOptions, type ColourOption, type Option } from "../../../../types/types";
-import { useEffect, useRef, useState } from "react";
+import { Card, Group, Button, Select, Box, Radio, Flex, Tooltip, Text, Accordion } from "@mantine/core";
+import { AttributeTypes, type Option } from "../../../../types/types";
+import { useState } from "react";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 import type { UseFormReturnType } from "@mantine/form";
 import type { EventFormKey, EventFormValues } from "../../../EventForm/eventFormModel";
+import { SelectOptionsHandler } from "./Handlers/SelectOptionsHandler";
+import { BooleanOptionsHandler } from "./Handlers/BooleanOptionsHandler";
+import { SliderPresetsOptionsHandler } from "./Handlers/SliderPresetsOptionsHandler";
+import { PresetIntensityHandler } from "./Handlers/PresetIntensityHandler";
+import { PresetColourHandler } from "./Handlers/PresetColourHandler";
+
 const ATTRIBUTE_OPTIONS: Option<AttributeTypes>[] = [
-  { label: "Text", value: AttributeTypes.TEXT },
-  { label: "Select one", value: AttributeTypes.SELECT },
-  { label: "Select many", value: AttributeTypes.MULTISELECT },
+  { label: "Text input", value: AttributeTypes.TEXT },
+  { label: "Select one from list", value: AttributeTypes.SELECT },
+  { label: "Select many from list", value: AttributeTypes.MULTISELECT },
   { label: "Colour select", value: AttributeTypes.COLOUR },
   { label: "Slider", value: AttributeTypes.SLIDER },
-  { label: "Slider with presets", value: AttributeTypes.SLIDER_PRESETS },
-  { label: "Checkbox", value: AttributeTypes.BOOLEAN },
+  { label: "Select one number from range", value: AttributeTypes.SLIDER_PRESETS },
+  { label: "Yes or no selection", value: AttributeTypes.BOOLEAN },
 ];
+
+const SELECT_OPTIONS = [
+  {
+    group: "Presets",
+    items: [
+      {
+        label: "Intensity",
+        value: AttributeTypes.PRESET_INTENSITY,
+      },
+      {
+        label: "Colour",
+        value: AttributeTypes.PRESET_COLOUR,
+      },
+    ],
+  },
+  {
+    group: "Custom",
+    items: ATTRIBUTE_OPTIONS,
+  },
+];
+
 /**
  *
  * @param id Generated Attribute ID
@@ -59,9 +71,14 @@ export const AddAttributeCard = ({
   const opvFieldName = `${baseFieldName}.optionPossibleValues`;
   const metadataFieldName = `${baseFieldName}.metadata`;
   const initialType = form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].type;
-  const initialColourOptions =
+  // const initialColourOptions =
+  //   form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].optionPossibleValues[
+  //     AttributeTypes.COLOUR
+  //   ] ?? [];
+
+  const initialPresetColourOptions =
     form.getValues().fixtureGroups[fixtureGroupClientId].attributes[attributeClientId].optionPossibleValues[
-      AttributeTypes.COLOUR
+      AttributeTypes.PRESET_COLOUR
     ] ?? [];
   const [selectedAttribute, setSelectedAttribute] = useState<AttributeTypes | null>(
     initialType === AttributeTypes.NONE ? null : initialType,
@@ -70,6 +87,19 @@ export const AddAttributeCard = ({
   form.watch(`${baseFieldName}.type`, ({ value }) => {
     const nextValue = value as unknown as AttributeTypes | undefined;
     setSelectedAttribute(nextValue === undefined || nextValue === AttributeTypes.NONE ? null : nextValue);
+
+    // Specific for presets
+    // AttributeTypes.PRESET_INTENSITY: add 0, 25, 50, 75, 100 to the form
+    if (nextValue === AttributeTypes.PRESET_INTENSITY) {
+      form.setFieldValue(`${opvFieldName}.${AttributeTypes.PRESET_INTENSITY}`, ["0", "25", "50", "75", "100"]);
+      form.setFieldValue(`${baseFieldName}.name`, "Intensity");
+      form.setFieldValue(`${baseFieldName}.metadata.required`, "true"); // intensity is always required
+    }
+
+    if (nextValue === AttributeTypes.PRESET_COLOUR) {
+      form.setFieldValue(`${baseFieldName}.name`, "Colour");
+      form.setFieldValue(`${baseFieldName}.metadata.required`, "false"); //
+    }
   });
 
   return (
@@ -115,12 +145,14 @@ export const AddAttributeCard = ({
         >
           <Select
             label="Input type"
-            placeholder="Pick an attribute"
-            data={ATTRIBUTE_OPTIONS}
+            placeholder="Choose how choreographers can input options for this attribute"
+            data={SELECT_OPTIONS}
             allowDeselect={false}
             name={`${baseFieldName}.type`}
             key={form.key(`${baseFieldName}.type`)}
             {...form.getInputProps(`${baseFieldName}.type`)}
+
+            comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
           />
         </Box>
 
@@ -136,15 +168,24 @@ export const AddAttributeCard = ({
             <SelectOptionsHandler optionType={selectedAttribute} opvFieldName={opvFieldName} form={form} />
           )}
 
-          {selectedAttribute === AttributeTypes.COLOUR && (
+          {/* TODO: convert this to be a true colour select. For now, use the PRESET_COLOUR */}
+          {/* {selectedAttribute === AttributeTypes.COLOUR && (
             <ColourOptionsHandler initialColours={initialColourOptions} opvFieldName={opvFieldName} form={form} />
-          )}
+          )} */}
 
           {selectedAttribute === AttributeTypes.BOOLEAN && (
             <BooleanOptionsHandler opvFieldName={opvFieldName} form={form} />
           )}
           {selectedAttribute === AttributeTypes.SLIDER_PRESETS && (
             <SliderPresetsOptionsHandler opvFieldName={opvFieldName} form={form} />
+          )}
+
+          {selectedAttribute === AttributeTypes.PRESET_INTENSITY && (
+            <PresetIntensityHandler opvFieldName={opvFieldName} form={form} />
+          )}
+
+          {selectedAttribute === AttributeTypes.PRESET_COLOUR && (
+            <PresetColourHandler initialColours={initialPresetColourOptions} opvFieldName={opvFieldName} form={form} />
           )}
           {/* {selectedAttribute === AttributeTypes.MULTISELECT ||
             (selectedAttribute === AttributeTypes.SELECT && (
@@ -209,187 +250,5 @@ export const AddAttributeCard = ({
     {selectedAttribute === 'boolean' && <MultiSelectCreatable />}
     {selectedAttribute === 'text' && <MultiSelectCreatable />} */}
     </Card>
-  );
-};
-
-const SelectOptionsHandler = ({
-  optionType,
-  opvFieldName,
-  form,
-}: {
-  optionType: typeof AttributeTypes.SELECT | typeof AttributeTypes.MULTISELECT;
-  opvFieldName: string;
-  form: UseFormReturnType<any>;
-}) => {
-  opvFieldName = `${opvFieldName}.${optionType}`;
-
-  return (
-    <TagsInput
-      required
-      name={opvFieldName}
-      key={form.key(opvFieldName)}
-      {...form.getInputProps(opvFieldName)}
-      label="Options"
-      placeholder="Press enter to add"
-    />
-  );
-};
-
-// need to specify hex code
-const ColourOptionsHandler = ({
-  initialColours,
-  opvFieldName,
-  form,
-}: {
-  initialColours: ColourOption[];
-  opvFieldName: string;
-  form: UseFormReturnType<any>;
-}) => {
-  // list of colours
-  opvFieldName = `${opvFieldName}.${AttributeTypes.COLOUR}`;
-
-  const [colorInputIds, setColorInputIds] = useState<string[]>(() =>
-    initialColours.length > 0 ? initialColours.map((_, index) => `existing-colour-${index}`) : [Date.now().toString()],
-  );
-  const initializedEmptyColour = useRef(false);
-
-  useEffect(() => {
-    if (initialColours.length > 0 || initializedEmptyColour.current) return;
-    initializedEmptyColour.current = true;
-
-    form.setFieldValue(`${opvFieldName}.0`, {
-      hex: "",
-      name: "",
-    });
-  }, [form, initialColours.length, opvFieldName]);
-
-  const onAddNewColourOption = (index: number) => {
-    const id = Date.now().toString();
-    setColorInputIds((prev) => [...prev, id]);
-
-    // init the field value for this colour
-    form.setFieldValue(`${opvFieldName}.${index}`, {
-      hex: "",
-      name: "",
-    });
-  };
-
-  const onDeleteColourOption = (index: number) => {
-    setColorInputIds((prev) => prev.filter((_, i) => i !== index));
-    form.removeListItem(`${opvFieldName}`, index);
-  };
-  return (
-    <Stack>
-      {colorInputIds.map((colorInputId, index) => (
-        <Group key={colorInputId}>
-          <Box flex={5}>
-            <ColorInput
-              variant="unstyled"
-              label="Colour"
-              withAsterisk
-              placeholder="Input placeholder"
-              name={`${opvFieldName}.${index}.hex`}
-              key={form.key(`${opvFieldName}.${index}.hex`)}
-              {...form.getInputProps(`${opvFieldName}.${index}.hex`)}
-              withEyeDropper={false}
-              swatches={[
-                "#ffffff",
-                "#ffbf00",
-                "#ff0000",
-                "#00ff00",
-                "#0000ff",
-                "#00ffff",
-                "#ff00ff",
-                "#ffff00",
-                "#800080",
-                "#FFC0CB",
-                "#fd7e14",
-              ]}
-            />
-          </Box>
-          <Box flex={5}>
-            <CustomTextInput
-              label="Colour name"
-              placeholder="e.g. Red"
-              withAsterisk
-              name={`${opvFieldName}.${index}.name`}
-              key={form.key(`${opvFieldName}.${index}.name`)}
-              {...form.getInputProps(`${opvFieldName}.${index}.name`)}
-            />
-          </Box>
-          <Box flex={1}>
-            <Button
-              type="button"
-              variant="transparent"
-              size="xs"
-              color="red"
-              onClick={() => onDeleteColourOption(index)}
-            >
-              {" "}
-              Remove option
-            </Button>
-          </Box>
-        </Group>
-      ))}
-      <Center>
-        <Button type="button" variant="subtle" size="xs" onClick={() => onAddNewColourOption(colorInputIds.length)}>
-          {" "}
-          Add another colour
-        </Button>
-      </Center>
-    </Stack>
-  );
-};
-
-// specify default value
-const BooleanOptionsHandler = ({ opvFieldName, form }: { opvFieldName: string; form: UseFormReturnType<any> }) => {
-  opvFieldName = `${opvFieldName}.${AttributeTypes.BOOLEAN}`;
-
-  return (
-    <Radio.Group
-      name={opvFieldName}
-      key={form.key(opvFieldName)}
-      {...form.getInputProps(opvFieldName)}
-      label="Default state"
-      withAsterisk
-    >
-      <Group mt="xs">
-        <Radio value={BooleanOptions.UNCHECKED} label="Unchecked" />
-        <Radio value={BooleanOptions.CHECKED} label="Checked" />
-      </Group>
-    </Radio.Group>
-  );
-};
-
-const SliderPresetsOptionsHandler = ({
-  opvFieldName,
-  form,
-}: {
-  opvFieldName: string;
-  form: UseFormReturnType<any>;
-}) => {
-  opvFieldName = `${opvFieldName}.${AttributeTypes.SLIDER_PRESETS}`;
-
-  return (
-    <TagsInput
-      required
-      name={opvFieldName}
-      type="number"
-      key={form.key(opvFieldName)}
-      {...form.getInputProps(opvFieldName)}
-      label="Options"
-      description="Only numbers are allowed"
-      placeholder="Press enter to add (numbers only)"
-
-      // onChange={(value) => {
-      //   console.log({ value });
-      //   // Filter out non-numeric values and sort them
-      //   const numericValues = value
-      //     .filter((v) => !isNaN(Number(v)))
-      //     .map(Number)
-      //     .sort((a, b) => a - b);
-      //   form.setFieldValue(opvFieldName, numericValues);
-      // }}
-    />
   );
 };
