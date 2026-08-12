@@ -18,7 +18,11 @@ export const AddFixtureGroupButton = (props: ButtonProps & React.ComponentProps<
           <IconPlus />
         </Center>
         <Text fw="bold"> Add fixture group </Text>
-        <Text style={{ color: "var(--mantine-color-lime-3)" }} fz="sm" mt={"0.25rem"}>
+        <Text
+          style={{ color: "light-dark(var(--mantine-color-lime-9), var(--mantine-color-lime-3))" }}
+          fz="sm"
+          mt={"0.25rem"}
+        >
           A fixture group consists of one or more
           <br />
           lighting devices that are controlled together.{" "}

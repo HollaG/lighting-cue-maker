@@ -355,8 +355,8 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
         style={{
           transform: `translateY(${translateDistance})`,
           transition: "all 0.3s ease",
-          zIndex: isCueSelected || isAtLeastOneComboboxOpened ? 100 : undefined,
-          // position: "relative",
+          zIndex: isAtLeastOneComboboxOpened ? 100 : undefined, // DO NOT REMOVE
+          position: "relative", // DO NOT REMOVE
           // marginTop: marginPushDownCue,
           // top: cueRefTop + 100,
         }}

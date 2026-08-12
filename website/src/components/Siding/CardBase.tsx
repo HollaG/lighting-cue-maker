@@ -22,7 +22,7 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
       style={{
         backgroundColor: backgroundColour,
         overflow: "visible",
-        borderColor: isActive ? "light-dark(var(--mantine-color-lime-0), var(--mantine-color-lime-5))" : undefined,
+        borderColor: isActive ? "light-dark(var(--mantine-color-lime-0), var(--mantine-color-yellow-9))" : undefined,
       }}
     >
       {children}

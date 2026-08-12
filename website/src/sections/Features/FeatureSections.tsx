@@ -28,8 +28,8 @@ const movingHeadFormValues = {
 movingHeadFormValues.fixtureGroups.mhGroup.attributes["1"] = {
   ...createEmptyEventFormAttribute(0),
   name: "Intensity",
-  type: "sliderPresets",
-  optionPossibleValues: { sliderPresets: ["0", "50", "100"] },
+  type: "presetIntensity",
+  optionPossibleValues: { presetIntensity: ["0", "25", "50", "75", "100"] },
 };
 movingHeadFormValues.fixtureGroups.mhGroup.attributes["2"] = {
   ...createEmptyEventFormAttribute(1),
@@ -63,15 +63,15 @@ const ledFormValues = {
 ledFormValues.fixtureGroups.ledGroup.attributes["1"] = {
   ...createEmptyEventFormAttribute(0),
   name: "Intensity",
-  type: "sliderPresets",
-  optionPossibleValues: { sliderPresets: ["0", "50", "100"] },
+  type: "presetIntensity",
+  optionPossibleValues: { presetIntensity: ["0", "25", "50", "75", "100"] },
 };
 ledFormValues.fixtureGroups.ledGroup.attributes["2"] = {
   ...createEmptyEventFormAttribute(1),
   name: "Colour",
-  type: "colour",
+  type: "presetColour",
   optionPossibleValues: {
-    colour: [
+    presetColour: [
       { hex: "#ffffff", name: "White" },
       { hex: "#ff0000", name: "Red" },
       { hex: "#00ff00", name: "Green" },
@@ -121,17 +121,31 @@ export const CreateSection = () => {
       <Flex>
         <Flex flex={3}>
           <Box style={{ padding: "4rem", display: "flex", justifyContent: "center", alignItems: "center" }}>
-            {lightGroup === "led" && <Image mah="450px" src={LED_PAR_IMAGE} alt="LED PAR Example" w="100%" fit="contain" />}
-            {lightGroup === "mh" && <Image mah="450px" src={MH_IMAGE} alt="Moving Head Example" w="100%" fit="contain" />}
+            {lightGroup === "led" && (
+              <Image mah="450px" src={LED_PAR_IMAGE} alt="LED PAR Example" w="100%" fit="contain" />
+            )}
+            {lightGroup === "mh" && (
+              <Image mah="450px" src={MH_IMAGE} alt="Moving Head Example" w="100%" fit="contain" />
+            )}
           </Box>
         </Flex>
         <Flex flex={9}>
           <Box>
             <Box display={lightGroup === "led" ? "block" : "none"}>
-              <FixtureGroupCard formKey="ledGroup" form={ledForm} index={1} onDeleteFixtureGroup={onDeleteFixtureGroup} />
+              <FixtureGroupCard
+                formKey="ledGroup"
+                form={ledForm}
+                index={1}
+                onDeleteFixtureGroup={onDeleteFixtureGroup}
+              />
             </Box>
             <Box display={lightGroup === "mh" ? "block" : "none"}>
-              <FixtureGroupCard formKey="mhGroup" form={movingHeadForm} index={0} onDeleteFixtureGroup={onDeleteFixtureGroup} />
+              <FixtureGroupCard
+                formKey="mhGroup"
+                form={movingHeadForm}
+                index={0}
+                onDeleteFixtureGroup={onDeleteFixtureGroup}
+              />
             </Box>
           </Box>
         </Flex>
@@ -170,9 +184,9 @@ const DEMO_FIXTURE_GROUPS: FixtureGroupConfiguration[] = [
       {
         id: "1",
         name: "Intensity",
-        type: "sliderPresets",
+        type: "presetIntensity",
         metadata: { required: false },
-        optionPossibleValues: { sliderPresets: [0, 50, 100] },
+        optionPossibleValues: { presetIntensity: [0, 25, 50, 75, 100] },
         order: 0,
       },
       {
@@ -202,18 +216,18 @@ const DEMO_FIXTURE_GROUPS: FixtureGroupConfiguration[] = [
       {
         id: "1",
         name: "Intensity",
-        type: "sliderPresets",
+        type: "presetIntensity",
         metadata: { required: false },
-        optionPossibleValues: { sliderPresets: [0, 50, 100] },
+        optionPossibleValues: { presetIntensity: [0, 25, 50, 75, 100] },
         order: 0,
       },
       {
         id: "2",
         name: "Colour",
-        type: "colour",
+        type: "presetColour",
         metadata: { required: false },
         optionPossibleValues: {
-          colour: [
+          presetColour: [
             { hex: "#ffffff", name: "White" },
             { hex: "#ff0000", name: "Red" },
             { hex: "#00ff00", name: "Green" },

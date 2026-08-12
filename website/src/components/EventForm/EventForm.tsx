@@ -113,7 +113,7 @@ export const EventForm = ({
           </Stack>
         </Container>
 
-        <Box w="100%" px="6rem">
+        <Box w="100%" px="xl">
           <Stack>
             <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
               {fixtureGroupOrder.map((formKey, index) => (

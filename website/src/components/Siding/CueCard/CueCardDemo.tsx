@@ -199,6 +199,23 @@ const DemoAttributeInput = ({
       );
     }
 
+    case AttributeTypes.PRESET_COLOUR: {
+      const options = attribute.optionPossibleValues[AttributeTypes.PRESET_COLOUR] ?? [];
+      const selected =
+        form.getValues().assignments[groupId]?.assignment[attribute.id]?.value[AttributeTypes.PRESET_COLOUR];
+
+      return (
+        <DemoColourSelect
+          name={attribute.name}
+          fieldName={fieldName}
+          colourOptions={options}
+          selected={selected}
+          required={attribute.metadata.required}
+          form={form}
+        />
+      );
+    }
+
     case AttributeTypes.SLIDER: {
       const range = attribute.optionPossibleValues[AttributeTypes.SLIDER] ?? { min: 0, max: 100 };
       return (
@@ -210,6 +227,25 @@ const DemoAttributeInput = ({
 
     case AttributeTypes.SLIDER_PRESETS: {
       const values = attribute.optionPossibleValues[AttributeTypes.SLIDER_PRESETS] ?? [];
+      if (values.length === 0) return <Text c="dimmed">No values available for {attribute.name}.</Text>;
+
+      return (
+        <Input.Wrapper {...commonProps}>
+          <Slider
+            restrictToMarks
+            marks={values.map((value) => ({ value, label: String(value) }))}
+            min={Math.min(...values)}
+            max={Math.max(...values)}
+            mt="xl"
+            mb="md"
+            {...form.getInputProps(fieldName)}
+          />
+        </Input.Wrapper>
+      );
+    }
+
+    case AttributeTypes.PRESET_INTENSITY: {
+      const values = attribute.optionPossibleValues[AttributeTypes.PRESET_INTENSITY] ?? [];
       if (values.length === 0) return <Text c="dimmed">No values available for {attribute.name}.</Text>;
 
       return (
