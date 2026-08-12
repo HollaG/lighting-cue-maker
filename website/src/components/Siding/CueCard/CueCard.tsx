@@ -34,6 +34,7 @@ import {
   type ColourOption,
   type FixtureGroupConfiguration,
   type Item,
+  type PositionOption,
 } from "../../../types/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
@@ -760,6 +761,18 @@ const AttributeDisplay = ({
           required={attribute.metadata.required}
         />
       );
+
+    case AttributeTypes.PRESET_POSITION:
+      return (
+        <PositionSelect
+          name={name}
+          fieldName={`${baseFieldName}.${AttributeTypes.PRESET_POSITION}`}
+          form={form}
+          positionOptions={optionPossibleValues[AttributeTypes.PRESET_POSITION] ?? []}
+          placeholder={attribute.metadata.placeholder ?? `Pick a value`}
+          required={attribute.metadata.required}
+        />
+      );
   }
   return <CustomTextInput label={attribute.name}></CustomTextInput>;
 };
@@ -956,6 +969,53 @@ function BooleanSelect({
     />
   );
 }
+
+function PositionSelect({
+  name,
+  fieldName,
+  form,
+  positionOptions,
+  placeholder,
+  required = false,
+}: {
+  name: string;
+  fieldName: string;
+  form: UseFormReturnType<FormData>;
+  positionOptions: PositionOption[];
+  placeholder: string;
+  required?: boolean;
+}) {
+  const inputProps = form.getInputProps(fieldName);
+  const initialPosition = inputProps.defaultValue as PositionOption | undefined;
+
+  return (
+    <Select
+      comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+      searchable
+      label={name}
+      data={positionOptions.map((position) => ({
+        value: positionToSelectValue(position),
+        label: position.name,
+      }))}
+      placeholder={placeholder}
+      name={fieldName}
+      key={form.key(fieldName)}
+      defaultValue={initialPosition ? positionToSelectValue(initialPosition) : null}
+      onChange={(value) => {
+        const selectedPosition = positionOptions.find((position) => positionToSelectValue(position) === value);
+        form.setFieldValue(fieldName, selectedPosition ? { ...selectedPosition } : undefined);
+      }}
+      onBlur={inputProps.onBlur}
+      error={inputProps.error}
+      clearable
+      rightSection={<IconCaretDown width={"0.75rem"} />}
+      clearSectionMode="clear"
+      required={required}
+    />
+  );
+}
+
+const positionToSelectValue = ({ pan, tilt }: PositionOption) => `${pan}-${tilt}`;
 
 function SliderPresetInput({
   name,

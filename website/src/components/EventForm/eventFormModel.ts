@@ -7,6 +7,7 @@ import type {
   ColourOption,
   FixtureGroupConfiguration,
   LightEventConfiguration,
+  PositionOption,
 } from "../../types/types";
 
 export type EventFormMode = "create" | "edit";
@@ -17,10 +18,16 @@ export type EventFormKey = string;
 //   for example, configuring number values in the BE may require string values in the FE Form.
 export type EventFormAttributeOptions = Omit<
   AttributeTypesOptions,
-  typeof AttributeTypes.SLIDER_PRESETS | typeof AttributeTypes.PRESET_INTENSITY
+  typeof AttributeTypes.SLIDER_PRESETS | typeof AttributeTypes.PRESET_INTENSITY | typeof AttributeTypes.PRESET_POSITION
 > & {
   [AttributeTypes.SLIDER_PRESETS]?: string[];
   [AttributeTypes.PRESET_INTENSITY]?: string[];
+  [AttributeTypes.PRESET_POSITION]?: string[];
+};
+
+export type EventFormPositionOption = Omit<PositionOption, "pan" | "tilt"> & {
+  pan: string;
+  tilt: string;
 };
 
 export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" | "optionPossibleValues"> & {
@@ -33,7 +40,7 @@ export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" 
   metadata: {
     placeholder?: string;
     required?: "true" | "false"; // STRING!!
-    defaultValue?: string | string[] | ColourOption | boolean | number;
+    defaultValue?: string | string[] | ColourOption | PositionOption | boolean | number;
   };
 };
 
@@ -107,6 +114,7 @@ export const createEmptyEventFormAttribute = (attributeCount: number): EventForm
       [AttributeTypes.BOOLEAN]: BooleanOptions.UNCHECKED,
       [AttributeTypes.PRESET_INTENSITY]: [],
       [AttributeTypes.PRESET_COLOUR]: [],
+      [AttributeTypes.PRESET_POSITION]: [],
       [AttributeTypes.TEXT]: "",
       [AttributeTypes.NONE]: null,
     },
@@ -290,6 +298,15 @@ const formAttributeOptionsToAttributeOptions = (
       };
     case AttributeTypes.PRESET_COLOUR:
       return { [AttributeTypes.PRESET_COLOUR]: options[AttributeTypes.PRESET_COLOUR] ?? [] };
+    case AttributeTypes.PRESET_POSITION:
+      return {
+        [AttributeTypes.PRESET_POSITION]: (options[AttributeTypes.PRESET_POSITION] ?? []).map((position) => ({
+          // IMPORTANT NOTE: When creating a new position, the pan and tilt will be set later.
+          pan: 0,
+          tilt: 0,
+          name: position,
+        })),
+      };
     case AttributeTypes.TEXT:
     case AttributeTypes.NONE:
       return {};
@@ -300,6 +317,15 @@ const attributeOptionsToFormAttributeOptions = (options: AttributeTypesOptions):
   ...options,
   [AttributeTypes.SLIDER_PRESETS]: (options[AttributeTypes.SLIDER_PRESETS] ?? []).map(String),
   [AttributeTypes.PRESET_INTENSITY]: (options[AttributeTypes.PRESET_INTENSITY] ?? []).map(String),
+  [AttributeTypes.PRESET_POSITION]: (options[AttributeTypes.PRESET_POSITION] ?? []).map(
+    (position) =>
+      position.name,
+      //   {
+      //   pan: String(position.pan),
+      //   tilt: String(position.tilt),
+      //   name: position.name,
+      // }
+  ),
 });
 
 const attributeMetadataToFormAttributeMetadata = (

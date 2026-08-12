@@ -1,4 +1,4 @@
-import { AttributeTypes, type ColourOption } from "./types";
+import { AttributeTypes, type ColourOption, type PositionOption } from "./types";
 
 /**
  * Cues indicate
@@ -39,6 +39,7 @@ export type ValueAssignment = {
   // Presets
   [AttributeTypes.PRESET_INTENSITY]?: number; // value
   [AttributeTypes.PRESET_COLOUR]?: ColourOption;
+  [AttributeTypes.PRESET_POSITION]?: PositionOption;
 };
 
 // export const DEFAULT_VALUE_ASSIGNMENT: ValueAssignment = {

@@ -179,4 +179,59 @@ describe("eventToEventFormValues", () => {
       [AttributeTypes.SLIDER_PRESETS]: [25, 75],
     });
   });
+
+  it("converts preset position values between form strings and request numbers", () => {
+    const values = createEmptyEventFormValues();
+    const fixtureGroup = createEmptyEventFormFixtureGroup(0);
+    const attribute = createEmptyEventFormAttribute(0);
+
+    attribute.type = AttributeTypes.PRESET_POSITION;
+    attribute.optionPossibleValues.presetPosition = [{ pan: "12.5", tilt: "-30", name: "Stage left" }];
+    fixtureGroup.attributes[attribute.clientId] = attribute;
+    fixtureGroup.attributeOrder.push(attribute.clientId);
+    values.fixtureGroups[fixtureGroup.clientId] = fixtureGroup;
+    values.fixtureGroupOrder.push(fixtureGroup.clientId);
+
+    const request = eventFormValuesToCreateRequest(values);
+
+    expect(request.fixtureGroups[0].attributes[0].optionPossibleValues).toEqual({
+      [AttributeTypes.PRESET_POSITION]: [{ pan: 12.5, tilt: -30, name: "Stage left" }],
+    });
+  });
+
+  it("converts preset position numbers to strings when loading an event", () => {
+    const event: LightEventConfiguration = {
+      id: "event-id",
+      name: "Test event",
+      description: "",
+      fixtureGroups: [
+        {
+          id: "fixture-group-id",
+          name: "Moving heads",
+          order: 0,
+          attributes: [
+            {
+              id: "attribute-id",
+              name: "Position",
+              type: AttributeTypes.PRESET_POSITION,
+              metadata: {},
+              order: 0,
+              optionPossibleValues: {
+                [AttributeTypes.PRESET_POSITION]: [{ pan: 45, tilt: -12.5, name: "Centre" }],
+              },
+            },
+          ],
+        },
+      ],
+      bumpConfigurations: [],
+    };
+
+    const values = eventToEventFormValues(event);
+    const fixtureGroup = values.fixtureGroups[values.fixtureGroupOrder[0]];
+    const attribute = fixtureGroup.attributes[fixtureGroup.attributeOrder[0]];
+
+    expect(attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]).toEqual([
+      { pan: "45", tilt: "-12.5", name: "Centre" },
+    ]);
+  });
 });

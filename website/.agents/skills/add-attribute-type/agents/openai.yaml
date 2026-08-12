@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Attribute Type"
+  short_description: "Add attribute types across the shared data flow"
+  default_prompt: "Use $add-attribute-type to add a new lighting-cue-maker attribute type safely."

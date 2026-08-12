@@ -5,6 +5,7 @@ import {
   type AttributeConfiguration,
   type ColourOption,
   type FixtureGroupConfiguration,
+  type PositionOption,
 } from "../types/types";
 import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
 
@@ -296,6 +297,13 @@ export const createDefaultValueAssignment = (attribute: AttributeConfiguration):
             ? defaultValue
             : attribute.optionPossibleValues[AttributeTypes.PRESET_INTENSITY]?.[0],
       };
+    case AttributeTypes.PRESET_POSITION: {
+      const position = isPositionOption(defaultValue)
+        ? defaultValue
+        : attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]?.[0];
+
+      return { [AttributeTypes.PRESET_POSITION]: position ? { ...position } : undefined };
+    }
     case AttributeTypes.BOOLEAN:
       return {
         [AttributeTypes.BOOLEAN]:
@@ -314,5 +322,15 @@ const isColourOption = (value: unknown): value is ColourOption =>
   value !== null &&
   "hex" in value &&
   typeof value.hex === "string" &&
+  "name" in value &&
+  typeof value.name === "string";
+
+const isPositionOption = (value: unknown): value is PositionOption =>
+  typeof value === "object" &&
+  value !== null &&
+  "pan" in value &&
+  typeof value.pan === "number" &&
+  "tilt" in value &&
+  typeof value.tilt === "number" &&
   "name" in value &&
   typeof value.name === "string";

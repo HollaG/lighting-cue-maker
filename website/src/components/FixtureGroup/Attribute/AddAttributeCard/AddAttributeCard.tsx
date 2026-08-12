@@ -9,6 +9,7 @@ import { BooleanOptionsHandler } from "./Handlers/BooleanOptionsHandler";
 import { SliderPresetsOptionsHandler } from "./Handlers/SliderPresetsOptionsHandler";
 import { PresetIntensityHandler } from "./Handlers/PresetIntensityHandler";
 import { PresetColourHandler } from "./Handlers/PresetColourHandler";
+import { PresetPositionHandler } from "./Handlers/PresetPositionHandler";
 
 const ATTRIBUTE_OPTIONS: Option<AttributeTypes>[] = [
   { label: "Text input", value: AttributeTypes.TEXT },
@@ -31,6 +32,10 @@ const SELECT_OPTIONS = [
       {
         label: "Colour",
         value: AttributeTypes.PRESET_COLOUR,
+      },
+      {
+        label: "Position",
+        value: AttributeTypes.PRESET_POSITION,
       },
     ],
   },
@@ -98,6 +103,11 @@ export const AddAttributeCard = ({
 
     if (nextValue === AttributeTypes.PRESET_COLOUR) {
       form.setFieldValue(`${baseFieldName}.name`, "Colour");
+      form.setFieldValue(`${baseFieldName}.metadata.required`, "false"); //
+    }
+
+    if (nextValue === AttributeTypes.PRESET_POSITION) {
+      form.setFieldValue(`${baseFieldName}.name`, "Position");
       form.setFieldValue(`${baseFieldName}.metadata.required`, "false"); //
     }
   });
@@ -187,6 +197,11 @@ export const AddAttributeCard = ({
           {selectedAttribute === AttributeTypes.PRESET_COLOUR && (
             <PresetColourHandler initialColours={initialPresetColourOptions} opvFieldName={opvFieldName} form={form} />
           )}
+
+          {selectedAttribute === AttributeTypes.PRESET_POSITION && (
+            <PresetPositionHandler opvFieldName={opvFieldName} form={form} />
+          )}
+
           {/* {selectedAttribute === AttributeTypes.MULTISELECT ||
             (selectedAttribute === AttributeTypes.SELECT && (
               <TagsInput {...tagInputAttributes} label="Options" placeholder="Press enter to add" />

@@ -40,7 +40,7 @@ export type AttributeConfiguration = {
 export type AttributeMetadata = {
   placeholder?: string; // default: undefined
   required?: boolean; // default: FALSE
-  defaultValue?: string | string[] | ColourOption | boolean | number; // default: undefined
+  defaultValue?: string | string[] | ColourOption | PositionOption | boolean | number; // default: undefined
 };
 
 export const AttributeTypes = {
@@ -56,6 +56,7 @@ export const AttributeTypes = {
   // Preset types
   PRESET_INTENSITY: "presetIntensity",
   PRESET_COLOUR: "presetColour",
+  PRESET_POSITION: "presetPosition",
 } as const;
 
 export type AttributeTypes = (typeof AttributeTypes)[keyof typeof AttributeTypes];
@@ -82,10 +83,17 @@ export type AttributeTypesOptions = {
   // Presets
   [AttributeTypes.PRESET_INTENSITY]?: number[];
   [AttributeTypes.PRESET_COLOUR]?: ColourOption[];
+  [AttributeTypes.PRESET_POSITION]?: PositionOption[];
 };
 
 export type ColourOption = {
   hex: string;
+  name: string;
+};
+
+export type PositionOption = {
+  pan: number;
+  tilt: number;
   name: string;
 };
 
