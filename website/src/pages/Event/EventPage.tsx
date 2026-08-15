@@ -206,7 +206,7 @@ export const EventPage = () => {
           </Button> */}
         </Group>
 
-        <Container my="xl" ml={0}>
+        <Box my="xl" ml={0}>
           <Stack>
             <Group gap={0}>
               <Title>{evt?.name}</Title>
@@ -221,7 +221,7 @@ export const EventPage = () => {
               </Anchor>
             )}
           </Stack>
-        </Container>
+        </Box>
         {items.length !== 0 ? (
           <>
             {/* <Group justify="center"> */}

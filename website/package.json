@@ -21,8 +21,10 @@
     "@tanstack/react-router-devtools": "^1.167.1",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.12",
+    "konva": "^10.3.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-konva": "^19.2.5",
     "react-virtuoso": "^4.18.11",
     "zustand": "^5.0.14"
   },

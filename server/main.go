@@ -31,6 +31,7 @@ func main() {
 		&models.BumpConfiguration{},
 		&models.Bump{},
 		&models.Fixture{},
+		&models.Visualiser{},
 	); err != nil {
 		log.Fatalf("database: AutoMigrate failed: %v", err)
 	}

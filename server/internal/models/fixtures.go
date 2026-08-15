@@ -7,7 +7,8 @@ import (
 )
 
 // DTO
-type CreateFixtureReq struct {
+type UpsertFixtureReq struct {
+	ID             string `json:"id,omitempty"`
 	FixtureGroupId string `json:"fixtureGroupId"`
 	Name           string `json:"name"`
 	Type           string `json:"type"` // 'par' 'bar' 'moving_head'
