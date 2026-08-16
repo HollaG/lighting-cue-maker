@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestGetFixturesRequiresFixtureGroupID(t *testing.T) {
+func TestGetFixturesRequiresFixtureGroupOrEventID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(recorder)

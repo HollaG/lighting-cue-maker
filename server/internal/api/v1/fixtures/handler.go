@@ -13,29 +13,56 @@ import (
 
 func getFixtures(c *gin.Context) {
 	fixtureGroupId := c.Query("fixtureGroupId")
-	if fixtureGroupId == "" {
-		response.BadRequest(c, "Fixture group ID is required", nil)
-		return
-	}
-
-	var fixtureGroup models.FixtureGroupConfiguration
-	result := database.DB().Where("uuid = ?", fixtureGroupId).First(&fixtureGroup)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		response.NotFound(c, "Fixture group configuration not found")
-		return
-	}
-	if result.Error != nil {
-		response.InternalError(c, "Failed to get fixture group configuration")
+	eventId := c.Query("eventId")
+	if fixtureGroupId == "" && eventId == "" {
+		response.BadRequest(c, "Fixture group ID or event ID is required", nil)
 		return
 	}
 
 	fixtures := []models.Fixture{}
-	if result := database.DB().Where("fixture_group_configuration_uuid = ?", fixtureGroup.Uuid).Find(&fixtures); result.Error != nil {
-		response.InternalError(c, "Failed to get fixtures")
-		return
-	}
+	if fixtureGroupId != "" {
+		var fixtureGroup models.FixtureGroupConfiguration
+		result := database.DB().Where("uuid = ?", fixtureGroupId).First(&fixtureGroup)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			response.NotFound(c, "Fixture group configuration not found")
+			return
+		}
+		if result.Error != nil {
+			response.InternalError(c, "Failed to get fixture group configuration")
+			return
+		}
 
-	fmt.Println("API GET /v1/fixtures?fixtureGroupId=" + fixtureGroupId)
+		if result := database.DB().Where("fixture_group_configuration_uuid = ?", fixtureGroup.Uuid).Find(&fixtures); result.Error != nil {
+			response.InternalError(c, "Failed to get fixtures")
+			return
+		}
+
+		fmt.Println("API GET /v1/fixtures?fixtureGroupId=" + fixtureGroupId)
+	} else {
+		var event models.LightEvent
+		result := database.DB().Select("uuid").Where("uuid = ?", eventId).First(&event)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			response.NotFound(c, "Event not found")
+			return
+		}
+		if result.Error != nil {
+			response.InternalError(c, "Failed to get event")
+			return
+		}
+
+		fixtureGroupIds := database.DB().
+			Model(&models.FixtureGroupConfiguration{}).
+			Select("uuid").
+			Where("light_event_uuid = ?", event.Uuid)
+		if result := database.DB().
+			Where("fixture_group_configuration_uuid IN (?)", fixtureGroupIds).
+			Find(&fixtures); result.Error != nil {
+			response.InternalError(c, "Failed to get fixtures")
+			return
+		}
+
+		fmt.Println("API GET /v1/fixtures?eventId=" + eventId)
+	}
 
 	response.OK(c, map[string]any{
 		"fixtures": fixtures,

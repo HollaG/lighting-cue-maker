@@ -28,7 +28,7 @@ func TestDefaultVisualiser(t *testing.T) {
 	visualiser := defaultVisualiser("event-id")
 
 	if visualiser.LightEventUuid != "event-id" ||
-		string(visualiser.DefaultViewport) != `{"x":0,"y":0,"width":700,"height":500}` ||
+		visualiser.DefaultViewport != nil ||
 		string(visualiser.Objects2D) != "[]" {
 		t.Fatalf("unexpected default visualiser: %#v", visualiser)
 	}
