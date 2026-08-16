@@ -5,9 +5,28 @@ import type { TextConfig } from "konva/lib/shapes/Text";
 
 export type Visualiser = {
   id: string;
-  canvasWidth: number;
-  canvasHeight: number;
+
+  /** The view area that will be shown to users. Null when first created, but should be immediately configured (through a useEffect). */
+  defaultViewport?: VisualiserViewport;
   objects2D: VisualiserObject[];
+};
+
+/**
+ * Define how others view the visualiser.
+ * Scale the viewport such that the view is the same, regardless
+ * of actual viewport size  
+ *  *
+ */
+export type VisualiserViewport = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+
+  scale: number; // scale of the viewport, 1 = 100%. The user might have purposely zoomed out.
+
+  // originalWidth: number; // px of the original visualiser
+  // originalHeight: number; // px of the original visualiser
 };
 
 export type UpsertVisualiserReq = Partial<Visualiser> & { eventId: string };

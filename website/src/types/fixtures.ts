@@ -1,5 +1,9 @@
 export type FixtureType = "par" | "bar" | "moving_head";
 
+/**
+ * A representation of a lighting fixture.
+ *
+ */
 export type Fixture = {
   id: string;
   fixtureGroupId: string;
@@ -22,9 +26,10 @@ export type Fixture = {
   deletedAt: string | null;
 };
 
-export type UpsertFixtureReq = Omit<Fixture, "id" | "createdAt" | "updatedAt" | "deletedAt"> & {
-  id?: string;
-};
+export type UpsertFixtureReq = Partial<Omit<Fixture, "createdAt" | "updatedAt" | "deletedAt">>;
+
+// Helper type for 2D update
+export type UpdateFixtureIn2DReq = Pick<Fixture, "id" | "posX" | "posY" | "rotZ">;
 
 export type GetFixturesRes = {
   fixtures: Fixture[];

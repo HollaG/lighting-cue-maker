@@ -1,0 +1,26 @@
+.preview-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+.preview-viewer {
+  /* width: 100%; */
+  /* Height should be 4:3 */
+  /* height: 0; */
+  /* padding-bottom: 75%; */
+
+  background-color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-gray-9));
+  border-radius: var(--mantine-radius-md);
+}
+
+.preview-controls {
+  width: 400px;
+
+  padding: 1.5rem;
+
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-9));
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+
+}

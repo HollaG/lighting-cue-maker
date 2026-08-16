@@ -30,7 +30,7 @@ func getFixtures(c *gin.Context) {
 	}
 
 	fixtures := []models.Fixture{}
-	if result := database.DB().Where("fixture_group_uuid = ?", fixtureGroup.Uuid).Find(&fixtures); result.Error != nil {
+	if result := database.DB().Where("fixture_group_configuration_uuid = ?", fixtureGroup.Uuid).Find(&fixtures); result.Error != nil {
 		response.InternalError(c, "Failed to get fixtures")
 		return
 	}
@@ -56,14 +56,14 @@ func upsertFixture(c *gin.Context) {
 		response.BadRequest(c, "Fixture group ID is required", nil)
 		return
 	}
-	if req.Name == "" {
-		response.BadRequest(c, "Fixture name is required", nil)
-		return
-	}
-	if req.Type == "" {
-		response.BadRequest(c, "Fixture type is required", nil)
-		return
-	}
+	// if req.Name == "" {
+	// 	response.BadRequest(c, "Fixture name is required", nil)
+	// 	return
+	// }
+	// if req.Type == "" {
+	// 	response.BadRequest(c, "Fixture type is required", nil)
+	// 	return
+	// }
 
 	var fixtureGroup models.FixtureGroupConfiguration
 	result := database.DB().Where("uuid = ?", req.FixtureGroupId).First(&fixtureGroup)
@@ -92,7 +92,7 @@ func upsertFixture(c *gin.Context) {
 
 	var fixture models.Fixture
 	result = database.DB().Where(
-		"uuid = ? AND fixture_group_uuid = ?",
+		"uuid = ? AND fixture_group_configuration_uuid = ?",
 		req.ID,
 		fixtureGroup.Uuid,
 	).First(&fixture)
@@ -105,15 +105,42 @@ func upsertFixture(c *gin.Context) {
 		return
 	}
 
-	fixture.Name = req.Name
-	fixture.Type = req.Type
-	fixture.PosX = req.PosX
-	fixture.PosY = req.PosY
-	fixture.PosZ = req.PosZ
-	fixture.RotX = req.RotX
-	fixture.RotY = req.RotY
-	fixture.RotZ = req.RotZ
-	fixture.BeamAngle = req.BeamAngle
+	if req.Name != "" {
+		fixture.Name = req.Name
+	}
+	if req.Type != "" {
+		fixture.Type = req.Type
+	}
+	if req.PosX != 0 {
+		fixture.PosX = req.PosX
+	}
+	if req.PosY != 0 {
+		fixture.PosY = req.PosY
+	}
+	if req.PosZ != 0 {
+		fixture.PosZ = req.PosZ
+	}
+	if req.RotX != 0 {
+		fixture.RotX = req.RotX
+	}
+	if req.RotY != 0 {
+		fixture.RotY = req.RotY
+	}
+	if req.RotZ != 0 {
+		fixture.RotZ = req.RotZ
+	}
+	if req.BeamAngle != 0 {
+		fixture.BeamAngle = req.BeamAngle
+	}
+	// fixture.Name = req.Name
+	// fixture.Type = req.Type
+	// fixture.PosX = req.PosX
+	// fixture.PosY = req.PosY
+	// fixture.PosZ = req.PosZ
+	// fixture.RotX = req.RotX
+	// fixture.RotY = req.RotY
+	// fixture.RotZ = req.RotZ
+	// fixture.BeamAngle = req.BeamAngle
 
 	if result := database.DB().Save(&fixture); result.Error != nil {
 		response.InternalError(c, "Failed to update fixture")
@@ -157,15 +184,15 @@ func deleteFixture(c *gin.Context) {
 
 func fixtureFromRequest(req models.UpsertFixtureReq, fixtureGroupId string) models.Fixture {
 	return models.Fixture{
-		FixtureGroupUuid: fixtureGroupId,
-		Name:             req.Name,
-		Type:             req.Type,
-		PosX:             req.PosX,
-		PosY:             req.PosY,
-		PosZ:             req.PosZ,
-		RotX:             req.RotX,
-		RotY:             req.RotY,
-		RotZ:             req.RotZ,
-		BeamAngle:        req.BeamAngle,
+		FixtureGroupConfigurationUuid: fixtureGroupId,
+		Name:                          req.Name,
+		Type:                          req.Type,
+		PosX:                          req.PosX,
+		PosY:                          req.PosY,
+		PosZ:                          req.PosZ,
+		RotX:                          req.RotX,
+		RotY:                          req.RotY,
+		RotZ:                          req.RotZ,
+		BeamAngle:                     req.BeamAngle,
 	}
 }

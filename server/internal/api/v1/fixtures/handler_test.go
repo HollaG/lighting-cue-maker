@@ -55,7 +55,7 @@ func TestFixtureFromRequest(t *testing.T) {
 	if fixture.Uuid != "" {
 		t.Fatalf("new fixture must not copy request ID, got %q", fixture.Uuid)
 	}
-	if fixture.FixtureGroupUuid != "fixture-group" || fixture.Name != req.Name || fixture.Type != req.Type {
+	if fixture.FixtureGroupConfigurationUuid != "fixture-group" || fixture.Name != req.Name || fixture.Type != req.Type {
 		t.Fatalf("fixture identity fields were not mapped correctly: %#v", fixture)
 	}
 	if fixture.PosX != req.PosX || fixture.PosY != req.PosY || fixture.PosZ != req.PosZ ||

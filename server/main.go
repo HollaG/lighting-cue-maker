@@ -22,6 +22,14 @@ func main() {
 
 	database.Connect(cfg.DatabaseURL)
 
+	// AutoMigrate creates new columns but does not infer column renames.
+	if migrator := database.DB().Migrator(); migrator.HasColumn(&models.Fixture{}, "fixture_group_uuid") &&
+		!migrator.HasColumn(&models.Fixture{}, "fixture_group_configuration_uuid") {
+		if err := migrator.RenameColumn(&models.Fixture{}, "fixture_group_uuid", "fixture_group_configuration_uuid"); err != nil {
+			log.Fatalf("database: failed to rename fixture group column: %v", err)
+		}
+	}
+
 	if err := database.DB().AutoMigrate(
 		&models.LightEvent{},
 		&models.FixtureGroupConfiguration{},

@@ -66,7 +66,7 @@ func upsertVisualiser(c *gin.Context) {
 		response.BadRequest(c, "Event ID is required", nil)
 		return
 	}
-	if !isJSONArray(req.Objects2D) {
+	if len(req.Objects2D) > 0 && !isJSONArray(req.Objects2D) {
 		response.BadRequest(c, "Objects2D must be a JSON array", nil)
 		return
 	}
@@ -93,7 +93,11 @@ func upsertVisualiser(c *gin.Context) {
 		}
 
 		savedVisualiser = visualiserFromRequest(req)
-		if result := database.DB().Create(&savedVisualiser); result.Error != nil {
+		createQuery := database.DB()
+		if len(req.Objects2D) == 0 {
+			createQuery = createQuery.Omit("Objects2D")
+		}
+		if result := createQuery.Create(&savedVisualiser); result.Error != nil {
 			response.InternalError(c, "Failed to create visualiser")
 			return
 		}
@@ -109,10 +113,15 @@ func upsertVisualiser(c *gin.Context) {
 		return
 	}
 
-	savedVisualiser.CanvasWidth = req.CanvasWidth
-	savedVisualiser.CanvasHeight = req.CanvasHeight
-	savedVisualiser.Objects2D = req.Objects2D
-	if result := database.DB().Save(&savedVisualiser); result.Error != nil {
+	if req.DefaultViewport != nil {
+		savedVisualiser.DefaultViewport = req.DefaultViewport
+	}
+	updateFields := []string{"DefaultViewport"}
+	if len(req.Objects2D) > 0 {
+		savedVisualiser.Objects2D = req.Objects2D
+		updateFields = append(updateFields, "Objects2D")
+	}
+	if result := database.DB().Select(updateFields).Updates(&savedVisualiser); result.Error != nil {
 		response.InternalError(c, "Failed to update visualiser")
 		return
 	}
@@ -138,18 +147,18 @@ func isJSONArray(value datatypes.JSON) bool {
 
 func visualiserFromRequest(req models.UpsertVisualiserReq) models.Visualiser {
 	return models.Visualiser{
-		LightEventUuid: req.EventID,
-		CanvasWidth:    req.CanvasWidth,
-		CanvasHeight:   req.CanvasHeight,
-		Objects2D:      req.Objects2D,
+		LightEventUuid:  req.EventID,
+		DefaultViewport: req.DefaultViewport,
+		Objects2D:       req.Objects2D,
 	}
 }
 
 func defaultVisualiser(eventID string) models.Visualiser {
 	return models.Visualiser{
 		LightEventUuid: eventID,
-		CanvasWidth:    700,
-		CanvasHeight:   500,
-		Objects2D:      datatypes.JSON(`[]`),
+
+		// Users MUST create a default viewport.
+		DefaultViewport: nil,
+		Objects2D:       datatypes.JSON(`[]`),
 	}
 }

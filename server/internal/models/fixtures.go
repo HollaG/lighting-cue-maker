@@ -27,7 +27,7 @@ type UpsertFixtureReq struct {
 type Fixture struct {
 	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
-	FixtureGroupUuid string `json:"fixtureGroupId" gorm:"type:uuid;not null"`
+	FixtureGroupConfigurationUuid string `json:"fixtureGroupId" gorm:"type:uuid;not null"`
 
 	Name string `json:"name"`
 	Type string `json:"type"` // 'par' 'bar' 'moving_head'
