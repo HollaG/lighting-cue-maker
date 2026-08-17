@@ -53,6 +53,7 @@ func createAttributeConfiguration(c *gin.Context) {
 		Boolean:         req.Options.Boolean,
 		PresetIntensity: req.Options.PresetIntensity,
 		PresetColour:    req.Options.PresetColour,
+		PresetPosition:  req.Options.PresetPosition,
 	}
 
 	attr := models.AttributeConfiguration{
@@ -126,6 +127,7 @@ func updateAttributeConfiguration(c *gin.Context) {
 			Boolean:         req.Options.Boolean,
 			PresetIntensity: req.Options.PresetIntensity,
 			PresetColour:    req.Options.PresetColour,
+			PresetPosition:  req.Options.PresetPosition,
 		}
 		attr.Options = attributeOption
 		changed = true

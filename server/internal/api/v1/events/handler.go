@@ -95,6 +95,7 @@ func createEvent(c *gin.Context) {
 				Boolean:         attribute.Options.Boolean,
 				PresetIntensity: attribute.Options.PresetIntensity,
 				PresetColour:    attribute.Options.PresetColour,
+				PresetPosition:  attribute.Options.PresetPosition,
 			}
 
 			attribute := models.AttributeConfiguration{

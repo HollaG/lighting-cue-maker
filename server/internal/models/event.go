@@ -130,6 +130,7 @@ const (
 	// Prests
 	AttributeTypePresetIntensity AttributeType = "presetIntensity"
 	AttributeTypePresetColour    AttributeType = "presetColour"
+	AttributeTypePresetPosition  AttributeType = "presetPosition"
 )
 
 // Option is a single select / multiselect choice.
@@ -158,16 +159,23 @@ type SliderOption struct {
 	Max float64 `json:"max"`
 }
 
+type PresetPositionOption struct {
+	Pan  float64 `json:"pan"`
+	Tilt float64 `json:"tilt"`
+	Name string  `json:"name"`
+}
+
 // Please note that the key of the map MUST be from `type AttributeType`.
 type AttributeTypeOptions struct {
-	Select          []string       `json:"select,omitempty"`
-	Multiselect     []string       `json:"multiselect,omitempty"`
-	Colour          []ColourOption `json:"colour,omitempty"`
-	Slider          *SliderOption  `json:"slider,omitempty"`
-	SliderPresets   []float64      `json:"sliderPresets,omitempty"`
-	Boolean         *BooleanOption `json:"boolean,omitempty"`
-	PresetIntensity []float64      `json:"presetIntensity,omitempty"`
-	PresetColour    []ColourOption `json:"presetColour,omitempty"`
+	Select          []string               `json:"select,omitempty"`
+	Multiselect     []string               `json:"multiselect,omitempty"`
+	Colour          []ColourOption         `json:"colour,omitempty"`
+	Slider          *SliderOption          `json:"slider,omitempty"`
+	SliderPresets   []float64              `json:"sliderPresets,omitempty"`
+	Boolean         *BooleanOption         `json:"boolean,omitempty"`
+	PresetIntensity []float64              `json:"presetIntensity,omitempty"`
+	PresetColour    []ColourOption         `json:"presetColour,omitempty"`
+	PresetPosition  []PresetPositionOption `json:"presetPosition,omitempty"`
 	// Text and None have no options (null in TS), so no field needed.
 }
 
