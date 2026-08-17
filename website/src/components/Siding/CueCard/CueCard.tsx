@@ -988,21 +988,32 @@ function PositionSelect({
   const inputProps = form.getInputProps(fieldName);
   const initialPosition = inputProps.defaultValue as PositionOption | undefined;
 
+  console.log({ initialPosition });
+  const initialPositionIndex = initialPosition
+    ? positionOptions.findIndex(
+        (position) =>
+          position.pan === initialPosition.pan &&
+          position.tilt === initialPosition.tilt &&
+          position.name === initialPosition.name,
+      )
+    : -1;
+
   return (
     <Select
       comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
       searchable
       label={name}
-      data={positionOptions.map((position) => ({
-        value: positionToSelectValue(position),
+      data={positionOptions.map((position, index) => ({
+        // Mantine requires every Select value to be unique. Position values are not unique domain IDs.
+        value: String(index),
         label: position.name,
       }))}
       placeholder={placeholder}
       name={fieldName}
       key={form.key(fieldName)}
-      defaultValue={initialPosition ? positionToSelectValue(initialPosition) : null}
+      defaultValue={initialPositionIndex >= 0 ? String(initialPositionIndex) : null}
       onChange={(value) => {
-        const selectedPosition = positionOptions.find((position) => positionToSelectValue(position) === value);
+        const selectedPosition = value === null ? undefined : positionOptions[Number(value)];
         form.setFieldValue(fieldName, selectedPosition ? { ...selectedPosition } : undefined);
       }}
       onBlur={inputProps.onBlur}
@@ -1014,8 +1025,6 @@ function PositionSelect({
     />
   );
 }
-
-const positionToSelectValue = ({ pan, tilt }: PositionOption) => `${pan}-${tilt}`;
 
 function SliderPresetInput({
   name,

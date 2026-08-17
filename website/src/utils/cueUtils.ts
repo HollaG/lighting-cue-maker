@@ -298,9 +298,7 @@ export const createDefaultValueAssignment = (attribute: AttributeConfiguration):
             : attribute.optionPossibleValues[AttributeTypes.PRESET_INTENSITY]?.[0],
       };
     case AttributeTypes.PRESET_POSITION: {
-      const position = isPositionOption(defaultValue)
-        ? defaultValue
-        : attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]?.[0];
+      const position = isPositionOption(defaultValue) ? defaultValue : undefined;
 
       return { [AttributeTypes.PRESET_POSITION]: position ? { ...position } : undefined };
     }
