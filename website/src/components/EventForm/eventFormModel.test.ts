@@ -180,13 +180,13 @@ describe("eventToEventFormValues", () => {
     });
   });
 
-  it("converts preset position values between form strings and request numbers", () => {
+  it("creates zeroed preset positions from form position names", () => {
     const values = createEmptyEventFormValues();
     const fixtureGroup = createEmptyEventFormFixtureGroup(0);
     const attribute = createEmptyEventFormAttribute(0);
 
     attribute.type = AttributeTypes.PRESET_POSITION;
-    attribute.optionPossibleValues.presetPosition = [{ pan: "12.5", tilt: "-30", name: "Stage left" }];
+    attribute.optionPossibleValues.presetPosition = ["Stage left"];
     fixtureGroup.attributes[attribute.clientId] = attribute;
     fixtureGroup.attributeOrder.push(attribute.clientId);
     values.fixtureGroups[fixtureGroup.clientId] = fixtureGroup;
@@ -195,11 +195,11 @@ describe("eventToEventFormValues", () => {
     const request = eventFormValuesToCreateRequest(values);
 
     expect(request.fixtureGroups[0].attributes[0].optionPossibleValues).toEqual({
-      [AttributeTypes.PRESET_POSITION]: [{ pan: 12.5, tilt: -30, name: "Stage left" }],
+      [AttributeTypes.PRESET_POSITION]: [{ pan: 0, tilt: 0, name: "Stage left" }],
     });
   });
 
-  it("converts preset position numbers to strings when loading an event", () => {
+  it("loads preset position names into the form", () => {
     const event: LightEventConfiguration = {
       id: "event-id",
       name: "Test event",
@@ -230,8 +230,6 @@ describe("eventToEventFormValues", () => {
     const fixtureGroup = values.fixtureGroups[values.fixtureGroupOrder[0]];
     const attribute = fixtureGroup.attributes[fixtureGroup.attributeOrder[0]];
 
-    expect(attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]).toEqual([
-      { pan: "45", tilt: "-12.5", name: "Centre" },
-    ]);
+    expect(attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]).toEqual(["Centre"]);
   });
 });

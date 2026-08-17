@@ -6,10 +6,11 @@ import { lyricsSlice, type LyricsSlice, type InputMode } from "./slices/lyricsSl
 import { cueSlice, type CueSlice } from "./slices/cueSlice";
 import { bumpSlice, type BumpSlice } from "./slices/bumpSlice";
 import { timingSlice, type TimingSlice } from "./slices/timingSlice";
+import { visualiserSlice, type VisualiserSlice } from "./slices/visualiserSlice";
 
-export type { EventSlice, ItemSlice, LyricsSlice, CueSlice, BumpSlice, InputMode };
+export type { EventSlice, ItemSlice, LyricsSlice, CueSlice, BumpSlice, InputMode, VisualiserSlice };
 
-export type AppStore = EventSlice & ItemSlice & LyricsSlice & CueSlice & BumpSlice & TimingSlice;
+export type AppStore = EventSlice & ItemSlice & LyricsSlice & CueSlice & BumpSlice & TimingSlice & VisualiserSlice;
 
 export const useAppStore = create<AppStore>()(
   persist(
@@ -20,6 +21,7 @@ export const useAppStore = create<AppStore>()(
       ...cueSlice(...a),
       ...bumpSlice(...a),
       ...timingSlice(...a),
+      ...visualiserSlice(...a),
     }),
     {
       name: "code",

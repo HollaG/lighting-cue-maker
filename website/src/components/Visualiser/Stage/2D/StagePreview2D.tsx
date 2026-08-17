@@ -1,30 +1,14 @@
-import {
-  Fieldset,
-  Stack,
-  Flex,
-  Group,
-  Menu,
-  Button,
-  Center,
-  AspectRatio,
-  Box,
-  Select,
-  Text,
-  MantineProvider,
-} from "@mantine/core";
+import { Flex, Group, Button, AspectRatio, Box, Select, MantineProvider } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
 import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Layer, Stage, Text as KonvaText, Rect } from "react-konva";
-import { useDeleteFixture } from "../../../../query/useDeleteFixture";
-import { useGetFixtures } from "../../../../query/useGetFixtures";
 import { useUpsertFixture } from "../../../../query/useUpsertFixtures";
 import { useUpsertVisualiser } from "../../../../query/useUpsertVisualiser";
-import type { UpsertFixtureReq, Fixture, UpdateFixtureIn2DReq } from "../../../../types/fixtures";
+import type { Fixture, UpdateFixtureIn2DReq } from "../../../../types/fixtures";
 import type { FixtureGroupConfiguration } from "../../../../types/types";
 import type { Visualiser, VisualiserObject, VisualiserTypes, VisualiserRectangle } from "../../../../types/visualiser";
-import { CardBase } from "../../../Siding/CardBase";
 import { VisualiserCircleObject } from "../../Elements/VisualiserCircle";
 import { VisualiserLineObject } from "../../Elements/VisualiserLine";
 import { VisualiserParLightObject } from "../../Elements/VisualiserParLight";
@@ -32,101 +16,8 @@ import { VisualiserRectangleObject } from "../../Elements/VisualiserRect";
 import { VisualiserTextObject } from "../../Elements/VisualiserText";
 
 import classes from "./StagePreview2D.module.css";
-
-const DEFAULT_FIXTURE: UpsertFixtureReq = {
-  beamAngle: 0,
-
-  name: " ",
-  fixtureGroupId: "",
-  posX: 0,
-  posY: 0,
-  posZ: 0,
-  rotX: 0,
-  rotY: 0,
-  rotZ: 0,
-  type: "par",
-};
-export const VisualisationFixtureGroupCard = ({
-  fixtureGroup,
-  index,
-  setAllFixtures,
-}: {
-  fixtureGroup: FixtureGroupConfiguration;
-  index: number;
-  setAllFixtures: React.Dispatch<React.SetStateAction<Fixture[]>>;
-}) => {
-  const { fixtures } = useGetFixtures({ fixtureGroupId: fixtureGroup.id });
-  const { isPending, mutateAsync: upsertFixture } = useUpsertFixture();
-  const { isPending: isDeleting, mutateAsync: deleteFixture } = useDeleteFixture();
-
-  useEffect(() => {
-    setAllFixtures((prev) => {
-      const otherFixtures = prev.filter((f) => f.fixtureGroupId !== fixtureGroup.id);
-      return [...otherFixtures, ...fixtures];
-    });
-  }, [fixtures, fixtureGroup.id, setAllFixtures]);
-  const onAddFixture = async () => {
-    // upsert a new fixture with default values into the fixtures array for this fixture group
-
-    const result = await upsertFixture({ ...DEFAULT_FIXTURE, fixtureGroupId: fixtureGroup.id });
-
-    console.log({ result });
-  };
-
-  const onDeleteFixture = async (fixture: Fixture) => {
-    await deleteFixture({ fixtureId: fixture.id, fixtureGroupId: fixture.fixtureGroupId });
-  };
-  return (
-    <CardBase key={fixtureGroup.id} isActive={false} shadow={"none"}>
-      <Fieldset legend={`Group ${index + 1}: ${fixtureGroup.name}`}>
-        <Stack style={{ minWidth: "450px" }}>
-          {/* some stuff here */}
-          <Stack>
-            {fixtures.length ? (
-              fixtures.map((fixture, index) => (
-                <Group key={fixture.id}>
-                  <Text>Static light {index + 1}</Text>
-
-                  <Flex flex={1} />
-                  <Menu>
-                    <Menu.Target>
-                      <Button size="xs" variant="transparent">
-                        Change type{" "}
-                      </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item>Static light</Menu.Item>
-                      <Menu.Item>Moving light</Menu.Item>
-                      <Menu.Item>Bar light</Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                  <Button
-                    size="xs"
-                    variant="subtle"
-                    color="red"
-                    loading={isDeleting}
-                    onClick={() => onDeleteFixture(fixture)}
-                  >
-                    Delete
-                  </Button>
-                </Group>
-              ))
-            ) : (
-              <Center> No fixtures yet</Center>
-            )}
-          </Stack>
-
-          <Center>
-            <Button variant="subtle" size="xs" onClick={onAddFixture} loading={isPending}>
-              {" "}
-              Add a fixture{" "}
-            </Button>
-          </Center>
-        </Stack>
-      </Fieldset>
-    </CardBase>
-  );
-};
+import { VisualiserControls } from "../../Controls/VisualiserControl";
+import { useAppStore } from "../../../../store/appStore";
 
 // Pre-generate grid dots
 const gridDots: { x: number; y: number }[] = [];
@@ -142,15 +33,19 @@ export const StagePreview2D = ({
   eventId,
   visualiser,
   fixtures,
+  fixtureGroups,
 }: {
   eventId: string;
   visualiser: Visualiser;
   fixtures: Fixture[];
+  fixtureGroups: FixtureGroupConfiguration[];
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
   const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
   const { mutate: upsertFixture } = useUpsertFixture();
+
+  const setActiveObjectId = useAppStore((state) => state.setActiveObjectId);
 
   const [stageElements, setStageElements] = useState<VisualiserObject[]>(visualiser.objects2D);
 
@@ -229,12 +124,16 @@ export const StagePreview2D = ({
   }, [stageRef.current, containerRef.current]);
 
   // Controlled form component: Select new element type to add
-  const [selectedElementId, setSelectedElementId] = useState<VisualiserTypes | null>(null);
+  const [selectedElementType, setSelectedElementType] = useState<VisualiserTypes | null>(null);
   const onSelectElement = (elementId: VisualiserTypes | null) => {
     console.log(elementId);
-    setSelectedElementId(null);
+    setSelectedElementType(null);
 
     const id = crypto.randomUUID();
+
+    const stage = stageRef.current;
+    const x = stage ? (16 - stage.x()) / stage.scaleX() : 16;
+    const y = stage ? (75 - stage.y()) / stage.scaleY() : 75;
 
     switch (elementId) {
       case "rectangle":
@@ -247,8 +146,8 @@ export const StagePreview2D = ({
             name: "Rectangle",
             type: "rectangle",
             props: {
-              x: 10,
-              y: 10,
+              x,
+              y,
               width: 100,
               height: 100,
               // fill: "#eeeeee",
@@ -267,8 +166,8 @@ export const StagePreview2D = ({
             name: "Circle",
             type: "circle",
             props: {
-              x: 10 + 50,
-              y: 10 + 50,
+              x: x + 50,
+              y: y + 50,
               radius: 50,
               stroke: "#eeeeee",
               strokeWidth: 2,
@@ -286,8 +185,8 @@ export const StagePreview2D = ({
             name: "Line",
             type: "line",
             props: {
-              x: 10,
-              y: 150,
+              x: x + 10,
+              y: y + 150,
               points: [0, 0, 150, 0],
               stroke: "#eeeeee",
               strokeWidth: 2,
@@ -306,8 +205,8 @@ export const StagePreview2D = ({
             name: "Text",
             type: "text",
             props: {
-              x: 10,
-              y: 180,
+              x: x,
+              y: y,
               width: 200,
               text: "Text",
               fontSize: 24,
@@ -320,20 +219,25 @@ export const StagePreview2D = ({
     }
   };
 
-  const rects = stageElements.filter((el) => el.type === "rectangle");
-  const circles = stageElements.filter((el) => el.type === "circle");
-  const lines = stageElements.filter((el) => el.type === "line");
-  const texts = stageElements.filter((el) => el.type === "text");
+  // Shape select: "Stage Elements"
+  const [selectedId, setSelectedElementId] = useState<string | null>(null);
+  const onSelectShape = (id: string | null) => {
+    setSelectedElementId(id);
+    setActiveObjectId(id);
+  };
 
-  // Shape select
-  const [selectedId, selectShape] = useState<string | null>(null);
   const checkDeselect = (e: KonvaEventObject<MouseEvent | TouchEvent, Node<NodeConfig>>) => {
     // deselect when clicked on empty area
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty) {
-      selectShape(null);
+      onSelectShape(null);
     }
   };
+
+  const rects = stageElements.filter((el) => el.type === "rectangle");
+  const circles = stageElements.filter((el) => el.type === "circle");
+  const lines = stageElements.filter((el) => el.type === "line");
+  const texts = stageElements.filter((el) => el.type === "text");
 
   // Listen to resize events and update the scaling of the stage
 
@@ -371,30 +275,6 @@ export const StagePreview2D = ({
     // onSaveViewport();
   };
 
-  const ObjectMenu = memo(
-    ({ obj }: { obj: VisualiserObject }) => {
-      return (
-        <Menu shadow="sm" width={250} alignItemsLabels="all">
-          <Menu.Target>
-            <Button size="xs" variant="transparent">
-              Options
-            </Button>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Label>Display options</Menu.Label>
-            <Menu.CheckboxItem>Stroke</Menu.CheckboxItem>
-            <Menu.CheckboxItem>Fill</Menu.CheckboxItem>
-            <Menu.Item> Change colour </Menu.Item>
-            <Menu.Divider />
-            <Menu.Item color="red" onClick={() => onDeleteElement(obj.id)}>
-              Delete
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      );
-    },
-    (prev, next) => prev.obj.id === next.obj.id,
-  );
   let scaleBy = 1.05;
   const handleWheel = function (e: KonvaEventObject<WheelEvent, Node<NodeConfig>>) {
     if (!stageRef.current) return;
@@ -489,7 +369,7 @@ export const StagePreview2D = ({
                         shapeProps={rect.props}
                         isSelected={rect.id === selectedId}
                         onSelect={() => {
-                          selectShape(rect.id);
+                          onSelectShape(rect.id);
                         }}
                         onChange={(newAttrs) => {
                           const existingRect = rects.find((r) => r.id === rect.id);
@@ -509,7 +389,7 @@ export const StagePreview2D = ({
                         shapeProps={circle.props}
                         isSelected={circle.id === selectedId}
                         onSelect={() => {
-                          selectShape(circle.id);
+                          onSelectShape(circle.id);
                         }}
                         onChange={(newAttrs) => {
                           const existingCircle = circles.find((c) => c.id === circle.id);
@@ -528,7 +408,7 @@ export const StagePreview2D = ({
                         shapeProps={line.props}
                         isSelected={line.id === selectedId}
                         onSelect={() => {
-                          selectShape(line.id);
+                          onSelectShape(line.id);
                         }}
                         onChange={(newAttrs) => {
                           replaceStageElement({
@@ -545,7 +425,7 @@ export const StagePreview2D = ({
                         shapeProps={text.props}
                         isSelected={text.id === selectedId}
                         onSelect={() => {
-                          selectShape(text.id);
+                          onSelectShape(text.id);
                         }}
                         onChange={(newAttrs) => {
                           replaceStageElement({
@@ -562,7 +442,10 @@ export const StagePreview2D = ({
                     {fixtures.map((fixture) => (
                       <VisualiserParLightObject
                         key={fixture.id}
-                        onSelect={() => {}}
+                        isSelected={fixture.id === selectedId}
+                        onSelect={() => {
+                          onSelectShape(fixture.id);
+                        }}
                         // The shapeProps here have to be derived from our fixture data
                         // for x,y,z and rotation. Remember we need tohandle the arrow.
                         fixture={fixture}
@@ -574,9 +457,9 @@ export const StagePreview2D = ({
               ) : (
                 <div style={{ width: "100%", height: "100%" }}></div>
               )}
-              <Box style={{ position: "absolute", top: "1rem", right: "1rem" }}>
+              <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
                 <Select
-                  value={selectedElementId}
+                  value={selectedElementType}
                   onChange={(v: VisualiserTypes | null) => onSelectElement(v)}
                   data={[
                     {
@@ -596,7 +479,7 @@ export const StagePreview2D = ({
                       label: "Text",
                     },
                   ]}
-                  label="Add a shape"
+                  // label="Add a shape"
                   placeholder="Select a shape to add"
                 />
               </Box>
@@ -616,71 +499,12 @@ export const StagePreview2D = ({
       </Box>
 
       <Box className={classes["preview-controls"]}>
-        <Stack>
-          {rects.length ? (
-            <>
-              <Text fw="bold"> Rectangles </Text>
-              <Stack gap="xs">
-                {rects.map((rect, index) => (
-                  <Flex key={rect.id}>
-                    <Text style={{ flex: 1 }}>Rectangle {index + 1}</Text>
-                    <ObjectMenu obj={rect} />
-                  </Flex>
-                ))}
-              </Stack>
-            </>
-          ) : (
-            <></>
-          )}
-
-          {circles.length ? (
-            <>
-              <Text fw="bold"> Circles </Text>
-              <Stack gap="xs">
-                {circles.map((circle, index) => (
-                  <Group key={circle.id}>
-                    <Text style={{ flex: 1 }}>Circle {index + 1}</Text>
-                    <ObjectMenu obj={circle} />
-                  </Group>
-                ))}
-              </Stack>
-            </>
-          ) : (
-            <></>
-          )}
-
-          {lines.length ? (
-            <>
-              <Text fw="bold"> Lines </Text>
-              <Stack gap="xs">
-                {lines.map((line, index) => (
-                  <Flex key={line.id}>
-                    <Text style={{ flex: 1 }}>Line {index + 1}</Text>
-                    <ObjectMenu obj={line} />
-                  </Flex>
-                ))}
-              </Stack>
-            </>
-          ) : (
-            <></>
-          )}
-
-          {texts.length ? (
-            <>
-              <Text fw="bold"> Text </Text>
-              <Stack gap="xs">
-                {texts.map((text, index) => (
-                  <Flex key={text.id}>
-                    <Text style={{ flex: 1 }}>Text {index + 1}</Text>
-                    <ObjectMenu obj={text} />
-                  </Flex>
-                ))}
-              </Stack>
-            </>
-          ) : (
-            <></>
-          )}
-        </Stack>
+        <VisualiserControls
+          onDeleteElement={onDeleteElement}
+          stageElements={stageElements}
+          fixtureGroups={fixtureGroups}
+          stageRef={stageRef}
+        />
       </Box>
     </Flex>
   );

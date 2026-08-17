@@ -40,7 +40,7 @@ export const VisualiserCircleObject = ({
             y: e.target.y(),
           });
         }}
-        onTransformEnd={(e) => {
+        onTransformEnd={(_) => {
           // transformer is changing scale of the node
           // and NOT its width or height
           // but in the store we have only width and height
@@ -48,7 +48,7 @@ export const VisualiserCircleObject = ({
           const node = shapeRef.current;
           if (!node) return;
           const scaleX = node.scaleX();
-          const scaleY = node.scaleY();
+          // const scaleY = node.scaleY();
 
           // we will reset it back
           node.scaleX(1);

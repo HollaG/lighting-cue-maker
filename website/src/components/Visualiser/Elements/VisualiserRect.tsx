@@ -41,7 +41,7 @@ export const VisualiserRectangleObject = ({
             y: e.target.y(),
           });
         }}
-        onTransformEnd={(e) => {
+        onTransformEnd={(_) => {
           // transformer is changing scale of the node
           // and NOT its width or height
           // but in the store we have only width and height
