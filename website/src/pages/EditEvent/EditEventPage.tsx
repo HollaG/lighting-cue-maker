@@ -1,4 +1,4 @@
-import { Alert, Button, Center, Container, Group, Loader } from "@mantine/core";
+import { Alert, Box, Button, Center, Container, Group, Loader } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -26,6 +26,14 @@ export const EditEventPage = () => {
       to: "/events/$eventId",
       params: { eventId },
     });
+
+  const editVisualiser = () => {
+    navigate({
+      to: "/events/$eventId/visuals/update",
+      params: { eventId },
+      search: { from: "edit" },
+    });
+  };
 
   const onSubmit = async (values: EventFormValues) => {
     try {
@@ -78,6 +86,11 @@ export const EditEventPage = () => {
           onClick={returnToEvent}
         >
           Back to event
+        </Button>
+
+        <Box flex={1} />
+        <Button type="button" variant="light" onClick={editVisualiser}>
+          Edit visualisers
         </Button>
       </Group>
 

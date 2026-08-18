@@ -34,7 +34,7 @@ export const CreateEventPage = () => {
           console.log({ config });
           createEvent(config).then((res) => {
             if (res?.event?.id) {
-              navigate({ to: `/events/${res.event.id}/visuals/update?from=create` });
+              navigate({ to: `/events/${res.event.id}/visuals/update`, search: { from: "create" } });
             } else {
               // throw an error
               notifications.show({

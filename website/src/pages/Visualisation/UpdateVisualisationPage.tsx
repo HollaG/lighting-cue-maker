@@ -1,6 +1,6 @@
 import { Alert, Box, Button, Center, Container, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import { IconArrowLeft, IconInfoCircle } from "@tabler/icons-react";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useGetEvent } from "../../query/useGetEvent";
 
 import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
@@ -18,20 +18,33 @@ export const UpdateVisualisationPage = () => {
 
   const navigate = useNavigate();
 
+  const { from } = useSearch({ from: "/events/$eventId/visuals/update/" });
+
   return (
     <Box>
       {/* <Box style={{ width: "100%" }}> */}
       <Container size="xl" mt="4rem">
         <Group mb="2rem" style={{ width: "stretch" }}>
           <Box>
-            <Button
-              type="button"
-              leftSection={<IconArrowLeft width="1rem" />}
-              variant="transparent"
-              onClick={() => navigate({ to: `/events/${eventId}` })}
-            >
-              Back to event
-            </Button>
+            {from === "create" ? (
+              <Button
+                type="button"
+                leftSection={<IconArrowLeft width="1rem" />}
+                variant="transparent"
+                onClick={() => navigate({ to: `/events/${eventId}` })}
+              >
+                Back to event
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                leftSection={<IconArrowLeft width="1rem" />}
+                variant="transparent"
+                onClick={() => navigate({ to: `/events/${eventId}/edit` })}
+              >
+                Back to edit event
+              </Button>
+            )}
           </Box>
         </Group>
       </Container>
