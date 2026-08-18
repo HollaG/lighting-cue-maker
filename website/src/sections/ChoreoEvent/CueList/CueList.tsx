@@ -8,6 +8,7 @@ import type { FixtureGroupConfiguration } from "../../../types/types";
 export const CueList = memo(
   ({ itemId, fixtureGroups }: { itemId: string; fixtureGroups: FixtureGroupConfiguration[] }) => {
     const { cues, isCuesLoading } = useGetCues({ itemId });
+
     const cueOrder = useAppStore((s) => s.cueOrder);
     const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 

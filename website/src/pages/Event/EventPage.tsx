@@ -12,6 +12,7 @@ import {
   Group,
   Image,
   Kbd,
+  Loader,
   Menu,
   SimpleGrid,
   Stack,
@@ -54,14 +55,29 @@ export const EventPage = () => {
   const loadedEventId = evt?.id;
   const loadedEventName = evt?.name;
 
+  const [showCueList, setShowCueList] = useState(true);
+  const [isPendingCueListRendering, setIsPendingCueListRendering] = useState(true);
+
   useEffect(() => {
     if (!loadedEventId || !loadedEventName) return;
 
+    // save to localstorage
     saveRecentEvent({
       eventId: loadedEventId,
       eventName: loadedEventName,
     });
-  }, [loadedEventId, loadedEventName]);
+
+    // begin rendering of cue list
+    // startCueListRenderTransition(() => {
+    //   setShowCueList(true);
+    // });
+    if (showCueList) return;
+    setIsPendingCueListRendering(true);
+    setTimeout(() => {
+      setShowCueList(true);
+      setIsPendingCueListRendering(false);
+    }, 500);
+  }, [loadedEventId, loadedEventName, showCueList]);
 
   const activeItemId = useAppStore((s) => s.activeItemId);
   const showCues = useAppStore((s) => s.showCues);
@@ -139,7 +155,10 @@ export const EventPage = () => {
         key={item.id}
         className={classes.control}
         ref={setControlRef(item.id)}
-        onClick={() => changeActiveItem(item.id)}
+        onClick={() => {
+          changeActiveItem(item.id);
+          setShowCueList(false);
+        }}
         mod={{ active: activeItemId === item.id }}
         p={"xs"}
       >
@@ -389,7 +408,12 @@ export const EventPage = () => {
                     Cues
                   </Title>
                 </Group>
-                <CueList itemId={item.id} fixtureGroups={evt?.fixtureGroups ?? []} />
+                {showCueList && <CueList itemId={item.id} fixtureGroups={evt?.fixtureGroups ?? []} />}
+                {isPendingCueListRendering && (
+                  <Center>
+                    <Loader />
+                  </Center>
+                )}
               </Stack>
             ) : (
               <></>
