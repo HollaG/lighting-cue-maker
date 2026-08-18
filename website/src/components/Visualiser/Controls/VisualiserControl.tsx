@@ -1,6 +1,6 @@
-import { Accordion, Button, Center, Fieldset, Flex, Group, Menu, Stack, Text } from "@mantine/core";
+import { Accordion, Box, Button, Center, Fieldset, Flex, Group, Menu, Modal, Stack, Text } from "@mantine/core";
 import type { VisualiserObject } from "../../../types/visualiser";
-import type { Fixture, UpsertFixtureReq } from "../../../types/fixtures";
+import type { Fixture, UpdateFixtureReq, UpsertFixtureReq } from "../../../types/fixtures";
 import { CardBase } from "../../Siding/CardBase";
 import { useGetFixtures } from "../../../query/useGetFixtures";
 import { useUpsertFixture } from "../../../query/useUpsertFixtures";
@@ -9,32 +9,95 @@ import { useEffect, useState } from "react";
 import type { FixtureGroupConfiguration } from "../../../types/types";
 import { useAppStore } from "../../../store/appStore";
 import type { Stage } from "konva/lib/Stage";
+import { useDisclosure } from "@mantine/hooks";
+import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 
 const ObjectMenu = ({
   obj,
   onDeleteElement,
+  onUpdateElement,
 }: {
   obj: VisualiserObject;
   onDeleteElement: (elementId: string) => void;
-}) => (
-  <Menu shadow="sm" width={250} alignItemsLabels="all">
-    <Menu.Target>
-      <Button size="xs" variant="transparent">
-        Options
-      </Button>
-    </Menu.Target>
-    <Menu.Dropdown>
-      <Menu.Label>Display options</Menu.Label>
-      <Menu.CheckboxItem>Stroke</Menu.CheckboxItem>
-      <Menu.CheckboxItem>Fill</Menu.CheckboxItem>
-      <Menu.Item>Change colour</Menu.Item>
-      <Menu.Divider />
-      <Menu.Item color="red" onClick={() => onDeleteElement(obj.id)}>
-        Delete
-      </Menu.Item>
-    </Menu.Dropdown>
-  </Menu>
-);
+  onUpdateElement: (updatedElement: VisualiserObject) => void;
+}) => {
+  const isText = obj.type === "text";
+  const [opened, { close, open }] = useDisclosure(false);
+  const [text, setText] = useState(isText ? (obj.props.text ?? "") : "");
+
+  const onSubmitTextChange = () => {
+    if (obj.type !== "text") return;
+
+    onUpdateElement({
+      ...obj,
+      props: {
+        ...obj.props,
+        text,
+      },
+    });
+  };
+  return (
+    <>
+      <Modal opened={opened} onClose={close} title="Change text content" centered>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!isText) return;
+            onSubmitTextChange();
+            close();
+          }}
+        >
+          <Stack>
+            <CustomTextInput
+              label="New text"
+              placeholder="Enter the new text content..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              required
+            />
+            <Flex justify={"end"}>
+              <Box>
+                <Button variant="light" type="submit">
+                  {" "}
+                  Submit{" "}
+                </Button>
+              </Box>
+            </Flex>
+          </Stack>
+        </form>
+      </Modal>
+      <Menu shadow="sm" width={250} alignItemsLabels="all">
+        <Menu.Target>
+          <Button size="xs" variant="transparent">
+            Options
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {isText ? <Menu.Label> Element options </Menu.Label> : null}
+          {/* <Popover opened={opened} position="right">
+            <Popover.Target> */}
+          {isText ? <Menu.Item onClick={open}>Change Text</Menu.Item> : null}
+          {/* <Button> Change text</Button> */}
+          {/* </Popover.Target>
+            <Popover.Dropdown>
+              <Box onMouseEnter={open} onMouseLeave={close}>
+                <CustomTextInput label="New text" />
+              </Box>
+            </Popover.Dropdown>
+          </Popover> */}
+          <Menu.Label>Display options</Menu.Label>
+          <Menu.CheckboxItem>Stroke</Menu.CheckboxItem>
+          <Menu.CheckboxItem>Fill</Menu.CheckboxItem>
+          <Menu.Item>Change colour</Menu.Item>
+          <Menu.Divider />
+          <Menu.Item color="red" onClick={() => onDeleteElement(obj.id)}>
+            Delete
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    </>
+  );
+};
 
 const VisualiserObjectSection = ({
   title,
@@ -43,6 +106,7 @@ const VisualiserObjectSection = ({
 
   setStageElementAccordionValue,
   onDeleteElement,
+  onUpdateElement,
 }: {
   title: string;
   itemLabel: string;
@@ -50,6 +114,7 @@ const VisualiserObjectSection = ({
 
   setStageElementAccordionValue: (value: string | null) => void;
   onDeleteElement: (elementId: string) => void;
+  onUpdateElement: (updatedElement: VisualiserObject) => void;
 }) => {
   // if (!objects.length) return null;
 
@@ -81,7 +146,7 @@ const VisualiserObjectSection = ({
 
               <Flex style={{ flex: 1 }} />
 
-              <ObjectMenu obj={obj} onDeleteElement={onDeleteElement} />
+              <ObjectMenu obj={obj} onDeleteElement={onDeleteElement} onUpdateElement={onUpdateElement} />
             </Flex>
           ))}
         </Stack>
@@ -130,6 +195,10 @@ const VisualiserFixtureSection = ({
     console.log({ result });
   };
 
+  const onUpdateFixture = async (fixture: UpdateFixtureReq) => {
+    await upsertFixture(fixture);
+  };
+
   const onDeleteFixture = async (fixture: Fixture) => {
     await deleteFixture({ fixtureId: fixture.id, fixtureGroupId: fixture.fixtureGroupId });
   };
@@ -140,6 +209,19 @@ const VisualiserFixtureSection = ({
       setFixtureAccordionValue(fixtureGroup.id);
     }
   }, [selectedElementId, setFixtureAccordionValue]); // intentional excluded some deps
+
+  const getFixtureTextLabel = (fixture: Fixture, index: number) => {
+    switch (fixture.type) {
+      case "par":
+        return `${index + 1}. Static light `;
+      case "moving_head":
+        return `${index + 1}. Moving light`;
+      case "bar":
+        return `${index + 1}. Bar light`;
+      default:
+        return `${index + 1}. Fixture`;
+    }
+  };
 
   return (
     <Accordion.Item value={fixtureGroup.id}>
@@ -155,7 +237,7 @@ const VisualiserFixtureSection = ({
                   backgroundColor: selectedElementId === fixture.id ? "yellow" : "transparent",
                 }}
               >
-                Static light {index + 1}
+                {getFixtureTextLabel(fixture, index)}
               </Text>
               <Flex flex={1} />
 
@@ -166,9 +248,11 @@ const VisualiserFixtureSection = ({
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  <Menu.Item>Static light</Menu.Item>
-                  <Menu.Item>Moving light</Menu.Item>
-                  <Menu.Item>Bar light</Menu.Item>
+                  <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "par" })}>Static light</Menu.Item>
+                  <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "moving_head" })}>
+                    Moving light
+                  </Menu.Item>
+                  <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "bar" })}>Bar light</Menu.Item>
 
                   <Menu.Divider />
                   <Menu.Item color="red" onClick={() => onDeleteFixture(fixture)}>
@@ -278,11 +362,13 @@ export const VisualisationFixtureGroupCard = ({
 
 export const VisualiserControls = ({
   onDeleteElement,
+  onUpdateElement,
   stageElements,
   fixtureGroups,
   stageRef,
 }: {
   stageElements: VisualiserObject[];
+  onUpdateElement: (updatedElement: VisualiserObject) => void;
   onDeleteElement: (elementId: string) => void;
   fixtureGroups: FixtureGroupConfiguration[];
   stageRef: React.RefObject<Stage | null>;
@@ -345,6 +431,7 @@ export const VisualiserControls = ({
           itemLabel="Rectangle"
           objects={rects}
           onDeleteElement={onDeleteElement}
+          onUpdateElement={onUpdateElement}
           setStageElementAccordionValue={setStageElementAccordionValue}
         />
         <VisualiserObjectSection
@@ -353,6 +440,8 @@ export const VisualiserControls = ({
           itemLabel="Circle"
           objects={circles}
           onDeleteElement={onDeleteElement}
+          onUpdateElement={onUpdateElement}
+
           setStageElementAccordionValue={setStageElementAccordionValue}
         />
         <VisualiserObjectSection
@@ -361,6 +450,7 @@ export const VisualiserControls = ({
           itemLabel="Line"
           objects={lines}
           onDeleteElement={onDeleteElement}
+          onUpdateElement={onUpdateElement}
           setStageElementAccordionValue={setStageElementAccordionValue}
         />
         <VisualiserObjectSection
@@ -369,6 +459,7 @@ export const VisualiserControls = ({
           itemLabel="Text"
           objects={texts}
           onDeleteElement={onDeleteElement}
+          onUpdateElement={onUpdateElement}
           setStageElementAccordionValue={setStageElementAccordionValue}
         />
       </Accordion>

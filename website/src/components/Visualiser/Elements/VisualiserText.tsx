@@ -42,17 +42,20 @@ export const VisualiserTextObject = ({
         onTransformEnd={() => {
           const node = shapeRef.current;
           if (!node) return;
+          const scale = node.scaleX();
+          const fontSize = Math.max(5, node.fontSize() * scale);
 
-          // Resize the text box without stretching the glyphs.
-          const width = Math.max(5, node.width() * node.scaleX());
+          // Persist the visual scale as font size instead of resizing the text box.
           node.scaleX(1);
+          node.scaleY(1);
 
           onChange({
             ...shapeProps,
             x: node.x(),
             y: node.y(),
-            width,
+            width: Math.max(5, node.width() * scale),
             rotation: node.rotation(),
+            fontSize,
           });
         }}
       />
@@ -60,7 +63,8 @@ export const VisualiserTextObject = ({
         <Transformer
           ref={trRef}
           flipEnabled={false}
-          enabledAnchors={["middle-left", "middle-right"]}
+          keepRatio
+          enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
           boundBoxFunc={(oldBox, newBox) => {
             if (Math.abs(newBox.width) < 5) {
               return oldBox;

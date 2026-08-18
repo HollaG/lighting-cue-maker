@@ -27,6 +27,8 @@ export type Fixture = {
 };
 
 export type UpsertFixtureReq = Partial<Omit<Fixture, "createdAt" | "updatedAt" | "deletedAt">>;
+// More specific types
+export type UpdateFixtureReq = UpsertFixtureReq & { id: string };
 
 // Helper type for 2D update
 export type UpdateFixtureIn2DReq = Pick<Fixture, "id" | "posX" | "posY" | "rotZ">;

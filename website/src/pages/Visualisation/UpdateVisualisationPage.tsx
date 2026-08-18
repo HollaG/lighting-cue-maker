@@ -1,12 +1,11 @@
-import { Box, Button, Center, Container, Flex, Group, Loader, Scroller, Stack, Title } from "@mantine/core";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { Alert, Box, Button, Center, Container, Group, Loader, Stack, Text, Title } from "@mantine/core";
+import { IconArrowLeft, IconInfoCircle } from "@tabler/icons-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useGetEvent } from "../../query/useGetEvent";
 
 import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
 
 import { StagePreview2D } from "../../components/Visualiser/Stage/2D/StagePreview2D";
-import { VisualisationFixtureGroupCard } from "../../components/Visualiser/Controls/VisualiserControl";
 import { useGetFixturesByEventId } from "../../query/useGetFixtures";
 
 export const UpdateVisualisationPage = () => {
@@ -44,6 +43,23 @@ export const UpdateVisualisationPage = () => {
             <Title>
               Create visualisation for <span style={{ textDecoration: "underline" }}>{event?.name}</span>
             </Title>
+            <Alert title="Usage guide" icon={<IconInfoCircle />}>
+              <Stack>
+                <Text>
+                  {" "}
+                  Add fixtures for each fixture group and set their orientation, as given by the arc. Users will see
+                  these fixtures and can interact with them to set up the cue.{" "}
+                </Text>
+                <Text>
+                  Add stage elements for any physical stage objects (e.g. the stage itself) that you want to represent.
+                </Text>
+                <Text>
+                  Once you've added all your objects, position the viewport how you want users to see it, then click
+                  "Save viewport". The dashed rectangle represents the viewport that users will see.
+                </Text>
+                <Text>You can also zoom in/out to change the scale of the viewport.</Text>
+              </Stack>
+            </Alert>
 
             {/* <Scroller>
               <Group style={{ flexWrap: "nowrap" }}>

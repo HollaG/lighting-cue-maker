@@ -18,6 +18,8 @@ import { VisualiserTextObject } from "../../Elements/VisualiserText";
 import classes from "./StagePreview2D.module.css";
 import { VisualiserControls } from "../../Controls/VisualiserControl";
 import { useAppStore } from "../../../../store/appStore";
+import { VisualiserBarLightObject } from "../../Elements/VisualiserBarLight";
+import { VisualiserMovingLightObject } from "../../Elements/VisualiserMovingLight";
 
 // Pre-generate grid dots
 const gridDots: { x: number; y: number }[] = [];
@@ -151,7 +153,7 @@ export const StagePreview2D = ({
               width: 100,
               height: 100,
               // fill: "#eeeeee",
-              stroke: "#eeeeee",
+              stroke: "#aaaaaa",
               id,
             },
           } as VisualiserRectangle,
@@ -169,7 +171,7 @@ export const StagePreview2D = ({
               x: x + 50,
               y: y + 50,
               radius: 50,
-              stroke: "#eeeeee",
+              stroke: "#aaaaaa",
               strokeWidth: 2,
               id,
             },
@@ -188,7 +190,7 @@ export const StagePreview2D = ({
               x: x + 10,
               y: y + 150,
               points: [0, 0, 150, 0],
-              stroke: "#eeeeee",
+              stroke: "#aaaaaa",
               strokeWidth: 2,
               lineCap: "round",
               id,
@@ -210,7 +212,7 @@ export const StagePreview2D = ({
               width: 200,
               text: "Text",
               fontSize: 24,
-              fill: "#eeeeee",
+              fill: "#ffffff",
               id,
             },
           },
@@ -439,19 +441,45 @@ export const StagePreview2D = ({
                   </Layer>
 
                   <Layer>
-                    {fixtures.map((fixture) => (
-                      <VisualiserParLightObject
-                        key={fixture.id}
-                        isSelected={fixture.id === selectedId}
-                        onSelect={() => {
-                          onSelectShape(fixture.id);
-                        }}
-                        // The shapeProps here have to be derived from our fixture data
-                        // for x,y,z and rotation. Remember we need tohandle the arrow.
-                        fixture={fixture}
-                        onChange={debouncedSavePositions}
-                      />
-                    ))}
+                    {fixtures.map((fixture) =>
+                      fixture.type === "par" ? (
+                        <VisualiserParLightObject
+                          key={fixture.id}
+                          isSelected={fixture.id === selectedId}
+                          onSelect={() => {
+                            onSelectShape(fixture.id);
+                          }}
+                          // The shapeProps here have to be derived from our fixture data
+                          // for x,y,z and rotation. Remember we need tohandle the arrow.
+                          fixture={fixture}
+                          onChange={debouncedSavePositions}
+                        />
+                      ) : fixture.type === "bar" ? (
+                        <VisualiserBarLightObject
+                          key={fixture.id}
+                          isSelected={fixture.id === selectedId}
+                          onSelect={() => {
+                            onSelectShape(fixture.id);
+                          }}
+                          // The shapeProps here have to be derived from our fixture data
+                          // for x,y,z and rotation. Remember we need tohandle the arrow.
+                          fixture={fixture}
+                          onChange={debouncedSavePositions}
+                        />
+                      ) : fixture.type === "moving_head" ? (
+                        <VisualiserMovingLightObject
+                          key={fixture.id}
+                          isSelected={fixture.id === selectedId}
+                          onSelect={() => {
+                            onSelectShape(fixture.id);
+                          }}
+                          // The shapeProps here have to be derived from our fixture data
+                          // for x,y,z and rotation. Remember we need tohandle the arrow.
+                          fixture={fixture}
+                          onChange={debouncedSavePositions}
+                        />
+                      ) : null,
+                    )}
                   </Layer>
                 </Stage>
               ) : (
@@ -501,6 +529,7 @@ export const StagePreview2D = ({
       <Box className={classes["preview-controls"]}>
         <VisualiserControls
           onDeleteElement={onDeleteElement}
+          onUpdateElement={replaceStageElement}
           stageElements={stageElements}
           fixtureGroups={fixtureGroups}
           stageRef={stageRef}
