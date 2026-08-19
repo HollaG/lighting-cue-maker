@@ -44,7 +44,7 @@ export type ValueAssignment = {
   [AttributeTypes.SELECT]?: SelectOption; // value
   [AttributeTypes.MULTISELECT]?: MultiSelectOption[]; // value
   [AttributeTypes.COLOUR]?: ColourOption;
-  [AttributeTypes.SLIDER]?: SliderOption; // value
+  [AttributeTypes.SLIDER]?: number; // value
   [AttributeTypes.BOOLEAN]?: boolean; // True = checked, false = not checked
   [AttributeTypes.NONE]?: null;
   [AttributeTypes.SLIDER_PRESETS]?: SliderPresetsOption; // value

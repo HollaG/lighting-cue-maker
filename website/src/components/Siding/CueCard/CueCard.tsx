@@ -38,7 +38,7 @@ import {
   type ColourOption,
   type FixtureGroupConfiguration,
   type Item,
-  type PositionOption,
+  type PresetPositionOption,
 } from "../../../types/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
@@ -1051,40 +1051,43 @@ function PositionSelect({
   name: string;
   fieldName: string;
   form: UseFormReturnType<FormData>;
-  positionOptions: PositionOption[];
+  positionOptions: PresetPositionOption[];
   placeholder: string;
   required?: boolean;
 }) {
   const inputProps = form.getInputProps(fieldName);
-  const initialPosition = inputProps.defaultValue as PositionOption | undefined;
-
-  console.log({ initialPosition });
-  const initialPositionIndex = initialPosition
-    ? positionOptions.findIndex(
-        (position) =>
-          position.pan === initialPosition.pan &&
-          position.tilt === initialPosition.tilt &&
-          position.name === initialPosition.name,
-      )
-    : -1;
+  const initialPosition = inputProps.defaultValue as PresetPositionOption | undefined;
 
   return (
     <Select
       comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
       searchable
       label={name}
-      data={positionOptions.map((position, index) => ({
-        // Mantine requires every Select value to be unique. Position values are not unique domain IDs.
-        value: String(index),
+      data={positionOptions.map((position) => ({
+        // Position names remain the selector identity for now.
+        value: position.name,
         label: position.name,
       }))}
       placeholder={placeholder}
       name={fieldName}
       key={form.key(fieldName)}
-      defaultValue={initialPositionIndex >= 0 ? String(initialPositionIndex) : null}
+      defaultValue={initialPosition?.name ?? null}
       onChange={(value) => {
-        const selectedPosition = value === null ? undefined : positionOptions[Number(value)];
-        form.setFieldValue(fieldName, selectedPosition ? { ...selectedPosition } : undefined);
+        const selectedPosition = positionOptions.find((position) => position.name === value);
+        form.setFieldValue(
+          fieldName,
+          selectedPosition
+            ? {
+                ...selectedPosition,
+                fixtures: Object.fromEntries(
+                  Object.entries(selectedPosition.fixtures ?? {}).map(([fixtureId, fixturePosition]) => [
+                    fixtureId,
+                    { ...fixturePosition },
+                  ]),
+                ),
+              }
+            : undefined,
+        );
       }}
       onBlur={inputProps.onBlur}
       error={inputProps.error}

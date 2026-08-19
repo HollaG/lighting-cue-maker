@@ -18,11 +18,10 @@ export type EventFormKey = string;
 //   for example, configuring number values in the BE may require string values in the FE Form.
 export type EventFormAttributeOptions = Omit<
   AttributeTypesOptions,
-  typeof AttributeTypes.SLIDER_PRESETS | typeof AttributeTypes.PRESET_INTENSITY | typeof AttributeTypes.PRESET_POSITION
+  typeof AttributeTypes.SLIDER_PRESETS | typeof AttributeTypes.PRESET_INTENSITY
 > & {
   [AttributeTypes.SLIDER_PRESETS]?: string[];
   [AttributeTypes.PRESET_INTENSITY]?: string[];
-  [AttributeTypes.PRESET_POSITION]?: string[];
 };
 
 export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" | "optionPossibleValues"> & {
@@ -295,12 +294,9 @@ const formAttributeOptionsToAttributeOptions = (
       return { [AttributeTypes.PRESET_COLOUR]: options[AttributeTypes.PRESET_COLOUR] ?? [] };
     case AttributeTypes.PRESET_POSITION:
       return {
-        [AttributeTypes.PRESET_POSITION]: (options[AttributeTypes.PRESET_POSITION] ?? []).map((position) => ({
-          // IMPORTANT NOTE: When creating a new position, the pan and tilt will be set later.
-          pan: 0,
-          tilt: 0,
-          name: position,
-        })),
+        [AttributeTypes.PRESET_POSITION]: (options[AttributeTypes.PRESET_POSITION] ?? []).map(
+          clonePresetPositionOption,
+        ),
       };
     case AttributeTypes.TEXT:
     case AttributeTypes.NONE:
@@ -312,13 +308,14 @@ const attributeOptionsToFormAttributeOptions = (options: AttributeTypesOptions):
   ...options,
   [AttributeTypes.SLIDER_PRESETS]: (options[AttributeTypes.SLIDER_PRESETS] ?? []).map(String),
   [AttributeTypes.PRESET_INTENSITY]: (options[AttributeTypes.PRESET_INTENSITY] ?? []).map(String),
-  [AttributeTypes.PRESET_POSITION]: (options[AttributeTypes.PRESET_POSITION] ?? []).map(
-    (position) => position.name,
-    //   {
-    //   pan: String(position.pan),
-    //   tilt: String(position.tilt),
-    //   name: position.name,
-    // }
+  [AttributeTypes.PRESET_POSITION]: (options[AttributeTypes.PRESET_POSITION] ?? []).map(clonePresetPositionOption),
+});
+
+const clonePresetPositionOption = (position: PresetPositionOption): PresetPositionOption => ({
+  id: position.id || crypto.randomUUID(),
+  name: position.name,
+  fixtures: Object.fromEntries(
+    Object.entries(position.fixtures ?? {}).map(([fixtureId, fixturePosition]) => [fixtureId, { ...fixturePosition }]),
   ),
 });
 

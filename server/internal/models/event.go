@@ -159,10 +159,15 @@ type SliderOption struct {
 	Max float64 `json:"max"`
 }
 
-type PresetPositionOption struct {
+type FixturePosition struct {
 	Pan  float64 `json:"pan"`
 	Tilt float64 `json:"tilt"`
-	Name string  `json:"name"`
+}
+
+type PresetPositionOption struct {
+	ID       string                     `json:"id"`
+	Name     string                     `json:"name"`
+	Fixtures map[string]FixturePosition `json:"fixtures"`
 }
 
 // Please note that the key of the map MUST be from `type AttributeType`.

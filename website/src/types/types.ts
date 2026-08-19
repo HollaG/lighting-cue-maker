@@ -97,10 +97,6 @@ export type ColourOption = {
   name: string;
 };
 
-type PositionOption = {
-  name: string;
-};
-
 export const BooleanOptions = {
   CHECKED: "checkedDefault",
   UNCHECKED: "uncheckedDefault",
@@ -108,10 +104,15 @@ export const BooleanOptions = {
 
 export type PresetIntensityOption = number;
 export type PresetColourOption = ColourOption;
-export type PresetPositionOption = {
-  name: string;
+export type FixturePosition = {
   pan: number;
   tilt: number;
+};
+
+export type PresetPositionOption = {
+  id: string;
+  name: string;
+  fixtures: Record<string, FixturePosition>;
 };
 
 export type BooleanOptions = (typeof BooleanOptions)[keyof typeof BooleanOptions];

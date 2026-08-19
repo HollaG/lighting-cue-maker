@@ -5,10 +5,16 @@ import {
   removeCueFromRawLyrics,
   CUE_START,
   CUE_END,
+  createDefaultValueAssignment,
   reconcileCueAssignments,
 } from "../cueUtils";
 import type { Cue } from "../../types/cues";
-import { AttributeTypes, BooleanOptions, type FixtureGroupConfiguration } from "../../types/types";
+import {
+  AttributeTypes,
+  BooleanOptions,
+  type AttributeConfiguration,
+  type FixtureGroupConfiguration,
+} from "../../types/types";
 
 describe("cueUtils", () => {
   it("constants use curly braces", () => {
@@ -176,5 +182,29 @@ describe("cueUtils", () => {
       type: AttributeTypes.SELECT,
       value: { [AttributeTypes.SELECT]: "Default option" },
     });
+  });
+
+  it("copies preset position fixture values when creating a default assignment", () => {
+    const defaultPosition = {
+      id: "position-id",
+      name: "Centre",
+      fixtures: {
+        "fixture-id": { pan: 45, tilt: -12.5 },
+      },
+    };
+    const attribute: AttributeConfiguration = {
+      id: "attribute-id",
+      name: "Position",
+      type: AttributeTypes.PRESET_POSITION,
+      metadata: { defaultValue: defaultPosition },
+      optionPossibleValues: { [AttributeTypes.PRESET_POSITION]: [defaultPosition] },
+      order: 0,
+    };
+
+    const result = createDefaultValueAssignment(attribute)[AttributeTypes.PRESET_POSITION];
+
+    expect(result).toEqual(defaultPosition);
+    expect(result).not.toBe(defaultPosition);
+    expect(result?.fixtures["fixture-id"]).not.toBe(defaultPosition.fixtures["fixture-id"]);
   });
 });

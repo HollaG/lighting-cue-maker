@@ -29,10 +29,12 @@ export const UpdateVisualisationPage = () => {
               <Button
                 type="button"
                 leftSection={<IconArrowLeft width="1rem" />}
-                variant="transparent"
+                // variant="transparent"
+                variant="light"
+
                 onClick={() => navigate({ to: `/events/${eventId}` })}
               >
-                Back to event
+                Go to event
               </Button>
             ) : (
               <Button
@@ -88,7 +90,7 @@ export const UpdateVisualisationPage = () => {
           <Loader />{" "}
         </Center>
       )}
-      <Container mt="2rem" fluid style={{ width: "100%", maxHeight: "85vh" }}>
+      <Container mt="2rem" fluid style={{ width: "100%" }}>
         <Box>
           {event && visualiser && fixtures ? (
             <StagePreview2D
@@ -100,6 +102,8 @@ export const UpdateVisualisationPage = () => {
           ) : null}
         </Box>
       </Container>
+
+      <Center mt="lg">{<Button onClick={() => navigate({ to: `/events/${eventId}` })}>Go to event</Button>}</Center>
     </Box>
   );
 };

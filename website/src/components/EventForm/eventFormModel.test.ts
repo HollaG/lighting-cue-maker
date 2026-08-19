@@ -180,13 +180,19 @@ describe("eventToEventFormValues", () => {
     });
   });
 
-  it("creates zeroed preset positions from form position names", () => {
+  it("creates preset positions from the complete form values", () => {
     const values = createEmptyEventFormValues();
     const fixtureGroup = createEmptyEventFormFixtureGroup(0);
     const attribute = createEmptyEventFormAttribute(0);
 
     attribute.type = AttributeTypes.PRESET_POSITION;
-    attribute.optionPossibleValues.presetPosition = ["Stage left"];
+    attribute.optionPossibleValues.presetPosition = [
+      {
+        id: "position-id",
+        name: "Stage left",
+        fixtures: {},
+      },
+    ];
     fixtureGroup.attributes[attribute.clientId] = attribute;
     fixtureGroup.attributeOrder.push(attribute.clientId);
     values.fixtureGroups[fixtureGroup.clientId] = fixtureGroup;
@@ -195,11 +201,11 @@ describe("eventToEventFormValues", () => {
     const request = eventFormValuesToCreateRequest(values);
 
     expect(request.fixtureGroups[0].attributes[0].optionPossibleValues).toEqual({
-      [AttributeTypes.PRESET_POSITION]: [{ pan: 0, tilt: 0, name: "Stage left" }],
+      [AttributeTypes.PRESET_POSITION]: [{ id: "position-id", name: "Stage left", fixtures: {} }],
     });
   });
 
-  it("loads preset position names into the form", () => {
+  it("preserves preset position fixtures through an edit form save", () => {
     const event: LightEventConfiguration = {
       id: "event-id",
       name: "Test event",
@@ -217,7 +223,15 @@ describe("eventToEventFormValues", () => {
               metadata: {},
               order: 0,
               optionPossibleValues: {
-                [AttributeTypes.PRESET_POSITION]: [{ pan: 45, tilt: -12.5, name: "Centre" }],
+                [AttributeTypes.PRESET_POSITION]: [
+                  {
+                    id: "position-id",
+                    name: "Centre",
+                    fixtures: {
+                      "fixture-id": { pan: 45, tilt: -12.5 },
+                    },
+                  },
+                ],
               },
             },
           ],
@@ -230,6 +244,21 @@ describe("eventToEventFormValues", () => {
     const fixtureGroup = values.fixtureGroups[values.fixtureGroupOrder[0]];
     const attribute = fixtureGroup.attributes[fixtureGroup.attributeOrder[0]];
 
-    expect(attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]).toEqual(["Centre"]);
+    const expectedPositions = [
+      {
+        id: "position-id",
+        name: "Centre",
+        fixtures: {
+          "fixture-id": { pan: 45, tilt: -12.5 },
+        },
+      },
+    ];
+
+    expect(attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]).toEqual(expectedPositions);
+
+    const request = eventFormValuesToUpdateRequest(values);
+    expect(request.fixtureGroups?.[0].attributes[0].optionPossibleValues).toEqual({
+      [AttributeTypes.PRESET_POSITION]: expectedPositions,
+    });
   });
 });
