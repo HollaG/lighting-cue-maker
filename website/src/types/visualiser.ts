@@ -2,6 +2,8 @@ import type { CircleConfig } from "konva/lib/shapes/Circle";
 import type { LineConfig } from "konva/lib/shapes/Line";
 import type { RectConfig } from "konva/lib/shapes/Rect";
 import type { TextConfig } from "konva/lib/shapes/Text";
+import type { AttributeTypes } from "./types";
+import type { PositionOption } from "./fixtures";
 
 export type Visualiser = {
   id: string;
@@ -9,6 +11,21 @@ export type Visualiser = {
   /** The view area that will be shown to users. Null when first created, but should be immediately configured (through a useEffect). */
   defaultViewport?: VisualiserViewport;
   objects2D: VisualiserObject[];
+
+  /** Map certain editable attributes e.g. pan and tilt from a key decided by event creation
+   * to hard values that the VisualiserObjects can decode */
+  fixtureAttributeMapping: FixtureAttributeMapping;
+};
+
+export type FixtureAttributeMapping = {
+  [fixtureGroupId: string]: {
+    // add other attributes later
+    [AttributeTypes.PRESET_POSITION]?: {
+      [positionOptionId: string]: {
+        [fixtureId: string]: PositionOption;
+      };
+    };
+  };
 };
 
 /**

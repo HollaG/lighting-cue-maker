@@ -44,3 +44,9 @@ export type UpsertFixtureRes = {
 export type DeleteFixtureRes = {
   message: string;
 };
+
+// Configs for fixture attributes and how they can be represented to simulate
+export type PositionOption = {
+  pan: number;
+  tilt: number;
+};

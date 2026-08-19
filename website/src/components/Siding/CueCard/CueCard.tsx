@@ -29,7 +29,7 @@ import {
   useCombobox,
 } from "@mantine/core";
 import { CardBase } from "../CardBase";
-import type { Cue, FixtureGroupsAssignment } from "../../../types/cues";
+import type { Cue } from "../../../types/cues";
 import { useAppStore } from "../../../store/appStore";
 import {
   AttributeTypes,
@@ -482,7 +482,7 @@ const CueCardInternal = ({
 
               <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
               <SegmentedControl
-                data={["Table", "2D", "3D"]}
+                data={["Table", "2D View"]}
                 value={viewMode}
                 onChange={(value) => setViewMode(value as "Table" | "2D" | "3D")}
               />
@@ -647,7 +647,11 @@ const FixtureGroupSection = ({
 
   return (
     <Fieldset
-      legend={`Group ${index}: ${group.name}`}
+      legend={
+        <Text>
+          Group {index}: {group.name}
+        </Text>
+      }
       style={{
         backgroundColor: "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
         // backgroundClip
@@ -1074,20 +1078,7 @@ function PositionSelect({
       defaultValue={initialPosition?.name ?? null}
       onChange={(value) => {
         const selectedPosition = positionOptions.find((position) => position.name === value);
-        form.setFieldValue(
-          fieldName,
-          selectedPosition
-            ? {
-                ...selectedPosition,
-                fixtures: Object.fromEntries(
-                  Object.entries(selectedPosition.fixtures ?? {}).map(([fixtureId, fixturePosition]) => [
-                    fixtureId,
-                    { ...fixturePosition },
-                  ]),
-                ),
-              }
-            : undefined,
-        );
+        form.setFieldValue(fieldName, selectedPosition ? { ...selectedPosition } : undefined);
       }}
       onBlur={inputProps.onBlur}
       error={inputProps.error}

@@ -21,7 +21,7 @@ export const PresetPositionHandler = ({
       {...inputProps}
       defaultValue={positions.map((position) => position.name)}
       onChange={(names) => {
-        // The input edits names only, so retain fixture coordinates for every unchanged name.
+        // The input edits names only, so retain the ID for every unchanged name.
         const currentPositions = getPositions(form, opvFieldName);
 
         console.log("PresetPositionHandler onChange", { names, currentPositions });
@@ -32,7 +32,6 @@ export const PresetPositionHandler = ({
               currentPositions.find((position) => position.name === name) ?? {
                 id: crypto.randomUUID(),
                 name,
-                fixtures: {},
               },
           ),
           { forceUpdate: false },

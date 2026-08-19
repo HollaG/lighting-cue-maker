@@ -108,7 +108,14 @@ export const CueCardDemo = ({ fixtureGroups, cueNumber, isCueSelected }: CueCard
           ) : (
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 2 }} mb="md">
               {fixtureGroups.map((group, index) => (
-                <Fieldset key={group.id} legend={`Group ${index + 1}: ${group.name}`}>
+                <Fieldset
+                  key={group.id}
+                  legend={
+                    <Text>
+                      Group {index + 1}: {group.name}
+                    </Text>
+                  }
+                >
                   <Stack gap="xs">
                     {group.attributes.map((attribute) => (
                       <DemoAttributeInput key={attribute.id} attribute={attribute} groupId={group.id} form={form} />

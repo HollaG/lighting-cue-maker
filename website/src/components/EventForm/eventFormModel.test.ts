@@ -190,7 +190,6 @@ describe("eventToEventFormValues", () => {
       {
         id: "position-id",
         name: "Stage left",
-        fixtures: {},
       },
     ];
     fixtureGroup.attributes[attribute.clientId] = attribute;
@@ -201,11 +200,11 @@ describe("eventToEventFormValues", () => {
     const request = eventFormValuesToCreateRequest(values);
 
     expect(request.fixtureGroups[0].attributes[0].optionPossibleValues).toEqual({
-      [AttributeTypes.PRESET_POSITION]: [{ id: "position-id", name: "Stage left", fixtures: {} }],
+      [AttributeTypes.PRESET_POSITION]: [{ id: "position-id", name: "Stage left" }],
     });
   });
 
-  it("preserves preset position fixtures through an edit form save", () => {
+  it("preserves preset positions through an edit form save", () => {
     const event: LightEventConfiguration = {
       id: "event-id",
       name: "Test event",
@@ -227,9 +226,6 @@ describe("eventToEventFormValues", () => {
                   {
                     id: "position-id",
                     name: "Centre",
-                    fixtures: {
-                      "fixture-id": { pan: 45, tilt: -12.5 },
-                    },
                   },
                 ],
               },
@@ -248,9 +244,6 @@ describe("eventToEventFormValues", () => {
       {
         id: "position-id",
         name: "Centre",
-        fixtures: {
-          "fixture-id": { pan: 45, tilt: -12.5 },
-        },
       },
     ];
 

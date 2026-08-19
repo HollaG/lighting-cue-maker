@@ -3,7 +3,7 @@ import { useDebouncedCallback, useElementSize } from "@mantine/hooks";
 import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 import { useEffect, useId, useRef, useState } from "react";
-import { Layer, Stage, Text as KonvaText, Rect } from "react-konva";
+import { Layer, Stage, Rect } from "react-konva";
 import { useUpsertFixture } from "../../../../query/useUpsertFixtures";
 import { useUpsertVisualiser } from "../../../../query/useUpsertVisualiser";
 import type { Fixture, UpdateFixtureIn2DReq } from "../../../../types/fixtures";
@@ -361,7 +361,6 @@ export const StagePreview2D = ({
               })}
             </Layer> */}
                   <Layer>
-                    <KonvaText text="Try to drag shapes" fontSize={15} />
                     {/* <Rect x={20} y={50} width={100} height={100} fill="red" shadowBlur={10} draggable /> */}
 
                     {rects.map((rect) => (
@@ -533,6 +532,7 @@ export const StagePreview2D = ({
           stageElements={stageElements}
           fixtureGroups={fixtureGroups}
           stageRef={stageRef}
+          visualiser={visualiser}
         />
       </Box>
     </Flex>
@@ -548,7 +548,7 @@ export const StagePreview2D = ({
 export const StaticStagePreview2D = ({
   visualiser,
   fixtures,
-  fixtureGroups,
+  // fixtureGroups,
   fixtureGroupsAssignment,
   controls,
 }: {
@@ -645,7 +645,6 @@ export const StaticStagePreview2D = ({
               })}
             </Layer> */}
                       <Layer listening={false}>
-                        <KonvaText text="Try to drag shapes" fontSize={15} />
                         {/* <Rect x={20} y={50} width={100} height={100} fill="red" shadowBlur={10} draggable /> */}
 
                         {rects.map((rect) => (
@@ -752,6 +751,17 @@ export const StaticStagePreview2D = ({
                               fixture={fixture}
                               onChange={() => {}}
                               viewOnly
+
+                              colourAttribute={
+                                getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
+                                  ?.value?.[AttributeTypes.PRESET_COLOUR]
+                              }
+                              intensityAttribute={
+                                getSpecificAttributeGivenTheType(
+                                  fixture.fixtureGroupId,
+                                  AttributeTypes.PRESET_INTENSITY,
+                                )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                              }
                             />
                           ) : null,
                         )}

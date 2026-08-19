@@ -5,7 +5,6 @@ import {
   type AttributeConfiguration,
   type ColourOption,
   type FixtureGroupConfiguration,
-  type FixturePosition,
   type PresetPositionOption,
 } from "../types/types";
 import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
@@ -324,30 +323,14 @@ const isColourOption = (value: unknown): value is ColourOption =>
   "name" in value &&
   typeof value.name === "string";
 
-const isFixturePosition = (value: unknown): value is FixturePosition =>
-  typeof value === "object" &&
-  value !== null &&
-  "pan" in value &&
-  typeof value.pan === "number" &&
-  "tilt" in value &&
-  typeof value.tilt === "number";
-
 const isPresetPositionOption = (value: unknown): value is PresetPositionOption =>
   typeof value === "object" &&
   value !== null &&
   "id" in value &&
   typeof value.id === "string" &&
   "name" in value &&
-  typeof value.name === "string" &&
-  "fixtures" in value &&
-  typeof value.fixtures === "object" &&
-  value.fixtures !== null &&
-  !Array.isArray(value.fixtures) &&
-  Object.values(value.fixtures).every(isFixturePosition);
+  typeof value.name === "string";
 
 const clonePresetPositionOption = (position: PresetPositionOption): PresetPositionOption => ({
   ...position,
-  fixtures: Object.fromEntries(
-    Object.entries(position.fixtures).map(([fixtureId, fixturePosition]) => [fixtureId, { ...fixturePosition }]),
-  ),
 });

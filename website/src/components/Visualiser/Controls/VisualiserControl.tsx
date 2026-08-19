@@ -1,12 +1,26 @@
-import { Accordion, Box, Button, Center, Fieldset, Flex, Group, Menu, Modal, Stack, Text } from "@mantine/core";
-import type { VisualiserObject } from "../../../types/visualiser";
+import {
+  Accordion,
+  Box,
+  Button,
+  Center,
+  Collapse,
+  Fieldset,
+  Flex,
+  Group,
+  Menu,
+  Modal,
+  SimpleGrid,
+  Stack,
+  Text,
+} from "@mantine/core";
+import type { FixtureAttributeMapping, Visualiser, VisualiserObject } from "../../../types/visualiser";
 import type { Fixture, UpdateFixtureReq, UpsertFixtureReq } from "../../../types/fixtures";
 import { CardBase } from "../../Siding/CardBase";
 import { useGetFixtures } from "../../../query/useGetFixtures";
 import { useUpsertFixture } from "../../../query/useUpsertFixtures";
 import { useDeleteFixture } from "../../../query/useDeleteFixture";
-import { useEffect, useState } from "react";
-import type { FixtureGroupConfiguration } from "../../../types/types";
+import React, { useEffect, useState } from "react";
+import { AttributeTypes, type FixtureGroupConfiguration } from "../../../types/types";
 import { useAppStore } from "../../../store/appStore";
 import type { Stage } from "konva/lib/Stage";
 import { useDisclosure } from "@mantine/hooks";
@@ -169,7 +183,9 @@ const VisualiserFixtureSection = ({
   index,
   setFixtureAccordionValue,
   stageRef,
+  visualiser,
 }: {
+  visualiser: Visualiser;
   fixtureGroup: FixtureGroupConfiguration;
   index: number;
   setFixtureAccordionValue: (value: string | null) => void;
@@ -232,6 +248,79 @@ const VisualiserFixtureSection = ({
     }
   };
 
+  // For handling special attributes like pan/tilt
+  const hasPresetPositionAttribute = fixtureGroup.attributes.some(
+    (attr) => attr.type === AttributeTypes.PRESET_POSITION,
+  );
+  const presetPositionOptions = hasPresetPositionAttribute
+    ? (fixtureGroup.attributes.find((attr) => attr.type === AttributeTypes.PRESET_POSITION)?.optionPossibleValues[
+        AttributeTypes.PRESET_POSITION
+      ] ?? [])
+    : [];
+
+  const [isEditingSpecialAttributes, setIsEditingSpecialAttributes] = useState(false);
+  const [editingFixtureId, setEditingFixtureId] = useState<string | null>(null);
+  const [fixtureAttributeMapping, setFixtureAttributeMapping] = useState<FixtureAttributeMapping>(
+    visualiser.fixtureAttributeMapping ?? {},
+  );
+
+  // shared
+  // TODO: this either needs to be in a store or lifted up through state
+  // So that the preview can access the values it should, preview
+  // This is work for tomorrow
+  const [previewFixtureId, setPreviewFixtureId] = useState<string | null>(null);
+  const onSave = () => {
+    setIsEditingSpecialAttributes(false);
+    setEditingFixtureId(null);
+  };
+
+  const onPositionAttributeInput = (
+    fixtureId: string,
+    positionOptionId: string,
+    fixtureGroupId: string,
+    {
+      pan,
+      tilt,
+    }: {
+      pan?: number;
+      tilt?: number;
+    },
+  ) => {
+    // Update the fixtureAttributeMapping state with the new pan/tilt values for the given fixtureId and positionOptionId
+    setFixtureAttributeMapping((prev) => {
+      const newMapping = { ...prev };
+
+      if (!newMapping[fixtureGroupId]) {
+        newMapping[fixtureGroupId] = {};
+      }
+
+      if (!newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]) {
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION] = {};
+      }
+
+      if (!newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId]) {
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId] = {};
+      }
+
+      newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId] = {
+        pan: pan ?? 0,
+        tilt: tilt ?? 0,
+      };
+
+      return newMapping;
+    });
+  };
+
+  const get2DRotationFromPanAndTilt = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
+    const { pan, tilt } = fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+      positionOptionId
+    ]?.[fixtureId] ?? { pan: 0, tilt: 0 };
+
+    // if tilt > 90, add 180 to pan
+    const pan2D = tilt > 90 ? pan + 180 : pan;
+    return pan2D;
+  };
+
   return (
     <Accordion.Item value={fixtureGroup.id}>
       <Accordion.Control>
@@ -240,36 +329,106 @@ const VisualiserFixtureSection = ({
       <Accordion.Panel>
         <Stack gap="xs">
           {fixtures.map((fixture, index) => (
-            <Flex key={fixture.id}>
-              <Text
-                style={{
-                  backgroundColor: selectedElementId === fixture.id ? "yellow" : "transparent",
-                }}
-              >
-                {getFixtureTextLabel(fixture, index)}
-              </Text>
-              <Flex flex={1} />
+            <Stack key={fixture.id}>
+              <Flex>
+                <Text
+                  style={{
+                    backgroundColor: selectedElementId === fixture.id ? "yellow" : "transparent",
+                  }}
+                >
+                  {getFixtureTextLabel(fixture, index)}
+                </Text>
+                <Flex flex={1} />
+                <Menu shadow="sm" width={250} alignItemsLabels="all">
+                  <Menu.Target>
+                    <Button size="xs" variant="transparent">
+                      Options
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Label>Select fixture type</Menu.Label>
+                    <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "par" })}>Static light</Menu.Item>
+                    <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "moving_head" })}>
+                      Moving light
+                    </Menu.Item>
+                    <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "bar" })}>Bar light</Menu.Item>
 
-              <Menu shadow="sm" width={250} alignItemsLabels="all">
-                <Menu.Target>
-                  <Button size="xs" variant="transparent">
-                    Options
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "par" })}>Static light</Menu.Item>
-                  <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "moving_head" })}>
-                    Moving light
-                  </Menu.Item>
-                  <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "bar" })}>Bar light</Menu.Item>
+                    <Menu.Divider />
+                    {/* <Menu.Label>Configure attributes</Menu.Label>
+                    <Menu.Item
+                      onClick={() => {
+                        setIsEditingSpecialAttributes(true);
+                        setEditingFixtureId(fixture.id);
+                      }}
+                    >
+                      Set pan & tilt corresponding to cue selection
+                    </Menu.Item> */}
+                    <Menu.Divider />
+                    <Menu.Item color="red" onClick={() => onDeleteFixture(fixture)}>
+                      Delete
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>{" "}
+              </Flex>
 
-                  <Menu.Divider />
-                  <Menu.Item color="red" onClick={() => onDeleteFixture(fixture)}>
-                    Delete
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Flex>
+              {/* TODO: find a better way to represent this */}
+              {hasPresetPositionAttribute && (
+                <Collapse expanded={isEditingSpecialAttributes && editingFixtureId === fixture.id}>
+                  <Stack>
+                    {presetPositionOptions.map((option, index) => (
+                      <Group key={option.id} style={{ flexWrap: "nowrap" }}>
+                        <Text style={{ flexShrink: 1 }}>
+                          {index + 1}. {option.name}
+                        </Text>
+                        <Flex flex={1} />
+                        <Button variant="transparent" size="xs">
+                          Preview
+                        </Button>
+                        <Box style={{ width: "40px" }}>
+                          <CustomTextInput
+                            required
+                            type="number"
+                            label={"Pan"}
+                            value={
+                              fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+                                option.id
+                              ]?.[fixture.id]?.pan || 0
+                            }
+                            onChange={(e) =>
+                              onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
+                                pan: Number(e.target.value),
+                              })
+                            }
+                          />
+                        </Box>
+                        <Box style={{ width: "40px" }}>
+                          <CustomTextInput
+                            required
+                            type="number"
+                            label={"Tilt"}
+                            value={
+                              fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+                                option.id
+                              ]?.[fixture.id]?.tilt || 0
+                            }
+                            onChange={(e) =>
+                              onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
+                                tilt: Number(e.target.value),
+                              })
+                            }
+                          />
+                        </Box>
+                      </Group>
+                    ))}
+                    <Center>
+                      <Button size="xs" variant="light">
+                        Save
+                      </Button>
+                    </Center>
+                  </Stack>
+                </Collapse>
+              )}
+            </Stack>
           ))}
           <Center>
             <Button variant="subtle" size="xs" onClick={onAddFixture} loading={isPending}>
@@ -295,6 +454,7 @@ const DEFAULT_FIXTURE: UpsertFixtureReq = {
   rotZ: 0,
   type: "par",
 };
+// deprecated
 export const VisualisationFixtureGroupCard = ({
   fixtureGroup,
   index,
@@ -319,7 +479,14 @@ export const VisualisationFixtureGroupCard = ({
   };
   return (
     <CardBase key={fixtureGroup.id} isActive={false} shadow={"none"}>
-      <Fieldset legend={`Group ${index + 1}: ${fixtureGroup.name}`}>
+      <Fieldset
+        legend={
+          <Text>
+            {" "}
+            `Group ${index + 1}: ${fixtureGroup.name}`
+          </Text>
+        }
+      >
         <Stack>
           {/* some stuff here */}
           <Stack>
@@ -375,12 +542,14 @@ export const VisualiserControls = ({
   stageElements,
   fixtureGroups,
   stageRef,
+  visualiser,
 }: {
   stageElements: VisualiserObject[];
   onUpdateElement?: (updatedElement: VisualiserObject) => void;
   onDeleteElement?: (elementId: string) => void;
   fixtureGroups: FixtureGroupConfiguration[];
   stageRef: React.RefObject<Stage | null>;
+  visualiser: Visualiser;
 }) => {
   const rects = stageElements.filter((el) => el.type === "rectangle");
   const circles = stageElements.filter((el) => el.type === "circle");
@@ -428,50 +597,58 @@ export const VisualiserControls = ({
             index={index}
             setFixtureAccordionValue={setFixtureAccordionValue}
             stageRef={stageRef}
+            visualiser={visualiser}
           />
         ))}
       </Accordion>
 
-      {/* <Text fw="bold">Stage Elements</Text>
-      <Accordion value={stageElementAccordionValue} onChange={setStageElementAccordionValue}>
-        <VisualiserObjectSection
-          key="rectangles"
-          title="Rectangles"
-          itemLabel="Rectangle"
-          objects={rects}
-          onDeleteElement={onDeleteElement}
-          onUpdateElement={onUpdateElement}
-          setStageElementAccordionValue={setStageElementAccordionValue}
-        />
-        <VisualiserObjectSection
-          key="circles"
-          title="Circles"
-          itemLabel="Circle"
-          objects={circles}
-          onDeleteElement={onDeleteElement}
-          onUpdateElement={onUpdateElement}
+      {/* TODO: this should be a boolean */}
+      {onDeleteElement && onUpdateElement ? (
+        <>
+          <Text fw="bold">Stage Elements</Text>
+          <Accordion value={stageElementAccordionValue} onChange={setStageElementAccordionValue}>
+            <VisualiserObjectSection
+              key="rectangles"
+              title="Rectangles"
+              itemLabel="Rectangle"
+              objects={rects}
+              onDeleteElement={onDeleteElement}
+              onUpdateElement={onUpdateElement}
+              setStageElementAccordionValue={setStageElementAccordionValue}
+            />
+            <VisualiserObjectSection
+              key="circles"
+              title="Circles"
+              itemLabel="Circle"
+              objects={circles}
+              onDeleteElement={onDeleteElement}
+              onUpdateElement={onUpdateElement}
 
-          setStageElementAccordionValue={setStageElementAccordionValue}
-        />
-        <VisualiserObjectSection
-          key="lines"
-          title="Lines"
-          itemLabel="Line"
-          objects={lines}
-          onDeleteElement={onDeleteElement}
-          onUpdateElement={onUpdateElement}
-          setStageElementAccordionValue={setStageElementAccordionValue}
-        />
-        <VisualiserObjectSection
-          key="texts"
-          title="Text"
-          itemLabel="Text"
-          objects={texts}
-          onDeleteElement={onDeleteElement}
-          onUpdateElement={onUpdateElement}
-          setStageElementAccordionValue={setStageElementAccordionValue}
-        />
-      </Accordion> */}
+              setStageElementAccordionValue={setStageElementAccordionValue}
+            />
+            <VisualiserObjectSection
+              key="lines"
+              title="Lines"
+              itemLabel="Line"
+              objects={lines}
+              onDeleteElement={onDeleteElement}
+              onUpdateElement={onUpdateElement}
+              setStageElementAccordionValue={setStageElementAccordionValue}
+            />
+            <VisualiserObjectSection
+              key="texts"
+              title="Text"
+              itemLabel="Text"
+              objects={texts}
+              onDeleteElement={onDeleteElement}
+              onUpdateElement={onUpdateElement}
+              setStageElementAccordionValue={setStageElementAccordionValue}
+            />
+          </Accordion>
+        </>
+      ) : (
+        <></>
+      )}
     </Stack>
   );
 };

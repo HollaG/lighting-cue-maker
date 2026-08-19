@@ -104,15 +104,9 @@ export const BooleanOptions = {
 
 export type PresetIntensityOption = number;
 export type PresetColourOption = ColourOption;
-export type FixturePosition = {
-  pan: number;
-  tilt: number;
-};
-
 export type PresetPositionOption = {
   id: string;
   name: string;
-  fixtures: Record<string, FixturePosition>;
 };
 
 export type BooleanOptions = (typeof BooleanOptions)[keyof typeof BooleanOptions];

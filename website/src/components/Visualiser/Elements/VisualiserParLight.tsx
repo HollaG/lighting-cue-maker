@@ -8,8 +8,7 @@ import {
   hexToRgba,
   shapePropsToFixtureRepresentation,
 } from "../../../utils/visualiser";
-import type { AttributesAssignment, ValueAssignment } from "../../../types/cues";
-import type { ColourOption, PresetColourOption, PresetIntensityOption } from "../../../types/types";
+import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 
 const LAMP_CENTER = 35;
 

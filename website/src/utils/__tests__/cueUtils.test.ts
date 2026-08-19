@@ -184,13 +184,10 @@ describe("cueUtils", () => {
     });
   });
 
-  it("copies preset position fixture values when creating a default assignment", () => {
+  it("copies a preset position when creating a default assignment", () => {
     const defaultPosition = {
       id: "position-id",
       name: "Centre",
-      fixtures: {
-        "fixture-id": { pan: 45, tilt: -12.5 },
-      },
     };
     const attribute: AttributeConfiguration = {
       id: "attribute-id",
@@ -205,6 +202,5 @@ describe("cueUtils", () => {
 
     expect(result).toEqual(defaultPosition);
     expect(result).not.toBe(defaultPosition);
-    expect(result?.fixtures["fixture-id"]).not.toBe(defaultPosition.fixtures["fixture-id"]);
   });
 });

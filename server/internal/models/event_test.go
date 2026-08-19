@@ -12,9 +12,6 @@ func TestPresetPositionOptionJSONRoundTrip(t *testing.T) {
 			{
 				ID:   "position-id",
 				Name: "Centre",
-				Fixtures: map[string]FixturePosition{
-					"fixture-id": {Pan: 45, Tilt: -12.5},
-				},
 			},
 		},
 	}
@@ -23,7 +20,7 @@ func TestPresetPositionOptionJSONRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal attribute options: %v", err)
 	}
-	const wantJSON = `{"presetPosition":[{"id":"position-id","name":"Centre","fixtures":{"fixture-id":{"pan":45,"tilt":-12.5}}}]}`
+	const wantJSON = `{"presetPosition":[{"id":"position-id","name":"Centre"}]}`
 	if string(encoded) != wantJSON {
 		t.Fatalf("unexpected JSON: got %s, want %s", encoded, wantJSON)
 	}

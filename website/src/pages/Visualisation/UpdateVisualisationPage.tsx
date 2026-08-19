@@ -103,6 +103,9 @@ export const UpdateVisualisationPage = () => {
         </Box>
       </Container>
 
+      {/* If event has fixture groups that has position */}
+      <Container mt="2rem" size="xl"></Container>
+
       <Center mt="lg">{<Button onClick={() => navigate({ to: `/events/${eventId}` })}>Go to event</Button>}</Center>
     </Box>
   );

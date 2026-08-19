@@ -314,9 +314,6 @@ const attributeOptionsToFormAttributeOptions = (options: AttributeTypesOptions):
 const clonePresetPositionOption = (position: PresetPositionOption): PresetPositionOption => ({
   id: position.id || crypto.randomUUID(),
   name: position.name,
-  fixtures: Object.fromEntries(
-    Object.entries(position.fixtures ?? {}).map(([fixtureId, fixturePosition]) => [fixtureId, { ...fixturePosition }]),
-  ),
 });
 
 const attributeMetadataToFormAttributeMetadata = (

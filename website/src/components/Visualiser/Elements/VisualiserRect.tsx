@@ -37,6 +37,7 @@ export const VisualiserRectangleObject = ({
         {...shapeProps}
         listening={!viewOnly}
         draggable={!viewOnly}
+
         onDragEnd={(e) => {
           onChange({
             ...shapeProps,
@@ -78,6 +79,7 @@ export const VisualiserRectangleObject = ({
             }
             return newBox;
           }}
+          keepRatio={false}
         />
       )}
     </React.Fragment>

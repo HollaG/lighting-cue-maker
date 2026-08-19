@@ -2,8 +2,13 @@ import React, { useRef, useEffect } from "react";
 import { Arc, Circle, Group, Rect, Transformer } from "react-konva";
 import type { Group as GroupType } from "konva/lib/Group";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
-import type { Fixture, UpdateFixtureIn2DReq } from "../../../types/fixtures";
-import { fixtureRepresentationTo2DShapeProps, shapePropsToFixtureRepresentation } from "../../../utils/visualiser";
+import type { Fixture, PositionOption, UpdateFixtureIn2DReq } from "../../../types/fixtures";
+import {
+  fixtureRepresentationTo2DShapeProps,
+  hexToRgba,
+  shapePropsToFixtureRepresentation,
+} from "../../../utils/visualiser";
+import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 
 const LAMP_CENTER = 35;
 
@@ -19,12 +24,20 @@ export const VisualiserMovingLightObject = ({
   onSelect,
   onChange,
   viewOnly = false,
+
+  intensityAttribute,
+  colourAttribute,
+  positionAttribute,
 }: {
   fixture: Fixture;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (newProps: UpdateFixtureIn2DReq) => void;
   viewOnly?: boolean;
+
+  intensityAttribute?: PresetIntensityOption;
+  colourAttribute?: PresetColourOption;
+  positionAttribute?: PositionOption;
 }) => {
   const shapeRef = useRef<GroupType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
@@ -37,7 +50,24 @@ export const VisualiserMovingLightObject = ({
   }, [isSelected, viewOnly]);
 
   const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
-  console.log({ shapeProps });
+
+  // Custom logic to draw
+  // Intensity represents alpha: 0 is black (transparent), 1 is full colour (opaque)
+  // Colour represents the colour of the light, in hex format.
+  // If intensity not specified, default to 0
+  // If colour not specified, default to black (#000000)
+  const intensityAlpha = intensityAttribute ? intensityAttribute / 100 : 0;
+  const colourHex = colourAttribute?.hex ?? "#000000";
+  const fillColour = hexToRgba(colourHex, intensityAlpha);
+
+  // convert the 3d pan and tilt to 2d pan and tilt
+  // basically, if tilt > 90, then add 180 to the pan value
+  // pan then represents the clockwise rotation of the arc.
+  // pan default is 0
+  const pan = positionAttribute?.pan ?? 0;
+  const tilt = positionAttribute?.tilt ?? 0;
+  const pan2D = tilt > 90 ? pan + 180 : pan;
+
   return (
     <React.Fragment>
       <Group
@@ -76,7 +106,7 @@ export const VisualiserMovingLightObject = ({
           });
         }}
       >
-        <Circle x={25 + 10} y={25 + 10} radius={25} stroke={"#ffffff"} strokeWidth={2} />
+        <Circle x={25 + 10} y={25 + 10} radius={25} stroke={"#ffffff"} strokeWidth={2} fill={fillColour} />
         <Circle x={25 + 10} y={25 + 10} radius={35} stroke={"#3b3b3b"} strokeWidth={2} />
         {/* <Rect x={0 + 10} y={0 + 10} width={50} height={50} stroke={"#ffffff"} strokeWidth={2} /> */}
 
@@ -95,8 +125,8 @@ export const VisualiserMovingLightObject = ({
           // Note that this is not the rotation of the fixture.
           angle={beamAngle}
           stroke={"#ffffff"}
-
-          rotation={-beamAngle / 2 - 90}
+          fill={fillColour}
+          rotation={-beamAngle / 2 - 90 + pan2D}
 
           x={35}
           y={35}
