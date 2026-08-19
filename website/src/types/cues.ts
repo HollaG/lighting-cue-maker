@@ -1,4 +1,15 @@
-import { AttributeTypes, type ColourOption, type PositionOption } from "./types";
+import {
+  AttributeTypes,
+  type ColourOption,
+  type MultiSelectOption,
+  type PresetColourOption,
+  type PresetIntensityOption,
+  type PresetPositionOption,
+  type SelectOption,
+  type SliderOption,
+  type SliderPresetsOption,
+  type TextOption,
+} from "./types";
 
 /**
  * Cues indicate
@@ -14,32 +25,34 @@ export interface Cue {
   deletedAt: Date;
 }
 
-type FixtureGroupsAssignment = {
-  [groupId: string]: { name: string; assignment: FixtureGroupAssignment };
+export type FixtureGroupsAssignment = {
+  [groupId: string]: { name: string; assignment: AttributesAssignment };
 };
 
-type FixtureGroupAssignment = {
-  [attributeId: string]: {
-    name: string;
-    type: AttributeTypes;
-    value: ValueAssignment;
-  };
+export type AttributesAssignment = {
+  [attributeId: string]: AttributeAssignment;
+};
+
+export type AttributeAssignment = {
+  name: string;
+  type: AttributeTypes;
+  value: ValueAssignment;
 };
 
 export type ValueAssignment = {
-  [AttributeTypes.TEXT]?: string;
-  [AttributeTypes.SELECT]?: string; // value
-  [AttributeTypes.MULTISELECT]?: string[]; // value
+  [AttributeTypes.TEXT]?: TextOption;
+  [AttributeTypes.SELECT]?: SelectOption; // value
+  [AttributeTypes.MULTISELECT]?: MultiSelectOption[]; // value
   [AttributeTypes.COLOUR]?: ColourOption;
-  [AttributeTypes.SLIDER]?: number; // value
+  [AttributeTypes.SLIDER]?: SliderOption; // value
   [AttributeTypes.BOOLEAN]?: boolean; // True = checked, false = not checked
   [AttributeTypes.NONE]?: null;
-  [AttributeTypes.SLIDER_PRESETS]?: number; // value
+  [AttributeTypes.SLIDER_PRESETS]?: SliderPresetsOption; // value
 
   // Presets
-  [AttributeTypes.PRESET_INTENSITY]?: number; // value
-  [AttributeTypes.PRESET_COLOUR]?: ColourOption;
-  [AttributeTypes.PRESET_POSITION]?: PositionOption;
+  [AttributeTypes.PRESET_INTENSITY]?: PresetIntensityOption; // value
+  [AttributeTypes.PRESET_COLOUR]?: PresetColourOption;
+  [AttributeTypes.PRESET_POSITION]?: PresetPositionOption;
 };
 
 // export const DEFAULT_VALUE_ASSIGNMENT: ValueAssignment = {

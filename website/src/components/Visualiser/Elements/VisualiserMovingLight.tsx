@@ -18,11 +18,13 @@ export const VisualiserMovingLightObject = ({
   isSelected,
   onSelect,
   onChange,
+  viewOnly = false,
 }: {
   fixture: Fixture;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (newProps: UpdateFixtureIn2DReq) => void;
+  viewOnly?: boolean;
 }) => {
   const shapeRef = useRef<GroupType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
@@ -30,9 +32,9 @@ export const VisualiserMovingLightObject = ({
   const shapeProps = fixtureRepresentationTo2DShapeProps(fixture);
 
   useEffect(() => {
-    if (!shapeRef.current || !trRef.current || !isSelected) return;
+    if (!shapeRef.current || !trRef.current || !isSelected || viewOnly) return;
     trRef.current.nodes([shapeRef.current]);
-  }, [isSelected]);
+  }, [isSelected, viewOnly]);
 
   const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
   console.log({ shapeProps });
@@ -49,7 +51,8 @@ export const VisualiserMovingLightObject = ({
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
-        draggable
+        listening={!viewOnly}
+        draggable={!viewOnly}
         onDragEnd={(e) => {
           onChange({
             ...shapePropsToFixtureRepresentation(shapeProps, fixture),
@@ -99,7 +102,7 @@ export const VisualiserMovingLightObject = ({
           y={35}
         />
       </Group>
-      {isSelected && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
+      {isSelected && !viewOnly && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
     </React.Fragment>
   );
 };

@@ -13,7 +13,6 @@ export const UpdateVisualisationPage = () => {
 
   const { event } = useGetEvent({ eventId });
   const { visualiser } = useGetOrCreateVisualiser({ eventId });
-
   const { fixtures } = useGetFixturesByEventId({ event: event || undefined });
 
   const navigate = useNavigate();

@@ -7,7 +7,7 @@ import type {
   ColourOption,
   FixtureGroupConfiguration,
   LightEventConfiguration,
-  PositionOption,
+  PresetPositionOption,
 } from "../../types/types";
 
 export type EventFormMode = "create" | "edit";
@@ -25,11 +25,6 @@ export type EventFormAttributeOptions = Omit<
   [AttributeTypes.PRESET_POSITION]?: string[];
 };
 
-export type EventFormPositionOption = Omit<PositionOption, "pan" | "tilt"> & {
-  pan: string;
-  tilt: string;
-};
-
 export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" | "optionPossibleValues"> & {
   /** Stable frontend identity. Always generated locally. */
   clientId: EventFormKey;
@@ -40,7 +35,7 @@ export type EventFormAttribute = Omit<AttributeConfiguration, "id" | "metadata" 
   metadata: {
     placeholder?: string;
     required?: "true" | "false"; // STRING!!
-    defaultValue?: string | string[] | ColourOption | PositionOption | boolean | number;
+    defaultValue?: string | string[] | ColourOption | PresetPositionOption | boolean | number;
   };
 };
 
@@ -318,13 +313,12 @@ const attributeOptionsToFormAttributeOptions = (options: AttributeTypesOptions):
   [AttributeTypes.SLIDER_PRESETS]: (options[AttributeTypes.SLIDER_PRESETS] ?? []).map(String),
   [AttributeTypes.PRESET_INTENSITY]: (options[AttributeTypes.PRESET_INTENSITY] ?? []).map(String),
   [AttributeTypes.PRESET_POSITION]: (options[AttributeTypes.PRESET_POSITION] ?? []).map(
-    (position) =>
-      position.name,
-      //   {
-      //   pan: String(position.pan),
-      //   tilt: String(position.tilt),
-      //   name: position.name,
-      // }
+    (position) => position.name,
+    //   {
+    //   pan: String(position.pan),
+    //   tilt: String(position.tilt),
+    //   name: position.name,
+    // }
   ),
 });
 

@@ -3,12 +3,22 @@ import { Arc, Circle, Group, Rect, Transformer } from "react-konva";
 import type { Group as GroupType } from "konva/lib/Group";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import type { Fixture, UpdateFixtureIn2DReq } from "../../../types/fixtures";
-import { fixtureRepresentationTo2DShapeProps, shapePropsToFixtureRepresentation } from "../../../utils/visualiser";
+import {
+  fixtureRepresentationTo2DShapeProps,
+  hexToRgba,
+  shapePropsToFixtureRepresentation,
+} from "../../../utils/visualiser";
+import type { AttributesAssignment, ValueAssignment } from "../../../types/cues";
+import type { ColourOption, PresetColourOption, PresetIntensityOption } from "../../../types/types";
 
 const LAMP_CENTER = 35;
 
 /**
  * Representation of a Fixture in 2D view.
+ *
+ * ParLight can take in two attributes:
+ *   intensity
+ *   colour
  *
  * @param param0
  * @returns
@@ -18,11 +28,20 @@ export const VisualiserParLightObject = ({
   isSelected,
   onSelect,
   onChange,
+  viewOnly = false,
+
+  intensityAttribute,
+  colourAttribute,
 }: {
   fixture: Fixture;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (newProps: UpdateFixtureIn2DReq) => void;
+
+  intensityAttribute?: PresetIntensityOption;
+  colourAttribute?: PresetColourOption;
+
+  viewOnly?: boolean;
 }) => {
   const shapeRef = useRef<GroupType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
@@ -30,12 +49,21 @@ export const VisualiserParLightObject = ({
   const shapeProps = fixtureRepresentationTo2DShapeProps(fixture);
 
   useEffect(() => {
-    if (!shapeRef.current || !trRef.current || !isSelected) return;
+    if (!shapeRef.current || !trRef.current || !isSelected || viewOnly) return;
     trRef.current.nodes([shapeRef.current]);
-  }, [isSelected]);
+  }, [isSelected, viewOnly]);
 
   const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
-  console.log({ shapeProps });
+
+  // Custom logic to draw
+  // Intensity represents alpha: 0 is black (transparent), 1 is full colour (opaque)
+  // Colour represents the colour of the light, in hex format.
+  // If intensity not specified, default to 0
+  // If colour not specified, default to black (#000000)
+  const intensityAlpha = intensityAttribute ? intensityAttribute / 100 : 0;
+  const colourHex = colourAttribute?.hex ?? "#000000";
+  const fillColour = hexToRgba(colourHex, intensityAlpha);
+
   return (
     <React.Fragment>
       <Group
@@ -49,7 +77,8 @@ export const VisualiserParLightObject = ({
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
-        draggable
+        listening={!viewOnly}
+        draggable={!viewOnly}
         onDragEnd={(e) => {
           onChange({
             ...shapePropsToFixtureRepresentation(shapeProps, fixture),
@@ -73,7 +102,7 @@ export const VisualiserParLightObject = ({
           });
         }}
       >
-        <Circle x={25 + 10} y={25 + 10} radius={25} stroke={"#ffffff"} strokeWidth={2} />
+        <Circle x={25 + 10} y={25 + 10} radius={25} stroke={"#ffffff"} strokeWidth={2} fill={fillColour} />
         {/* <Rect x={0 + 10} y={0 + 10} width={50} height={50} stroke={"#ffffff"} strokeWidth={2} /> */}
 
         {/* Make a full + inside the circle */}
@@ -93,12 +122,12 @@ export const VisualiserParLightObject = ({
           stroke={"#ffffff"}
 
           rotation={-beamAngle / 2 - 90}
-
+          fill={fillColour}
           x={35}
           y={35}
         />
       </Group>
-      {isSelected && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
+      {isSelected && !viewOnly && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
     </React.Fragment>
   );
 };

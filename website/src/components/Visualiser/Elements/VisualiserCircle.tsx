@@ -8,22 +8,24 @@ export const VisualiserCircleObject = ({
   isSelected,
   onSelect,
   onChange,
+  viewOnly = false,
 }: {
   shapeProps: CircleConfig;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (newProps: CircleConfig) => void;
+  viewOnly?: boolean;
 }) => {
   const shapeRef = useRef<CircleType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
 
   useEffect(() => {
-    if (!shapeRef.current || !trRef.current) return;
+    if (!shapeRef.current || !trRef.current || viewOnly) return;
     if (isSelected) {
       // we need to attach transformer manually
       trRef?.current?.nodes([shapeRef.current]);
     }
-  }, [isSelected]);
+  }, [isSelected, viewOnly]);
 
   return (
     <React.Fragment>
@@ -32,7 +34,8 @@ export const VisualiserCircleObject = ({
         onTap={onSelect}
         ref={shapeRef}
         {...shapeProps}
-        draggable
+        listening={!viewOnly}
+        draggable={!viewOnly}
         onDragEnd={(e) => {
           onChange({
             ...shapeProps,
@@ -62,7 +65,7 @@ export const VisualiserCircleObject = ({
           });
         }}
       />
-      {isSelected && (
+      {isSelected && !viewOnly && (
         <Transformer
           ref={trRef}
           flipEnabled={false}

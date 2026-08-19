@@ -12,15 +12,18 @@ import type { Stage } from "konva/lib/Stage";
 import { useDisclosure } from "@mantine/hooks";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 
-const ObjectMenu = ({
-  obj,
-  onDeleteElement,
-  onUpdateElement,
-}: {
+interface ObjectMenuProps {
   obj: VisualiserObject;
+}
+interface StaticObjectMenuProps extends ObjectMenuProps {}
+interface EditableObjectMenuProps extends ObjectMenuProps {
   onDeleteElement: (elementId: string) => void;
   onUpdateElement: (updatedElement: VisualiserObject) => void;
-}) => {
+}
+
+const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
+  const { obj } = props;
+  const isEditable = "onDeleteElement" in props && "onUpdateElement" in props;
   const isText = obj.type === "text";
   const [opened, { close, open }] = useDisclosure(false);
   const [text, setText] = useState(isText ? (obj.props.text ?? "") : "");
@@ -28,13 +31,14 @@ const ObjectMenu = ({
   const onSubmitTextChange = () => {
     if (obj.type !== "text") return;
 
-    onUpdateElement({
-      ...obj,
-      props: {
-        ...obj.props,
-        text,
-      },
-    });
+    isEditable &&
+      props.onUpdateElement({
+        ...obj,
+        props: {
+          ...obj.props,
+          text,
+        },
+      });
   };
   return (
     <>
@@ -66,35 +70,40 @@ const ObjectMenu = ({
           </Stack>
         </form>
       </Modal>
-      <Menu shadow="sm" width={250} alignItemsLabels="all">
-        <Menu.Target>
-          <Button size="xs" variant="transparent">
-            Options
-          </Button>
-        </Menu.Target>
-        <Menu.Dropdown>
-          {isText ? <Menu.Label> Element options </Menu.Label> : null}
-          {/* <Popover opened={opened} position="right">
+      {isEditable ? (
+        <Menu shadow="sm" width={250} alignItemsLabels="all">
+          <Menu.Target>
+            <Button size="xs" variant="transparent">
+              Options
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            {isText ? <Menu.Label> Element options </Menu.Label> : null}
+            {/* <Popover opened={opened} position="right">
             <Popover.Target> */}
-          {isText ? <Menu.Item onClick={open}>Change Text</Menu.Item> : null}
-          {/* <Button> Change text</Button> */}
-          {/* </Popover.Target>
+            {isText ? <Menu.Item onClick={open}>Change Text</Menu.Item> : null}
+            {/* <Button> Change text</Button> */}
+            {/* </Popover.Target>
             <Popover.Dropdown>
               <Box onMouseEnter={open} onMouseLeave={close}>
                 <CustomTextInput label="New text" />
               </Box>
             </Popover.Dropdown>
           </Popover> */}
-          <Menu.Label>Display options</Menu.Label>
-          <Menu.CheckboxItem>Stroke</Menu.CheckboxItem>
-          <Menu.CheckboxItem>Fill</Menu.CheckboxItem>
-          <Menu.Item>Change colour</Menu.Item>
-          <Menu.Divider />
-          <Menu.Item color="red" onClick={() => onDeleteElement(obj.id)}>
-            Delete
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
+            <Menu.Label>Display options</Menu.Label>
+            <Menu.CheckboxItem>Stroke</Menu.CheckboxItem>
+            <Menu.CheckboxItem>Fill</Menu.CheckboxItem>
+            <Menu.Item>Change colour</Menu.Item>
+            <Menu.Divider />
+
+            <Menu.Item color="red" onClick={() => props.onDeleteElement(obj.id)}>
+              Delete
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      ) : (
+        <></>
+      )}
     </>
   );
 };
@@ -113,8 +122,8 @@ const VisualiserObjectSection = ({
   objects: VisualiserObject[];
 
   setStageElementAccordionValue: (value: string | null) => void;
-  onDeleteElement: (elementId: string) => void;
-  onUpdateElement: (updatedElement: VisualiserObject) => void;
+  onDeleteElement?: (elementId: string) => void;
+  onUpdateElement?: (updatedElement: VisualiserObject) => void;
 }) => {
   // if (!objects.length) return null;
 
@@ -368,8 +377,8 @@ export const VisualiserControls = ({
   stageRef,
 }: {
   stageElements: VisualiserObject[];
-  onUpdateElement: (updatedElement: VisualiserObject) => void;
-  onDeleteElement: (elementId: string) => void;
+  onUpdateElement?: (updatedElement: VisualiserObject) => void;
+  onDeleteElement?: (elementId: string) => void;
   fixtureGroups: FixtureGroupConfiguration[];
   stageRef: React.RefObject<Stage | null>;
 }) => {
@@ -423,7 +432,7 @@ export const VisualiserControls = ({
         ))}
       </Accordion>
 
-      <Text fw="bold">Stage Elements</Text>
+      {/* <Text fw="bold">Stage Elements</Text>
       <Accordion value={stageElementAccordionValue} onChange={setStageElementAccordionValue}>
         <VisualiserObjectSection
           key="rectangles"
@@ -462,7 +471,7 @@ export const VisualiserControls = ({
           onUpdateElement={onUpdateElement}
           setStageElementAccordionValue={setStageElementAccordionValue}
         />
-      </Accordion>
+      </Accordion> */}
     </Stack>
   );
 };

@@ -8,21 +8,23 @@ export const VisualiserLineObject = ({
   isSelected,
   onSelect,
   onChange,
+  viewOnly = false,
 }: {
   shapeProps: LineConfig;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (newProps: LineConfig) => void;
+  viewOnly?: boolean;
 }) => {
   const shapeRef = useRef<LineType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
 
   useEffect(() => {
-    if (!shapeRef.current || !trRef.current) return;
+    if (!shapeRef.current || !trRef.current || viewOnly) return;
     if (isSelected) {
       trRef.current.nodes([shapeRef.current]);
     }
-  }, [isSelected]);
+  }, [isSelected, viewOnly]);
 
   return (
     <React.Fragment>
@@ -31,7 +33,8 @@ export const VisualiserLineObject = ({
         onTap={onSelect}
         ref={shapeRef}
         {...shapeProps}
-        draggable
+        listening={!viewOnly}
+        draggable={!viewOnly}
         onDragEnd={(e) => {
           onChange({
             ...shapeProps,
@@ -60,7 +63,7 @@ export const VisualiserLineObject = ({
           });
         }}
       />
-      {isSelected && (
+      {isSelected && !viewOnly && (
         <Transformer
           ref={trRef}
           flipEnabled={false}

@@ -40,7 +40,7 @@ export type AttributeConfiguration = {
 export type AttributeMetadata = {
   placeholder?: string; // default: undefined
   required?: boolean; // default: FALSE
-  defaultValue?: string | string[] | ColourOption | PositionOption | boolean | number; // default: undefined
+  defaultValue?: string | string[] | ColourOption | PresetPositionOption | boolean | number; // default: undefined
 };
 
 export const AttributeTypes = {
@@ -71,29 +71,33 @@ export type AttributeTypes = (typeof AttributeTypes)[keyof typeof AttributeTypes
  *
  */
 export type AttributeTypesOptions = {
-  [AttributeTypes.TEXT]?: string;
-  [AttributeTypes.SELECT]?: string[];
-  [AttributeTypes.MULTISELECT]?: string[];
+  [AttributeTypes.TEXT]?: TextOption;
+  [AttributeTypes.SELECT]?: SelectOption[];
+  [AttributeTypes.MULTISELECT]?: MultiSelectOption[];
   [AttributeTypes.COLOUR]?: ColourOption[];
-  [AttributeTypes.SLIDER]?: { min: number; max: number };
-  [AttributeTypes.SLIDER_PRESETS]?: number[];
-  [AttributeTypes.BOOLEAN]?: BooleanOptions;
+  [AttributeTypes.SLIDER]?: SliderOption;
+  [AttributeTypes.SLIDER_PRESETS]?: SliderPresetsOption[];
+  [AttributeTypes.BOOLEAN]?: BooleanOptions; // this is atypical! usually it's true or false
   [AttributeTypes.NONE]?: null;
 
   // Presets
-  [AttributeTypes.PRESET_INTENSITY]?: number[];
-  [AttributeTypes.PRESET_COLOUR]?: ColourOption[];
-  [AttributeTypes.PRESET_POSITION]?: PositionOption[];
+  [AttributeTypes.PRESET_INTENSITY]?: PresetIntensityOption[];
+  [AttributeTypes.PRESET_COLOUR]?: PresetColourOption[];
+  [AttributeTypes.PRESET_POSITION]?: PresetPositionOption[];
 };
+
+export type TextOption = string;
+export type SelectOption = string;
+export type MultiSelectOption = string;
+export type SliderOption = { min: number; max: number };
+export type SliderPresetsOption = number;
 
 export type ColourOption = {
   hex: string;
   name: string;
 };
 
-export type PositionOption = {
-  pan: number;
-  tilt: number;
+type PositionOption = {
   name: string;
 };
 
@@ -101,6 +105,14 @@ export const BooleanOptions = {
   CHECKED: "checkedDefault",
   UNCHECKED: "uncheckedDefault",
 } as const;
+
+export type PresetIntensityOption = number;
+export type PresetColourOption = ColourOption;
+export type PresetPositionOption = {
+  name: string;
+  pan: number;
+  tilt: number;
+};
 
 export type BooleanOptions = (typeof BooleanOptions)[keyof typeof BooleanOptions];
 

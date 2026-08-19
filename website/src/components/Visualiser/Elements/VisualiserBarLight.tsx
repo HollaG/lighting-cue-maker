@@ -3,7 +3,12 @@ import { Arc, Group, Rect, Transformer } from "react-konva";
 import type { Group as GroupType } from "konva/lib/Group";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import type { Fixture, UpdateFixtureIn2DReq } from "../../../types/fixtures";
-import { fixtureRepresentationTo2DShapeProps, shapePropsToFixtureRepresentation } from "../../../utils/visualiser";
+import {
+  fixtureRepresentationTo2DShapeProps,
+  hexToRgba,
+  shapePropsToFixtureRepresentation,
+} from "../../../utils/visualiser";
+import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 
 /**
  * Representation of a Fixture in 2D view.
@@ -16,11 +21,19 @@ export const VisualiserBarLightObject = ({
   isSelected,
   onSelect,
   onChange,
+  viewOnly = false,
+
+  intensityAttribute,
+  colourAttribute,
 }: {
   fixture: Fixture;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (newProps: UpdateFixtureIn2DReq) => void;
+  viewOnly?: boolean;
+
+  intensityAttribute?: PresetIntensityOption;
+  colourAttribute?: PresetColourOption;
 }) => {
   const shapeRef = useRef<GroupType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
@@ -28,12 +41,21 @@ export const VisualiserBarLightObject = ({
   const shapeProps = fixtureRepresentationTo2DShapeProps(fixture);
 
   useEffect(() => {
-    if (!shapeRef.current || !trRef.current || !isSelected) return;
+    if (!shapeRef.current || !trRef.current || !isSelected || viewOnly) return;
     trRef.current.nodes([shapeRef.current]);
-  }, [isSelected]);
+  }, [isSelected, viewOnly]);
 
   const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
-  console.log({ shapeProps });
+
+  // Custom logic to draw
+  // Intensity represents alpha: 0 is black (transparent), 1 is full colour (opaque)
+  // Colour represents the colour of the light, in hex format.
+  // If intensity not specified, default to 0
+  // If colour not specified, default to black (#000000)
+  const intensityAlpha = intensityAttribute ? intensityAttribute / 100 : 0;
+  const colourHex = colourAttribute?.hex ?? "#000000";
+  const fillColour = hexToRgba(colourHex, intensityAlpha);
+
   return (
     <React.Fragment>
       <Group
@@ -46,7 +68,8 @@ export const VisualiserBarLightObject = ({
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
-        draggable
+        listening={!viewOnly}
+        draggable={!viewOnly}
         onDragEnd={(e) => {
           onChange({
             ...shapePropsToFixtureRepresentation(shapeProps, fixture),
@@ -70,8 +93,7 @@ export const VisualiserBarLightObject = ({
           });
         }}
       >
-        <Rect x={0} y={0} width={135} height={15} stroke={"#ffffff"} strokeWidth={2} />
-
+        <Rect x={0} y={0} width={135} height={15} stroke={"#ffffff"} strokeWidth={2} fill={fillColour} />
         <Arc
           innerRadius={25}
           outerRadius={35}
@@ -81,13 +103,15 @@ export const VisualiserBarLightObject = ({
           angle={beamAngle}
           stroke={"#ffffff"}
 
+          fill={fillColour}
+
           rotation={-beamAngle / 2 - 90}
 
           x={135 / 2}
           y={0}
         />
       </Group>
-      {isSelected && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
+      {isSelected && !viewOnly && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
     </React.Fragment>
   );
 };

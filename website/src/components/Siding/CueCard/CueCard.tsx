@@ -1,7 +1,9 @@
 import {
+  Accordion,
   ActionIcon,
   Box,
   Button,
+  Center,
   Checkbox,
   Collapse,
   Combobox,
@@ -10,10 +12,12 @@ import {
   Group,
   Input,
   InputBase,
+  Loader,
   Menu,
   MultiSelect,
   Popover,
   px,
+  SegmentedControl,
   Select,
   SimpleGrid,
   Slider,
@@ -25,7 +29,7 @@ import {
   useCombobox,
 } from "@mantine/core";
 import { CardBase } from "../CardBase";
-import type { Cue } from "../../../types/cues";
+import type { Cue, FixtureGroupsAssignment } from "../../../types/cues";
 import { useAppStore } from "../../../store/appStore";
 import {
   AttributeTypes,
@@ -47,6 +51,9 @@ import { useDeleteCue } from "../../../query/useDeleteCue";
 import { createDefaultValueAssignment, reconcileCueAssignments, removeCueFromRawLyrics } from "../../../utils/cueUtils";
 import { useUpdateItem } from "../../../query/useUpdateItem";
 import { notifications } from "../../../utils/notifications";
+import type { Visualiser } from "../../../types/visualiser";
+import type { Fixture } from "../../../types/fixtures";
+import { StaticStagePreview2D } from "../../Visualiser/Stage/2D/StagePreview2D";
 
 type FormData = Cue;
 
@@ -56,10 +63,22 @@ interface CueCardProps {
   isCueSelected: boolean;
   fixtureGroups?: FixtureGroupConfiguration[];
 
+  eventId: string; // for visualiser
+  visualiser: Visualiser | null; // allow for null visualiser so that it can be loading state? TODO;
+  fixtures: Fixture[];
   setOffset: React.Dispatch<React.SetStateAction<number>>; // translate the WHOLE cue cards up
 }
 
-const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], setOffset }: CueCardProps) => {
+const CueCardInternal = ({
+  cue,
+  cueNumber,
+  isCueSelected,
+  fixtureGroups = [],
+  setOffset,
+  eventId,
+  visualiser,
+  fixtures,
+}: CueCardProps) => {
   const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
@@ -72,7 +91,6 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
   const [isDirty, setIsDirty] = useState(false);
 
   // --- Form ---------
-
   const initialValues: FormData = useMemo(
     () => ({
       id: cue.id,
@@ -348,6 +366,9 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
     cuesIdsOtherThanThisList = cuesIdsOtherThanThisList.filter((cue) => cue.label.includes(query));
   }
 
+  // --- Visualiser ---------
+  const [viewMode, setViewMode] = useState<"Table" | "2D" | "3D">("Table");
+
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
       <div
@@ -460,6 +481,11 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
               </Menu>
 
               <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
+              <SegmentedControl
+                data={["Table", "2D", "3D"]}
+                value={viewMode}
+                onChange={(value) => setViewMode(value as "Table" | "2D" | "3D")}
+              />
               <Popover
                 shadow="sm"
                 withArrow
@@ -513,17 +539,61 @@ const CueCardInternal = ({ cue, cueNumber, isCueSelected, fixtureGroups = [], se
             </Group>
 
             <Collapse expanded={!isCollapsed}>
-              <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
-                {fixtureGroups.map((group, index) => (
-                  <FixtureGroupSection
-                    key={group.id}
-                    group={group}
-                    index={index + 1}
-                    form={form}
-                    setIsAtLeastOneComboboxOpened={setAtLeastOneComboboxOpened}
-                  />
-                ))}
-              </SimpleGrid>
+              {viewMode === "Table" ? (
+                <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
+                  {fixtureGroups.map((group, index) => (
+                    <FixtureGroupSection
+                      key={group.id}
+                      group={group}
+                      index={index + 1}
+                      form={form}
+                      setIsAtLeastOneComboboxOpened={setAtLeastOneComboboxOpened}
+                    />
+                  ))}
+                </SimpleGrid>
+              ) : (
+                <></>
+              )}
+
+              {viewMode === "2D" ? (
+                <Box mb="md">
+                  {visualiser ? (
+                    <StaticStagePreview2D
+                      eventId={eventId}
+                      visualiser={visualiser}
+                      fixtures={fixtures}
+                      fixtureGroups={fixtureGroups}
+
+                      fixtureGroupsAssignment={cue.assignments}
+
+                      controls={
+                        <Accordion>
+                          {fixtureGroups.map((group, index) => (
+                            <Accordion.Item key={group.id} value={group.id}>
+                              <Accordion.Control>{group.name}</Accordion.Control>
+                              <Accordion.Panel>
+                                <FixtureGroupSection
+                                  key={group.id}
+                                  group={group}
+                                  index={index + 1}
+                                  form={form}
+                                  setIsAtLeastOneComboboxOpened={setAtLeastOneComboboxOpened}
+                                />
+                              </Accordion.Panel>
+                            </Accordion.Item>
+                          ))}
+                        </Accordion>
+                      }
+                    />
+                  ) : (
+                    <Center>
+                      <Loader />
+                    </Center>
+                  )}
+                </Box>
+              ) : (
+                <></>
+              )}
             </Collapse>
             <Stack>
               {/* <Collapse expanded={isCollapsed}>

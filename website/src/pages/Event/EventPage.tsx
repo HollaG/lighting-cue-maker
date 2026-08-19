@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Anchor,
   Box,
@@ -9,6 +10,7 @@ import {
   Drawer,
   Flex,
   FloatingIndicator,
+  Grid,
   Group,
   Image,
   Kbd,
@@ -33,8 +35,14 @@ import { useGetItem } from "../../query/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
 import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
-import { IconArrowLeft, IconFileSpreadsheet, IconInfoCircle } from "@tabler/icons-react";
-import { useDisclosure, useHotkeys, type HotkeyItem } from "@mantine/hooks";
+import {
+  IconArrowLeft,
+  IconChevronLeft,
+  IconChevronRight,
+  IconFileSpreadsheet,
+  IconInfoCircle,
+} from "@tabler/icons-react";
+import { useDisclosure, useHotkeys, useLocalStorage, type HotkeyItem } from "@mantine/hooks";
 import { sanitize } from "../../utils/sanitize";
 import { ContentControl } from "../../components/ContentControl/ContentControl";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -56,7 +64,7 @@ export const EventPage = () => {
   const loadedEventName = evt?.name;
 
   const [showCueList, setShowCueList] = useState(true);
-  const [isPendingCueListRendering, setIsPendingCueListRendering] = useState(true);
+  const [isPendingCueListRendering, setIsPendingCueListRendering] = useState(false);
 
   useEffect(() => {
     if (!loadedEventId || !loadedEventName) return;
@@ -66,22 +74,26 @@ export const EventPage = () => {
       eventId: loadedEventId,
       eventName: loadedEventName,
     });
-
-    // begin rendering of cue list
-    // startCueListRenderTransition(() => {
-    //   setShowCueList(true);
-    // });
-    if (showCueList) return;
-    setIsPendingCueListRendering(true);
-    setTimeout(() => {
-      setShowCueList(true);
-      setIsPendingCueListRendering(false);
-    }, 500);
   }, [loadedEventId, loadedEventName, showCueList]);
 
   const activeItemId = useAppStore((s) => s.activeItemId);
   const showCues = useAppStore((s) => s.showCues);
   const toggleShowCues = useAppStore((s) => s.toggleShowCues);
+
+  // useEffect(() => {
+  //   // begin rendering of cue list
+  //   // startCueListRenderTransition(() => {
+  //   //   setShowCueList(true);
+  //   // });
+  //   if (showCueList) {
+  //     setIsPendingCueListRendering(false);
+  //   }
+  //   setIsPendingCueListRendering(true);
+  //   setShowCueList(false);
+  //   setTimeout(() => {
+  //     setShowCueList(true);
+  //   }, 500);
+  // }, [showCueList, activeItemId, evt]);
 
   const { items, isItemsLoading } = useGetItems({ eventId });
 
@@ -157,7 +169,6 @@ export const EventPage = () => {
         ref={setControlRef(item.id)}
         onClick={() => {
           changeActiveItem(item.id);
-          setShowCueList(false);
         }}
         mod={{ active: activeItemId === item.id }}
         p={"xs"}
@@ -187,6 +198,12 @@ export const EventPage = () => {
   // QLC+ export controls
   const [openedQlcExport, { open: openQlcExport, close: closeQlcExport }] = useDisclosure(false);
 
+  // Page size controls
+  const [cueFraction, setCueFraction] = useLocalStorage({ key: "cueFraction", defaultValue: "6" }); // range: 1 - 11
+  const decreaseFraction = () => setCueFraction((prev) => Math.max(1, Number(prev) - 1).toString());
+  const increaseFraction = () => setCueFraction((prev) => Math.min(11, Number(prev) + 1).toString());
+  const canDecreaseFraction = Number(cueFraction) > 1;
+  const canIncreaseFraction = Number(cueFraction) < 11;
   return (
     <>
       <Container size={"xl"} mt="4rem">
@@ -305,120 +322,134 @@ export const EventPage = () => {
       </Container>
       <Container fluid={showCues} size={!showCues ? "xl" : undefined}>
         {!!item && (
-          <SimpleGrid cols={showCues ? 2 : 1} px="xl" mt="3rem" style={{ position: "relative" }}>
-            <Stack>
-              <Group>
-                <Flex flex={1}>
-                  <ContentControl
-                    showCues={showCues}
-                    deleteExtraSpaces={deleteExtraSpaces}
-                    eventId={evt?.id || ""}
-                    onFinishAddingLyrics={onClickFinishAddingLyricsButton}
-                  />
-                </Flex>
-              </Group>
-              <Alert
-                variant="light"
-                color="lime"
-                icon={<IconInfoCircle />}
-                style={{
-                  transition: "all 0.3s ease",
-                }}
-              >
-                {inputMode === "raw" ? (
-                  <Stack gap={"xs"}>
-                    <span>
-                      You can add any lyrics / spoken word during your set here. Once done, switch the editor mode to
-                      configure cues/bumps.{" "}
-                    </span>
-                    <span>
-                      Do not modify the embedded cue/bump data (<Code>{`{cueId=...=cueId}`}</Code>)
-                    </span>
-                    <span>Tip: use a hyphen (-) if you need to separate syllables.</span>
-                  </Stack>
-                ) : (
-                  ""
-                )}
-
-                {inputMode === "cue" ? (
-                  <Stack gap="xs">
-                    <span>Click on any word or space to add a cue at that point.</span>
-                    <span>
-                      Tip: need to put a cue on a syllable? Use a hyphen (-) in <Code>Edit lyrics</Code> mode to
-                      separate the syllables.
-                    </span>
-                  </Stack>
-                ) : (
-                  <></>
-                )}
-
-                {inputMode === "bump" ? (
-                  <Stack gap="xs">
-                    <span>
-                      Click on any word or space to add a bump for <Code>{instantBumpMode?.name}</Code> at that point. A
-                      bump is an instantaneous effect that will flash only at the point you specify.
-                    </span>
-                    Click again to remove.
-                  </Stack>
-                ) : (
-                  <></>
-                )}
-
-                {inputMode === "timing" ? (
-                  <Stack gap="xs">
-                    <span>
-                      {" "}
-                      First, set the beat number you want to add by pressing <Kbd>1</Kbd> ... <Kbd>8</Kbd> on your
-                      keyboard, or use the "Beat to add" input.
-                    </span>
-                    <span>
-                      {" "}
-                      Then, click on any word or space to indicate the <Code>{inputTimingMode} beat</Code>.
-                    </span>
-                  </Stack>
-                ) : (
-                  <></>
-                )}
-              </Alert>
-              {inputMode === "raw" && (
-                <Textarea
-                  variant="unstyled"
-                  autosize
-                  className={classes["lyric-input"]}
-                  value={internalRawLyrics}
-                  onChange={(e) => setInternalRawLyrics(e.target.value)}
-                  placeholder="Paste all your lyrics here! You can also include band introductions or other improv stuff."
-                  styles={{
-                    input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
-                  }}
-                  minRows={14}
-                />
-              )}
-
-              {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
-                <div ref={contentRef} id="focus-trap-lyrics" tabIndex={-1} style={{ outline: "none" }}>
-                  <RichContent itemId={item.id} />
-                </div>
-              )}
-            </Stack>
-            {showCues && evt ? (
+          <Grid px="xl" mt="1.5rem" style={{ position: "relative" }}>
+            <Grid.Col span={showCues ? 12 - Number(cueFraction) : 12}>
               <Stack>
                 <Group>
-                  <Title order={3} flex={1}>
-                    Cues
-                  </Title>
+                  <Flex flex={1}>
+                    <ContentControl
+                      showCues={showCues}
+                      deleteExtraSpaces={deleteExtraSpaces}
+                      eventId={evt?.id || ""}
+                      onFinishAddingLyrics={onClickFinishAddingLyricsButton}
+                    />
+                  </Flex>
                 </Group>
-                {showCueList && <CueList itemId={item.id} fixtureGroups={evt?.fixtureGroups ?? []} />}
-                {isPendingCueListRendering && (
-                  <Center>
-                    <Loader />
-                  </Center>
+                <Alert
+                  variant="light"
+                  color="lime"
+                  icon={<IconInfoCircle />}
+                  style={{
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  {inputMode === "raw" ? (
+                    <Stack gap={"xs"}>
+                      <span>
+                        You can add any lyrics / spoken word during your set here. Once done, switch the editor mode to
+                        configure cues/bumps.{" "}
+                      </span>
+                      <span>
+                        Do not modify the embedded cue/bump data (<Code>{`{cueId=...=cueId}`}</Code>)
+                      </span>
+                      <span>Tip: use a hyphen (-) if you need to separate syllables.</span>
+                    </Stack>
+                  ) : (
+                    ""
+                  )}
+
+                  {inputMode === "cue" ? (
+                    <Stack gap="xs">
+                      <span>Click on any word or space to add a cue at that point.</span>
+                      <span>
+                        Tip: need to put a cue on a syllable? Use a hyphen (-) in <Code>Edit lyrics</Code> mode to
+                        separate the syllables.
+                      </span>
+                    </Stack>
+                  ) : (
+                    <></>
+                  )}
+
+                  {inputMode === "bump" ? (
+                    <Stack gap="xs">
+                      <span>
+                        Click on any word or space to add a bump for <Code>{instantBumpMode?.name}</Code> at that point.
+                        A bump is an instantaneous effect that will flash only at the point you specify.
+                      </span>
+                      Click again to remove.
+                    </Stack>
+                  ) : (
+                    <></>
+                  )}
+
+                  {inputMode === "timing" ? (
+                    <Stack gap="xs">
+                      <span>
+                        {" "}
+                        First, set the beat number you want to add by pressing <Kbd>1</Kbd> ... <Kbd>8</Kbd> on your
+                        keyboard, or use the "Beat to add" input.
+                      </span>
+                      <span>
+                        {" "}
+                        Then, click on any word or space to indicate the <Code>{inputTimingMode} beat</Code>.
+                      </span>
+                    </Stack>
+                  ) : (
+                    <></>
+                  )}
+                </Alert>
+                {inputMode === "raw" && (
+                  <Textarea
+                    variant="unstyled"
+                    autosize
+                    className={classes["lyric-input"]}
+                    value={internalRawLyrics}
+                    onChange={(e) => setInternalRawLyrics(e.target.value)}
+                    placeholder="Paste all your lyrics here! You can also include band introductions or other improv stuff."
+                    styles={{
+                      input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+                    }}
+                    minRows={14}
+                  />
+                )}
+
+                {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
+                  <div ref={contentRef} id="focus-trap-lyrics" tabIndex={-1} style={{ outline: "none" }}>
+                    <RichContent itemId={item.id} />
+                  </div>
                 )}
               </Stack>
+            </Grid.Col>
+            {showCues && evt ? (
+              <Grid.Col span={Number(cueFraction)}>
+                <Stack>
+                  <Group>
+                    <Title order={3} flex={1}>
+                      Cues
+                    </Title>
+                    <Flex flex={1} />
+                    <ActionIcon color="gray" variant="light" onClick={increaseFraction} disabled={!canIncreaseFraction}>
+                      {" "}
+                      <IconChevronLeft style={{ width: "1rem" }} />
+                    </ActionIcon>
+                    <Text> Adjust width </Text>
+                    <ActionIcon color="gray" variant="light" onClick={decreaseFraction} disabled={!canDecreaseFraction}>
+                      {" "}
+                      <IconChevronRight style={{ width: "1rem" }} />
+                    </ActionIcon>
+                  </Group>
+                  {showCueList && <CueList itemId={item.id} event={evt} />}
+                  {isPendingCueListRendering && (
+                    <Center>
+                      <Loader />
+                    </Center>
+                  )}
+                </Stack>
+              </Grid.Col>
             ) : (
               <></>
             )}
-          </SimpleGrid>
+          </Grid>
         )}
       </Container>
 

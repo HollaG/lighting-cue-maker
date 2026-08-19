@@ -8,21 +8,25 @@ export const VisualiserTextObject = ({
   isSelected,
   onSelect,
   onChange,
+
+  viewOnly = false,
 }: {
   shapeProps: TextConfig;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (newProps: TextConfig) => void;
+
+  viewOnly?: boolean;
 }) => {
   const shapeRef = useRef<TextType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
 
   useEffect(() => {
-    if (!shapeRef.current || !trRef.current) return;
+    if (!shapeRef.current || !trRef.current || viewOnly) return;
     if (isSelected) {
       trRef.current.nodes([shapeRef.current]);
     }
-  }, [isSelected]);
+  }, [isSelected, viewOnly]);
 
   return (
     <React.Fragment>
@@ -31,7 +35,8 @@ export const VisualiserTextObject = ({
         onTap={onSelect}
         ref={shapeRef}
         {...shapeProps}
-        draggable
+        listening={!viewOnly}
+        draggable={!viewOnly}
         onDragEnd={(e) => {
           onChange({
             ...shapeProps,
@@ -59,7 +64,7 @@ export const VisualiserTextObject = ({
           });
         }}
       />
-      {isSelected && (
+      {isSelected && !viewOnly && (
         <Transformer
           ref={trRef}
           flipEnabled={false}

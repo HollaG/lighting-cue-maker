@@ -1,13 +1,13 @@
 import { Flex, Group, Button, AspectRatio, Box, Select, MantineProvider } from "@mantine/core";
-import { useDebouncedCallback } from "@mantine/hooks";
+import { useDebouncedCallback, useElementSize } from "@mantine/hooks";
 import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Layer, Stage, Text as KonvaText, Rect } from "react-konva";
 import { useUpsertFixture } from "../../../../query/useUpsertFixtures";
 import { useUpsertVisualiser } from "../../../../query/useUpsertVisualiser";
 import type { Fixture, UpdateFixtureIn2DReq } from "../../../../types/fixtures";
-import type { FixtureGroupConfiguration } from "../../../../types/types";
+import { AttributeTypes, type FixtureGroupConfiguration } from "../../../../types/types";
 import type { Visualiser, VisualiserObject, VisualiserTypes, VisualiserRectangle } from "../../../../types/visualiser";
 import { VisualiserCircleObject } from "../../Elements/VisualiserCircle";
 import { VisualiserLineObject } from "../../Elements/VisualiserLine";
@@ -20,6 +20,7 @@ import { VisualiserControls } from "../../Controls/VisualiserControl";
 import { useAppStore } from "../../../../store/appStore";
 import { VisualiserBarLightObject } from "../../Elements/VisualiserBarLight";
 import { VisualiserMovingLightObject } from "../../Elements/VisualiserMovingLight";
+import type { AttributeAssignment, FixtureGroupsAssignment } from "../../../../types/cues";
 
 // Pre-generate grid dots
 const gridDots: { x: number; y: number }[] = [];
@@ -111,7 +112,6 @@ export const StagePreview2D = ({
     if (!visualiser.defaultViewport) return;
 
     // Compare the current width and the saved width (saved width of the admin) to get a scale factor
-    // const currentHeight = containerRef.current.offsetHeight;
     const currentWidth = containerRef.current.offsetWidth;
     const screenScaleFactor = currentWidth / visualiser.defaultViewport.width;
 
@@ -535,6 +535,252 @@ export const StagePreview2D = ({
           stageRef={stageRef}
         />
       </Box>
+    </Flex>
+  );
+};
+
+/**
+ * A more lightweight version of the StagePreview without any editing capabilities.
+ * Streamlined to be as efficient as possible for rendering in ~50 cues.
+ *
+ * @param param0
+ */
+export const StaticStagePreview2D = ({
+  visualiser,
+  fixtures,
+  fixtureGroups,
+  fixtureGroupsAssignment,
+  controls,
+}: {
+  eventId: string;
+  visualiser: Visualiser;
+  fixtures: Fixture[];
+  fixtureGroups: FixtureGroupConfiguration[];
+  fixtureGroupsAssignment: FixtureGroupsAssignment;
+  controls?: React.ReactNode;
+}) => {
+  const { ref: containerRef, width: containerWidth, height: containerHeight } = useElementSize<HTMLDivElement>();
+  const stageRef = useRef<Konva.Stage | null>(null);
+  const previewId = useId();
+
+  /**
+   * Keep the saved viewport fitted to the measured preview width.
+   */
+  useEffect(() => {
+    if (!stageRef.current || !visualiser.defaultViewport || containerWidth === 0) return;
+
+    // Compare the current width and the saved width (saved width of the admin) to get a scale factor
+    const screenScaleFactor = containerWidth / visualiser.defaultViewport.width;
+
+    stageRef.current.position({
+      x: visualiser.defaultViewport.x * screenScaleFactor,
+      y: visualiser.defaultViewport.y * screenScaleFactor,
+    });
+    stageRef.current.scale({
+      x: visualiser.defaultViewport.scale * screenScaleFactor,
+      y: visualiser.defaultViewport.scale * screenScaleFactor,
+    });
+  }, [containerWidth, visualiser.defaultViewport]);
+
+  const stageElements = visualiser.objects2D;
+  const rects = stageElements.filter((el) => el.type === "rectangle");
+  const circles = stageElements.filter((el) => el.type === "circle");
+  const lines = stageElements.filter((el) => el.type === "line");
+  const texts = stageElements.filter((el) => el.type === "text");
+
+  // How do we know which fixtures should receive which attributeassignments?
+  const getAttributeAssignmentsOfAFixtureGroup = (fixtureGroupId: string): AttributeAssignment[] => {
+    const fixtureGroupAssignment = fixtureGroupsAssignment[fixtureGroupId];
+    if (!fixtureGroupAssignment) return [];
+
+    return Object.values(fixtureGroupAssignment.assignment);
+  };
+  const getSpecificAttributeGivenTheType = (
+    fixtureGroupId: string,
+    attributeType: string,
+  ): AttributeAssignment | undefined => {
+    const assignments = getAttributeAssignmentsOfAFixtureGroup(fixtureGroupId);
+    return assignments.find((assignment) => assignment.type === attributeType);
+  };
+
+  return (
+    <Flex className={classes["preview-container"]}>
+      {/* Height constrained to viewport minus 128px => width constrained to viewport height - 128/4*3 */}
+      <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
+        <Group align="start">
+          <Box style={{ flex: 1 }}>
+            <AspectRatio ratio={4 / 3}>
+              <MantineProvider
+                forceColorScheme="dark"
+                getRootElement={() => document.getElementById(previewId) || document.body}
+              >
+                <Box
+                  id={previewId}
+                  className={classes["preview-viewer"]}
+                  ref={containerRef}
+                  style={{ position: "relative", width: "100%", height: "100%" }}
+                >
+                  {containerWidth > 0 && containerHeight > 0 ? (
+                    <Stage ref={stageRef} width={containerWidth} height={containerHeight} listening={false}>
+                      {/* Layer for the rectangle representing the default viewport */}
+                      {visualiser.defaultViewport && (
+                        <Layer listening={false}>
+                          <Rect
+                            x={(-1 * visualiser.defaultViewport.x) / visualiser.defaultViewport.scale || 0}
+                            y={(-1 * visualiser.defaultViewport.y) / visualiser.defaultViewport.scale || 0}
+                            width={visualiser.defaultViewport.width / visualiser.defaultViewport.scale || 0}
+                            height={visualiser.defaultViewport.height / visualiser.defaultViewport.scale || 0}
+                            // fill="rgba(0, 0, 0, 0.1)"
+                            // mantine-dark-7
+                            stroke="#242424"
+                            // stroke="rgb(255, 0, 0)"
+                            strokeWidth={8}
+                            dash={[30, 20]}
+                          />
+                        </Layer>
+                      )}
+                      {/* <Layer>
+              {gridDots.map(function (d, i) {
+                return <Circle key={"g" + i} x={d.x} y={d.y} radius={1} fill="#424242" listening={false} />;
+              })}
+            </Layer> */}
+                      <Layer listening={false}>
+                        <KonvaText text="Try to drag shapes" fontSize={15} />
+                        {/* <Rect x={20} y={50} width={100} height={100} fill="red" shadowBlur={10} draggable /> */}
+
+                        {rects.map((rect) => (
+                          // TODO: add colour, left panel selection
+                          <VisualiserRectangleObject
+                            key={rect.id}
+                            shapeProps={rect.props}
+                            isSelected={false}
+                            onSelect={() => {}}
+                            onChange={() => {}}
+                            viewOnly
+                          />
+                        ))}
+
+                        {circles.map((circle) => (
+                          <VisualiserCircleObject
+                            key={circle.id}
+                            shapeProps={circle.props}
+                            isSelected={false}
+                            onSelect={() => {}}
+                            onChange={() => {}}
+                            viewOnly
+                          />
+                        ))}
+
+                        {lines.map((line) => (
+                          <VisualiserLineObject
+                            key={line.id}
+                            shapeProps={line.props}
+                            isSelected={false}
+                            onSelect={() => {}}
+                            onChange={() => {}}
+                            viewOnly
+                          />
+                        ))}
+
+                        {texts.map((text) => (
+                          <VisualiserTextObject
+                            key={text.id}
+                            shapeProps={text.props}
+                            isSelected={false}
+                            onSelect={() => {}}
+                            onChange={() => {}}
+                            viewOnly
+                          />
+                        ))}
+                        {/* <Circle x={200} y={100} radius={50} fill="green" draggable /> */}
+                      </Layer>
+
+                      <Layer listening={false}>
+                        {fixtures.map((fixture) =>
+                          fixture.type === "par" ? (
+                            <VisualiserParLightObject
+                              key={fixture.id}
+                              isSelected={false}
+                              onSelect={() => {}}
+                              // The shapeProps here have to be derived from our fixture data
+                              // for x,y,z and rotation. Remember we need tohandle the arrow.
+                              fixture={fixture}
+                              onChange={() => {}}
+                              viewOnly
+
+                              // fixture.fixtureGroupId is the group id, we need to find the
+                              colourAttribute={
+                                getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
+                                  ?.value?.[AttributeTypes.PRESET_COLOUR]
+                              }
+                              intensityAttribute={
+                                getSpecificAttributeGivenTheType(
+                                  fixture.fixtureGroupId,
+                                  AttributeTypes.PRESET_INTENSITY,
+                                )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                              }
+                            />
+                          ) : fixture.type === "bar" ? (
+                            <VisualiserBarLightObject
+                              key={fixture.id}
+                              isSelected={false}
+                              onSelect={() => {}}
+                              // The shapeProps here have to be derived from our fixture data
+                              // for x,y,z and rotation. Remember we need tohandle the arrow.
+                              fixture={fixture}
+                              onChange={() => {}}
+                              viewOnly
+
+                              colourAttribute={
+                                getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
+                                  ?.value?.[AttributeTypes.PRESET_COLOUR]
+                              }
+                              intensityAttribute={
+                                getSpecificAttributeGivenTheType(
+                                  fixture.fixtureGroupId,
+                                  AttributeTypes.PRESET_INTENSITY,
+                                )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                              }
+                            />
+                          ) : fixture.type === "moving_head" ? (
+                            <VisualiserMovingLightObject
+                              key={fixture.id}
+                              isSelected={false}
+                              onSelect={() => {}}
+                              // The shapeProps here have to be derived from our fixture data
+                              // for x,y,z and rotation. Remember we need tohandle the arrow.
+                              fixture={fixture}
+                              onChange={() => {}}
+                              viewOnly
+                            />
+                          ) : null,
+                        )}
+                      </Layer>
+                    </Stage>
+                  ) : (
+                    <div style={{ width: "100%", height: "100%" }}></div>
+                  )}
+                </Box>
+              </MantineProvider>
+            </AspectRatio>
+          </Box>
+
+          <Box className={classes["preview-controls"]}>
+            {/* <VisualiserControls stageElements={stageElements} fixtureGroups={fixtureGroups} stageRef={stageRef} /> */}
+            {controls}
+          </Box>
+        </Group>
+      </Box>
+
+      {/* <Box className={classes["preview-controls"]}>
+        <VisualiserControls
+          onDeleteElement={onDeleteElement}
+          onUpdateElement={replaceStageElement}
+          stageElements={stageElements}
+          fixtureGroups={fixtureGroups}
+          stageRef={stageRef}
+        />
+      </Box> */}
     </Flex>
   );
 };
