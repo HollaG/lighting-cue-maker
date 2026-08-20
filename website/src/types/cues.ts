@@ -6,7 +6,6 @@ import {
   type PresetIntensityOption,
   type PresetPositionOption,
   type SelectOption,
-  type SliderOption,
   type SliderPresetsOption,
   type TextOption,
 } from "./types";

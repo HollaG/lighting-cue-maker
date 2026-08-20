@@ -13,7 +13,11 @@ export type Visualiser = {
   objects2D: VisualiserObject[];
 
   /** Map certain editable attributes e.g. pan and tilt from a key decided by event creation
-   * to hard values that the VisualiserObjects can decode */
+   * to hard values that the VisualiserObjects can decode
+   * Note: there is potential for memory leak: if a fixture group gets deleted, the mapping here won't get deleted.
+   * However, it is small enough to not worry about it.
+   *
+   */
   fixtureAttributeMapping: FixtureAttributeMapping;
 };
 

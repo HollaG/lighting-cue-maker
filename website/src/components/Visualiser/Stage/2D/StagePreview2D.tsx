@@ -533,6 +533,7 @@ export const StagePreview2D = ({
           fixtureGroups={fixtureGroups}
           stageRef={stageRef}
           visualiser={visualiser}
+          eventId={eventId}
         />
       </Box>
     </Flex>
@@ -588,7 +589,6 @@ export const StaticStagePreview2D = ({
   const lines = stageElements.filter((el) => el.type === "line");
   const texts = stageElements.filter((el) => el.type === "text");
 
-  // How do we know which fixtures should receive which attributeassignments?
   const getAttributeAssignmentsOfAFixtureGroup = (fixtureGroupId: string): AttributeAssignment[] => {
     const fixtureGroupAssignment = fixtureGroupsAssignment[fixtureGroupId];
     if (!fixtureGroupAssignment) return [];
@@ -602,6 +602,10 @@ export const StaticStagePreview2D = ({
     const assignments = getAttributeAssignmentsOfAFixtureGroup(fixtureGroupId);
     return assignments.find((assignment) => assignment.type === attributeType);
   };
+
+  const previewFixtureId = useAppStore((state) => state.previewFixtureId);
+  const previewPositionId = useAppStore((state) => state.previewPositionId);
+  const isPreviewingFixture = useAppStore((state) => state.isPreviewingFixture);
 
   return (
     <Flex className={classes["preview-container"]}>
@@ -707,7 +711,9 @@ export const StaticStagePreview2D = ({
                               onChange={() => {}}
                               viewOnly
 
-                              // fixture.fixtureGroupId is the group id, we need to find the
+                              // These attributes are general to ALL fixture types.
+                              // There are some attributes that are specific to certain fixture types, but those will be handled in the individual fixture components,
+                              // NOT passed down from here.
                               colourAttribute={
                                 getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
                                   ?.value?.[AttributeTypes.PRESET_COLOUR]

@@ -16,7 +16,6 @@ import {
   Kbd,
   Loader,
   Menu,
-  SimpleGrid,
   Stack,
   Text,
   Textarea,
@@ -63,8 +62,8 @@ export const EventPage = () => {
   const loadedEventId = evt?.id;
   const loadedEventName = evt?.name;
 
-  const [showCueList, setShowCueList] = useState(true);
-  const [isPendingCueListRendering, setIsPendingCueListRendering] = useState(false);
+  const [showCueList] = useState(true);
+  const [isPendingCueListRendering] = useState(false);
 
   useEffect(() => {
     if (!loadedEventId || !loadedEventName) return;

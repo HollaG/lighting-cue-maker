@@ -367,7 +367,7 @@ const CueCardInternal = ({
   }
 
   // --- Visualiser ---------
-  const [viewMode, setViewMode] = useState<"Table" | "2D" | "3D">("Table");
+  const [viewMode, setViewMode] = useState<"Table" | "2D View" | "3D View">("Table");
 
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
@@ -484,7 +484,7 @@ const CueCardInternal = ({
               <SegmentedControl
                 data={["Table", "2D View"]}
                 value={viewMode}
-                onChange={(value) => setViewMode(value as "Table" | "2D" | "3D")}
+                onChange={(value) => setViewMode(value as "Table" | "2D View" | "3D View")}
               />
               <Popover
                 shadow="sm"
@@ -555,7 +555,7 @@ const CueCardInternal = ({
                 <></>
               )}
 
-              {viewMode === "2D" ? (
+              {viewMode === "2D View" ? (
                 <Box mb="md">
                   {visualiser ? (
                     <StaticStagePreview2D

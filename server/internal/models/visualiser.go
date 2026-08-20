@@ -6,8 +6,9 @@ type UpsertVisualiserReq struct {
 	ID      string `json:"id,omitempty"`
 	EventID string `json:"eventId"`
 
-	DefaultViewport datatypes.JSON `json:"defaultViewport,omitempty"`
-	Objects2D       datatypes.JSON `json:"objects2D,omitempty"`
+	DefaultViewport         datatypes.JSON `json:"defaultViewport,omitempty"`
+	Objects2D               datatypes.JSON `json:"objects2D,omitempty"`
+	FixtureAttributeMapping datatypes.JSON `json:"fixtureAttributeMapping,omitempty"`
 }
 
 type Visualiser struct {
@@ -17,4 +18,6 @@ type Visualiser struct {
 	DefaultViewport datatypes.JSON `json:"defaultViewport" gorm:"type:jsonb"`
 
 	Objects2D datatypes.JSON `json:"objects2D" gorm:"type:jsonb"`
+
+	FixtureAttributeMapping datatypes.JSON `json:"fixtureAttributeMapping" gorm:"type:jsonb"`
 }

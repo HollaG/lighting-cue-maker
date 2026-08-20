@@ -1,16 +1,19 @@
 import React, { useRef, useEffect } from "react";
-import { Arc, Circle, Group, Rect, Transformer } from "react-konva";
+import { Arc, Circle, Group, Line, Rect, Transformer } from "react-konva";
 import type { Group as GroupType } from "konva/lib/Group";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
-import type { Fixture, PositionOption, UpdateFixtureIn2DReq } from "../../../types/fixtures";
+import type { Fixture, UpdateFixtureIn2DReq } from "../../../types/fixtures";
 import {
   fixtureRepresentationTo2DShapeProps,
   hexToRgba,
   shapePropsToFixtureRepresentation,
 } from "../../../utils/visualiser";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
+import { useAppStore } from "../../../store/appStore";
 
 const LAMP_CENTER = 35;
+const BEAM_OUTER_RADIUS = 45;
+const BEAM_GUIDE_LENGTH = 1000;
 
 /**
  * Representation of a Fixture in 2D view.
@@ -27,7 +30,7 @@ export const VisualiserMovingLightObject = ({
 
   intensityAttribute,
   colourAttribute,
-  positionAttribute,
+  // positionAttribute,
 }: {
   fixture: Fixture;
   isSelected: boolean;
@@ -37,7 +40,7 @@ export const VisualiserMovingLightObject = ({
 
   intensityAttribute?: PresetIntensityOption;
   colourAttribute?: PresetColourOption;
-  positionAttribute?: PositionOption;
+  // positionAttribute?: PositionOption;
 }) => {
   const shapeRef = useRef<GroupType | null>(null);
   const trRef = useRef<TransformerType | null>(null);
@@ -64,20 +67,64 @@ export const VisualiserMovingLightObject = ({
   // basically, if tilt > 90, then add 180 to the pan value
   // pan then represents the clockwise rotation of the arc.
   // pan default is 0
-  const pan = positionAttribute?.pan ?? 0;
-  const tilt = positionAttribute?.tilt ?? 0;
+  // const pan = positionAttribute?.pan ?? 0;
+  // const tilt = positionAttribute?.tilt ?? 0;
+  // const pan2D = tilt > 90 ? pan + 180 : pan;
+
+  // Note that this is only used in the EditVisualiser page.
+  // EventPage visualisers will be set elsewhere
+
+  // Whether this fixture is currently selected for preview AND whether a function is active previewing
+  const isPreviewingFixture = useAppStore(
+    (state) => state.previewFixtureId && state.previewFixtureId === fixture.id && state.previewPositionId !== null,
+  );
+  const position = useAppStore((state) => state.position);
+  const { pan, tilt } = position ?? { pan: 0, tilt: 0 };
   const pan2D = tilt > 90 ? pan + 180 : pan;
+  const beamDirection = pan2D - 90;
+  const leftBeamAngle = ((beamDirection - beamAngle / 2) * Math.PI) / 180;
+  const rightBeamAngle = ((beamDirection + beamAngle / 2) * Math.PI) / 180;
+  const fixtureTransformProps = {
+    ...shapeProps,
+    x: (shapeProps.x ?? 0) + LAMP_CENTER,
+    y: (shapeProps.y ?? 0) + LAMP_CENTER,
+    offsetX: LAMP_CENTER,
+    offsetY: LAMP_CENTER,
+  };
 
   return (
     <React.Fragment>
+      {/* Keep guides outside the draggable fixture group so they do not affect its Transformer bounds. */}
+      {isPreviewingFixture && (
+        <Group {...fixtureTransformProps} listening={false} key="group1">
+          <Line
+            points={[
+              LAMP_CENTER + BEAM_OUTER_RADIUS * Math.cos(leftBeamAngle),
+              LAMP_CENTER + BEAM_OUTER_RADIUS * Math.sin(leftBeamAngle),
+              LAMP_CENTER + BEAM_GUIDE_LENGTH * Math.cos(leftBeamAngle),
+              LAMP_CENTER + BEAM_GUIDE_LENGTH * Math.sin(leftBeamAngle),
+            ]}
+            stroke={"#3b3b3b"}
+            strokeWidth={2}
+          />
+          <Line
+            points={[
+              LAMP_CENTER + BEAM_OUTER_RADIUS * Math.cos(rightBeamAngle),
+              LAMP_CENTER + BEAM_OUTER_RADIUS * Math.sin(rightBeamAngle),
+              LAMP_CENTER + BEAM_GUIDE_LENGTH * Math.cos(rightBeamAngle),
+              LAMP_CENTER + BEAM_GUIDE_LENGTH * Math.sin(rightBeamAngle),
+            ]}
+            stroke={"#3b3b3b"}
+            strokeWidth={2}
+          />
+        </Group>
+      )}
+
       <Group
-        {...shapeProps}
-        x={(shapeProps.x ?? 0) + LAMP_CENTER}
-        y={(shapeProps.y ?? 0) + LAMP_CENTER}
+        key="group2"
+        {...fixtureTransformProps}
         // Keep posX/posY as the fixture's top-left position, like the other stage elements.
         // Moving the offset to the lamp centre only changes its rotation pivot.
-        offsetX={LAMP_CENTER}
-        offsetY={LAMP_CENTER}
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
@@ -119,14 +166,14 @@ export const VisualiserMovingLightObject = ({
         {/* The beam indicator.*/}
         <Arc
           innerRadius={35}
-          outerRadius={45}
+          outerRadius={BEAM_OUTER_RADIUS}
 
           // The angle of the arc is determined by the fixture's beam angle.
           // Note that this is not the rotation of the fixture.
           angle={beamAngle}
           stroke={"#ffffff"}
           fill={fillColour}
-          rotation={-beamAngle / 2 - 90 + pan2D}
+          rotation={-beamAngle / 2 - 90 + (isPreviewingFixture ? pan2D : 0)}
 
           x={35}
           y={35}

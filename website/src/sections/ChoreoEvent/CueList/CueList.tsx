@@ -3,7 +3,7 @@ import { Stack } from "@mantine/core";
 import { CueCard } from "../../../components/Siding/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
 import { useAppStore } from "../../../store/appStore";
-import type { FixtureGroupConfiguration, LightEventConfiguration } from "../../../types/types";
+import type { LightEventConfiguration } from "../../../types/types";
 import { useGetOrCreateVisualiser } from "../../../query/useGetOrCreateVisualiser";
 import { useGetFixturesByEventId } from "../../../query/useGetFixtures";
 

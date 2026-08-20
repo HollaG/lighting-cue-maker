@@ -29,8 +29,31 @@ func TestDefaultVisualiser(t *testing.T) {
 
 	if visualiser.LightEventUuid != "event-id" ||
 		visualiser.DefaultViewport != nil ||
-		string(visualiser.Objects2D) != "[]" {
+		string(visualiser.Objects2D) != "[]" ||
+		string(visualiser.FixtureAttributeMapping) != "{}" {
 		t.Fatalf("unexpected default visualiser: %#v", visualiser)
+	}
+}
+
+func TestIsJSONObject(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{name: "empty object", value: `{}`, want: true},
+		{name: "nested object", value: `{"group":{"position":{}}}`, want: true},
+		{name: "array", value: `[]`, want: false},
+		{name: "null", value: `null`, want: false},
+		{name: "invalid", value: `{`, want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isJSONObject(datatypes.JSON(test.value)); got != test.want {
+				t.Fatalf("isJSONObject(%q) = %v, want %v", test.value, got, test.want)
+			}
+		})
 	}
 }
 
@@ -58,10 +81,11 @@ func TestIsJSONArray(t *testing.T) {
 
 func TestVisualiserFromRequest(t *testing.T) {
 	req := models.UpsertVisualiserReq{
-		ID:              "existing-visualiser",
-		EventID:         "event-id",
-		DefaultViewport: datatypes.JSON(`{"x":10,"y":20,"width":600,"height":400}`),
-		Objects2D:       datatypes.JSON(`[{"type":"fixture"}]`),
+		ID:                      "existing-visualiser",
+		EventID:                 "event-id",
+		DefaultViewport:         datatypes.JSON(`{"x":10,"y":20,"width":600,"height":400}`),
+		Objects2D:               datatypes.JSON(`[{"type":"fixture"}]`),
+		FixtureAttributeMapping: datatypes.JSON(`{"group-id":{"PRESET_POSITION":{}}}`),
 	}
 
 	savedVisualiser := visualiserFromRequest(req)
@@ -71,7 +95,8 @@ func TestVisualiserFromRequest(t *testing.T) {
 	}
 	if savedVisualiser.LightEventUuid != req.EventID ||
 		string(savedVisualiser.DefaultViewport) != string(req.DefaultViewport) ||
-		string(savedVisualiser.Objects2D) != string(req.Objects2D) {
+		string(savedVisualiser.Objects2D) != string(req.Objects2D) ||
+		string(savedVisualiser.FixtureAttributeMapping) != string(req.FixtureAttributeMapping) {
 		t.Fatalf("visualiser fields were not mapped correctly: %#v", savedVisualiser)
 	}
 }

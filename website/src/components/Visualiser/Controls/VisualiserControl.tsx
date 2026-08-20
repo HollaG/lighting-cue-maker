@@ -1,5 +1,6 @@
 import {
   Accordion,
+  AngleSlider,
   Box,
   Button,
   Center,
@@ -9,12 +10,12 @@ import {
   Group,
   Menu,
   Modal,
-  SimpleGrid,
+  Popover,
   Stack,
   Text,
 } from "@mantine/core";
 import type { FixtureAttributeMapping, Visualiser, VisualiserObject } from "../../../types/visualiser";
-import type { Fixture, UpdateFixtureReq, UpsertFixtureReq } from "../../../types/fixtures";
+import type { Fixture, FixtureType, UpdateFixtureReq, UpsertFixtureReq } from "../../../types/fixtures";
 import { CardBase } from "../../Siding/CardBase";
 import { useGetFixtures } from "../../../query/useGetFixtures";
 import { useUpsertFixture } from "../../../query/useUpsertFixtures";
@@ -23,8 +24,9 @@ import React, { useEffect, useState } from "react";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../../types/types";
 import { useAppStore } from "../../../store/appStore";
 import type { Stage } from "konva/lib/Stage";
-import { useDisclosure } from "@mantine/hooks";
+import { useDebouncedCallback, useDisclosure } from "@mantine/hooks";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
+import { useUpsertVisualiser } from "../../../query/useUpsertVisualiser";
 
 interface ObjectMenuProps {
   obj: VisualiserObject;
@@ -184,16 +186,20 @@ const VisualiserFixtureSection = ({
   setFixtureAccordionValue,
   stageRef,
   visualiser,
+  eventId,
 }: {
   visualiser: Visualiser;
   fixtureGroup: FixtureGroupConfiguration;
   index: number;
   setFixtureAccordionValue: (value: string | null) => void;
   stageRef: React.RefObject<Stage | null>;
+  eventId: string;
 }) => {
   const selectedElementId = useAppStore((state) => state.activeObjectId);
 
   const { fixtures } = useGetFixtures({ fixtureGroupId: fixtureGroup.id });
+  const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
+
   const { isPending, mutateAsync: upsertFixture } = useUpsertFixture();
 
   // TODO: unused var
@@ -249,29 +255,50 @@ const VisualiserFixtureSection = ({
   };
 
   // For handling special attributes like pan/tilt
+  // const hasPresetPositionAttribute = fixtureGroup.attributes.some(
+  //   (attr) => attr.type === AttributeTypes.PRESET_POSITION,
+  // );
+
+  /**
+   * Does this fixtureGroup have a PresetPosition configured? If so, does this fixture support it?
+   */
   const hasPresetPositionAttribute = fixtureGroup.attributes.some(
     (attr) => attr.type === AttributeTypes.PRESET_POSITION,
   );
+  const fixtureTypeSupportsPosition = (fixtureType: FixtureType) => fixtureType === "moving_head";
+
   const presetPositionOptions = hasPresetPositionAttribute
     ? (fixtureGroup.attributes.find((attr) => attr.type === AttributeTypes.PRESET_POSITION)?.optionPossibleValues[
         AttributeTypes.PRESET_POSITION
       ] ?? [])
     : [];
 
-  const [isEditingSpecialAttributes, setIsEditingSpecialAttributes] = useState(false);
-  const [editingFixtureId, setEditingFixtureId] = useState<string | null>(null);
+  // Debounce and save
   const [fixtureAttributeMapping, setFixtureAttributeMapping] = useState<FixtureAttributeMapping>(
     visualiser.fixtureAttributeMapping ?? {},
   );
 
   // shared
   // TODO: this either needs to be in a store or lifted up through state
-  // So that the preview can access the values it should, preview
-  // This is work for tomorrow
-  const [previewFixtureId, setPreviewFixtureId] = useState<string | null>(null);
+  const previewFixtureId = useAppStore((state) => state.previewFixtureId);
+  const setPreviewFixtureId = useAppStore((state) => state.setPreviewFixtureId);
+  const previewPositionId = useAppStore((state) => state.previewPositionId);
+  const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
+  const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
+
+  const [isEditingSpecialAttributes, setIsEditingSpecialAttributes] = useState(false);
   const onSave = () => {
     setIsEditingSpecialAttributes(false);
-    setEditingFixtureId(null);
+    setPreviewFixtureId(null);
+  };
+
+  const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
+    return (
+      fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[positionOptionId]?.[fixtureId] ?? {
+        pan: 0,
+        tilt: 0,
+      }
+    );
   };
 
   const onPositionAttributeInput = (
@@ -302,24 +329,35 @@ const VisualiserFixtureSection = ({
         newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId] = {};
       }
 
+      const existingPan =
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId]?.pan ?? 0;
+      const existingTilt =
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId]?.tilt ?? 0;
+
       newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId] = {
-        pan: pan ?? 0,
-        tilt: tilt ?? 0,
+        pan: pan ?? existingPan,
+        tilt: tilt ?? existingTilt,
       };
 
       return newMapping;
     });
+
+    // Update the store
+    setPreviewPosition(positionOptionId, { pan, tilt });
   };
 
-  const get2DRotationFromPanAndTilt = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
-    const { pan, tilt } = fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
-      positionOptionId
-    ]?.[fixtureId] ?? { pan: 0, tilt: 0 };
+  /** Debounce the saving of position settings */
+  const debouncedSave = useDebouncedCallback((fixtureAttributeMapping: FixtureAttributeMapping) => {
+    upsertVisualiser({
+      id: visualiser.id,
+      eventId,
+      fixtureAttributeMapping,
+    });
+  }, 500);
 
-    // if tilt > 90, add 180 to pan
-    const pan2D = tilt > 90 ? pan + 180 : pan;
-    return pan2D;
-  };
+  useEffect(() => {
+    debouncedSave(fixtureAttributeMapping);
+  }, [fixtureAttributeMapping, debouncedSave]);
 
   return (
     <Accordion.Item value={fixtureGroup.id}>
@@ -354,15 +392,17 @@ const VisualiserFixtureSection = ({
                     <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "bar" })}>Bar light</Menu.Item>
 
                     <Menu.Divider />
-                    {/* <Menu.Label>Configure attributes</Menu.Label>
-                    <Menu.Item
-                      onClick={() => {
-                        setIsEditingSpecialAttributes(true);
-                        setEditingFixtureId(fixture.id);
-                      }}
-                    >
-                      Set pan & tilt corresponding to cue selection
-                    </Menu.Item> */}
+                    <Menu.Label>Configure attributes</Menu.Label>
+                    {hasPresetPositionAttribute && fixtureTypeSupportsPosition(fixture.type) && (
+                      <Menu.Item
+                        onClick={() => {
+                          setIsEditingSpecialAttributes(true);
+                          setPreviewFixtureId(fixture.id);
+                        }}
+                      >
+                        Set pan & tilt corresponding to cue selection
+                      </Menu.Item>
+                    )}
                     <Menu.Divider />
                     <Menu.Item color="red" onClick={() => onDeleteFixture(fixture)}>
                       Delete
@@ -371,60 +411,115 @@ const VisualiserFixtureSection = ({
                 </Menu>{" "}
               </Flex>
 
-              {/* TODO: find a better way to represent this */}
-              {hasPresetPositionAttribute && (
-                <Collapse expanded={isEditingSpecialAttributes && editingFixtureId === fixture.id}>
+              {/* Special Attribute: Position */}
+              {hasPresetPositionAttribute && fixtureTypeSupportsPosition(fixture.type) && (
+                <Collapse expanded={isEditingSpecialAttributes && previewFixtureId === fixture.id}>
                   <Stack>
+                    <Text fw="bold"> Positions </Text>
                     {presetPositionOptions.map((option, index) => (
                       <Group key={option.id} style={{ flexWrap: "nowrap" }}>
                         <Text style={{ flexShrink: 1 }}>
                           {index + 1}. {option.name}
                         </Text>
                         <Flex flex={1} />
-                        <Button variant="transparent" size="xs">
+                        <Button
+                          color="lime"
+                          variant={option.id === previewPositionId ? "filled" : "transparent"}
+                          size="xs"
+                          onClick={() =>
+                            togglePreviewPositionId(
+                              option.id,
+                              getPosition(fixture.id, option.id, fixture.fixtureGroupId),
+                            )
+                          }
+                        >
                           Preview
                         </Button>
                         <Box style={{ width: "40px" }}>
-                          <CustomTextInput
-                            required
-                            type="number"
-                            label={"Pan"}
-                            value={
-                              fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
-                                option.id
-                              ]?.[fixture.id]?.pan || 0
-                            }
-                            onChange={(e) =>
-                              onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
-                                pan: Number(e.target.value),
-                              })
-                            }
-                          />
+                          <Popover withArrow shadow="md">
+                            <Popover.Target>
+                              <AngleSlider
+                                size={40}
+                                thumbSize={8}
+                                value={
+                                  fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+                                    option.id
+                                  ]?.[fixture.id]?.pan || 0
+                                }
+                                onChange={(e) =>
+                                  onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
+                                    pan: e,
+                                  })
+                                }
+                                formatLabel={(value) => `${value}°`}
+                                marks={[{ value: 0, label: "Pan" }]}
+                              />
+                            </Popover.Target>
+                            <Popover.Dropdown>
+                              <CustomTextInput
+                                required
+                                type="number"
+                                label={"Pan"}
+                                value={
+                                  fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+                                    option.id
+                                  ]?.[fixture.id]?.pan || 0
+                                }
+                                onChange={(e) =>
+                                  onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
+                                    pan: Number(e.target.value),
+                                  })
+                                }
+                              />
+                            </Popover.Dropdown>
+                          </Popover>
                         </Box>
                         <Box style={{ width: "40px" }}>
-                          <CustomTextInput
-                            required
-                            type="number"
-                            label={"Tilt"}
-                            value={
-                              fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
-                                option.id
-                              ]?.[fixture.id]?.tilt || 0
-                            }
-                            onChange={(e) =>
-                              onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
-                                tilt: Number(e.target.value),
-                              })
-                            }
-                          />
+                          <Popover withArrow shadow="md">
+                            <Popover.Target>
+                              <AngleSlider
+                                size={40}
+                                thumbSize={8}
+                                value={
+                                  fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+                                    option.id
+                                  ]?.[fixture.id]?.tilt || 0
+                                }
+                                onChange={(value) =>
+                                  onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
+                                    tilt: value,
+                                  })
+                                }
+                                formatLabel={(value) => `${value}°`}
+                                marks={[{ value: 0, label: "Tilt" }]}
+                              />
+                            </Popover.Target>
+                            <Popover.Dropdown>
+                              <CustomTextInput
+                                required
+                                type="number"
+                                label={"Tilt"}
+                                value={
+                                  fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+                                    option.id
+                                  ]?.[fixture.id]?.tilt || 0
+                                }
+                                onChange={(e) =>
+                                  onPositionAttributeInput(fixture.id, option.id, fixture.fixtureGroupId, {
+                                    tilt: Number(e.target.value),
+                                  })
+                                }
+                              />
+                            </Popover.Dropdown>
+                          </Popover>
                         </Box>
                       </Group>
                     ))}
-                    <Center>
+                    {/* <Center>
                       <Button size="xs" variant="light">
                         Save
                       </Button>
-                    </Center>
+                    </Center> */}
                   </Stack>
                 </Collapse>
               )}
@@ -542,6 +637,7 @@ export const VisualiserControls = ({
   stageElements,
   fixtureGroups,
   stageRef,
+  eventId,
   visualiser,
 }: {
   stageElements: VisualiserObject[];
@@ -550,6 +646,7 @@ export const VisualiserControls = ({
   fixtureGroups: FixtureGroupConfiguration[];
   stageRef: React.RefObject<Stage | null>;
   visualiser: Visualiser;
+  eventId: string;
 }) => {
   const rects = stageElements.filter((el) => el.type === "rectangle");
   const circles = stageElements.filter((el) => el.type === "circle");
@@ -598,6 +695,7 @@ export const VisualiserControls = ({
             setFixtureAccordionValue={setFixtureAccordionValue}
             stageRef={stageRef}
             visualiser={visualiser}
+            eventId={eventId}
           />
         ))}
       </Accordion>

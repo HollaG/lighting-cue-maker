@@ -70,6 +70,10 @@ func upsertVisualiser(c *gin.Context) {
 		response.BadRequest(c, "Objects2D must be a JSON array", nil)
 		return
 	}
+	if len(req.FixtureAttributeMapping) > 0 && !isJSONObject(req.FixtureAttributeMapping) {
+		response.BadRequest(c, "Fixture attribute mapping must be a JSON object", nil)
+		return
+	}
 
 	if err := ensureEventExists(req.EventID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -121,6 +125,10 @@ func upsertVisualiser(c *gin.Context) {
 		savedVisualiser.Objects2D = req.Objects2D
 		updateFields = append(updateFields, "Objects2D")
 	}
+	if len(req.FixtureAttributeMapping) > 0 {
+		savedVisualiser.FixtureAttributeMapping = req.FixtureAttributeMapping
+		updateFields = append(updateFields, "FixtureAttributeMapping")
+	}
 	if result := database.DB().Select(updateFields).Updates(&savedVisualiser); result.Error != nil {
 		response.InternalError(c, "Failed to update visualiser")
 		return
@@ -145,11 +153,17 @@ func isJSONArray(value datatypes.JSON) bool {
 	return json.Unmarshal(value, &items) == nil && items != nil
 }
 
+func isJSONObject(value datatypes.JSON) bool {
+	var object map[string]json.RawMessage
+	return json.Unmarshal(value, &object) == nil && object != nil
+}
+
 func visualiserFromRequest(req models.UpsertVisualiserReq) models.Visualiser {
 	return models.Visualiser{
-		LightEventUuid:  req.EventID,
-		DefaultViewport: req.DefaultViewport,
-		Objects2D:       req.Objects2D,
+		LightEventUuid:          req.EventID,
+		DefaultViewport:         req.DefaultViewport,
+		Objects2D:               req.Objects2D,
+		FixtureAttributeMapping: req.FixtureAttributeMapping,
 	}
 }
 
@@ -158,7 +172,8 @@ func defaultVisualiser(eventID string) models.Visualiser {
 		LightEventUuid: eventID,
 
 		// Users MUST create a default viewport.
-		DefaultViewport: nil,
-		Objects2D:       datatypes.JSON(`[]`),
+		DefaultViewport:         nil,
+		Objects2D:               datatypes.JSON(`[]`),
+		FixtureAttributeMapping: datatypes.JSON(`{}`),
 	}
 }
