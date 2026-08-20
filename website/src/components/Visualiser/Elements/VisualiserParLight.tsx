@@ -22,7 +22,7 @@ const LAMP_CENTER = 35;
  * @param param0
  * @returns
  */
-export const VisualiserParLightObject = ({
+export const VisualiserParLightObject = React.memo(({
   fixture,
   isSelected,
   onSelect,
@@ -34,7 +34,7 @@ export const VisualiserParLightObject = ({
 }: {
   fixture: Fixture;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (id: string) => void;
   onChange: (newProps: UpdateFixtureIn2DReq) => void;
 
   intensityAttribute?: PresetIntensityOption;
@@ -73,8 +73,8 @@ export const VisualiserParLightObject = ({
         // Moving the offset to the lamp centre only changes its rotation pivot.
         offsetX={LAMP_CENTER}
         offsetY={LAMP_CENTER}
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={() => onSelect(fixture.id)}
+        onTap={() => onSelect(fixture.id)}
         ref={shapeRef}
         listening={!viewOnly}
         draggable={!viewOnly}
@@ -129,4 +129,4 @@ export const VisualiserParLightObject = ({
       {isSelected && !viewOnly && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
     </React.Fragment>
   );
-};
+});

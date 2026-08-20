@@ -1103,7 +1103,6 @@ function SliderPresetInput({
   marks: number[];
   required?: boolean;
 }) {
-  console.log({ name });
   // validation: if no marks, return nothing
   if (!marks || marks.length === 0) {
     return (

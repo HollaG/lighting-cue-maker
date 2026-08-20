@@ -13,7 +13,7 @@ export interface VisualiserSlice {
 
   // special attribute: Position
   previewPositionId: string | null; // which position we are currently editing the position mappings of
-  position: { pan: number; tilt: number } | null; // the position we are currently editing the position mappings of
+  previewPosition: { pan: number; tilt: number } | null; // the position we are currently editing the position mappings of
   togglePreviewPositionId: (id: string | null, position?: { pan: number; tilt: number }) => void; // set the position we are currently editing the position mappings of
   setPreviewPosition: (id: string | null, position?: { pan?: number; tilt?: number }) => void; // set the position we are currently editing the position mappings of
 }
@@ -33,13 +33,13 @@ export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = 
   },
 
   previewPositionId: null,
-  position: null,
+  previewPosition: null,
   togglePreviewPositionId: (id: string | null, position?: { pan: number; tilt: number }) => {
     // if not set, set, if set, unset
     if (get().previewPositionId === id) {
-      set({ previewPositionId: null, position: null });
+      set({ previewPositionId: null, previewPosition: null });
     } else {
-      set({ previewPositionId: id, position });
+      set({ previewPositionId: id, previewPosition: position });
     }
   },
   setPreviewPosition: (positionId: string | null, position?: { pan?: number; tilt?: number }) => {
@@ -49,9 +49,9 @@ export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = 
 
     set((state) => ({
       previewPositionId: positionId,
-      position: {
-        pan: position?.pan ?? state.position?.pan ?? 0,
-        tilt: position?.tilt ?? state.position?.tilt ?? 0,
+      previewPosition: {
+        pan: position?.pan ?? state.previewPosition?.pan ?? 0,
+        tilt: position?.tilt ?? state.previewPosition?.tilt ?? 0,
       },
     }));
   },

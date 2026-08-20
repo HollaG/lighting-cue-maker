@@ -279,7 +279,6 @@ const VisualiserFixtureSection = ({
   );
 
   // shared
-  // TODO: this either needs to be in a store or lifted up through state
   const previewFixtureId = useAppStore((state) => state.previewFixtureId);
   const setPreviewFixtureId = useAppStore((state) => state.setPreviewFixtureId);
   const previewPositionId = useAppStore((state) => state.previewPositionId);
@@ -287,10 +286,6 @@ const VisualiserFixtureSection = ({
   const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
 
   const [isEditingSpecialAttributes, setIsEditingSpecialAttributes] = useState(false);
-  const onSave = () => {
-    setIsEditingSpecialAttributes(false);
-    setPreviewFixtureId(null);
-  };
 
   const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
     return (

@@ -16,7 +16,7 @@ import type { PresetColourOption, PresetIntensityOption } from "../../../types/t
  * @param param0
  * @returns
  */
-export const VisualiserBarLightObject = ({
+export const VisualiserBarLightObject = React.memo(({
   fixture,
   isSelected,
   onSelect,
@@ -28,7 +28,7 @@ export const VisualiserBarLightObject = ({
 }: {
   fixture: Fixture;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (id: string) => void;
   onChange: (newProps: UpdateFixtureIn2DReq) => void;
   viewOnly?: boolean;
 
@@ -65,8 +65,8 @@ export const VisualiserBarLightObject = ({
         // Keep posX/posY as the fixture's top-left position, like the other stage elements.
         // Moving the offset to the lamp centre only changes its rotation pivot.
 
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={() => onSelect(fixture.id)}
+        onTap={() => onSelect(fixture.id)}
         ref={shapeRef}
         listening={!viewOnly}
         draggable={!viewOnly}
@@ -114,4 +114,4 @@ export const VisualiserBarLightObject = ({
       {isSelected && !viewOnly && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
     </React.Fragment>
   );
-};
+});

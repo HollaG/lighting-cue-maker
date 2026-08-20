@@ -3,17 +3,19 @@ import { Circle, Transformer } from "react-konva";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import type { Circle as CircleType, CircleConfig } from "konva/lib/shapes/Circle";
 
-export const VisualiserCircleObject = ({
+export const VisualiserCircleObject = React.memo(({
+  id,
   shapeProps,
   isSelected,
   onSelect,
   onChange,
   viewOnly = false,
 }: {
+  id: string;
   shapeProps: CircleConfig;
   isSelected: boolean;
-  onSelect: () => void;
-  onChange: (newProps: CircleConfig) => void;
+  onSelect: (id: string) => void;
+  onChange: (id: string, newProps: CircleConfig) => void;
   viewOnly?: boolean;
 }) => {
   const shapeRef = useRef<CircleType | null>(null);
@@ -30,14 +32,14 @@ export const VisualiserCircleObject = ({
   return (
     <React.Fragment>
       <Circle
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={() => onSelect(id)}
+        onTap={() => onSelect(id)}
         ref={shapeRef}
         {...shapeProps}
         listening={!viewOnly}
         draggable={!viewOnly}
         onDragEnd={(e) => {
-          onChange({
+          onChange(id, {
             ...shapeProps,
             x: e.target.x(),
             y: e.target.y(),
@@ -56,7 +58,7 @@ export const VisualiserCircleObject = ({
           // we will reset it back
           node.scaleX(1);
           node.scaleY(1);
-          onChange({
+          onChange(id, {
             ...shapeProps,
             x: node.x(),
             y: node.y(),
@@ -83,4 +85,4 @@ export const VisualiserCircleObject = ({
       )}
     </React.Fragment>
   );
-};
+});

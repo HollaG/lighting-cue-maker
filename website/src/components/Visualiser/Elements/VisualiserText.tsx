@@ -3,7 +3,8 @@ import type { Text as TextType, TextConfig } from "konva/lib/shapes/Text";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import { Text, Transformer } from "react-konva";
 
-export const VisualiserTextObject = ({
+export const VisualiserTextObject = React.memo(({
+  id,
   shapeProps,
   isSelected,
   onSelect,
@@ -11,10 +12,11 @@ export const VisualiserTextObject = ({
 
   viewOnly = false,
 }: {
+  id: string;
   shapeProps: TextConfig;
   isSelected: boolean;
-  onSelect: () => void;
-  onChange: (newProps: TextConfig) => void;
+  onSelect: (id: string) => void;
+  onChange: (id: string, newProps: TextConfig) => void;
 
   viewOnly?: boolean;
 }) => {
@@ -31,14 +33,14 @@ export const VisualiserTextObject = ({
   return (
     <React.Fragment>
       <Text
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={() => onSelect(id)}
+        onTap={() => onSelect(id)}
         ref={shapeRef}
         {...shapeProps}
         listening={!viewOnly}
         draggable={!viewOnly}
         onDragEnd={(e) => {
-          onChange({
+          onChange(id, {
             ...shapeProps,
             x: e.target.x(),
             y: e.target.y(),
@@ -54,7 +56,7 @@ export const VisualiserTextObject = ({
           node.scaleX(1);
           node.scaleY(1);
 
-          onChange({
+          onChange(id, {
             ...shapeProps,
             x: node.x(),
             y: node.y(),
@@ -80,4 +82,4 @@ export const VisualiserTextObject = ({
       )}
     </React.Fragment>
   );
-};
+});

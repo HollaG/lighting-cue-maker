@@ -3,17 +3,19 @@ import type { Line as LineType, LineConfig } from "konva/lib/shapes/Line";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import { Line, Transformer } from "react-konva";
 
-export const VisualiserLineObject = ({
+export const VisualiserLineObject = React.memo(({
+  id,
   shapeProps,
   isSelected,
   onSelect,
   onChange,
   viewOnly = false,
 }: {
+  id: string;
   shapeProps: LineConfig;
   isSelected: boolean;
-  onSelect: () => void;
-  onChange: (newProps: LineConfig) => void;
+  onSelect: (id: string) => void;
+  onChange: (id: string, newProps: LineConfig) => void;
   viewOnly?: boolean;
 }) => {
   const shapeRef = useRef<LineType | null>(null);
@@ -29,14 +31,14 @@ export const VisualiserLineObject = ({
   return (
     <React.Fragment>
       <Line
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={() => onSelect(id)}
+        onTap={() => onSelect(id)}
         ref={shapeRef}
         {...shapeProps}
         listening={!viewOnly}
         draggable={!viewOnly}
         onDragEnd={(e) => {
-          onChange({
+          onChange(id, {
             ...shapeProps,
             x: e.target.x(),
             y: e.target.y(),
@@ -54,7 +56,7 @@ export const VisualiserLineObject = ({
           node.scaleX(1);
           node.scaleY(1);
 
-          onChange({
+          onChange(id, {
             ...shapeProps,
             x: node.x(),
             y: node.y(),
@@ -79,4 +81,4 @@ export const VisualiserLineObject = ({
       )}
     </React.Fragment>
   );
-};
+});

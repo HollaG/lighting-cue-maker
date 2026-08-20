@@ -2,13 +2,21 @@ import { Flex, Group, Button, AspectRatio, Box, Select, MantineProvider } from "
 import { useDebouncedCallback, useElementSize } from "@mantine/hooks";
 import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Layer, Stage, Rect } from "react-konva";
 import { useUpsertFixture } from "../../../../query/useUpsertFixtures";
 import { useUpsertVisualiser } from "../../../../query/useUpsertVisualiser";
-import type { Fixture, UpdateFixtureIn2DReq } from "../../../../types/fixtures";
+import type { Fixture, PositionOption, UpdateFixtureIn2DReq } from "../../../../types/fixtures";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../../../types/types";
-import type { Visualiser, VisualiserObject, VisualiserTypes, VisualiserRectangle } from "../../../../types/visualiser";
+import type {
+  Visualiser,
+  VisualiserCircle,
+  VisualiserLine,
+  VisualiserObject,
+  VisualiserRectangle,
+  VisualiserText,
+  VisualiserTypes,
+} from "../../../../types/visualiser";
 import { VisualiserCircleObject } from "../../Elements/VisualiserCircle";
 import { VisualiserLineObject } from "../../Elements/VisualiserLine";
 import { VisualiserParLightObject } from "../../Elements/VisualiserParLight";
@@ -24,6 +32,7 @@ import type { AttributeAssignment, FixtureGroupsAssignment } from "../../../../t
 
 // Pre-generate grid dots
 const gridDots: { x: number; y: number }[] = [];
+const NOOP = () => {};
 const spacing = 24;
 const range = 2000;
 for (var gx = -range; gx <= range; gx += spacing) {
@@ -52,7 +61,7 @@ export const StagePreview2D = ({
 
   const [stageElements, setStageElements] = useState<VisualiserObject[]>(visualiser.objects2D);
 
-  const replaceStageElement = (newElement: VisualiserObject) => {
+  const replaceStageElement = useCallback((newElement: VisualiserObject) => {
     setStageElements((prev) => {
       const index = prev.findIndex((el) => el.id === newElement.id);
       if (index === -1) {
@@ -62,11 +71,35 @@ export const StagePreview2D = ({
       newElements[index] = newElement;
       return newElements;
     });
-  };
+  }, []);
 
-  const onDeleteElement = (elementId: string) => {
+  const onDeleteElement = useCallback((elementId: string) => {
     setStageElements((prev) => prev.filter((el) => el.id !== elementId));
-  };
+  }, []);
+
+  const onChangeRectangle = useCallback((id: string, props: VisualiserRectangle["props"]) => {
+    setStageElements((prev) =>
+      prev.map((element) => (element.id === id && element.type === "rectangle" ? { ...element, props } : element)),
+    );
+  }, []);
+
+  const onChangeCircle = useCallback((id: string, props: VisualiserCircle["props"]) => {
+    setStageElements((prev) =>
+      prev.map((element) => (element.id === id && element.type === "circle" ? { ...element, props } : element)),
+    );
+  }, []);
+
+  const onChangeLine = useCallback((id: string, props: VisualiserLine["props"]) => {
+    setStageElements((prev) =>
+      prev.map((element) => (element.id === id && element.type === "line" ? { ...element, props } : element)),
+    );
+  }, []);
+
+  const onChangeText = useCallback((id: string, props: VisualiserText["props"]) => {
+    setStageElements((prev) =>
+      prev.map((element) => (element.id === id && element.type === "text" ? { ...element, props } : element)),
+    );
+  }, []);
 
   /** Debounce the saving of positions of stage items */
   const debouncedSave = useDebouncedCallback((objects2D: VisualiserObject[]) => {
@@ -223,10 +256,13 @@ export const StagePreview2D = ({
 
   // Shape select: "Stage Elements"
   const [selectedId, setSelectedElementId] = useState<string | null>(null);
-  const onSelectShape = (id: string | null) => {
-    setSelectedElementId(id);
-    setActiveObjectId(id);
-  };
+  const onSelectShape = useCallback(
+    (id: string | null) => {
+      setSelectedElementId(id);
+      setActiveObjectId(id);
+    },
+    [setActiveObjectId],
+  );
 
   const checkDeselect = (e: KonvaEventObject<MouseEvent | TouchEvent, Node<NodeConfig>>) => {
     // deselect when clicked on empty area
@@ -312,6 +348,26 @@ export const StagePreview2D = ({
     upsertFixture(newFixtureProps);
   }, 500);
 
+  const onChangeFixture = useCallback(
+    (newFixtureProps: UpdateFixtureIn2DReq) => debouncedSavePositions(newFixtureProps),
+    [debouncedSavePositions],
+  );
+
+  // --- SPECIAL: EDIT-ONLY preview attributes ---
+  // Example usecase: preview position attribute, preview Zoom(TBD), Focus(?)
+  // Whether this fixture is currently selected for preview AND whether a function is active previewing
+  // const isPreviewingFixture = useAppStore(
+  //   (state) => state.previewFixtureId && state.previewFixtureId === fixture.id && state.previewPositionId !== null,
+  // );
+
+  // POSITION
+  const previewFixtureId = useAppStore((state) => state.previewFixtureId);
+  const previewPositionId = useAppStore((state) => state.previewPositionId);
+  const getIsPreviewingFixture = (fixtureId: string) => {
+    return previewFixtureId === fixtureId && previewFixtureId !== null && previewPositionId !== null;
+  };
+  const position = useAppStore((state) => state.previewPosition) ?? { pan: 0, tilt: 0 };
+
   return (
     <Flex className={classes["preview-container"]}>
       {/* Height constrained to viewport minus 128px => width constrained to viewport height - 128/4*3 */}
@@ -367,73 +423,44 @@ export const StagePreview2D = ({
                       // TODO: add colour, left panel selection
                       <VisualiserRectangleObject
                         key={rect.id}
+                        id={rect.id}
                         shapeProps={rect.props}
                         isSelected={rect.id === selectedId}
-                        onSelect={() => {
-                          onSelectShape(rect.id);
-                        }}
-                        onChange={(newAttrs) => {
-                          const existingRect = rects.find((r) => r.id === rect.id);
-                          if (!existingRect) return;
-
-                          replaceStageElement({
-                            ...existingRect,
-                            props: newAttrs,
-                          });
-                        }}
+                        onSelect={onSelectShape}
+                        onChange={onChangeRectangle}
                       />
                     ))}
 
                     {circles.map((circle) => (
                       <VisualiserCircleObject
                         key={circle.id}
+                        id={circle.id}
                         shapeProps={circle.props}
                         isSelected={circle.id === selectedId}
-                        onSelect={() => {
-                          onSelectShape(circle.id);
-                        }}
-                        onChange={(newAttrs) => {
-                          const existingCircle = circles.find((c) => c.id === circle.id);
-                          if (!existingCircle) return;
-                          replaceStageElement({
-                            ...existingCircle,
-                            props: newAttrs,
-                          });
-                        }}
+                        onSelect={onSelectShape}
+                        onChange={onChangeCircle}
                       />
                     ))}
 
                     {lines.map((line) => (
                       <VisualiserLineObject
                         key={line.id}
+                        id={line.id}
                         shapeProps={line.props}
                         isSelected={line.id === selectedId}
-                        onSelect={() => {
-                          onSelectShape(line.id);
-                        }}
-                        onChange={(newAttrs) => {
-                          replaceStageElement({
-                            ...line,
-                            props: newAttrs,
-                          });
-                        }}
+                        onSelect={onSelectShape}
+                        onChange={onChangeLine}
                       />
                     ))}
 
                     {texts.map((text) => (
                       <VisualiserTextObject
                         key={text.id}
+                        id={text.id}
                         shapeProps={text.props}
                         isSelected={text.id === selectedId}
-                        onSelect={() => {
-                          onSelectShape(text.id);
-                        }}
-                        onChange={(newAttrs) => {
-                          replaceStageElement({
-                            ...text,
-                            props: newAttrs,
-                          });
-                        }}
+                        onSelect={onSelectShape}
+                        onChange={onChangeText}
                       />
                     ))}
                     {/* <Circle x={200} y={100} radius={50} fill="green" draggable /> */}
@@ -445,37 +472,33 @@ export const StagePreview2D = ({
                         <VisualiserParLightObject
                           key={fixture.id}
                           isSelected={fixture.id === selectedId}
-                          onSelect={() => {
-                            onSelectShape(fixture.id);
-                          }}
+                          onSelect={onSelectShape}
                           // The shapeProps here have to be derived from our fixture data
                           // for x,y,z and rotation. Remember we need tohandle the arrow.
                           fixture={fixture}
-                          onChange={debouncedSavePositions}
+                          onChange={onChangeFixture}
                         />
                       ) : fixture.type === "bar" ? (
                         <VisualiserBarLightObject
                           key={fixture.id}
                           isSelected={fixture.id === selectedId}
-                          onSelect={() => {
-                            onSelectShape(fixture.id);
-                          }}
+                          onSelect={onSelectShape}
                           // The shapeProps here have to be derived from our fixture data
                           // for x,y,z and rotation. Remember we need tohandle the arrow.
                           fixture={fixture}
-                          onChange={debouncedSavePositions}
+                          onChange={onChangeFixture}
                         />
                       ) : fixture.type === "moving_head" ? (
                         <VisualiserMovingLightObject
                           key={fixture.id}
                           isSelected={fixture.id === selectedId}
-                          onSelect={() => {
-                            onSelectShape(fixture.id);
-                          }}
+                          onSelect={onSelectShape}
                           // The shapeProps here have to be derived from our fixture data
                           // for x,y,z and rotation. Remember we need tohandle the arrow.
                           fixture={fixture}
-                          onChange={debouncedSavePositions}
+                          onChange={onChangeFixture}
+
+                          positionAttribute={getIsPreviewingFixture(fixture.id) ? position : undefined}
                         />
                       ) : null,
                     )}
@@ -599,13 +622,28 @@ export const StaticStagePreview2D = ({
     fixtureGroupId: string,
     attributeType: string,
   ): AttributeAssignment | undefined => {
+    console.log({ fixtureGroupId, attributeType, fixtureGroupsAssignment });
     const assignments = getAttributeAssignmentsOfAFixtureGroup(fixtureGroupId);
     return assignments.find((assignment) => assignment.type === attributeType);
   };
 
-  const previewFixtureId = useAppStore((state) => state.previewFixtureId);
-  const previewPositionId = useAppStore((state) => state.previewPositionId);
-  const isPreviewingFixture = useAppStore((state) => state.isPreviewingFixture);
+  // Get the { pan, tilt } position, given a) fixtureId, b) fixtureGroupId, c) positionId
+  const fixtureAttributeMapping = visualiser.fixtureAttributeMapping;
+  const getPositionOfFixture = (
+    fixtureId: string,
+    fixtureGroupId: string,
+    positionId: string,
+  ): PositionOption | null => {
+    console.log({ fixtureAttributeMapping, fixtureId, fixtureGroupId, positionId });
+    const fixtureMapping = fixtureAttributeMapping[fixtureGroupId];
+    if (!fixtureMapping) return null;
+    const fixtureGroupMapping = fixtureMapping[AttributeTypes.PRESET_POSITION]?.[positionId];
+    if (!fixtureGroupMapping) return null;
+    const positionMapping = fixtureGroupMapping[fixtureId];
+    if (!positionMapping) return null;
+
+    return positionMapping;
+  };
 
   return (
     <Flex className={classes["preview-container"]}>
@@ -655,10 +693,11 @@ export const StaticStagePreview2D = ({
                           // TODO: add colour, left panel selection
                           <VisualiserRectangleObject
                             key={rect.id}
+                            id={rect.id}
                             shapeProps={rect.props}
                             isSelected={false}
-                            onSelect={() => {}}
-                            onChange={() => {}}
+                            onSelect={NOOP}
+                            onChange={NOOP}
                             viewOnly
                           />
                         ))}
@@ -666,10 +705,11 @@ export const StaticStagePreview2D = ({
                         {circles.map((circle) => (
                           <VisualiserCircleObject
                             key={circle.id}
+                            id={circle.id}
                             shapeProps={circle.props}
                             isSelected={false}
-                            onSelect={() => {}}
-                            onChange={() => {}}
+                            onSelect={NOOP}
+                            onChange={NOOP}
                             viewOnly
                           />
                         ))}
@@ -677,10 +717,11 @@ export const StaticStagePreview2D = ({
                         {lines.map((line) => (
                           <VisualiserLineObject
                             key={line.id}
+                            id={line.id}
                             shapeProps={line.props}
                             isSelected={false}
-                            onSelect={() => {}}
-                            onChange={() => {}}
+                            onSelect={NOOP}
+                            onChange={NOOP}
                             viewOnly
                           />
                         ))}
@@ -688,10 +729,11 @@ export const StaticStagePreview2D = ({
                         {texts.map((text) => (
                           <VisualiserTextObject
                             key={text.id}
+                            id={text.id}
                             shapeProps={text.props}
                             isSelected={false}
-                            onSelect={() => {}}
-                            onChange={() => {}}
+                            onSelect={NOOP}
+                            onChange={NOOP}
                             viewOnly
                           />
                         ))}
@@ -704,11 +746,11 @@ export const StaticStagePreview2D = ({
                             <VisualiserParLightObject
                               key={fixture.id}
                               isSelected={false}
-                              onSelect={() => {}}
+                              onSelect={NOOP}
                               // The shapeProps here have to be derived from our fixture data
                               // for x,y,z and rotation. Remember we need tohandle the arrow.
                               fixture={fixture}
-                              onChange={() => {}}
+                              onChange={NOOP}
                               viewOnly
 
                               // These attributes are general to ALL fixture types.
@@ -729,11 +771,11 @@ export const StaticStagePreview2D = ({
                             <VisualiserBarLightObject
                               key={fixture.id}
                               isSelected={false}
-                              onSelect={() => {}}
+                              onSelect={NOOP}
                               // The shapeProps here have to be derived from our fixture data
                               // for x,y,z and rotation. Remember we need tohandle the arrow.
                               fixture={fixture}
-                              onChange={() => {}}
+                              onChange={NOOP}
                               viewOnly
 
                               colourAttribute={
@@ -751,11 +793,11 @@ export const StaticStagePreview2D = ({
                             <VisualiserMovingLightObject
                               key={fixture.id}
                               isSelected={false}
-                              onSelect={() => {}}
+                              onSelect={NOOP}
                               // The shapeProps here have to be derived from our fixture data
                               // for x,y,z and rotation. Remember we need tohandle the arrow.
                               fixture={fixture}
-                              onChange={() => {}}
+                              onChange={NOOP}
                               viewOnly
 
                               colourAttribute={
@@ -768,6 +810,18 @@ export const StaticStagePreview2D = ({
                                   AttributeTypes.PRESET_INTENSITY,
                                 )?.value?.[AttributeTypes.PRESET_INTENSITY]
                               }
+                              positionAttribute={
+                                getPositionOfFixture(
+                                  fixture.id,
+                                  fixture.fixtureGroupId,
+                                  getSpecificAttributeGivenTheType(
+                                    fixture.fixtureGroupId,
+                                    AttributeTypes.PRESET_POSITION,
+                                  )?.value?.[AttributeTypes.PRESET_POSITION]?.id || "",
+                                ) || undefined
+                              }
+
+                              showGuideLines={false}
                             />
                           ) : null,
                         )}
