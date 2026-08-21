@@ -1,6 +1,6 @@
 import { AttributeTypes, type Item } from "../types/types";
 import type { QLCCollection, QLCEventJson, QLCFunction } from "../types/qlc";
-import { getCueOrder, getValueFromValueAssignment, hasAValue } from "./cueUtils";
+import { getCueOrder, getValueFromValueAssignment, hasAValue } from "./cue/cueForm";
 import type { ValueAssignment } from "../types/cues";
 import type { QlcFormType } from "../sections/QLCConverter/QLCConverter";
 

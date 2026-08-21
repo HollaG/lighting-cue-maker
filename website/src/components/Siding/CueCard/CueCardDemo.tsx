@@ -30,7 +30,7 @@ import {
   type ColourOption,
   type FixtureGroupConfiguration,
 } from "../../../types/types";
-import { createDefaultValueAssignment } from "../../../utils/cueUtils";
+import { createDefaultValueAssignment } from "../../../utils/cue/cueForm";
 import { CardBase } from "../CardBase";
 
 export type CueCardDemoProps = {

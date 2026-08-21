@@ -3,7 +3,7 @@ import type { AppStore } from "../appStore";
 
 import type { Option } from "../../types/types";
 import { generateRich } from "../../utils/convertText";
-import { getCueOrder } from "../../utils/cueUtils";
+import { getCueOrder } from "../../utils/cue/cueForm";
 import { getBumpOrder } from "../../utils/bumpUtils";
 import { sanitize } from "../../utils/sanitize";
 

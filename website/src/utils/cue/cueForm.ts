@@ -1,4 +1,4 @@
-import type { Cue, ValueAssignment } from "../types/cues";
+import type { Cue, ValueAssignment } from "../../types/cues";
 import {
   AttributeTypes,
   BooleanOptions,
@@ -6,8 +6,8 @@ import {
   type ColourOption,
   type FixtureGroupConfiguration,
   type PresetPositionOption,
-} from "../types/types";
-import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
+} from "../../types/types";
+import { convertUuidForDatabase, convertUuidForEmbedding } from "../convertUuid";
 
 export const CUE_MATCH_REGEX = /[\{<]cueId=(.*?)=cueId[\}>]/;
 export const CUE_START = "{cueId=";

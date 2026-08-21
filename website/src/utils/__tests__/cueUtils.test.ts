@@ -7,7 +7,7 @@ import {
   CUE_END,
   createDefaultValueAssignment,
   reconcileCueAssignments,
-} from "../cueUtils";
+} from "../cue/cueForm";
 import type { Cue } from "../../types/cues";
 import {
   AttributeTypes,
@@ -45,10 +45,7 @@ describe("cueUtils", () => {
       "Hello {cueId=11111111_1111_1111_1111_111111111111=cueId}world <cueId=22222222_2222_2222_2222_222222222222=cueId>test";
     const order = getCueOrder(rawLyrics);
 
-    expect(order).toEqual([
-      "11111111-1111-1111-1111-111111111111",
-      "22222222-2222-2222-2222-222222222222",
-    ]);
+    expect(order).toEqual(["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"]);
   });
 
   it("removeCueFromRawLyrics removes curly and legacy angle cue tags", () => {

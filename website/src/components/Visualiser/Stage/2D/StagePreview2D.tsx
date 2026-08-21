@@ -29,6 +29,7 @@ import { useAppStore } from "../../../../store/appStore";
 import { VisualiserBarLightObject } from "../../Elements/VisualiserBarLight";
 import { VisualiserMovingLightObject } from "../../Elements/VisualiserMovingLight";
 import type { AttributeAssignment, FixtureGroupsAssignment } from "../../../../types/cues";
+import { CustomCoverLoader } from "../../../Loader/CustomCoverLoader";
 
 // Pre-generate grid dots
 const gridDots: { x: number; y: number }[] = [];
@@ -567,6 +568,11 @@ export const StagePreview2D = ({
  * A more lightweight version of the StagePreview without any editing capabilities.
  * Streamlined to be as efficient as possible for rendering in ~50 cues.
  *
+ * Differences:
+ *   1. Only one layer
+ *      - this is for 2 reasons: efficiency in rendering (1 layer = 1 canvas) and also enabling right-click->copy function to work
+ *   2. externally controlled onClick functions
+ *
  * @param param0
  */
 export const StaticStagePreview2D = ({
@@ -575,6 +581,12 @@ export const StaticStagePreview2D = ({
   // fixtureGroups,
   fixtureGroupsAssignment,
   controls,
+
+  // Callback to open the relevant fixture group when something is selected
+  activeFixtureGroupId,
+  onFixtureSelect,
+
+  isLoading,
 }: {
   eventId: string;
   visualiser: Visualiser;
@@ -582,10 +594,23 @@ export const StaticStagePreview2D = ({
   fixtureGroups: FixtureGroupConfiguration[];
   fixtureGroupsAssignment: FixtureGroupsAssignment;
   controls?: React.ReactNode;
+
+  activeFixtureGroupId: string | null;
+  onFixtureSelect: (fixtureId: string, fixtureGroupId: string) => void;
+
+  /**  use this to see if the cue is saving, cos the cue needs to save before the visualiser updates */
+  isLoading: boolean;
 }) => {
   const { ref: containerRef, width: containerWidth, height: containerHeight } = useElementSize<HTMLDivElement>();
   const stageRef = useRef<Konva.Stage | null>(null);
   const previewId = useId();
+
+  // Set background colour
+  useEffect(() => {
+    if (stageRef.current) {
+      stageRef.current.container().style.backgroundColor = "#141414";
+    }
+  }, [stageRef.current]);
 
   /**
    * Keep the saved viewport fitted to the measured preview width.
@@ -652,186 +677,180 @@ export const StaticStagePreview2D = ({
         <Group align="start">
           <Box style={{ flex: 1 }}>
             <AspectRatio ratio={4 / 3}>
-              <MantineProvider
-                forceColorScheme="dark"
-                getRootElement={() => document.getElementById(previewId) || document.body}
-              >
-                <Box
-                  id={previewId}
-                  className={classes["preview-viewer"]}
-                  ref={containerRef}
-                  style={{ position: "relative", width: "100%", height: "100%" }}
+              <CustomCoverLoader isLoading={isLoading}>
+                <MantineProvider
+                  forceColorScheme="dark"
+                  getRootElement={() => document.getElementById(previewId) || document.body}
                 >
-                  {containerWidth > 0 && containerHeight > 0 ? (
-                    <Stage ref={stageRef} width={containerWidth} height={containerHeight} listening={false}>
-                      {/* Layer for the rectangle representing the default viewport */}
-                      {visualiser.defaultViewport && (
-                        <Layer listening={false}>
-                          <Rect
-                            x={(-1 * visualiser.defaultViewport.x) / visualiser.defaultViewport.scale || 0}
-                            y={(-1 * visualiser.defaultViewport.y) / visualiser.defaultViewport.scale || 0}
-                            width={visualiser.defaultViewport.width / visualiser.defaultViewport.scale || 0}
-                            height={visualiser.defaultViewport.height / visualiser.defaultViewport.scale || 0}
-                            // fill="rgba(0, 0, 0, 0.1)"
-                            // mantine-dark-7
-                            stroke="#242424"
-                            // stroke="rgb(255, 0, 0)"
-                            strokeWidth={8}
-                            dash={[30, 20]}
-                          />
-                        </Layer>
-                      )}
-                      {/* <Layer>
-              {gridDots.map(function (d, i) {
-                return <Circle key={"g" + i} x={d.x} y={d.y} radius={1} fill="#424242" listening={false} />;
-              })}
-            </Layer> */}
-                      <Layer listening={false}>
-                        {/* <Rect x={20} y={50} width={100} height={100} fill="red" shadowBlur={10} draggable /> */}
-
-                        {rects.map((rect) => (
-                          // TODO: add colour, left panel selection
-                          <VisualiserRectangleObject
-                            key={rect.id}
-                            id={rect.id}
-                            shapeProps={rect.props}
-                            isSelected={false}
-                            onSelect={NOOP}
-                            onChange={NOOP}
-                            viewOnly
-                          />
-                        ))}
-
-                        {circles.map((circle) => (
-                          <VisualiserCircleObject
-                            key={circle.id}
-                            id={circle.id}
-                            shapeProps={circle.props}
-                            isSelected={false}
-                            onSelect={NOOP}
-                            onChange={NOOP}
-                            viewOnly
-                          />
-                        ))}
-
-                        {lines.map((line) => (
-                          <VisualiserLineObject
-                            key={line.id}
-                            id={line.id}
-                            shapeProps={line.props}
-                            isSelected={false}
-                            onSelect={NOOP}
-                            onChange={NOOP}
-                            viewOnly
-                          />
-                        ))}
-
-                        {texts.map((text) => (
-                          <VisualiserTextObject
-                            key={text.id}
-                            id={text.id}
-                            shapeProps={text.props}
-                            isSelected={false}
-                            onSelect={NOOP}
-                            onChange={NOOP}
-                            viewOnly
-                          />
-                        ))}
-                        {/* <Circle x={200} y={100} radius={50} fill="green" draggable /> */}
-                      </Layer>
-
-                      <Layer listening={false}>
-                        {fixtures.map((fixture) =>
-                          fixture.type === "par" ? (
-                            <VisualiserParLightObject
-                              key={fixture.id}
+                  <Box
+                    id={previewId}
+                    className={classes["preview-viewer"]}
+                    ref={containerRef}
+                    style={{ position: "relative", width: "100%", height: "100%" }}
+                  >
+                    {containerWidth > 0 && containerHeight > 0 ? (
+                      <Stage ref={stageRef} width={containerWidth} height={containerHeight}>
+                        <Layer>
+                          {/* Background layer, containing the black background */}
+                          {visualiser.defaultViewport && (
+                            <>
+                              <Rect
+                                x={(-1 * visualiser.defaultViewport.x) / visualiser.defaultViewport.scale || 0}
+                                y={(-1 * visualiser.defaultViewport.y) / visualiser.defaultViewport.scale || 0}
+                                width={visualiser.defaultViewport.width / visualiser.defaultViewport.scale || 0}
+                                height={visualiser.defaultViewport.height / visualiser.defaultViewport.scale || 0}
+                                // fill="rgba(0, 0, 0, 0.1)"
+                                fill="#141414"
+                                // mantine-dark-7
+                                stroke="#242424"
+                                // stroke="rgb(255, 0, 0)"
+                                strokeWidth={8}
+                                dash={[30, 20]}
+                              />
+                            </>
+                          )}
+                          {rects.map((rect) => (
+                            // TODO: add colour, left panel selection
+                            <VisualiserRectangleObject
+                              key={rect.id}
+                              id={rect.id}
+                              shapeProps={rect.props}
                               isSelected={false}
                               onSelect={NOOP}
-                              // The shapeProps here have to be derived from our fixture data
-                              // for x,y,z and rotation. Remember we need tohandle the arrow.
-                              fixture={fixture}
                               onChange={NOOP}
                               viewOnly
-
-                              // These attributes are general to ALL fixture types.
-                              // There are some attributes that are specific to certain fixture types, but those will be handled in the individual fixture components,
-                              // NOT passed down from here.
-                              colourAttribute={
-                                getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
-                                  ?.value?.[AttributeTypes.PRESET_COLOUR]
-                              }
-                              intensityAttribute={
-                                getSpecificAttributeGivenTheType(
-                                  fixture.fixtureGroupId,
-                                  AttributeTypes.PRESET_INTENSITY,
-                                )?.value?.[AttributeTypes.PRESET_INTENSITY]
-                              }
                             />
-                          ) : fixture.type === "bar" ? (
-                            <VisualiserBarLightObject
-                              key={fixture.id}
+                          ))}
+
+                          {circles.map((circle) => (
+                            <VisualiserCircleObject
+                              key={circle.id}
+                              id={circle.id}
+                              shapeProps={circle.props}
                               isSelected={false}
                               onSelect={NOOP}
-                              // The shapeProps here have to be derived from our fixture data
-                              // for x,y,z and rotation. Remember we need tohandle the arrow.
-                              fixture={fixture}
                               onChange={NOOP}
                               viewOnly
-
-                              colourAttribute={
-                                getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
-                                  ?.value?.[AttributeTypes.PRESET_COLOUR]
-                              }
-                              intensityAttribute={
-                                getSpecificAttributeGivenTheType(
-                                  fixture.fixtureGroupId,
-                                  AttributeTypes.PRESET_INTENSITY,
-                                )?.value?.[AttributeTypes.PRESET_INTENSITY]
-                              }
                             />
-                          ) : fixture.type === "moving_head" ? (
-                            <VisualiserMovingLightObject
-                              key={fixture.id}
+                          ))}
+
+                          {lines.map((line) => (
+                            <VisualiserLineObject
+                              key={line.id}
+                              id={line.id}
+                              shapeProps={line.props}
                               isSelected={false}
                               onSelect={NOOP}
-                              // The shapeProps here have to be derived from our fixture data
-                              // for x,y,z and rotation. Remember we need tohandle the arrow.
-                              fixture={fixture}
                               onChange={NOOP}
                               viewOnly
+                            />
+                          ))}
 
-                              colourAttribute={
-                                getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
-                                  ?.value?.[AttributeTypes.PRESET_COLOUR]
-                              }
-                              intensityAttribute={
-                                getSpecificAttributeGivenTheType(
-                                  fixture.fixtureGroupId,
-                                  AttributeTypes.PRESET_INTENSITY,
-                                )?.value?.[AttributeTypes.PRESET_INTENSITY]
-                              }
-                              positionAttribute={
-                                getPositionOfFixture(
-                                  fixture.id,
-                                  fixture.fixtureGroupId,
+                          {texts.map((text) => (
+                            <VisualiserTextObject
+                              key={text.id}
+                              id={text.id}
+                              shapeProps={text.props}
+                              isSelected={false}
+                              onSelect={NOOP}
+                              onChange={NOOP}
+                              viewOnly
+                            />
+                          ))}
+                          {/* <Circle x={200} y={100} radius={50} fill="green" draggable /> */}
+
+                          {fixtures.map((fixture) =>
+                            fixture.type === "par" ? (
+                              <VisualiserParLightObject
+                                key={fixture.id}
+                                isSelected={activeFixtureGroupId === fixture.fixtureGroupId}
+                                onSelect={(fixtureId) => onFixtureSelect(fixtureId, fixture.fixtureGroupId)}
+                                // The shapeProps here have to be derived from our fixture data
+                                // for x,y,z and rotation. Remember we need tohandle the arrow.
+                                fixture={fixture}
+                                onChange={NOOP}
+                                viewOnly
+
+                                // These attributes are general to ALL fixture types.
+                                // There are some attributes that are specific to certain fixture types, but those will be handled in the individual fixture components,
+                                // NOT passed down from here.
+                                colourAttribute={
+                                  getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
+                                    ?.value?.[AttributeTypes.PRESET_COLOUR]
+                                }
+                                intensityAttribute={
                                   getSpecificAttributeGivenTheType(
                                     fixture.fixtureGroupId,
-                                    AttributeTypes.PRESET_POSITION,
-                                  )?.value?.[AttributeTypes.PRESET_POSITION]?.id || "",
-                                ) || undefined
-                              }
+                                    AttributeTypes.PRESET_INTENSITY,
+                                  )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                                }
+                              />
+                            ) : fixture.type === "bar" ? (
+                              <VisualiserBarLightObject
+                                key={fixture.id}
+                                isSelected={activeFixtureGroupId === fixture.fixtureGroupId}
+                                onSelect={(fixtureId) => onFixtureSelect(fixtureId, fixture.fixtureGroupId)}
+                                // The shapeProps here have to be derived from our fixture data
+                                // for x,y,z and rotation. Remember we need tohandle the arrow.
+                                fixture={fixture}
+                                onChange={NOOP}
+                                viewOnly
 
-                              showGuideLines={false}
-                            />
-                          ) : null,
-                        )}
-                      </Layer>
-                    </Stage>
-                  ) : (
-                    <div style={{ width: "100%", height: "100%" }}></div>
-                  )}
-                </Box>
-              </MantineProvider>
+                                colourAttribute={
+                                  getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
+                                    ?.value?.[AttributeTypes.PRESET_COLOUR]
+                                }
+                                intensityAttribute={
+                                  getSpecificAttributeGivenTheType(
+                                    fixture.fixtureGroupId,
+                                    AttributeTypes.PRESET_INTENSITY,
+                                  )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                                }
+                              />
+                            ) : fixture.type === "moving_head" ? (
+                              <VisualiserMovingLightObject
+                                key={fixture.id}
+                                isSelected={activeFixtureGroupId === fixture.fixtureGroupId}
+                                onSelect={(fixtureId) => onFixtureSelect(fixtureId, fixture.fixtureGroupId)}
+                                // The shapeProps here have to be derived from our fixture data
+                                // for x,y,z and rotation. Remember we need tohandle the arrow.
+                                fixture={fixture}
+                                onChange={NOOP}
+                                viewOnly
+
+                                colourAttribute={
+                                  getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
+                                    ?.value?.[AttributeTypes.PRESET_COLOUR]
+                                }
+                                intensityAttribute={
+                                  getSpecificAttributeGivenTheType(
+                                    fixture.fixtureGroupId,
+                                    AttributeTypes.PRESET_INTENSITY,
+                                  )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                                }
+                                positionAttribute={
+                                  getPositionOfFixture(
+                                    fixture.id,
+                                    fixture.fixtureGroupId,
+                                    getSpecificAttributeGivenTheType(
+                                      fixture.fixtureGroupId,
+                                      AttributeTypes.PRESET_POSITION,
+                                    )?.value?.[AttributeTypes.PRESET_POSITION]?.id || "",
+                                  ) || undefined
+                                }
+
+                                showGuideLines={false}
+                              />
+                            ) : null,
+                          )}
+                        </Layer>
+                      </Stage>
+                    ) : (
+                      <div style={{ width: "100%", height: "100%" }}></div>
+                    )}
+                  </Box>
+                </MantineProvider>
+              </CustomCoverLoader>
             </AspectRatio>
           </Box>
 

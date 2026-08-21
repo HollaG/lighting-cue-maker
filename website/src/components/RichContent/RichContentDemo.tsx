@@ -2,7 +2,7 @@ import { Flex, Group, SegmentedControl, Stack, Text } from "@mantine/core";
 import { useState, type MouseEvent } from "react";
 import { insertBumpInRichContent } from "../../utils/bumpUtils";
 import { generateRich } from "../../utils/convertText";
-import { insertCueInRichContent } from "../../utils/cueUtils";
+import { insertCueInRichContent } from "../../utils/cue/cueForm";
 import { RichWord } from "./RichWord";
 
 type DemoMarkerMode = "cue" | "bump";

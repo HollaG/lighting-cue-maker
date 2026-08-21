@@ -4,7 +4,7 @@ import type { Cue } from "../../types/cues";
 import type { GroupedFnList } from "./QLCConverter";
 import { notifications } from "../../utils/notifications";
 import { useState } from "react";
-import { generateOneLineCue } from "../../utils/cueUtils";
+import { generateOneLineCue } from "../../utils/cue/cueForm";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useAppStore } from "../../store/appStore";
 

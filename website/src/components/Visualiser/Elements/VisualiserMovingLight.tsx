@@ -9,6 +9,7 @@ import {
   shapePropsToFixtureRepresentation,
 } from "../../../utils/visualiser";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
+import { VisualiserSelectedIndicator } from "./VisualiserSelectedIndicator";
 
 const LAMP_CENTER = 35;
 const BEAM_OUTER_RADIUS = 45;
@@ -120,7 +121,6 @@ export const VisualiserMovingLightObject = React.memo(
           onClick={() => onSelect(fixture.id)}
           onTap={() => onSelect(fixture.id)}
           ref={shapeRef}
-          listening={!viewOnly}
           draggable={!viewOnly}
           onDragEnd={(e) => {
             onChange({
@@ -170,7 +170,11 @@ export const VisualiserMovingLightObject = React.memo(
             x={35}
             y={35}
           />
+
+          {/* The Selected indicator */}
+          {isSelected && <VisualiserSelectedIndicator x={25 + 10} y={25 + 10} />}
         </Group>
+
         {isSelected && !viewOnly && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
       </React.Fragment>
     );

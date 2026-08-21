@@ -7,7 +7,7 @@ import { useGetEvent } from "../../query/useGetEvent";
 import { RichWord } from "./RichWord";
 import { useCreateCue } from "../../query/useCreateCue";
 import { useUpdateItem } from "../../query/useUpdateItem";
-import { insertCueInRichContent } from "../../utils/cueUtils";
+import { insertCueInRichContent } from "../../utils/cue/cueForm";
 import { generateRaw } from "../../utils/convertText";
 import { useCreateBump } from "../../query/useCreateBump";
 import { insertBumpInRichContent, removeBumpFromRawLyrics } from "../../utils/bumpUtils";

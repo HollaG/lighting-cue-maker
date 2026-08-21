@@ -521,7 +521,13 @@ const VisualiserFixtureSection = ({
             </Stack>
           ))}
           <Center>
-            <Button variant="subtle" size="xs" onClick={onAddFixture} loading={isPending}>
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={onAddFixture}
+              loading={isPending}
+              loaderProps={{ type: "bars" }}
+            >
               {" "}
               Add a fixture{" "}
             </Button>
@@ -603,6 +609,7 @@ export const VisualisationFixtureGroupCard = ({
                     variant="subtle"
                     color="red"
                     loading={isDeleting}
+                    loaderProps={{ type: "bars" }}
                     onClick={() => onDeleteFixture(fixture)}
                   >
                     Delete
@@ -615,7 +622,13 @@ export const VisualisationFixtureGroupCard = ({
           </Stack>
 
           <Center>
-            <Button variant="subtle" size="xs" onClick={onAddFixture} loading={isPending}>
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={onAddFixture}
+              loading={isPending}
+              loaderProps={{ type: "bars" }}
+            >
               {" "}
               Add a fixture{" "}
             </Button>

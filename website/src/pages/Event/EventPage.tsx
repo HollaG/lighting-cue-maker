@@ -291,6 +291,7 @@ export const EventPage = () => {
                       variant="transparent"
                       disabled={isItemsLoading}
                       loading={isItemCreating}
+                      loaderProps={{ type: "bars" }}
                     >
                       Add item
                     </Button>

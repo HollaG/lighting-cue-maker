@@ -1,10 +1,12 @@
 import {
   Accordion,
   ActionIcon,
+  Alert,
   Box,
   Button,
   Center,
   Checkbox,
+  Code,
   Collapse,
   Combobox,
   Fieldset,
@@ -43,17 +45,29 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { IconCaretDown, IconChevronUp } from "@tabler/icons-react";
+import {
+  IconCaretDown,
+  IconChevronUp,
+  IconExclamationCircle,
+  IconHelpCircle,
+  IconInfoCircle,
+} from "@tabler/icons-react";
 import { useForm, type FormErrors, type UseFormReturnType } from "@mantine/form";
-import { useDebouncedCallback } from "@mantine/hooks";
+import { useDebouncedCallback, useLocalStorage } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
 import { useDeleteCue } from "../../../query/useDeleteCue";
-import { createDefaultValueAssignment, reconcileCueAssignments, removeCueFromRawLyrics } from "../../../utils/cueUtils";
+import {
+  createDefaultValueAssignment,
+  reconcileCueAssignments,
+  removeCueFromRawLyrics,
+} from "../../../utils/cue/cueForm";
 import { useUpdateItem } from "../../../query/useUpdateItem";
 import { notifications } from "../../../utils/notifications";
 import type { Visualiser } from "../../../types/visualiser";
 import type { Fixture } from "../../../types/fixtures";
 import { StaticStagePreview2D } from "../../Visualiser/Stage/2D/StagePreview2D";
+import { checkCueCorrectness } from "../../../utils/cue/cueValidator";
+import { CustomCoverLoader } from "../../Loader/CustomCoverLoader";
 
 type FormData = Cue;
 
@@ -169,6 +183,12 @@ const CueCardInternal = ({
         itemId: activeItemId,
         requestBody: form.getValues(),
       });
+
+      // re-validate the cue after saving
+      // set all the alerts to be visible again
+      setShowNotices(true);
+      setShowWarnings(true);
+      setShowErrors(true);
     } catch (e) {
       console.error(e);
     } finally {
@@ -366,8 +386,28 @@ const CueCardInternal = ({
     cuesIdsOtherThanThisList = cuesIdsOtherThanThisList.filter((cue) => cue.label.includes(query));
   }
 
+  // --- Visual feedback on problems with cue, if any ---------
+  const cueValidationResult = useMemo(() => checkCueCorrectness(cue, fixtureGroups), [cue, fixtureGroups]);
+  const notices = cueValidationResult.issues.filter((issue) => issue.type === "notice");
+  const warnings = cueValidationResult.issues.filter((issue) => issue.type === "warning");
+  const errors = cueValidationResult.issues.filter((issue) => issue.type === "error");
+
+  const [showNotices, setShowNotices] = useState<boolean>(false);
+  const [showWarnings, setShowWarnings] = useState<boolean>(false);
+  const [showErrors, setShowErrors] = useState<boolean>(false);
+
   // --- Visualiser ---------
-  const [viewMode, setViewMode] = useState<"Table" | "2D View" | "3D View">("Table");
+  // const [viewMode, setViewMode] = useState<"Table" | "2D View" | "3D View">("Table");
+  const [viewMode, setViewMode] = useLocalStorage<"Table" | "2D View" | "3D View">({
+    key: `${cue.id}-viewmode`,
+    defaultValue: "Table",
+  });
+
+  // control accordion panel state
+  const [activeFixtureGroupId, setActiveFixtureGroupId] = useState<string | null>(null);
+  const onFixtureSelect = (fixtureId: string, fixtureGroupId: string) => {
+    setActiveFixtureGroupId(fixtureGroupId);
+  };
 
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
@@ -481,6 +521,9 @@ const CueCardInternal = ({
               </Menu>
 
               <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
+
+              {isDirty && <Loader size="1.25rem" type="bars" />}
+
               <SegmentedControl
                 data={["Table", "2D View"]}
                 value={viewMode}
@@ -521,12 +564,12 @@ const CueCardInternal = ({
                 </Popover.Dropdown>
               </Popover>
 
-              <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
+              {/* <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
                 <Button variant="light" size="xs" disabled={!isDirty} type="submit">
                   {" "}
                   Save changes{" "}
                 </Button>
-              </Tooltip>
+              </Tooltip> */}
               <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
                 <IconChevronUp
                   style={{
@@ -538,6 +581,7 @@ const CueCardInternal = ({
               </ActionIcon>
             </Group>
 
+            {/* Cue Contents */}
             <Collapse expanded={!isCollapsed}>
               {viewMode === "Table" ? (
                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
@@ -566,13 +610,35 @@ const CueCardInternal = ({
 
                       fixtureGroupsAssignment={cue.assignments}
 
+                      activeFixtureGroupId={activeFixtureGroupId}
+                      onFixtureSelect={onFixtureSelect}
+                      isLoading={isDirty}
                       controls={
-                        <Accordion>
+                        <Accordion value={activeFixtureGroupId} onChange={setActiveFixtureGroupId}>
                           {fixtureGroups.map((group, index) => (
                             <Accordion.Item key={group.id} value={group.id}>
-                              <Accordion.Control>{group.name}</Accordion.Control>
+                              <Accordion.Control>
+                                <Group>
+                                  {group.name}
+                                  <Flex flex={1} />
+                                  {activeFixtureGroupId === group.id && (
+                                    <Box
+                                      style={{
+                                        backgroundColor: "var(--mantine-color-lime-4)",
+                                        width: "16px",
+                                        height: "16px",
+                                        borderRadius: "50%",
+                                        border: "2px solid black",
+                                      }}
+                                      mr="md"
+                                    />
+                                  )}
+                                </Group>
+                              </Accordion.Control>
                               <Accordion.Panel>
                                 <FixtureGroupSection
+                                  showFieldsetWrapper={false}
+
                                   key={group.id}
                                   group={group}
                                   index={index + 1}
@@ -600,7 +666,6 @@ const CueCardInternal = ({
                 <Text>{generateOneLineCue(cue)}</Text>
               </Collapse> */}
               <Textarea
-                ml="xs"
                 label="Comments"
                 minRows={1}
                 variant="unstyled"
@@ -615,6 +680,96 @@ const CueCardInternal = ({
                 }}
               />
             </Stack>
+            <Stack gap="xs">
+              {notices.length > 0 && (
+                <Box key="notices">
+                  <Collapse expanded={showNotices}>
+                    <Alert
+                      style={{ cursor: "pointer" }}
+                      icon={<IconInfoCircle />}
+                      color="lime"
+                      withCloseButton
+                      closeButtonLabel="Dismiss"
+                      onClose={() => setShowNotices(false)}
+                      onClick={() => setShowNotices(false)}
+                    >
+                      <Stack gap="2px">
+                        {notices.map((notice, index) => (
+                          <Tooltip label={notice.message} key={index}>
+                            <Group style={{ width: "fit-content" }}>
+                              <Code color="light-dark(var(--mantine-color-lime-3), var(--mantine-color-lime-9))">
+                                {notice.group.name}
+                              </Code>
+                              <Text>missing</Text>
+                              <Code>{notice.attributes.map((attr) => attr.name).join(", ")}</Code>
+                            </Group>
+                          </Tooltip>
+                        ))}
+                      </Stack>
+                    </Alert>
+                  </Collapse>
+                </Box>
+              )}
+              {warnings.length > 0 && (
+                <Box key="warnings">
+                  <Collapse expanded={showWarnings}>
+                    <Alert
+                      style={{ cursor: "pointer" }}
+                      icon={<IconHelpCircle />}
+                      color="yellow"
+                      withCloseButton
+                      closeButtonLabel="Dismiss"
+                      onClose={() => setShowWarnings(false)}
+                      onClick={() => setShowWarnings(false)}
+                    >
+                      <Stack gap="2px">
+                        {warnings.map((warning, index) => (
+                          <Tooltip label={warning.message} key={index}>
+                            <Group style={{ width: "fit-content" }}>
+                              <Code color="light-dark(var(--mantine-color-yellow-3), var(--mantine-color-yellow-9))">
+                                {warning.group.name}
+                              </Code>
+                              <Text>missing</Text>
+                              <Code>{warning.attributes.map((attr) => attr.name).join(", ")}</Code>
+                            </Group>
+                          </Tooltip>
+                        ))}
+                      </Stack>
+                    </Alert>
+                  </Collapse>
+                </Box>
+              )}
+              {errors.length > 0 && (
+                <Box key="errors">
+                  <Collapse expanded={showErrors}>
+                    <Alert
+                      style={{ cursor: "pointer" }}
+                      icon={<IconExclamationCircle />}
+                      color="red"
+                      withCloseButton
+                      closeButtonLabel="Dismiss"
+                      onClose={() => setShowErrors(false)}
+                      onClick={() => setShowErrors(false)}
+                      radius="sm"
+                    >
+                      <Stack gap="2px">
+                        {errors.map((error, index) => (
+                          <Tooltip label={error.message} key={index}>
+                            <Group style={{ width: "fit-content" }}>
+                              <Code color="light-dark(var(--mantine-color-red-3), var(--mantine-color-red-9))">
+                                {error.group.name}
+                              </Code>
+                              <Text>missing</Text>
+                              <Code>{error.attributes.map((attr) => attr.name).join(", ")}</Code>
+                            </Group>
+                          </Tooltip>
+                        ))}
+                      </Stack>
+                    </Alert>
+                  </Collapse>
+                </Box>
+              )}
+            </Stack>
           </Stack>
         </CardBase>
       </div>
@@ -627,11 +782,15 @@ const FixtureGroupSection = ({
   index,
   form,
 
+  showFieldsetWrapper = true,
+
   setIsAtLeastOneComboboxOpened,
 }: {
   group: FixtureGroupConfiguration;
   index: number;
   form: UseFormReturnType<FormData>;
+
+  showFieldsetWrapper?: boolean;
 
   setIsAtLeastOneComboboxOpened: (value: boolean) => void;
 }) => {
@@ -644,6 +803,23 @@ const FixtureGroupSection = ({
 
   //   return () => form.setFieldValue(`assignments.${group.id}`, undefined);
   // }, []);
+
+  if (!showFieldsetWrapper) {
+    return (
+      <Stack gap="xs">
+        {group.attributes.map((attr, attrIndex) => (
+          <AttributeDisplay
+            groupId={group.id}
+            form={form}
+            key={attrIndex}
+            attribute={attr}
+            index={attrIndex}
+            setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+          />
+        ))}
+      </Stack>
+    );
+  }
 
   return (
     <Fieldset
