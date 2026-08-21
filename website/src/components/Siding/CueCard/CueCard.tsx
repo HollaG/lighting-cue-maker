@@ -66,7 +66,6 @@ import type { Visualiser } from "../../../types/visualiser";
 import type { Fixture } from "../../../types/fixtures";
 import { StaticStagePreview2D } from "../../Visualiser/Stage/2D/StagePreview2D";
 import { checkCueCorrectness } from "../../../utils/cue/cueValidator";
-import { CustomCoverLoader } from "../../Loader/CustomCoverLoader";
 import { ViewModeSelect, type ViewMode } from "./ViewModeSelect";
 
 type FormData = Cue;
@@ -81,6 +80,7 @@ interface CueCardProps {
   visualiser: Visualiser | null; // allow for null visualiser so that it can be loading state? TODO;
   fixtures: Fixture[];
   setOffset: React.Dispatch<React.SetStateAction<number>>; // translate the WHOLE cue cards up
+  globalViewMode: ViewMode;
 }
 
 const CueCardInternal = ({
@@ -92,6 +92,7 @@ const CueCardInternal = ({
   eventId,
   visualiser,
   fixtures,
+  globalViewMode,
 }: CueCardProps) => {
   const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
@@ -403,11 +404,7 @@ const CueCardInternal = ({
     defaultValue: "Table",
   });
 
-  const [globalViewMode] = useLocalStorage<ViewMode>({
-    key: `global-viewmode`,
-    defaultValue: "Table",
-  });
-
+  // Capture the mount value so the card starts from its own persisted mode.
   const previousGlobalViewMode = useRef(globalViewMode);
   useEffect(() => {
     if (globalViewMode === previousGlobalViewMode.current) return;

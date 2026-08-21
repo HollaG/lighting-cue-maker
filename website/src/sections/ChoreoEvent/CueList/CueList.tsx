@@ -9,7 +9,6 @@ import { useGetOrCreateVisualiser } from "../../../query/useGetOrCreateVisualise
 import { useGetFixturesByEventId } from "../../../query/useGetFixtures";
 import { CustomCoverLoader } from "../../../components/Loader/CustomCoverLoader";
 import { ViewModeSelect, type ViewMode } from "../../../components/Siding/CueCard/ViewModeSelect";
-import { useLocalStorage } from "@mantine/hooks";
 
 type CueListProps = {
   itemId: string;
@@ -46,10 +45,7 @@ export const CueList = memo(
     const { fixtures } = useGetFixturesByEventId({ event: event || undefined });
 
     // handle swap between table and 2D view
-    const [viewMode, setViewMode] = useLocalStorage<ViewMode>({
-      key: `global-viewmode`,
-      defaultValue: "Table",
-    });
+    const [globalViewMode, setGlobalViewMode] = useState<ViewMode>("Table");
 
     return (
       <Stack>
@@ -58,7 +54,7 @@ export const CueList = memo(
             Cues
           </Title>
           <Flex flex={1} />
-          <ViewModeSelect viewMode={viewMode || "Table"} setViewMode={setViewMode} />
+          <ViewModeSelect viewMode={globalViewMode} setViewMode={setGlobalViewMode} />
 
           <ActionIcon size="lg" color="gray" variant="light" onClick={onIncreaseWidth} disabled={!canIncreaseWidth}>
             <IconChevronLeft style={{ width: "1rem" }} />
@@ -95,6 +91,7 @@ export const CueList = memo(
                   visualiser={visualiser}
                   fixtures={fixtures}
                   eventId={event.id}
+                  globalViewMode={globalViewMode}
                 />
               </CustomCoverLoader>
             ) : (
@@ -112,6 +109,7 @@ export const CueList = memo(
                     visualiser={visualiser}
                     fixtures={fixtures}
                     eventId={event.id}
+                    globalViewMode={globalViewMode}
                   />
                 );
               })
