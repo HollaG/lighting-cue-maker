@@ -1,5 +1,4 @@
 import {
-  ActionIcon,
   Alert,
   Anchor,
   Box,
@@ -14,7 +13,6 @@ import {
   Group,
   Image,
   Kbd,
-  Loader,
   Menu,
   Stack,
   Text,
@@ -36,8 +34,6 @@ import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
 import {
   IconArrowLeft,
-  IconChevronLeft,
-  IconChevronRight,
   IconFileSpreadsheet,
   IconInfoCircle,
 } from "@tabler/icons-react";
@@ -422,29 +418,16 @@ export const EventPage = () => {
             </Grid.Col>
             {showCues && evt ? (
               <Grid.Col span={Number(cueFraction)}>
-                <Stack>
-                  <Group>
-                    <Title order={3} flex={1}>
-                      Cues
-                    </Title>
-                    <Flex flex={1} />
-                    <ActionIcon color="gray" variant="light" onClick={increaseFraction} disabled={!canIncreaseFraction}>
-                      {" "}
-                      <IconChevronLeft style={{ width: "1rem" }} />
-                    </ActionIcon>
-                    <Text> Adjust width </Text>
-                    <ActionIcon color="gray" variant="light" onClick={decreaseFraction} disabled={!canDecreaseFraction}>
-                      {" "}
-                      <IconChevronRight style={{ width: "1rem" }} />
-                    </ActionIcon>
-                  </Group>
-                  {showCueList && <CueList itemId={item.id} event={evt} />}
-                  {isPendingCueListRendering && (
-                    <Center>
-                      <Loader />
-                    </Center>
-                  )}
-                </Stack>
+                <CueList
+                  itemId={item.id}
+                  event={evt}
+                  showCueList={showCueList}
+                  isPendingRendering={isPendingCueListRendering}
+                  canIncreaseWidth={canIncreaseFraction}
+                  canDecreaseWidth={canDecreaseFraction}
+                  onIncreaseWidth={increaseFraction}
+                  onDecreaseWidth={decreaseFraction}
+                />
               </Grid.Col>
             ) : (
               <></>

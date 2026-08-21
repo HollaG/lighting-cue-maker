@@ -19,7 +19,6 @@ import {
   MultiSelect,
   Popover,
   px,
-  SegmentedControl,
   Select,
   SimpleGrid,
   Slider,
@@ -68,6 +67,7 @@ import type { Fixture } from "../../../types/fixtures";
 import { StaticStagePreview2D } from "../../Visualiser/Stage/2D/StagePreview2D";
 import { checkCueCorrectness } from "../../../utils/cue/cueValidator";
 import { CustomCoverLoader } from "../../Loader/CustomCoverLoader";
+import { ViewModeSelect, type ViewMode } from "./ViewModeSelect";
 
 type FormData = Cue;
 
@@ -398,10 +398,23 @@ const CueCardInternal = ({
 
   // --- Visualiser ---------
   // const [viewMode, setViewMode] = useState<"Table" | "2D View" | "3D View">("Table");
-  const [viewMode, setViewMode] = useLocalStorage<"Table" | "2D View" | "3D View">({
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>({
     key: `${cue.id}-viewmode`,
     defaultValue: "Table",
   });
+
+  const [globalViewMode] = useLocalStorage<ViewMode>({
+    key: `global-viewmode`,
+    defaultValue: "Table",
+  });
+
+  const previousGlobalViewMode = useRef(globalViewMode);
+  useEffect(() => {
+    if (globalViewMode === previousGlobalViewMode.current) return;
+
+    previousGlobalViewMode.current = globalViewMode;
+    setViewMode(globalViewMode);
+  }, [globalViewMode, setViewMode]);
 
   // control accordion panel state
   const [activeFixtureGroupId, setActiveFixtureGroupId] = useState<string | null>(null);
@@ -524,10 +537,12 @@ const CueCardInternal = ({
 
               {isDirty && <Loader size="1.25rem" type="bars" />}
 
-              <SegmentedControl
-                data={["Table", "2D View"]}
-                value={viewMode}
-                onChange={(value) => setViewMode(value as "Table" | "2D View" | "3D View")}
+              <ViewModeSelect
+                props={{
+                  size: "xs",
+                }}
+                viewMode={viewMode || "Table"}
+                setViewMode={setViewMode}
               />
               <Popover
                 shadow="sm"

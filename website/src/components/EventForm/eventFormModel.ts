@@ -63,7 +63,6 @@ export type EventFormProps = {
   initialValues?: EventFormValues;
   isSubmitting?: boolean;
   submitLabel?: string;
-  bumpConfigurationsReadOnly?: boolean;
   onSubmit: (values: EventFormValues) => void | Promise<void>;
   onCancel?: () => void;
 };
@@ -89,6 +88,14 @@ export const createEmptyEventFormValues = (): EventFormValues => ({
   fixtureGroupOrder: [],
   fixtureGroups: {},
 });
+
+export const getAddedBumpConfigurationNames = (
+  existingBumpConfigurations: BumpConfiguration[],
+  bumpConfigurationNames: string[],
+): string[] => {
+  const existingNames = new Set(existingBumpConfigurations.map((bump) => bump.name));
+  return bumpConfigurationNames.filter((name) => !existingNames.has(name));
+};
 
 export const createEmptyEventFormAttribute = (attributeCount: number): EventFormAttribute => {
   const clientId = createEventFormKey();

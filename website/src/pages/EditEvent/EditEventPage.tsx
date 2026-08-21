@@ -6,8 +6,10 @@ import { EventForm } from "../../components/EventForm/EventForm";
 import {
   eventFormValuesToUpdateRequest,
   eventToEventFormValues,
+  getAddedBumpConfigurationNames,
   type EventFormValues,
 } from "../../components/EventForm/eventFormModel";
+import { useCreateBumpConfiguration } from "../../query/useCreateBumpConfiguration";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useUpdateEvent } from "../../query/useUpdateEvent";
 import { notifications } from "../../utils/notifications";
@@ -17,7 +19,10 @@ export const EditEventPage = () => {
   const navigate = useNavigate();
   const { event, isLoading, isError } = useGetEvent({ eventId });
 
-  const { mutateAsync: updateEvent, isPending: isSubmitting } = useUpdateEvent();
+  const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useUpdateEvent();
+  const { mutateAsync: createBumpConfiguration, isPending: isCreatingBumpConfiguration } =
+    useCreateBumpConfiguration();
+  const isSubmitting = isUpdatingEvent || isCreatingBumpConfiguration;
 
   const initialValues = useMemo(() => (event ? eventToEventFormValues(event) : null), [event]);
 
@@ -37,10 +42,16 @@ export const EditEventPage = () => {
 
   const onSubmit = async (values: EventFormValues) => {
     try {
+      const newBumpNames = getAddedBumpConfigurationNames(event?.bumpConfigurations ?? [], values.bumpConfigurations);
+
       await updateEvent({
         eventId,
         requestBody: eventFormValuesToUpdateRequest(values),
       });
+
+      for (const name of newBumpNames) {
+        await createBumpConfiguration({ eventId, name });
+      }
 
       notifications.show({
         title: "Event updated",
@@ -100,7 +111,6 @@ export const EditEventPage = () => {
         initialValues={initialValues}
         isSubmitting={isSubmitting}
         submitLabel="Save changes"
-        bumpConfigurationsReadOnly
         onSubmit={onSubmit}
         onCancel={returnToEvent}
       />

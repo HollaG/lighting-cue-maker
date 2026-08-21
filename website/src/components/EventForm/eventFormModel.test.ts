@@ -7,9 +7,27 @@ import {
   eventFormValuesToCreateRequest,
   eventFormValuesToUpdateRequest,
   eventToEventFormValues,
+  getAddedBumpConfigurationNames,
 } from "./eventFormModel";
 
 describe("eventToEventFormValues", () => {
+  it("returns only newly added bump configurations", () => {
+    const existingBumps = [
+      {
+        id: "flash-id",
+        name: "Flash",
+        description: "",
+      },
+      {
+        id: "blackout-id",
+        name: "Blackout",
+        description: "",
+      },
+    ];
+
+    expect(getAddedBumpConfigurationNames(existingBumps, ["Flash", "Strobe"])).toEqual(["Strobe"]);
+  });
+
   it("keeps backend IDs separate from frontend client IDs", () => {
     const event: LightEventConfiguration = {
       id: "event-id",

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Button, Center, Container, Group, SimpleGrid, Stack, TagsInput, Textarea } from "@mantine/core";
+import { Box, Button, Center, Container, Group, Pill, SimpleGrid, Stack, TagsInput, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { AddFixtureGroupButton } from "../FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
@@ -17,7 +17,6 @@ export const EventForm = ({
   initialValues,
   isSubmitting = false,
   submitLabel = mode === "create" ? "Create event" : "Save changes",
-  bumpConfigurationsReadOnly = false,
   onSubmit,
   onCancel,
 }: EventFormProps) => {
@@ -25,11 +24,24 @@ export const EventForm = ({
   // event, remount EventForm with `key={event.id}`.
   const [mountedInitialValues] = useState<EventFormValues>(() => initialValues ?? createEmptyEventFormValues());
   const [fixtureGroupOrder, setFixtureGroupOrder] = useState<EventFormKey[]>(mountedInitialValues.fixtureGroupOrder);
+  const existingBumpConfigurations = mode === "edit" ? mountedInitialValues.bumpConfigurations : [];
+  const [bumpConfigurations, setBumpConfigurations] = useState(mountedInitialValues.bumpConfigurations);
 
   const form = useForm<EventFormValues>({
     mode: "uncontrolled",
     initialValues: mountedInitialValues,
   });
+
+  const updateBumpConfigurations = (nextBumpConfigurations: string[]) => {
+    const existingNames = new Set(existingBumpConfigurations);
+    const preservedBumpConfigurations = [
+      ...existingBumpConfigurations,
+      ...nextBumpConfigurations.filter((name) => !existingNames.has(name)),
+    ];
+
+    setBumpConfigurations(preservedBumpConfigurations);
+    form.setFieldValue("bumpConfigurations", preservedBumpConfigurations, { forceUpdate: false });
+  };
 
   const setFixtureGroupOrderInStateAndForm = (nextOrder: EventFormKey[]) => {
     setFixtureGroupOrder(nextOrder);
@@ -103,12 +115,31 @@ export const EventForm = ({
             <TagsInput
               name="bumpConfigurations"
               key={form.key("bumpConfigurations")}
-              {...form.getInputProps("bumpConfigurations")}
+              value={bumpConfigurations}
+              onChange={updateBumpConfigurations}
               label="Define bump options"
-              description="These are possible bumps (instantaneous changes in lighting) that you can do"
+              description={
+                mode === "edit"
+                  ? "Add new bumps here. Existing bumps cannot be removed."
+                  : "These are possible bumps (instantaneous changes in lighting) that you can do"
+              }
               placeholder="Type a name, then press enter to add"
               variant="unstyled"
-              readOnly={bumpConfigurationsReadOnly}
+              renderPill={({ option, value, onRemove, disabled, reorderProps }) => {
+                const name = String(value ?? option.value);
+                const isExisting = existingBumpConfigurations.includes(name);
+
+                return (
+                  <Pill
+                    withRemoveButton={!isExisting}
+                    onRemove={isExisting ? undefined : onRemove}
+                    disabled={disabled}
+                    {...reorderProps}
+                  >
+                    {option.label}
+                  </Pill>
+                );
+              }}
             />
           </Stack>
         </Container>

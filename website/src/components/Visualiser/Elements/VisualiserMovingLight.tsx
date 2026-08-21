@@ -10,6 +10,7 @@ import {
 } from "../../../utils/visualiser";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import { VisualiserSelectedIndicator } from "./VisualiserSelectedIndicator";
+import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 
 const LAMP_CENTER = 35;
 const BEAM_OUTER_RADIUS = 45;
@@ -59,6 +60,27 @@ export const VisualiserMovingLightObject = React.memo(
     }, [isSelected, viewOnly]);
 
     const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
+
+    const handleMouseOver = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      stage.container().style.cursor = viewOnly ? "pointer" : "grab";
+    };
+
+    const handleMouseOut = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      stage.container().style.cursor = "default";
+    };
+
+    const onDragStart = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      stage.container().style.cursor = "grabbing";
+    };
 
     // Custom logic to draw
     // Intensity represents alpha: 0 is black (transparent), 1 is full colour (opaque)
@@ -122,7 +144,11 @@ export const VisualiserMovingLightObject = React.memo(
           onTap={() => onSelect(fixture.id)}
           ref={shapeRef}
           draggable={!viewOnly}
+          onDragStart={onDragStart}
           onDragEnd={(e) => {
+            const stage = e.target.getStage();
+            if (stage) stage.container().style.cursor = "grab";
+
             onChange({
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
@@ -144,6 +170,8 @@ export const VisualiserMovingLightObject = React.memo(
               rotZ: node.rotation(),
             });
           }}
+          onMouseOver={handleMouseOver}
+          onMouseOut={handleMouseOut}
         >
           <Circle x={25 + 10} y={25 + 10} radius={25} stroke={"#ffffff"} strokeWidth={2} fill={fillColour} />
           <Circle x={25 + 10} y={25 + 10} radius={35} stroke={"#3b3b3b"} strokeWidth={2} />

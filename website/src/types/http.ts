@@ -2,6 +2,7 @@ import type { Bump } from "./bumps";
 import type { Cue } from "./cues";
 import type {
   AttributeConfiguration,
+  BumpConfiguration,
   FixtureGroupConfiguration,
   Item,
   LightEventConfiguration,
@@ -56,6 +57,9 @@ export type UpdateCueRes = { cue: Cue };
 
 export type CreateBumpReq = { itemId: string; bumpConfigurationId: string };
 export type CreateBumpRes = { bump: Bump };
+
+export type CreateBumpConfigurationReq = { eventId: string; name: string };
+export type CreateBumpConfigurationRes = { bumpConfiguration: BumpConfiguration };
 
 export type UpsertEventAttributeReq = Omit<AttributeConfiguration, "id"> & {
   id?: string;

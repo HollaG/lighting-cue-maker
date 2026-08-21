@@ -10,6 +10,7 @@ import {
 } from "../../../utils/visualiser";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import { VisualiserSelectedIndicator } from "./VisualiserSelectedIndicator";
+import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 
 /**
  * Representation of a Fixture in 2D view.
@@ -49,6 +50,27 @@ export const VisualiserBarLightObject = React.memo(
 
     const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
 
+    const handleMouseOver = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      stage.container().style.cursor = viewOnly ? "pointer" : "grab";
+    };
+
+    const handleMouseOut = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      stage.container().style.cursor = "default";
+    };
+
+    const onDragStart = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      stage.container().style.cursor = "grabbing";
+    };
+
     // Custom logic to draw
     // Intensity represents alpha: 0 is black (transparent), 1 is full colour (opaque)
     // Colour represents the colour of the light, in hex format.
@@ -71,7 +93,11 @@ export const VisualiserBarLightObject = React.memo(
           onTap={() => onSelect(fixture.id)}
           ref={shapeRef}
           draggable={!viewOnly}
+          onDragStart={onDragStart}
           onDragEnd={(e) => {
+            const stage = e.target.getStage();
+            if (stage) stage.container().style.cursor = "grab";
+
             onChange({
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
@@ -93,6 +119,8 @@ export const VisualiserBarLightObject = React.memo(
               rotZ: node.rotation(),
             });
           }}
+          onMouseOver={handleMouseOver}
+          onMouseOut={handleMouseOut}
         >
           <Rect x={0} y={0} width={135} height={15} stroke={"#ffffff"} strokeWidth={2} fill={fillColour} />
           <Arc
