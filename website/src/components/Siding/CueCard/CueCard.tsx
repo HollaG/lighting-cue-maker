@@ -398,7 +398,6 @@ const CueCardInternal = ({
   const [showErrors, setShowErrors] = useState<boolean>(false);
 
   // --- Visualiser ---------
-  // const [viewMode, setViewMode] = useState<"Table" | "2D View" | "3D View">("Table");
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>({
     key: `${cue.id}-viewmode`,
     defaultValue: "Table",
@@ -415,7 +414,7 @@ const CueCardInternal = ({
 
   // control accordion panel state
   const [activeFixtureGroupId, setActiveFixtureGroupId] = useState<string | null>(null);
-  const onFixtureSelect = (fixtureId: string, fixtureGroupId: string) => {
+  const onFixtureSelect = (_fixtureId: string, fixtureGroupId: string) => {
     setActiveFixtureGroupId(fixtureGroupId);
   };
 

@@ -436,6 +436,55 @@ const OptList = ({
         </>
       );
 
+    case AttributeTypes.PRESET_POSITION:
+      return (
+        <>
+          {attribute.optionPossibleValues[AttributeTypes.PRESET_POSITION]?.map((position, index) => (
+            <Fragment key={position.id}>
+              <Grid.Col span={COLUMN_SPANS[0]}>
+                <Text>{index === 0 ? attribute.name : ""}</Text>
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[1]}>
+                <Text>{position.name}</Text>
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[2]}>
+                <IconArrowRightBar width={"1rem"} />
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[3]}>
+                <FunctionSelect
+                  groupedFnList={groupedFnList}
+                  form={form}
+                  inputId={`mappings.${attribute.id}|${position.id}`}
+                />
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[4]}>
+                <AdvancedMappingMenu attributeId={attribute.id} value={position.id} form={form} />
+              </Grid.Col>
+            </Fragment>
+          ))}
+
+          <Grid.Col span={COLUMN_SPANS[0]}>
+            <Text></Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[1]}>
+            <Text>Not selected</Text>
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[2]}>
+            <IconArrowRightBar width={"1rem"} />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[3]}>
+            <FunctionSelect
+              groupedFnList={groupedFnList}
+              form={form}
+              inputId={`mappings.${attribute.id}|not-selected`}
+            />
+          </Grid.Col>
+          <Grid.Col span={COLUMN_SPANS[4]}>
+            <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
+          </Grid.Col>
+        </>
+      );
+
     case AttributeTypes.MULTISELECT:
       return (
         <>
@@ -482,9 +531,15 @@ const OptList = ({
       );
 
     case AttributeTypes.COLOUR:
+    case AttributeTypes.PRESET_COLOUR: {
+      const colourOptions =
+        attribute.type === AttributeTypes.COLOUR
+          ? attribute.optionPossibleValues[AttributeTypes.COLOUR]
+          : attribute.optionPossibleValues[AttributeTypes.PRESET_COLOUR];
+
       return (
         <>
-          {attribute.optionPossibleValues[AttributeTypes.COLOUR]?.map((colourOption, index) => (
+          {colourOptions?.map((colourOption, index) => (
             <Fragment key={colourOption.hex}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
@@ -556,11 +611,19 @@ const OptList = ({
         //   </Stack>
         // </Group>
       );
+    }
 
-    case AttributeTypes.SLIDER_PRESETS: {
+    case AttributeTypes.SLIDER_PRESETS:
+    case AttributeTypes.PRESET_INTENSITY: {
+      const values =
+        attribute.type === AttributeTypes.SLIDER_PRESETS
+          ? attribute.optionPossibleValues[AttributeTypes.SLIDER_PRESETS]
+          : attribute.optionPossibleValues[AttributeTypes.PRESET_INTENSITY];
+      const hasNotSelectedOption = attribute.type === AttributeTypes.SLIDER_PRESETS;
+
       return (
         <>
-          {attribute.optionPossibleValues[AttributeTypes.SLIDER_PRESETS]?.map((val, index) => (
+          {values?.map((val, index) => (
             <Fragment key={val}>
               <Grid.Col span={COLUMN_SPANS[0]}>
                 <Text>{index === 0 ? attribute.name : ""}</Text>
@@ -579,26 +642,29 @@ const OptList = ({
               </Grid.Col>
             </Fragment>
           ))}
-          {/* For none selected option */}
-          <Grid.Col span={COLUMN_SPANS[0]}>
-            <Text></Text>
-          </Grid.Col>
-          <Grid.Col span={COLUMN_SPANS[1]}>
-            <Text>Not selected</Text>
-          </Grid.Col>
-          <Grid.Col span={COLUMN_SPANS[2]}>
-            <IconArrowRightBar width={"1rem"} />
-          </Grid.Col>
-          <Grid.Col span={COLUMN_SPANS[3]}>
-            <FunctionSelect
-              groupedFnList={groupedFnList}
-              form={form}
-              inputId={`mappings.${attribute.id}|${"not-selected"}`}
-            />
-          </Grid.Col>
-          <Grid.Col span={COLUMN_SPANS[4]}>
-            <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
-          </Grid.Col>
+          {hasNotSelectedOption && (
+            <>
+              <Grid.Col span={COLUMN_SPANS[0]}>
+                <Text></Text>
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[1]}>
+                <Text>Not selected</Text>
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[2]}>
+                <IconArrowRightBar width={"1rem"} />
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[3]}>
+                <FunctionSelect
+                  groupedFnList={groupedFnList}
+                  form={form}
+                  inputId={`mappings.${attribute.id}|not-selected`}
+                />
+              </Grid.Col>
+              <Grid.Col span={COLUMN_SPANS[4]}>
+                <AdvancedMappingMenu attributeId={attribute.id} value="not-selected" form={form} />
+              </Grid.Col>
+            </>
+          )}
         </>
       );
     }

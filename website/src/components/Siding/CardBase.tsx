@@ -12,7 +12,7 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
     backgroundColour = isActive ? "var(--mantine-color-dark-7)" : "var(--mantine-color-dark-7)";
   }
   if (colorScheme === "light") {
-    backgroundColour = isActive ? "var(--mantine-color-lime-0)" : "var(--mantine-color-white)";
+    backgroundColour = isActive ? "var(--mantine-color-lime-light)" : "var(--mantine-color-white)";
   }
 
   return (

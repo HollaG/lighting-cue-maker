@@ -3,6 +3,24 @@ import React, { useRef, useEffect } from "react";
 import { Rect, Transformer } from "react-konva";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import type { Rect as RectType } from "konva/lib/shapes/Rect";
+import type { VisualiserRectangle } from "../../../types/visualiser";
+
+export const createDefaultVisualiserRectangle = (id: string, x: number, y: number): VisualiserRectangle => {
+  return {
+    id,
+    name: "Rectangle",
+    type: "rectangle",
+    props: {
+      x,
+      y,
+      width: 100,
+      height: 100,
+      // fill: "#eeeeee",
+      stroke: "#aaaaaa",
+      id,
+    },
+  };
+};
 
 export const VisualiserRectangleObject = React.memo(
   ({

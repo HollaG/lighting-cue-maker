@@ -60,7 +60,7 @@ export const CueList = memo(
             <IconChevronLeft style={{ width: "1rem" }} />
           </ActionIcon>
           <Text>Adjust width</Text>
-          <ActionIcon color="gray" variant="light" onClick={onDecreaseWidth} disabled={!canDecreaseWidth}>
+          <ActionIcon size="lg" color="gray" variant="light" onClick={onDecreaseWidth} disabled={!canDecreaseWidth}>
             <IconChevronRight style={{ width: "1rem" }} />
           </ActionIcon>
         </Group>

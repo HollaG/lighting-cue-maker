@@ -141,7 +141,7 @@ export const VisualiserBarLightObject = React.memo(
           />
 
           {/* The Selected indicator */}
-          {isSelected && <VisualiserSelectedIndicator x={135 / 2 + 5} y={15 / 2 + 5} />}
+          {isSelected && <VisualiserSelectedIndicator x={135 / 2} y={15 / 2} />}
         </Group>
         {isSelected && !viewOnly && <Transformer ref={trRef} resizeEnabled={false} rotateEnabled />}
       </React.Fragment>

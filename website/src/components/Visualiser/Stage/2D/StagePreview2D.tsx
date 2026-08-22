@@ -1,4 +1,4 @@
-import { Flex, Group, Button, AspectRatio, Box, Select, MantineProvider } from "@mantine/core";
+import { Flex, Group, Button, AspectRatio, Box, MantineProvider } from "@mantine/core";
 import { useDebouncedCallback, useElementSize } from "@mantine/hooks";
 import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
@@ -160,9 +160,9 @@ export const StagePreview2D = ({
   }, [stageRef.current, containerRef.current]);
 
   // Controlled form component: Select new element type to add
-  const [selectedElementType, setSelectedElementType] = useState<VisualiserTypes | null>(null);
+  const [_, setSelectedElementType] = useState<VisualiserTypes | null>(null);
+
   const onSelectElement = (elementId: VisualiserTypes | null) => {
-    console.log(elementId);
     setSelectedElementType(null);
 
     const id = crypto.randomUUID();
@@ -508,7 +508,7 @@ export const StagePreview2D = ({
               ) : (
                 <div style={{ width: "100%", height: "100%" }}></div>
               )}
-              <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
+              {/* <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
                 <Select
                   value={selectedElementType}
                   onChange={(v: VisualiserTypes | null) => onSelectElement(v)}
@@ -533,7 +533,7 @@ export const StagePreview2D = ({
                   // label="Add a shape"
                   placeholder="Select a shape to add"
                 />
-              </Box>
+              </Box> */}
 
               <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
                 <Button size="sm" onClick={onResetViewport} variant="outline" color="gray">
@@ -551,6 +551,7 @@ export const StagePreview2D = ({
 
       <Box className={classes["preview-controls"]}>
         <VisualiserControls
+          onAddElement={onSelectElement}
           onDeleteElement={onDeleteElement}
           onUpdateElement={replaceStageElement}
           stageElements={stageElements}
@@ -674,7 +675,7 @@ export const StaticStagePreview2D = ({
     <Flex className={classes["preview-container"]}>
       {/* Height constrained to viewport minus 128px => width constrained to viewport height - 128/4*3 */}
       <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
-        <Group align="start">
+        <Group align="start" style={{ flexWrap: "nowrap" }}>
           <Box style={{ flex: 1 }}>
             <AspectRatio ratio={4 / 3}>
               <CustomCoverLoader isLoading={isLoading}>

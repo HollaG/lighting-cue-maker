@@ -96,6 +96,16 @@ export const getValueFromValueAssignment = (type: AttributeTypes, value: ValueAs
       const v = value.slider;
       return v;
     }
+    case AttributeTypes.SLIDER_PRESETS:
+    case AttributeTypes.PRESET_INTENSITY: {
+      return value[type];
+    }
+    case AttributeTypes.PRESET_COLOUR: {
+      return value[type]?.hex;
+    }
+    case AttributeTypes.PRESET_POSITION: {
+      return value[type]?.id;
+    }
     case AttributeTypes.BOOLEAN: {
       const v = value.boolean ? "true" : "false";
       return v;
@@ -138,7 +148,14 @@ export const hasAValue = (type: AttributeTypes, value: ValueAssignment) => {
       const v = value.colour?.hex;
       return v !== "";
     }
-    case AttributeTypes.SLIDER_PRESETS: {
+    case AttributeTypes.PRESET_COLOUR: {
+      return Boolean(value[type]?.hex);
+    }
+    case AttributeTypes.PRESET_POSITION: {
+      return Boolean(value[type]?.id);
+    }
+    case AttributeTypes.SLIDER_PRESETS:
+    case AttributeTypes.PRESET_INTENSITY: {
       if (value[type] === undefined || value[type] === null) {
         return false;
       }

@@ -153,6 +153,7 @@ export const QLC_MAPPABLE_TYPES = new Set<AttributeTypes>([
 
   AttributeTypes.PRESET_COLOUR,
   AttributeTypes.PRESET_INTENSITY,
+  AttributeTypes.PRESET_POSITION,
 ]);
 
 export const isQlcMappable = (type: AttributeTypes) => QLC_MAPPABLE_TYPES.has(type);

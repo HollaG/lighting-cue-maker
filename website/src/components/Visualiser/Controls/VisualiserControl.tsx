@@ -14,7 +14,7 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import type { FixtureAttributeMapping, Visualiser, VisualiserObject } from "../../../types/visualiser";
+import type { FixtureAttributeMapping, Visualiser, VisualiserObject, VisualiserTypes } from "../../../types/visualiser";
 import type { Fixture, FixtureType, UpdateFixtureReq, UpsertFixtureReq } from "../../../types/fixtures";
 import { CardBase } from "../../Siding/CardBase";
 import { useGetFixtures } from "../../../query/useGetFixtures";
@@ -124,6 +124,7 @@ const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
   );
 };
 
+// No side effects!
 const VisualiserObjectSection = ({
   title,
   itemLabel,
@@ -132,12 +133,15 @@ const VisualiserObjectSection = ({
   setStageElementAccordionValue,
   onDeleteElement,
   onUpdateElement,
+  onAddElement,
 }: {
   title: string;
   itemLabel: string;
   objects: VisualiserObject[];
 
   setStageElementAccordionValue: (value: string | null) => void;
+
+  onAddElement?: (newElementType: VisualiserTypes) => void;
   onDeleteElement?: (elementId: string) => void;
   onUpdateElement?: (updatedElement: VisualiserObject) => void;
 }) => {
@@ -163,7 +167,8 @@ const VisualiserObjectSection = ({
             <Flex key={obj.id}>
               <Text
                 style={{
-                  backgroundColor: selectedElementId === obj.id ? "yellow" : "transparent",
+                  backgroundColor:
+                    selectedElementId === obj.id ? "light-dark(yellow, var(--dark-yellow))" : "transparent",
                 }}
               >
                 {itemLabel} {index + 1}
@@ -174,6 +179,13 @@ const VisualiserObjectSection = ({
               <ObjectMenu obj={obj} onDeleteElement={onDeleteElement} onUpdateElement={onUpdateElement} />
             </Flex>
           ))}
+          {onAddElement && (
+            <Center>
+              <Button variant="subtle" size="xs" onClick={() => onAddElement("rectangle")}>
+                Add {itemLabel}
+              </Button>
+            </Center>
+          )}
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>
@@ -200,15 +212,14 @@ const VisualiserFixtureSection = ({
   const { fixtures } = useGetFixtures({ fixtureGroupId: fixtureGroup.id });
   const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
 
-  const { isPending, mutateAsync: upsertFixture } = useUpsertFixture();
+  const { isPending: isCreateFixturePending, mutateAsync: upsertFixture } = useUpsertFixture();
 
   // TODO: unused var
-  const { isPending: _, mutateAsync: deleteFixture } = useDeleteFixture();
+  const { isPending: _isDeletePending, mutateAsync: deleteFixture } = useDeleteFixture();
 
   const onAddFixture = async () => {
     // upsert a new fixture with default values into the fixtures array for this fixture group
     const stage = stageRef.current;
-    console.log({ stageRefs: stageRef.current, stage });
     // Convert the desired screen position to world coordinates, like the other stage elements.
     const x = stage ? (32 - stage.x()) / stage.scaleX() : 32;
     const y = stage ? (60 - stage.y()) / stage.scaleY() : 60;
@@ -221,9 +232,7 @@ const VisualiserFixtureSection = ({
     };
 
     // Get the stage ref
-    const result = await upsertFixture(fixture);
-
-    console.log({ result });
+    await upsertFixture(fixture);
   };
 
   const onUpdateFixture = async (fixture: UpdateFixtureReq) => {
@@ -366,7 +375,8 @@ const VisualiserFixtureSection = ({
               <Flex>
                 <Text
                   style={{
-                    backgroundColor: selectedElementId === fixture.id ? "yellow" : "transparent",
+                    backgroundColor:
+                      selectedElementId === fixture.id ? "light-dark(yellow, var(--dark-yellow))" : "transparent",
                   }}
                 >
                   {getFixtureTextLabel(fixture, index)}
@@ -525,7 +535,7 @@ const VisualiserFixtureSection = ({
               variant="subtle"
               size="xs"
               onClick={onAddFixture}
-              loading={isPending}
+              loading={isCreateFixturePending}
               loaderProps={{ type: "bars" }}
             >
               {" "}
@@ -640,6 +650,7 @@ export const VisualisationFixtureGroupCard = ({
 };
 
 export const VisualiserControls = ({
+  onAddElement,
   onDeleteElement,
   onUpdateElement,
   stageElements,
@@ -649,6 +660,7 @@ export const VisualiserControls = ({
   visualiser,
 }: {
   stageElements: VisualiserObject[];
+  onAddElement?: (newElementType: VisualiserTypes) => void;
   onUpdateElement?: (updatedElement: VisualiserObject) => void;
   onDeleteElement?: (elementId: string) => void;
   fixtureGroups: FixtureGroupConfiguration[];
@@ -718,6 +730,8 @@ export const VisualiserControls = ({
               title="Rectangles"
               itemLabel="Rectangle"
               objects={rects}
+
+              onAddElement={onAddElement}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
               setStageElementAccordionValue={setStageElementAccordionValue}
@@ -729,6 +743,7 @@ export const VisualiserControls = ({
               objects={circles}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
+              onAddElement={onAddElement}
 
               setStageElementAccordionValue={setStageElementAccordionValue}
             />
@@ -739,6 +754,7 @@ export const VisualiserControls = ({
               objects={lines}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
+              onAddElement={onAddElement}
               setStageElementAccordionValue={setStageElementAccordionValue}
             />
             <VisualiserObjectSection
@@ -748,6 +764,7 @@ export const VisualiserControls = ({
               objects={texts}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
+              onAddElement={onAddElement}
               setStageElementAccordionValue={setStageElementAccordionValue}
             />
           </Accordion>
