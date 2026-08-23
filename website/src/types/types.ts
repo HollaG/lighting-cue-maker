@@ -1,6 +1,5 @@
 import type { Bump } from "./bumps";
 import type { Cue } from "./cues";
-import type { Content } from "./lyrics";
 
 export type Option<T extends string> = {
   label: string;
@@ -128,7 +127,7 @@ export type LightEventConfiguration = {
 export type Item = {
   name: string; // future: let you see history?
   rawLyrics: string;
-  content: Content[];
+  content: string[][];
 
   bumps: Bump[];
   cues: Cue[];

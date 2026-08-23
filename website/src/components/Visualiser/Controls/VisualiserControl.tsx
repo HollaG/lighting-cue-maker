@@ -16,7 +16,7 @@ import {
 } from "@mantine/core";
 import type { FixtureAttributeMapping, Visualiser, VisualiserObject, VisualiserTypes } from "../../../types/visualiser";
 import type { Fixture, FixtureType, UpdateFixtureReq, UpsertFixtureReq } from "../../../types/fixtures";
-import { CardBase } from "../../Siding/CardBase";
+import { CardBase } from "../../Cues/CardBase";
 import { useGetFixtures } from "../../../query/useGetFixtures";
 import { useUpsertFixture } from "../../../query/useUpsertFixtures";
 import { useDeleteFixture } from "../../../query/useDeleteFixture";

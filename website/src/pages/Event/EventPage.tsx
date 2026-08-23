@@ -23,7 +23,7 @@ import {
 } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import classes from "./EventPage.module.css";
-import { RichContent } from "../../components/RichContent/RichContent";
+import { RichContentWrapper } from "../../components/RichContent/RichContentWrapper";
 import { useEffect, useMemo, useRef, useState } from "react";
 // import { CueList } from "./CueList/CueList";
 import { useGetEvent } from "../../query/useGetEvent";
@@ -34,8 +34,13 @@ import { useCreateItem } from "../../query/useCreateItem";
 import { useUpdateItem } from "../../query/useUpdateItem";
 import {
   IconArrowLeft,
+  IconEdit,
+  IconFileExport,
   IconFileSpreadsheet,
   IconInfoCircle,
+  IconLayoutSidebarRight,
+  IconLayoutSidebarRightCollapse,
+  IconPlayerPlay,
 } from "@tabler/icons-react";
 import { useDisclosure, useHotkeys, useLocalStorage, type HotkeyItem } from "@mantine/hooks";
 import { sanitize } from "../../utils/sanitize";
@@ -199,6 +204,14 @@ export const EventPage = () => {
   const increaseFraction = () => setCueFraction((prev) => Math.min(11, Number(prev) + 1).toString());
   const canDecreaseFraction = Number(cueFraction) > 1;
   const canIncreaseFraction = Number(cueFraction) < 11;
+
+  // RUN mode
+  const onGoRunMode = () => {
+    navigate({
+      to: "/events/$eventId/run",
+      params: { eventId },
+    });
+  };
   return (
     <>
       <Container size={"xl"} mt="4rem">
@@ -212,8 +225,56 @@ export const EventPage = () => {
             Back to home
           </Button>
           <Flex flex={1} />
-          <Box>
-            <Button size="xs" variant="outline" onClick={toggleShowCues}>
+
+          <Menu
+            width={200}
+            shadow={"sm"}
+            withArrow
+            position="bottom"
+            transitionProps={{ transition: "pop", duration: 100 }}
+          >
+            <Menu.Target>
+              <Button variant="subtle">Settings</Button>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Label>View options</Menu.Label>
+              <Menu.Item
+                leftSection={
+                  showCues ? <IconLayoutSidebarRightCollapse width="1rem" /> : <IconLayoutSidebarRight width="1rem" />
+                }
+                onClick={toggleShowCues}
+              >
+                {showCues ? "Hide " : "Show "}cues panel
+              </Menu.Item>
+              <Menu.Item leftSection={<IconPlayerPlay width="1rem" />} onClick={onGoRunMode}>
+                Enter RUN mode
+              </Menu.Item>
+              <Menu.Divider />
+
+              <Menu.Label>Export options</Menu.Label>
+
+              <Menu.Sub>
+                <Menu.Sub.Target>
+                  <Menu.Sub.Item leftSection={<IconFileExport width="1rem" />}>Export</Menu.Sub.Item>
+                </Menu.Sub.Target>
+                <Menu.Sub.Dropdown>
+                  <Menu.Item leftSection={<Image src={QlcLogo} width={16} height={16} />} onClick={openQlcExport}>
+                    QLC+ export
+                  </Menu.Item>
+                  <Menu.Item leftSection={<IconFileSpreadsheet width={"1rem"} />}>.xlsx sheet (WIP)</Menu.Item>
+                </Menu.Sub.Dropdown>
+              </Menu.Sub>
+
+              <Menu.Divider />
+              <Menu.Label>Event options</Menu.Label>
+              <Menu.Item leftSection={<IconEdit width="1rem" />} onClick={onEdit}>
+                Edit event
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          {/* <Box>
+            <Button variant="transparent" onClick={toggleShowCues}>
               {showCues ? "Hide " : "Show "}cues
             </Button>
           </Box>
@@ -232,6 +293,7 @@ export const EventPage = () => {
               <Menu.Item leftSection={<IconFileSpreadsheet width={"1rem"} />}>.xlsx sheet (WIP)</Menu.Item>
             </Menu.Dropdown>
           </Menu>
+          <Button variant="transparent">Enter RUN mode</Button> */}
           {/* <Button onClick={openQlcExport} variant="light">
             Export
           </Button> */}
@@ -411,7 +473,7 @@ export const EventPage = () => {
 
                 {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
                   <div ref={contentRef} id="focus-trap-lyrics" tabIndex={-1} style={{ outline: "none" }}>
-                    <RichContent itemId={item.id} />
+                    <RichContentWrapper itemId={item.id} />
                   </div>
                 )}
               </Stack>

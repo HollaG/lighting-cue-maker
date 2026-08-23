@@ -11,7 +11,7 @@ import {
 } from "../../components/EventForm/eventFormModel";
 import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard";
 import { RichContentDemo } from "../../components/RichContent/RichContentDemo";
-import { CueCardDemo } from "../../components/Siding/CueCard/CueCardDemo";
+import { CueCardDemo } from "../../components/Cues/CueCard/CueCardDemo";
 import type { FixtureGroupConfiguration } from "../../types/types";
 
 const movingHeadFormValues = {

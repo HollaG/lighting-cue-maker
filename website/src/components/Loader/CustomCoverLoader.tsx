@@ -6,12 +6,17 @@ import type { PropsWithChildren } from "react";
 
 type CustomCoverLoaderProps = PropsWithChildren<{
   isLoading: boolean;
+  content?: React.ReactNode;
 }>;
 
-export const CustomCoverLoader = ({ children, isLoading }: CustomCoverLoaderProps) => {
+export const CustomCoverLoader = ({ children, isLoading, content }: CustomCoverLoaderProps) => {
   return (
     <Box pos="relative" aria-busy={isLoading}>
-      <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2 }} loaderProps={{ type: "bars" }} />
+      <LoadingOverlay
+        visible={isLoading}
+        overlayProps={{ blur: 2 }}
+        loaderProps={{ type: "bars", children: content }}
+      />
       {children}
     </Box>
   );

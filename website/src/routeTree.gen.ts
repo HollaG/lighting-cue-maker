@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
 import { Route as EventsCreateIndexRouteImport } from './routes/events/create/index'
 import { Route as EventsEventIdEditIndexRouteImport } from './routes/events/$eventId/edit/index'
+import { Route as EventsEventIdRunIndexRouteImport } from './routes/events/$eventId/run/index'
 import { Route as EventsEventIdVisualsUpdateIndexRouteImport } from './routes/events/$eventId/visuals/update/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const EventsEventIdEditIndexRoute = EventsEventIdEditIndexRouteImport.update({
   path: '/events/$eventId/edit/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsEventIdRunIndexRoute = EventsEventIdRunIndexRouteImport.update({
+  id: '/events/$eventId/run/',
+  path: '/events/$eventId/run/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsEventIdVisualsUpdateIndexRoute =
   EventsEventIdVisualsUpdateIndexRouteImport.update({
     id: '/events/$eventId/visuals/update/',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/create/': typeof EventsCreateIndexRoute
   '/events/$eventId/edit/': typeof EventsEventIdEditIndexRoute
+  '/events/$eventId/run/': typeof EventsEventIdRunIndexRoute
   '/events/$eventId/visuals/update/': typeof EventsEventIdVisualsUpdateIndexRoute
 }
 export interface FileRoutesByTo {
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/events/$eventId': typeof EventsEventIdIndexRoute
   '/events/create': typeof EventsCreateIndexRoute
   '/events/$eventId/edit': typeof EventsEventIdEditIndexRoute
+  '/events/$eventId/run': typeof EventsEventIdRunIndexRoute
   '/events/$eventId/visuals/update': typeof EventsEventIdVisualsUpdateIndexRoute
 }
 export interface FileRoutesById {
@@ -62,6 +70,7 @@ export interface FileRoutesById {
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/create/': typeof EventsCreateIndexRoute
   '/events/$eventId/edit/': typeof EventsEventIdEditIndexRoute
+  '/events/$eventId/run/': typeof EventsEventIdRunIndexRoute
   '/events/$eventId/visuals/update/': typeof EventsEventIdVisualsUpdateIndexRoute
 }
 export interface FileRouteTypes {
@@ -71,6 +80,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/'
     | '/events/create/'
     | '/events/$eventId/edit/'
+    | '/events/$eventId/run/'
     | '/events/$eventId/visuals/update/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -78,6 +88,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/create'
     | '/events/$eventId/edit'
+    | '/events/$eventId/run'
     | '/events/$eventId/visuals/update'
   id:
     | '__root__'
@@ -85,6 +96,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/'
     | '/events/create/'
     | '/events/$eventId/edit/'
+    | '/events/$eventId/run/'
     | '/events/$eventId/visuals/update/'
   fileRoutesById: FileRoutesById
 }
@@ -93,6 +105,7 @@ export interface RootRouteChildren {
   EventsEventIdIndexRoute: typeof EventsEventIdIndexRoute
   EventsCreateIndexRoute: typeof EventsCreateIndexRoute
   EventsEventIdEditIndexRoute: typeof EventsEventIdEditIndexRoute
+  EventsEventIdRunIndexRoute: typeof EventsEventIdRunIndexRoute
   EventsEventIdVisualsUpdateIndexRoute: typeof EventsEventIdVisualsUpdateIndexRoute
 }
 
@@ -126,6 +139,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdEditIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$eventId/run/': {
+      id: '/events/$eventId/run/'
+      path: '/events/$eventId/run'
+      fullPath: '/events/$eventId/run/'
+      preLoaderRoute: typeof EventsEventIdRunIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/$eventId/visuals/update/': {
       id: '/events/$eventId/visuals/update/'
       path: '/events/$eventId/visuals/update'
@@ -141,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsEventIdIndexRoute: EventsEventIdIndexRoute,
   EventsCreateIndexRoute: EventsCreateIndexRoute,
   EventsEventIdEditIndexRoute: EventsEventIdEditIndexRoute,
+  EventsEventIdRunIndexRoute: EventsEventIdRunIndexRoute,
   EventsEventIdVisualsUpdateIndexRoute: EventsEventIdVisualsUpdateIndexRoute,
 }
 export const routeTree = rootRouteImport

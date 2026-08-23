@@ -1,14 +1,14 @@
 import { memo, useState } from "react";
 import { ActionIcon, Center, Flex, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
-import { CueCard } from "../../../components/Siding/CueCard/CueCard";
+import { CueCard } from "../../../components/Cues/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
 import { useAppStore } from "../../../store/appStore";
 import type { LightEventConfiguration } from "../../../types/types";
 import { useGetOrCreateVisualiser } from "../../../query/useGetOrCreateVisualiser";
 import { useGetFixturesByEventId } from "../../../query/useGetFixtures";
 import { CustomCoverLoader } from "../../../components/Loader/CustomCoverLoader";
-import { ViewModeSelect, type ViewMode } from "../../../components/Siding/CueCard/ViewModeSelect";
+import { ViewModeSelect, type ViewMode } from "../../../components/Cues/CueCard/ViewModeSelect";
 
 type CueListProps = {
   itemId: string;

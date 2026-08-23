@@ -5,53 +5,34 @@ import {
   Box,
   Button,
   Center,
-  Checkbox,
   Code,
   Collapse,
-  Combobox,
-  Fieldset,
   Flex,
   Group,
-  Input,
-  InputBase,
   Loader,
   Menu,
-  MultiSelect,
   Popover,
   px,
-  Select,
   SimpleGrid,
-  Slider,
   Stack,
   Text,
   Textarea,
   Title,
   Tooltip,
-  useCombobox,
 } from "@mantine/core";
 import { CardBase } from "../CardBase";
 import type { Cue } from "../../../types/cues";
 import { useAppStore } from "../../../store/appStore";
-import {
-  AttributeTypes,
-  BooleanOptions,
-  type AttributeConfiguration,
-  type ColourOption,
-  type FixtureGroupConfiguration,
-  type Item,
-  type PresetPositionOption,
-} from "../../../types/types";
+import { type FixtureGroupConfiguration, type Item } from "../../../types/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  IconCaretDown,
   IconChevronUp,
   IconExclamationCircle,
   IconHelpCircle,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { useForm, type FormErrors, type UseFormReturnType } from "@mantine/form";
+import { useForm, type FormErrors } from "@mantine/form";
 import { useDebouncedCallback, useLocalStorage } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
 import { useDeleteCue } from "../../../query/useDeleteCue";
@@ -67,6 +48,7 @@ import type { Fixture } from "../../../types/fixtures";
 import { StaticStagePreview2D } from "../../Visualiser/Stage/2D/StagePreview2D";
 import { checkCueCorrectness } from "../../../utils/cue/cueValidator";
 import { ViewModeSelect, type ViewMode } from "./ViewModeSelect";
+import { FixtureGroupSection } from "../FixtureGroupSection";
 
 type FormData = Cue;
 
@@ -102,7 +84,7 @@ const CueCardInternal = ({
   const { mutateAsync: deleteCue } = useDeleteCue();
   const { mutate: updateItem } = useUpdateItem();
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useLocalStorage({ key: `cue-${cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
 
   // --- Form ---------
@@ -241,11 +223,8 @@ const CueCardInternal = ({
 
   const cueRef = useRef<HTMLDivElement>(null);
 
-  const [translateDistance, setTranslateDistance] = useState<string>("0px");
-
   useEffect(() => {
     if (!isCueSelected || !cueRef.current) {
-      setTranslateDistance("0px");
       return;
     }
     const elementId = `ref-${cue.id}`;
@@ -254,11 +233,6 @@ const CueCardInternal = ({
 
     const targetTopY = element.offsetTop;
     const cardNaturalTopY = cueRef.current.offsetTop;
-
-    console.log({
-      targetTopY,
-      cardNaturalTopY,
-    });
 
     // 2.375rem convert to px
     const pxOffset = px("3.375rem");
@@ -424,7 +398,6 @@ const CueCardInternal = ({
         id={`cue-card-${cueNumber}`}
         ref={cueRef}
         style={{
-          transform: `translateY(${translateDistance})`,
           transition: "all 0.3s ease",
           zIndex: isAtLeastOneComboboxOpened ? 100 : undefined, // DO NOT REMOVE
           position: "relative", // DO NOT REMOVE
@@ -617,7 +590,6 @@ const CueCardInternal = ({
                       eventId={eventId}
                       visualiser={visualiser}
                       fixtures={fixtures}
-                      fixtureGroups={fixtureGroups}
 
                       fixtureGroupsAssignment={cue.assignments}
 
@@ -787,530 +759,6 @@ const CueCardInternal = ({
     </form>
   );
 };
-
-const FixtureGroupSection = ({
-  group,
-  index,
-  form,
-
-  showFieldsetWrapper = true,
-
-  setIsAtLeastOneComboboxOpened,
-}: {
-  group: FixtureGroupConfiguration;
-  index: number;
-  form: UseFormReturnType<FormData>;
-
-  showFieldsetWrapper?: boolean;
-
-  setIsAtLeastOneComboboxOpened: (value: boolean) => void;
-}) => {
-  // Configure the FormData to include this FixtureGroup.
-  // Only on init.
-  // useEffect(() => {
-  //   // assignments[group.id] = {}
-  //   form.setFieldValue(`assignments.${group.id}`, { name: group.name, assignment: {} });
-  //   console.log(`set field assignment assignments.${group.id}`, form.getValues());
-
-  //   return () => form.setFieldValue(`assignments.${group.id}`, undefined);
-  // }, []);
-
-  if (!showFieldsetWrapper) {
-    return (
-      <Stack gap="xs">
-        {group.attributes.map((attr, attrIndex) => (
-          <AttributeDisplay
-            groupId={group.id}
-            form={form}
-            key={attrIndex}
-            attribute={attr}
-            index={attrIndex}
-            setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
-          />
-        ))}
-      </Stack>
-    );
-  }
-
-  return (
-    <Fieldset
-      legend={
-        <Text>
-          Group {index}: {group.name}
-        </Text>
-      }
-      style={{
-        backgroundColor: "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
-        // backgroundClip
-      }}
-    >
-      <Stack gap="xs">
-        {group.attributes.map((attr, attrIndex) => (
-          <AttributeDisplay
-            groupId={group.id}
-            form={form}
-            key={attrIndex}
-            attribute={attr}
-            index={attrIndex}
-            setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
-          />
-        ))}
-      </Stack>
-    </Fieldset>
-  );
-};
-
-const AttributeDisplay = ({
-  attribute,
-  index: _index,
-  form,
-  groupId,
-
-  setIsAtLeastOneComboboxOpened,
-}: {
-  attribute: AttributeConfiguration;
-  index: number;
-  form: UseFormReturnType<FormData>;
-  groupId: string;
-
-  setIsAtLeastOneComboboxOpened: (value: boolean) => void;
-}) => {
-  const { name, type, optionPossibleValues } = attribute;
-
-  // Configure the FormData to include this Attribute.
-  // Only on init.
-  // useEffect(() => {
-  //   // assignments[group.id] = { [attribute.id] = { }}
-  //   console.log(`set field assignment assignments.${groupId}.${attribute.id}`, form.getValues());
-
-  //   // If I'm being honest, I'm not entirely sure why this is needed/
-  //   // It's not needed in the equivalent section for Adding, where the same method is used.
-  //   // If this is removed, the following setFieldValue throws an error saying that `assignments.groupId` is undefined,
-  //   // even though it's clearly set in the parent component.
-  //   // if (!form.getValues()["assignments"][groupId]) {
-  //   //   form.setFieldValue(`assignments.${groupId}`, {
-  //   //     assignment: {},
-  //   //     name: "it broke",
-  //   //   });
-  //   // }
-  //   form.setFieldValue(`assignments.${groupId}.assignment.${attribute.id}`, {
-  //     name: attribute.name,
-  //     type: attribute.type,
-  //     value: {
-  //       [AttributeTypes.SELECT]: "",
-  //       [AttributeTypes.MULTISELECT]: [],
-
-  //       // TODO: check how colour works
-  //       [AttributeTypes.COLOUR]: { hex: "", name: "" },
-  //       [AttributeTypes.SLIDER]: 0,
-  //       [AttributeTypes.BOOLEAN]: false,
-  //       [AttributeTypes.TEXT]: null,
-  //       [AttributeTypes.NONE]: null,
-  //     },
-  //   });
-
-  //   return () => form.setFieldValue(`assignments.${groupId}.assignment.${attribute.id}`, undefined);
-  // }, []);
-
-  const baseFieldName = `assignments.${groupId}.assignment.${attribute.id}.value`;
-
-  switch (type) {
-    case AttributeTypes.TEXT:
-      return (
-        <CustomTextInput
-          variant="default"
-          label={name}
-          placeholder={attribute.metadata.placeholder ?? `Input ${name}`}
-          name={`${baseFieldName}.${AttributeTypes.TEXT}`}
-          key={form.key(`${baseFieldName}.${AttributeTypes.TEXT}`)}
-          {...form.getInputProps(`${baseFieldName}.${AttributeTypes.TEXT}`)}
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.SELECT:
-      return (
-        <Select
-          comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
-          searchable
-          label={name}
-          data={optionPossibleValues[AttributeTypes.SELECT]}
-          placeholder={attribute.metadata.placeholder ?? `Pick a value`}
-          name={`${baseFieldName}.${AttributeTypes.SELECT}`}
-          key={form.key(`${baseFieldName}.${AttributeTypes.SELECT}`)}
-          {...form.getInputProps(`${baseFieldName}.${AttributeTypes.SELECT}`)}
-          clearable
-          rightSection={<IconCaretDown width={"0.75rem"} />}
-          clearSectionMode="clear"
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.MULTISELECT:
-      return (
-        <MultiSelect
-          searchable
-          label={name}
-          data={optionPossibleValues[AttributeTypes.MULTISELECT]}
-          placeholder={attribute.metadata.placeholder ?? `Pick one or more values`}
-          name={`${baseFieldName}.${AttributeTypes.MULTISELECT}`}
-          key={form.key(`${baseFieldName}.${AttributeTypes.MULTISELECT}`)}
-          {...form.getInputProps(`${baseFieldName}.${AttributeTypes.MULTISELECT}`)}
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.COLOUR:
-      return (
-        <ColourSelect
-          fieldName={`${baseFieldName}.${AttributeTypes.COLOUR}`}
-          form={form}
-          name={name}
-          colourOptions={optionPossibleValues[AttributeTypes.COLOUR] || []}
-          defaultValue={
-            form.getInitialValues().assignments[groupId].assignment?.[attribute.id]?.value[AttributeTypes.COLOUR]
-          }
-          setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.PRESET_COLOUR:
-      return (
-        <ColourSelect
-          fieldName={`${baseFieldName}.${AttributeTypes.PRESET_COLOUR}`}
-          form={form}
-          name={name}
-          colourOptions={optionPossibleValues[AttributeTypes.PRESET_COLOUR] || []}
-          defaultValue={
-            form.getInitialValues().assignments[groupId].assignment?.[attribute.id]?.value[AttributeTypes.PRESET_COLOUR]
-          }
-          setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.BOOLEAN:
-      return (
-        <BooleanSelect
-          name={name}
-          fieldName={`${baseFieldName}.${AttributeTypes.BOOLEAN}`}
-          form={form}
-          defaultValue={optionPossibleValues[AttributeTypes.BOOLEAN]!}
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.SLIDER_PRESETS:
-      return (
-        <SliderPresetInput
-          name={name}
-          fieldName={`${baseFieldName}.${AttributeTypes.SLIDER_PRESETS}`}
-          form={form}
-          marks={optionPossibleValues[AttributeTypes.SLIDER_PRESETS]!}
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.PRESET_INTENSITY:
-      return (
-        <SliderPresetInput
-          name={name}
-          fieldName={`${baseFieldName}.${AttributeTypes.PRESET_INTENSITY}`}
-          form={form}
-          marks={optionPossibleValues[AttributeTypes.PRESET_INTENSITY]!}
-          required={attribute.metadata.required}
-        />
-      );
-
-    case AttributeTypes.PRESET_POSITION:
-      return (
-        <PositionSelect
-          name={name}
-          fieldName={`${baseFieldName}.${AttributeTypes.PRESET_POSITION}`}
-          form={form}
-          positionOptions={optionPossibleValues[AttributeTypes.PRESET_POSITION] ?? []}
-          placeholder={attribute.metadata.placeholder ?? `Pick a value`}
-          required={attribute.metadata.required}
-        />
-      );
-  }
-  return <CustomTextInput label={attribute.name}></CustomTextInput>;
-};
-
-function ColourSelect({
-  colourOptions,
-  name,
-  fieldName,
-  form,
-  defaultValue,
-  required = false,
-
-  setIsAtLeastOneComboboxOpened,
-}: {
-  name: string;
-  colourOptions: ColourOption[];
-  fieldName: string;
-  form: UseFormReturnType<FormData>;
-  defaultValue?: ColourOption;
-  required?: boolean;
-
-  setIsAtLeastOneComboboxOpened: (value: boolean) => void;
-}) {
-  const combobox = useCombobox({
-    onDropdownClose: () => {
-      combobox.resetSelectedOption();
-      setIsAtLeastOneComboboxOpened(false);
-    },
-    onDropdownOpen: () => setIsAtLeastOneComboboxOpened(true),
-  });
-
-  // `search` is transient UI state — it controls the input text for dropdown filtering.
-  // The actual committed value (a ColourOption object) lives in the form.
-  const [search, setSearch] = useState(defaultValue?.name || "");
-
-  const formPath = `${fieldName}` as const;
-
-  const shouldFilterOptions = colourOptions.every((item) => item.hex !== search);
-  const filteredOptions = shouldFilterOptions
-    ? colourOptions.filter((item) => item.name.toLowerCase().includes(search.toLowerCase().trim()))
-    : colourOptions;
-
-  const options = filteredOptions.map((item) => (
-    <Combobox.Option value={item.name} key={item.hex}>
-      <ColourSelectOption {...item} />
-    </Combobox.Option>
-  ));
-
-  // watch the saved value
-  // @ts-ignore
-  form.watch(formPath, ({ value }: { value: ColourOption }) => {
-    if (value) {
-      setSearch(value.name); // always sync
-    }
-  });
-
-  return (
-    <Combobox
-      store={combobox}
-      withinPortal={false}
-      onOptionSubmit={(val) => {
-        // Find the full ColourOption so we store { hex, name } in the form — not just the name string.
-        const selected = colourOptions.find((item) => item.name === val);
-        form.setFieldValue(formPath, selected ?? { name: val, hex: "" });
-        setSearch(val);
-        combobox.closeDropdown();
-      }}
-      styles={{
-        dropdown: {
-          zIndex: 99,
-        },
-      }}
-    >
-      <Combobox.Target targetType="input">
-        <div>
-          <InputBase
-            required={required}
-            label={name}
-            rightSection={<Combobox.Chevron />}
-            value={search}
-            onChange={(event) => {
-              combobox.openDropdown();
-              combobox.updateSelectedOptionIndex();
-              setSearch(event.currentTarget.value);
-            }}
-            onClick={() => {
-              combobox.openDropdown();
-              setSearch("");
-            }}
-            onFocus={() => {
-              combobox.openDropdown();
-              setSearch("");
-            }}
-            onBlur={() => {
-              combobox.closeDropdown();
-              // Restore display to whatever the form currently holds (in case the user typed but didn't select).
-              const committed = formPath
-                .split(".")
-                .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-                ColourOption | undefined;
-
-              // const committed = form.getValues()[formPath.[0]][] as ColourOption | undefined;
-              setSearch(committed?.name ?? "");
-            }}
-            placeholder="Search value"
-            rightSectionPointerEvents="none"
-            leftSection={
-              <Box
-                style={{
-                  width: "1rem",
-                  height: "1rem",
-                  borderRadius: "4px",
-                  backgroundColor: (
-                    formPath
-                      .split(".")
-                      .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-                      ColourOption | undefined
-                  )?.hex,
-
-                  border:
-                    (
-                      formPath
-                        .split(".")
-                        .reduce((cur: any, key) => (cur ? cur[key] : undefined), form.getValues() as any) as
-                        ColourOption | undefined
-                    )?.hex === "#ffffff"
-                      ? "2px solid light-dark(black, transparent)"
-                      : "",
-                }}
-              />
-            }
-          />
-          <Button
-            size="xs"
-            variant="transparent"
-            color="gray"
-            onClick={() => {
-              setSearch("");
-
-              // clear the form
-              form.setFieldValue(formPath, { hex: "", name: "" });
-            }}
-          >
-            Clear
-          </Button>
-        </div>
-      </Combobox.Target>
-
-      <Combobox.Dropdown>
-        <Combobox.Options>
-          {options.length > 0 ? options : <Combobox.Empty>Nothing found</Combobox.Empty>}
-        </Combobox.Options>
-      </Combobox.Dropdown>
-    </Combobox>
-  );
-}
-
-function ColourSelectOption({ hex, name }: ColourOption) {
-  return (
-    <Group>
-      <Box
-        style={{
-          backgroundColor: hex,
-
-          border: hex === "#ffffff" ? "2px solid light-dark(black, transparent)" : "",
-          width: "20px",
-          height: "20px",
-          borderRadius: "4px",
-        }}
-      />
-      <Text>{name}</Text>
-    </Group>
-  );
-}
-
-function BooleanSelect({
-  name,
-  fieldName,
-  form,
-  required = false,
-}: {
-  defaultValue: BooleanOptions;
-  name: string;
-  fieldName: string;
-  required?: boolean;
-  form: UseFormReturnType<FormData>;
-}) {
-  return (
-    <Checkbox
-      required={required}
-      label={name}
-      key={form.key(fieldName)}
-      {...form.getInputProps(fieldName, { type: "checkbox" })}
-    />
-  );
-}
-
-function PositionSelect({
-  name,
-  fieldName,
-  form,
-  positionOptions,
-  placeholder,
-  required = false,
-}: {
-  name: string;
-  fieldName: string;
-  form: UseFormReturnType<FormData>;
-  positionOptions: PresetPositionOption[];
-  placeholder: string;
-  required?: boolean;
-}) {
-  const inputProps = form.getInputProps(fieldName);
-  const initialPosition = inputProps.defaultValue as PresetPositionOption | undefined;
-
-  return (
-    <Select
-      comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
-      searchable
-      label={name}
-      data={positionOptions.map((position) => ({
-        // Position names remain the selector identity for now.
-        value: position.name,
-        label: position.name,
-      }))}
-      placeholder={placeholder}
-      name={fieldName}
-      key={form.key(fieldName)}
-      defaultValue={initialPosition?.name ?? null}
-      onChange={(value) => {
-        const selectedPosition = positionOptions.find((position) => position.name === value);
-        form.setFieldValue(fieldName, selectedPosition ? { ...selectedPosition } : undefined);
-      }}
-      onBlur={inputProps.onBlur}
-      error={inputProps.error}
-      clearable
-      rightSection={<IconCaretDown width={"0.75rem"} />}
-      clearSectionMode="clear"
-      required={required}
-    />
-  );
-}
-
-function SliderPresetInput({
-  name,
-  fieldName,
-  form,
-  marks,
-  required = false,
-}: {
-  name: string;
-  fieldName: string;
-  form: UseFormReturnType<FormData>;
-  marks: number[];
-  required?: boolean;
-}) {
-  // validation: if no marks, return nothing
-  if (!marks || marks.length === 0) {
-    return (
-      <Text c="dimmed" size="sm">
-        {" "}
-        No values available for selection{" "}
-      </Text>
-    );
-  }
-  return (
-    <Input.Wrapper label={name} required={required}>
-      <Slider
-        key={form.key(fieldName)}
-        {...form.getInputProps(fieldName)}
-        mb="md"
-        restrictToMarks
-        marks={marks.map((mark) => ({ value: mark, label: mark.toString() }))}
-      />
-    </Input.Wrapper>
-  );
-}
 
 // re-render if cue.updatedAt is different OR isCueSelected is false
 export const CueCard = React.memo(CueCardInternal);

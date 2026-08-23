@@ -14,7 +14,7 @@ interface RichWordProps {
     bump: number;
   };
   isSelected?: boolean;
-  inputMode: InputMode;
+  inputMode: InputMode | "disabled";
   bumpNameMap?: Record<string, string>;
 }
 

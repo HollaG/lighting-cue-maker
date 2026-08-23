@@ -70,7 +70,7 @@ Do not add the type to QLC mapping unless its mapping representation and key for
 Only when requested:
 
 - Add the configuration choice and handler under `src/components/FixtureGroup/Attribute/AddAttributeCard`.
-- Add the cue input to `src/components/Siding/CueCard/CueCard.tsx`.
+- Add the cue input to `src/components/Cues/CueCard/CueCard.tsx`.
 - Keep `CueCardDemo.tsx` aligned when demo support is requested.
 - For object-valued single selection, let the control use a string identifier internally and save the complete selected object in `ValueAssignment`.
 
@@ -99,4 +99,3 @@ git diff --check
 ```
 
 Report unrelated existing warnings separately; do not fix them outside the requested scope.
-

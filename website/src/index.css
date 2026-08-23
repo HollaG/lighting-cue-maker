@@ -26,4 +26,14 @@ body {
 
 :root {
   --dark-yellow: var(--mantine-color-yellow-9);
+  --not-dark-yellow: var(--mantine-color-yellow-6);
+
+  /* --cue-color--light: var(--mantine-color-yellow-3);
+  --cue-color--light-selected: yellow; */
+
+  --cue-color--light: yellow;
+  --cue-color--light-selected: var(--mantine-color-lime-5);
+  --cue-color--dark: var(--dark-yellow);
+  --cue-color--dark-selected: var(--mantine-color-lime-9);
+
 }

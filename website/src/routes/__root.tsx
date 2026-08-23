@@ -24,7 +24,8 @@ function RootComponent() {
       {/* <div>Hello "__root"!</div> */}
 
       <QueryClientProvider client={client}>
-        <Box pt="xl" pb={"48rem"}>
+        {/* <Box pt="xl" pb={"48rem"}> */}
+        <Box style={{ height: "stretch" }}>
           <Notifications />
           {/* <Box className={classes.controlBar}>
             <Button variant="light">Night mode</Button>

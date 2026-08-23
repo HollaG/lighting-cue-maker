@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { Group, Flex, Stack } from "@mantine/core";
-import { useAppStore } from "../../store/appStore";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useGetItem } from "../../query/useGetItem";
 import { useGetEvent } from "../../query/useGetEvent";
@@ -14,17 +13,36 @@ import { insertBumpInRichContent, removeBumpFromRawLyrics } from "../../utils/bu
 import { useDeleteBump } from "../../query/useDeleteBump";
 import { insertTimingMarkerInRichContent, removeTimingMarkerFromContent } from "../../utils/timingUtils";
 import type { IndicatorTimingMode } from "../../store/slices/timingSlice";
+import type { InputMode } from "../../store/slices/lyricsSlice";
+import type { BumpConfiguration } from "../../types/types";
 
-const RichContentInternal = ({ itemId }: { itemId: string }) => {
-  const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
-  const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
-  const content = useAppStore((s) => s.content);
-  const code = useAppStore((s) => s.code);
-  const inputMode = useAppStore((s) => s.inputMode);
-  const showCues = useAppStore((s) => s.showCues);
+interface RichContentInternalProps {
+  itemId: string;
+  setCurrentlySelectedCueId: (cueId: string | undefined) => void;
+  currentlySelectedCueId: string | undefined;
+  content: string[][];
+  eventId: string;
+  inputMode: InputMode | "disabled"; // for RUN mode
+  showCues: boolean;
+  instantAddBumpMode: BumpConfiguration | null;
+  indicatorNumber: number;
+  inputTimingMode: IndicatorTimingMode;
+}
 
+const RichContentInternal = ({
+  itemId,
+  setCurrentlySelectedCueId,
+  currentlySelectedCueId,
+  content,
+  eventId,
+  inputMode,
+  // showCues,
+  instantAddBumpMode,
+  indicatorNumber,
+  inputTimingMode,
+}: RichContentInternalProps) => {
   const { item } = useGetItem({ itemId });
-  const { event } = useGetEvent({ eventId: code });
+  const { event } = useGetEvent({ eventId });
   const { mutateAsync: createCue } = useCreateCue();
   const { mutateAsync: createBump } = useCreateBump();
   const { mutateAsync: deleteBump } = useDeleteBump();
@@ -44,7 +62,6 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
   }, [item?.bumps, event?.bumpConfigurations]);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!showCues) return;
     if (!item) return;
     const target = (e.target as HTMLElement).closest<HTMLElement>("[data-action]");
     if (!target) return;
@@ -54,17 +71,20 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
     const wordIndex = Number(target.dataset.wordIndex);
     const isSpace = target.dataset.isSpace === "true";
 
-    const {
-      inputMode,
-      instantAddBumpMode,
-      indicatorNumber,
-      inputTimingMode: indicatorTimingMode,
-    } = useAppStore.getState();
+    if (inputMode === "disabled") {
+      // only enable selection of cues
+      if (action === "select-cue") {
+        const cueId = target.dataset.cueId;
+        if (cueId) {
+          setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
+        }
+      }
+    }
 
     if (action === "select-cue") {
       // ignore if not in Cue mode
       if (inputMode === "timing") {
-        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, indicatorTimingMode);
+        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, inputTimingMode);
         return;
       }
       if (inputMode !== "cue") return;
@@ -76,7 +96,7 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
     } else if (action === "select-bump") {
       // ignore if not in bump mode
       if (inputMode === "timing") {
-        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, indicatorTimingMode);
+        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, inputTimingMode);
         return;
       }
 
@@ -107,8 +127,7 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
           .catch(console.error);
       }
     } else if (action === "select-timing") {
-      const { inputTimingMode: indicatorTimingMode } = useAppStore.getState();
-      const updatedContent = removeTimingMarkerFromContent(content, lineIndex, wordIndex, indicatorTimingMode);
+      const updatedContent = removeTimingMarkerFromContent(content, lineIndex, wordIndex, inputTimingMode);
 
       updateItem({
         itemId: item.id,
@@ -160,7 +179,7 @@ const RichContentInternal = ({ itemId }: { itemId: string }) => {
           .catch(console.error);
       } else if (inputMode === "timing") {
         // main beats are superscripts, subbeats are subscripts
-        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, indicatorTimingMode);
+        toggleTiming(lineIndex, wordIndex, isSpace, indicatorNumber, inputTimingMode);
       }
     }
   };

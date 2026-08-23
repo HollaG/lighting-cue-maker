@@ -53,8 +53,9 @@ export const StagePreview2D = ({
   fixtures: Fixture[];
   fixtureGroups: FixtureGroupConfiguration[];
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { ref: containerRef, width: containerWidth, height: containerHeight } = useElementSize<HTMLDivElement>();
   const stageRef = useRef<Konva.Stage | null>(null);
+  const hasSavedInitialViewport = useRef(false);
   const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
   const { mutate: upsertFixture } = useUpsertFixture();
 
@@ -115,6 +116,28 @@ export const StagePreview2D = ({
     debouncedSave(stageElements);
   }, [stageElements, debouncedSave]);
 
+  /** Save the current stage position, scale, and measured size as the default viewport. */
+  const onSaveViewport = useCallback(() => {
+    const width = stageRef.current?.width() || 0;
+    const height = stageRef.current?.height() || 0;
+
+    const x = stageRef.current?.x() || 0;
+    const y = stageRef.current?.y() || 0;
+    const scale = stageRef.current?.scaleX() || 1;
+
+    upsertVisualiser({
+      id: visualiser.id,
+      eventId,
+      defaultViewport: {
+        x,
+        y,
+        scale,
+        width,
+        height,
+      },
+    }).catch(console.error);
+  }, [eventId, upsertVisualiser, visualiser.id]);
+
   /** Special: Always configure the default viewport if it doesn't exist.
    * The required values are FE-only, so it cannot be generated on the BE.
    *
@@ -124,14 +147,16 @@ export const StagePreview2D = ({
    */
   useEffect(() => {
     if (visualiser.defaultViewport) return; // do not configure if it already exists
+    if (hasSavedInitialViewport.current || containerWidth === 0 || containerHeight === 0) return;
     // defaultVIewport can never be set to null after configured.
 
     // wait for the stage to be rendered
     if (!stageRef.current) return;
 
     // save
+    hasSavedInitialViewport.current = true;
     onSaveViewport();
-  }, [visualiser.defaultViewport, stageRef]);
+  }, [containerHeight, containerWidth, onSaveViewport, visualiser.defaultViewport]);
 
   /**
    * On first load, set the stage to the default viewport, if present.
@@ -141,13 +166,10 @@ export const StagePreview2D = ({
    *  only a truthy value of `visualiser` results in this component being rendered.
    */
   useEffect(() => {
-    if (!stageRef.current || !containerRef.current) return;
-
-    if (!visualiser.defaultViewport) return;
+    if (!stageRef.current || !visualiser.defaultViewport || containerWidth === 0 || containerHeight === 0) return;
 
     // Compare the current width and the saved width (saved width of the admin) to get a scale factor
-    const currentWidth = containerRef.current.offsetWidth;
-    const screenScaleFactor = currentWidth / visualiser.defaultViewport.width;
+    const screenScaleFactor = containerWidth / visualiser.defaultViewport.width;
 
     stageRef.current.position({
       x: visualiser.defaultViewport.x * screenScaleFactor,
@@ -157,7 +179,7 @@ export const StagePreview2D = ({
       x: visualiser.defaultViewport.scale * screenScaleFactor,
       y: visualiser.defaultViewport.scale * screenScaleFactor,
     });
-  }, [stageRef.current, containerRef.current]);
+  }, [containerHeight, containerWidth, visualiser.defaultViewport]);
 
   // Controlled form component: Select new element type to add
   const [_, setSelectedElementType] = useState<VisualiserTypes | null>(null);
@@ -278,32 +300,6 @@ export const StagePreview2D = ({
   const lines = stageElements.filter((el) => el.type === "line");
   const texts = stageElements.filter((el) => el.type === "text");
 
-  // Listen to resize events and update the scaling of the stage
-
-  /**
-   * Save the current position and scale
-   */
-  const onSaveViewport = () => {
-    const width = stageRef.current?.width() || 0;
-    const height = stageRef.current?.height() || 0;
-
-    const x = stageRef.current?.x() || 0;
-    const y = stageRef.current?.y() || 0;
-    const scale = stageRef.current?.scaleX() || 1;
-
-    upsertVisualiser({
-      id: visualiser.id,
-      eventId,
-      defaultViewport: {
-        x,
-        y,
-        scale,
-        width,
-        height,
-      },
-    }).catch(console.error);
-  };
-
   const onResetViewport = () => {
     if (!stageRef.current) return;
 
@@ -382,16 +378,16 @@ export const StagePreview2D = ({
               id="preview-viewer"
               className={classes["preview-viewer"]}
               ref={containerRef}
-              style={{ position: "relative" }}
+              style={{ position: "relative", width: "100%", height: "100%" }}
             >
               {/* Load the container ref so we can set the widths appropriately */}
-              {containerRef.current ? (
+              {containerWidth > 0 && containerHeight > 0 ? (
                 <Stage
                   draggable
                   onWheel={handleWheel}
                   ref={stageRef}
-                  width={containerRef.current?.offsetWidth || window.innerWidth}
-                  height={containerRef.current?.offsetHeight || window.innerHeight}
+                  width={containerWidth}
+                  height={containerHeight}
                   onMouseDown={checkDeselect}
                   onTouchStart={checkDeselect}
                 >
@@ -592,7 +588,6 @@ export const StaticStagePreview2D = ({
   eventId: string;
   visualiser: Visualiser;
   fixtures: Fixture[];
-  fixtureGroups: FixtureGroupConfiguration[];
   fixtureGroupsAssignment: FixtureGroupsAssignment;
   controls?: React.ReactNode;
 
@@ -630,7 +625,7 @@ export const StaticStagePreview2D = ({
       x: visualiser.defaultViewport.scale * screenScaleFactor,
       y: visualiser.defaultViewport.scale * screenScaleFactor,
     });
-  }, [containerWidth, visualiser.defaultViewport]);
+  }, [containerWidth, containerHeight, visualiser.defaultViewport]);
 
   const stageElements = visualiser.objects2D;
   const rects = stageElements.filter((el) => el.type === "rectangle");
@@ -676,7 +671,7 @@ export const StaticStagePreview2D = ({
       {/* Height constrained to viewport minus 128px => width constrained to viewport height - 128/4*3 */}
       <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
         <Group align="start" style={{ flexWrap: "nowrap" }}>
-          <Box style={{ flex: 1 }}>
+          <Box style={{ flex: 1, minWidth: 0 }}>
             <AspectRatio ratio={4 / 3}>
               <CustomCoverLoader isLoading={isLoading}>
                 <MantineProvider
@@ -855,10 +850,12 @@ export const StaticStagePreview2D = ({
             </AspectRatio>
           </Box>
 
-          <Box className={classes["preview-controls"]}>
-            {/* <VisualiserControls stageElements={stageElements} fixtureGroups={fixtureGroups} stageRef={stageRef} /> */}
-            {controls}
-          </Box>
+          {controls && (
+            <Box className={classes["preview-controls"]}>
+              {/* <VisualiserControls stageElements={stageElements} fixtureGroups={fixtureGroups} stageRef={stageRef} /> */}
+              {controls}
+            </Box>
+          )}
         </Group>
       </Box>
 
