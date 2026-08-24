@@ -19,7 +19,7 @@ export const useGetEvent = ({ eventId }: { eventId: string }) => {
     event,
     isValidEvent,
     isError: query.isError,
-    isLoading: query.isLoading,
+    isEventLoading: query.isLoading,
     isFetching: query.isFetching,
     error: query.error,
     fetcher: query.refetch,

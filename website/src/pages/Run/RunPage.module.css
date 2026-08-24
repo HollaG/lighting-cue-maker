@@ -1,21 +1,55 @@
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 9.33fr) minmax(0, 2.67fr);
-  grid-template-rows: 3.5fr 3.5fr 2fr;
 
-  grid-template-areas:
-    "lyrics visualiser settings"
-    "lyrics visualiser settings"
-    "lyrics controls preview";
+
 
   width: 100%;
   height: 100%;
+
+  &.priority-visualiser {
+    grid-template-columns: minmax(0, 7.33fr) minmax(0, 6fr) minmax(0, 2.67fr);
+    grid-template-rows: 2.0025fr 3.495fr 3.5025fr;
+    /* grid-template-columns: minmax(0, 6fr) minmax(0, 7.33fr) minmax(0, 2.67fr);
+    grid-template-rows: 2.0025fr 6.9975fr; */
+
+    grid-template-areas:
+      "visualiser lyrics preview"
+      "visualiser lyrics settings"
+      "controls  lyrics settings";
+
+  }
+
+  /* &.priority-lyrics {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr) minmax(0, 4fr) minmax(0, 2fr);
+    grid-template-rows: 3fr 6fr;
+
+    grid-template-areas:
+      "lyrics visualiser preview settings"
+      "lyrics controls controls settings";
+  } */
+
+  &.priority-lyrics {
+    grid-template-columns: minmax(0, 5.33fr) minmax(0, 7.67fr) minmax(0, 3fr);
+    grid-template-rows: 4fr 0.5fr 0.5fr 4fr;
+
+    grid-template-areas:
+      "visualiser lyrics settings"
+      "visualiser-comments lyrics settings"
+      "preview-comments lyrics settings"
+      "preview lyrics settings";
+
+
+
+  }
+
 }
 
 .lyrics {
   grid-area: lyrics;
 
   overflow-y: scroll;
+
+  position: relative;
 
   padding: 1rem;
   scrollbar-width: none;
@@ -32,6 +66,8 @@
 
 .visualiser {
   grid-area: visualiser;
+
+  position: relative
 }
 
 .settings {
@@ -60,7 +96,6 @@
   flex-direction: column;
   gap: 2rem;
   min-width: 0;
-  overflow: hidden;
   align-items: center;
   /* justify-content: center; */
 
@@ -73,4 +108,20 @@
 
 .preview {
   grid-area: preview;
+
+  position: relative;
+}
+
+.preview-comments {
+  grid-area: preview-comments;
+
+  padding: 0.5rem;
+
+}
+
+.visualiser-comments {
+  grid-area: visualiser-comments;
+
+  padding: 0.5rem;
+
 }

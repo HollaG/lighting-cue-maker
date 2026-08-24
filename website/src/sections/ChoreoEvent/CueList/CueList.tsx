@@ -50,9 +50,8 @@ export const CueList = memo(
     return (
       <Stack>
         <Group>
-          <Title order={3} flex={1}>
-            Cues
-          </Title>
+          <Title order={3}>Cues</Title>
+          {isCuesLoading && <Loader type="bars" size="xs" />}
           <Flex flex={1} />
           <ViewModeSelect viewMode={globalViewMode} setViewMode={setGlobalViewMode} />
 
@@ -64,6 +63,73 @@ export const CueList = memo(
             <IconChevronRight style={{ width: "1rem" }} />
           </ActionIcon>
         </Group>
+        {isCuesLoading && (
+          <Stack>
+            <CustomCoverLoader isLoading>
+              <CueCard
+                key="loading"
+                cue={{
+                  assignments: {},
+                  id: "loading",
+                  comments: "",
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  deletedAt: new Date(),
+                }}
+                cueNumber={0}
+                isCueSelected={false}
+                fixtureGroups={event.fixtureGroups}
+                setOffset={() => {}}
+                visualiser={visualiser}
+                fixtures={fixtures}
+                eventId={event.id}
+                globalViewMode={globalViewMode}
+              />
+            </CustomCoverLoader>
+            <CustomCoverLoader isLoading>
+              <CueCard
+                key="loading"
+                cue={{
+                  assignments: {},
+                  id: "loading",
+                  comments: "",
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  deletedAt: new Date(),
+                }}
+                cueNumber={0}
+                isCueSelected={false}
+                fixtureGroups={event.fixtureGroups}
+                setOffset={() => {}}
+                visualiser={visualiser}
+                fixtures={fixtures}
+                eventId={event.id}
+                globalViewMode={globalViewMode}
+              />
+            </CustomCoverLoader>
+            <CustomCoverLoader isLoading>
+              <CueCard
+                key="loading"
+                cue={{
+                  assignments: {},
+                  id: "loading",
+                  comments: "",
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  deletedAt: new Date(),
+                }}
+                cueNumber={0}
+                isCueSelected={false}
+                fixtureGroups={event.fixtureGroups}
+                setOffset={() => {}}
+                visualiser={visualiser}
+                fixtures={fixtures}
+                eventId={event.id}
+                globalViewMode={globalViewMode}
+              />
+            </CustomCoverLoader>
+          </Stack>
+        )}
         {showCueList && itemId && cues && cues.length > 0 && (
           <Stack
             style={{
@@ -72,48 +138,24 @@ export const CueList = memo(
               zIndex: 10,
             }}
           >
-            {isCuesLoading ? (
-              <CustomCoverLoader isLoading>
+            {cueOrder.map((cueId, index) => {
+              const cue = cues.find((c) => c.id === cueId);
+              if (!cue) return null;
+              return (
                 <CueCard
-                  key="loading"
-                  cue={{
-                    assignments: {},
-                    id: "loading",
-                    comments: "",
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    deletedAt: new Date(),
-                  }}
-                  cueNumber={0}
-                  isCueSelected={false}
-                  fixtureGroups={[]}
-                  setOffset={() => {}}
+                  key={cue.id}
+                  cue={cue}
+                  cueNumber={index + 1}
+                  isCueSelected={currentlySelectedCueId === cue.id}
+                  fixtureGroups={event.fixtureGroups}
+                  setOffset={setOffset}
                   visualiser={visualiser}
                   fixtures={fixtures}
                   eventId={event.id}
                   globalViewMode={globalViewMode}
                 />
-              </CustomCoverLoader>
-            ) : (
-              cueOrder.map((cueId, index) => {
-                const cue = cues.find((c) => c.id === cueId);
-                if (!cue) return null;
-                return (
-                  <CueCard
-                    key={cue.id}
-                    cue={cue}
-                    cueNumber={index + 1}
-                    isCueSelected={currentlySelectedCueId === cue.id}
-                    fixtureGroups={event.fixtureGroups}
-                    setOffset={setOffset}
-                    visualiser={visualiser}
-                    fixtures={fixtures}
-                    eventId={event.id}
-                    globalViewMode={globalViewMode}
-                  />
-                );
-              })
-            )}
+              );
+            })}
           </Stack>
         )}
         {isPendingRendering && (

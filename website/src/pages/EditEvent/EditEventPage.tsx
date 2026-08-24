@@ -17,11 +17,10 @@ import { notifications } from "../../utils/notifications";
 export const EditEventPage = () => {
   const { eventId } = useParams({ from: "/events/$eventId/edit/" });
   const navigate = useNavigate();
-  const { event, isLoading, isError } = useGetEvent({ eventId });
+  const { event, isEventLoading: isLoading, isError } = useGetEvent({ eventId });
 
   const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useUpdateEvent();
-  const { mutateAsync: createBumpConfiguration, isPending: isCreatingBumpConfiguration } =
-    useCreateBumpConfiguration();
+  const { mutateAsync: createBumpConfiguration, isPending: isCreatingBumpConfiguration } = useCreateBumpConfiguration();
   const isSubmitting = isUpdatingEvent || isCreatingBumpConfiguration;
 
   const initialValues = useMemo(() => (event ? eventToEventFormValues(event) : null), [event]);

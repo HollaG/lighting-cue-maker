@@ -13,6 +13,7 @@ import {
   Group,
   Image,
   Kbd,
+  Loader,
   Menu,
   Stack,
   Text,
@@ -59,7 +60,7 @@ export const EventPage = () => {
     from: "/events/$eventId/",
   });
 
-  const { event: evt } = useGetEvent({ eventId });
+  const { event: evt, isEventLoading } = useGetEvent({ eventId });
   const loadedEventId = evt?.id;
   const loadedEventName = evt?.name;
 
@@ -273,48 +274,27 @@ export const EventPage = () => {
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
-          {/* <Box>
-            <Button variant="transparent" onClick={toggleShowCues}>
-              {showCues ? "Hide " : "Show "}cues
-            </Button>
-          </Box>
-          <Button onClick={onEdit} variant="transparent" color="lime">
-            Edit event
-          </Button>
-          <Menu shadow={"sm"} withArrow position="bottom">
-            <Menu.Target>
-              <Button variant="light">Export</Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>Export options</Menu.Label>
-              <Menu.Item leftSection={<Image src={QlcLogo} width={16} height={16} />} onClick={openQlcExport}>
-                QLC+ export
-              </Menu.Item>
-              <Menu.Item leftSection={<IconFileSpreadsheet width={"1rem"} />}>.xlsx sheet (WIP)</Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-          <Button variant="transparent">Enter RUN mode</Button> */}
-          {/* <Button onClick={openQlcExport} variant="light">
-            Export
-          </Button> */}
         </Group>
 
-        <Box my="xl" ml={0}>
-          <Stack>
-            <Group gap={0}>
-              <Title>{evt?.name}</Title>
-              {/* <Button onClick={onEdit} variant="transparent" color="lime">
-                Edit event
-              </Button> */}
-            </Group>
-            <Text> {evt?.description}</Text>
-            {evt?.externalLink && (
-              <Anchor href={evt?.externalLink} target="_blank">
-                {evt.externalLink}
-              </Anchor>
-            )}
-          </Stack>
-        </Box>
+        {isEventLoading ? (
+          <Center>
+            <Loader type="bars" />
+          </Center>
+        ) : (
+          <Box my="xl" ml={0}>
+            <Stack>
+              <Group gap={0}>
+                <Title>{evt?.name}</Title>
+              </Group>
+              <Text> {evt?.description}</Text>
+              {evt?.externalLink && (
+                <Anchor href={evt?.externalLink} target="_blank">
+                  {evt.externalLink}
+                </Anchor>
+              )}
+            </Stack>
+          </Box>
+        )}
         {items.length !== 0 ? (
           <>
             {/* <Group justify="center"> */}
@@ -387,6 +367,7 @@ export const EventPage = () => {
                   <Flex flex={1}>
                     <ContentControl
                       showCues={showCues}
+                      cueFraction={cueFraction}
                       deleteExtraSpaces={deleteExtraSpaces}
                       eventId={evt?.id || ""}
                       onFinishAddingLyrics={onClickFinishAddingLyricsButton}

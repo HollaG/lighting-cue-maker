@@ -10,8 +10,10 @@ export const ContentControl = ({
   deleteExtraSpaces,
   onFinishAddingLyrics,
   showCues,
+  cueFraction,
 }: {
   showCues: boolean;
+  cueFraction: string;
   eventId: string;
   deleteExtraSpaces: () => void;
   onFinishAddingLyrics: (switchTo: InputMode) => void;
@@ -28,6 +30,12 @@ export const ContentControl = ({
   const inputMode = useAppStore((s) => s.inputMode);
 
   const [alwaysShow, setAlwaysShow] = useState(false);
+
+  const lyricsWidthPercent = ((12 - Number(cueFraction)) / 12) * 100;
+  // Keep the same 10% inset within the lyrics column that the old 55%/40% values provided at fraction 6.
+  const floatingControlInsetPercent = lyricsWidthPercent * 0.1;
+  const floatingControlRightPercent = 100 - lyricsWidthPercent + floatingControlInsetPercent;
+  const floatingControlWidthPercent = lyricsWidthPercent - floatingControlInsetPercent * 2;
 
   const scrollToElement = (elementId: string) => {
     const element = document.getElementById(elementId);
@@ -108,10 +116,10 @@ export const ContentControl = ({
           <Box
             pos="fixed"
             bottom={"32px"}
-            right={showCues ? "55%" : "64px"}
+            right={showCues ? `${floatingControlRightPercent}%` : "64px"}
             style={{
               ...styles,
-              width: showCues ? "40%" : "calc(100% - 128px)",
+              width: showCues ? `${floatingControlWidthPercent}%` : "calc(100% - 128px)",
               marginLeft: "auto",
               marginRight: "auto",
               backgroundColor: "light-dark(var(--mantine-color-white), var(--mantine-color-dark-6))",

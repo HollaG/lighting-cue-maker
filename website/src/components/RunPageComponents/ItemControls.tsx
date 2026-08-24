@@ -15,7 +15,17 @@ export const ItemControls = ({
     return item.id === currentItem.id;
   };
   return (
-    <Flex style={{ width: "100%", gap: "1rem", flexDirection: "row" }}>
+    <Flex
+      style={{
+        width: "100%",
+        gap: "1rem",
+        flexDirection: "row",
+        backgroundColor: "light-dark(var(--mantine-color-white), var(--mantine-color-dark-8))",
+        border: "1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))",
+        borderRadius: "var(--mantine-radius-md)",
+      }}
+      p="md"
+    >
       {/* <Box style={{ flexShrink: 0, flexGrow: 0, width: "125px" }}>
         <Button leftSection={<IconCaretLeft width="1rem" />} variant="subtle" color="gray">
           Previous
