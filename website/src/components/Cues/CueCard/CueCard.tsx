@@ -26,12 +26,7 @@ import { useAppStore } from "../../../store/appStore";
 import { type FixtureGroupConfiguration, type Item } from "../../../types/types";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  IconChevronUp,
-  IconExclamationCircle,
-  IconHelpCircle,
-  IconInfoCircle,
-} from "@tabler/icons-react";
+import { IconChevronUp, IconExclamationCircle, IconHelpCircle, IconInfoCircle } from "@tabler/icons-react";
 import { useForm, type FormErrors } from "@mantine/form";
 import { useDebouncedCallback, useLocalStorage } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
@@ -79,6 +74,7 @@ const CueCardInternal = ({
   const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
+  const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
 
   const { mutateAsync: updateCue } = useUpdateCue();
   const { mutateAsync: deleteCue } = useDeleteCue();
@@ -304,6 +300,9 @@ const CueCardInternal = ({
           rawLyrics: updatedRawLyrics,
         },
       });
+
+      // Remove the curentlyselectedcueid
+      setSelectedCueId(undefined);
     } catch (e) {
       console.error(e);
     }
@@ -417,11 +416,13 @@ const CueCardInternal = ({
                 {" "}
                 Cue {cueNumber}
               </Title>
-              <Tooltip label={`Cue ID: ${cue.id}`}>
-                <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
-                  {cue.id.slice(0, 4)}
-                </Text>
-              </Tooltip>
+              {showCueIdentifiers && (
+                <Tooltip label={`Cue ID: ${cue.id}`}>
+                  <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
+                    {cue.id.slice(0, 4)}
+                  </Text>
+                </Tooltip>
+              )}
               {isCueSelected ? (
                 <Button size="xs" variant="light" onClick={() => setSelectedCueId(undefined)}>
                   Reset view
@@ -534,7 +535,7 @@ const CueCardInternal = ({
                       <Button
                         data-autofocus
                         variant="transparent"
-                        color="black"
+                        // color="black"
                         onClick={() => setDeletePopoverOpen(false)}
                         size="xs"
                       >

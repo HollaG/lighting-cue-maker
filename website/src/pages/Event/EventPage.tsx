@@ -36,6 +36,8 @@ import { useUpdateItem } from "../../query/useUpdateItem";
 import {
   IconArrowLeft,
   IconEdit,
+  IconEye,
+  IconEyeClosed,
   IconFileExport,
   IconFileSpreadsheet,
   IconInfoCircle,
@@ -119,6 +121,9 @@ export const EventPage = () => {
   const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
 
   const setIndicatorNumber = useAppStore((s) => s.setIndicatorNumber);
+
+  const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
+  const toggleShowCueIdentifiers = useAppStore((s) => s.toggleShowCueIdentifiers);
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -247,6 +252,12 @@ export const EventPage = () => {
                 onClick={toggleShowCues}
               >
                 {showCues ? "Hide " : "Show "}cues panel
+              </Menu.Item>
+              <Menu.Item
+                leftSection={showCueIdentifiers ? <IconEyeClosed width="1rem" /> : <IconEye width="1rem" />}
+                onClick={toggleShowCueIdentifiers}
+              >
+                {showCueIdentifiers ? "Hide " : "Show "}cue identifiers
               </Menu.Item>
               <Menu.Item leftSection={<IconPlayerPlay width="1rem" />} onClick={onGoRunMode}>
                 Enter RUN mode
