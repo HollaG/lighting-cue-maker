@@ -19,6 +19,9 @@ export interface Cue {
 
   assignments: FixtureGroupsAssignment;
 
+  // hold the enabled group IDs, do not display groups not present in this list.
+  // enabledGroups: string[];
+
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date;

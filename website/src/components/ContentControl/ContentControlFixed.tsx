@@ -1,39 +1,25 @@
-import {
-  Group,
-  Title,
-  Button,
-  Box,
-  NumberInput,
-  Menu,
-  Select,
-  Flex,
-  Tooltip,
-  useMantineColorScheme,
-} from "@mantine/core";
+import { Group, Title, Button, Box, NumberInput, Flex, useMantineColorScheme, SegmentedControl } from "@mantine/core";
 import { useAppStore, type InputMode } from "../../store/appStore";
-import { useGetEvent } from "../../query/useGetEvent";
-import type { BumpConfiguration } from "../../types/types";
-import type { IndicatorTimingMode } from "../../store/slices/timingSlice";
 
-const getIndicatorText = (
-  inputTimingMode: IndicatorTimingMode,
-  inputMode: InputMode,
-  bumpDefault?: BumpConfiguration | null,
-) => {
-  if (inputMode === "raw") return "Edit lyrics";
-  if (inputMode === "cue") return "Configure cues";
-  if (inputMode === "bump") {
-    return `Configure bump: ${bumpDefault?.name}`;
-  }
-  if (inputMode === "timing") {
-    return `Configure ${inputTimingMode} beats`;
-  }
-};
+// const getIndicatorText = (
+//   inputTimingMode: IndicatorTimingMode,
+//   inputMode: InputMode,
+//   bumpDefault?: BumpConfiguration | null,
+// ) => {
+//   if (inputMode === "raw") return "Edit lyrics";
+//   if (inputMode === "cue") return "Configure cues";
+//   if (inputMode === "bump") {
+//     return `Configure bump: ${bumpDefault?.name}`;
+//   }
+//   if (inputMode === "timing") {
+//     return `Configure ${inputTimingMode} beats`;
+//   }
+// };
 
 export const ContentControlFixed = ({
-  eventId,
+  // eventId,
   deleteExtraSpaces,
-  onFinishAddingLyrics,
+  // onFinishAddingLyrics,
   showTitle = true,
 }: {
   eventId: string;
@@ -41,37 +27,40 @@ export const ContentControlFixed = ({
   onFinishAddingLyrics: (switchTo: InputMode) => void;
   showTitle: boolean;
 }) => {
+  // deprecated other input modes
+  // only raw and cue are supported now
+
   const inputMode = useAppStore((s) => s.inputMode);
-  const previousInputMode = useAppStore((s) => s.previousInputMode);
-  const inputTimingMode = useAppStore((s) => s.inputTimingMode);
+  // const previousInputMode = useAppStore((s) => s.previousInputMode);
+  // const inputTimingMode = useAppStore((s) => s.inputTimingMode);
   const setInputMode = useAppStore((s) => s.setInputMode);
   const timingIndicatorNumber = useAppStore((s) => s.indicatorNumber);
   const setTimingIndicatorNumber = useAppStore((s) => s.setIndicatorNumber);
-  const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
-  const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
-  const setInputTimingMode = useAppStore((s) => s.setInputTimingMode);
-  const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
-  const setCurrentlySelectedBumpId = useAppStore((s) => s.setCurrentlySelectedBumpId);
-  const { event: evt } = useGetEvent({ eventId: eventId });
+  // const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
+  // const setInstantBumpMode = useAppStore((s) => s.setInstantAddBumpMode);
+  // const setInputTimingMode = useAppStore((s) => s.setInputTimingMode);
+  // const setCurrentlySelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
+  // const setCurrentlySelectedBumpId = useAppStore((s) => s.setCurrentlySelectedBumpId);
+  // const { event: evt } = useGetEvent({ eventId: eventId });
 
-  const handleMenuItemClick = (action: () => void) => {
-    action();
-    setCurrentlySelectedCueId(undefined);
-    setCurrentlySelectedBumpId(undefined);
-    setTimeout(() => {
-      document.getElementById("focus-trap-lyrics")?.focus({ preventScroll: true });
-    }, 0);
-  };
+  // const handleMenuItemClick = (action: () => void) => {
+  //   action();
+  //   setCurrentlySelectedCueId(undefined);
+  //   setCurrentlySelectedBumpId(undefined);
+  //   setTimeout(() => {
+  //     document.getElementById("focus-trap-lyrics")?.focus({ preventScroll: true });
+  //   }, 0);
+  // };
 
-  const revert = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (inputMode === "raw") {
-      onFinishAddingLyrics(previousInputMode);
-    } else {
-      // save
-      setInputMode(previousInputMode);
-    }
-  };
+  // const revert = (e: React.MouseEvent<HTMLButtonElement>) => {
+  //   e.stopPropagation();
+  //   if (inputMode === "raw") {
+  //     onFinishAddingLyrics(previousInputMode);
+  //   } else {
+  //     // save
+  //     setInputMode(previousInputMode);
+  //   }
+  // };
 
   const { colorScheme } = useMantineColorScheme();
 
@@ -114,9 +103,8 @@ export const ContentControlFixed = ({
         <></>
       )}
 
-      <Menu shadow="md" width={"200px"} position="bottom-end">
+      {/* <Menu shadow="md" width={"200px"} position="bottom-end">
         <Menu.Target>
-          {/* <Button>Change input mode</Button> */}
           <Box style={{ width: "250px" }}>
             <Select
               comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
@@ -197,7 +185,17 @@ export const ContentControlFixed = ({
             </Menu.Sub.Dropdown>
           </Menu.Sub>
         </Menu.Dropdown>
-      </Menu>
+      </Menu> */}
+
+      <SegmentedControl
+        data={[
+          { label: "Lyric mode", value: "raw" },
+          { label: "Cue mode", value: "cue" },
+        ]}
+
+        value={inputMode}
+        onChange={(value) => setInputMode(value as InputMode)}
+      />
 
       {/* <Input.Wrapper label="Input mode" mx={0}>
                     <Select
