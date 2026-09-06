@@ -125,6 +125,7 @@ export const RunPage = () => {
     () => ({
       assignments: {},
       comments: "",
+      cueConfig: { mode: "unknown" },
       createdAt: new Date(),
       deletedAt: new Date(),
       id: "",
@@ -338,7 +339,7 @@ export const RunPage = () => {
                     </Accordion.Control>
                     <Accordion.Panel>
                       <FixtureGroupSection
-                        showFieldsetWrapper={false}
+                        showGroupInfo={false}
 
                         key={group.id}
                         group={group}

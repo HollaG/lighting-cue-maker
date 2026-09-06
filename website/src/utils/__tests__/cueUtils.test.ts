@@ -61,6 +61,7 @@ describe("cueUtils", () => {
     const cue: Cue = {
       id: "cue-id",
       comments: "Keep me",
+      cueConfig: { mode: "unknown" },
       assignments: {
         "group-1": {
           name: "Old group name",
@@ -138,6 +139,7 @@ describe("cueUtils", () => {
     const cue: Cue = {
       id: "cue-id",
       comments: "",
+      cueConfig: { mode: "unknown" },
       assignments: {
         group: {
           name: "Group",

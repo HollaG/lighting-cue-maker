@@ -63,6 +63,15 @@ export const FixtureGroupCard = ({
               key={form.key(`${fixtureGroupPath}.name`)}
               {...form.getInputProps(`${fixtureGroupPath}.name`)}
             />
+            <CustomTextInput
+              // withAsterisk
+              label={`Description`}
+              placeholder="Explain briefly what this group does."
+              name={`${fixtureGroupPath}.description`}
+              key={form.key(`${fixtureGroupPath}.description`)}
+              {...form.getInputProps(`${fixtureGroupPath}.description`)}
+              maxLength={100}
+            />
           </Box>
 
           <Flex mt="md" justify="end" style={{ flexShrink: 1 }}>

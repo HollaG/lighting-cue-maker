@@ -45,6 +45,7 @@ const createCustomCue = (fixtureGroups: FixtureGroupConfiguration[]): Cue => {
   return {
     id: "custom-cue-demo",
     comments: "",
+    cueConfig: { mode: "unknown" },
     assignments: Object.fromEntries(
       fixtureGroups.map((group) => [
         group.id,

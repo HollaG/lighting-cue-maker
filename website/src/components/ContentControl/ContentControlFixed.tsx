@@ -19,7 +19,7 @@ import { useAppStore, type InputMode } from "../../store/appStore";
 export const ContentControlFixed = ({
   // eventId,
   deleteExtraSpaces,
-  // onFinishAddingLyrics,
+  onFinishAddingLyrics,
   showTitle = true,
 }: {
   eventId: string;
@@ -194,7 +194,14 @@ export const ContentControlFixed = ({
         ]}
 
         value={inputMode}
-        onChange={(value) => setInputMode(value as InputMode)}
+        onChange={(value) => {
+          if (value === "cue") {
+            onFinishAddingLyrics("cue");
+            // onfinishaddinglyrics already sets the input mode too
+          } else {
+            setInputMode(value as InputMode);
+          }
+        }}
       />
 
       {/* <Input.Wrapper label="Input mode" mx={0}>

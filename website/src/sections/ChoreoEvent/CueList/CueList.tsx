@@ -70,6 +70,7 @@ export const CueList = memo(
                 key="loading"
                 cue={{
                   assignments: {},
+                  cueConfig: { mode: "unknown" },
                   id: "loading",
                   comments: "",
                   createdAt: new Date(),
@@ -91,6 +92,7 @@ export const CueList = memo(
                 key="loading"
                 cue={{
                   assignments: {},
+                  cueConfig: { mode: "unknown" },
                   id: "loading",
                   comments: "",
                   createdAt: new Date(),
@@ -112,6 +114,7 @@ export const CueList = memo(
                 key="loading"
                 cue={{
                   assignments: {},
+                  cueConfig: { mode: "unknown" },
                   id: "loading",
                   comments: "",
                   createdAt: new Date(),

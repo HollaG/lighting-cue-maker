@@ -65,7 +65,7 @@ export type UpsertEventAttributeReq = Omit<AttributeConfiguration, "id"> & {
   id?: string;
 };
 
-export type UpsertEventFixtureGroupReq = Pick<FixtureGroupConfiguration, "name" | "order"> & {
+export type UpsertEventFixtureGroupReq = Pick<FixtureGroupConfiguration, "name" | "description" | "order"> & {
   id?: string;
   attributes: UpsertEventAttributeReq[];
 };

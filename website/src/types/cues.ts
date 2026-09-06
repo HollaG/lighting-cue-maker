@@ -10,6 +10,13 @@ import {
   type TextOption,
 } from "./types";
 
+export type CueConfig =
+  | { mode: "unknown" }
+  | { mode: "normal"; enabledGroups: string[] }
+  | { mode: "blackout" };
+
+export type CueMode = CueConfig["mode"];
+
 /**
  * Cues indicate
  */
@@ -19,8 +26,7 @@ export interface Cue {
 
   assignments: FixtureGroupsAssignment;
 
-  // hold the enabled group IDs, do not display groups not present in this list.
-  // enabledGroups: string[];
+  cueConfig: CueConfig;
 
   createdAt: Date;
   updatedAt: Date;

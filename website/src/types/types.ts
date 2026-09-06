@@ -9,6 +9,9 @@ export type Option<T extends string> = {
 export type FixtureGroupConfiguration = {
   id: string; // stable
   name: string;
+
+  description: string; // give an overview to users what this is for
+
   attributes: AttributeConfiguration[];
   order: number;
 

@@ -1,18 +1,20 @@
 import type { Cue } from "../../types/cues";
 import { AttributeTypes, type AttributeConfiguration, type FixtureGroupConfiguration } from "../../types/types";
 
+export type CueValidationIssue = {
+  group: { id: string; name: string }; // fixture group config
+  attributes: { id: string; name: string }[]; // attribute config
+  message: string;
+
+  // notice: cue is empty
+  // warning: move-in-dark enabled (only position set)
+  // error: cue is invalid (preset intensity or colour not set)
+  type: "warning" | "error" | "notice";
+};
+
 type CueValidationResult = {
   ok: boolean;
-  issues: {
-    group: { id: string; name: string }; // fixture group config
-    attributes: { id: string; name: string }[]; // attribute config
-    message: string;
-
-    // notice: cue is empty
-    // warning: move-in-dark enabled (only position set)
-    // error: cue is invalid (preset intensity or colour not set)
-    type: "warning" | "error" | "notice";
-  }[];
+  issues: CueValidationIssue[];
 };
 type PresetAttributeType =
   typeof AttributeTypes.PRESET_INTENSITY | typeof AttributeTypes.PRESET_COLOUR | typeof AttributeTypes.PRESET_POSITION;
@@ -62,9 +64,19 @@ const hasPresetValue = (
  * 8. All absent: notice.
  */
 export const checkCueCorrectness = (cue: Cue, fixtureGroups: FixtureGroupConfiguration[]): CueValidationResult => {
+  // No issues for blackout cue
+  if (cue.cueConfig.mode === "blackout") {
+    return { ok: true, issues: [] };
+  }
+
+  // only the groups that are enabled in the cueConfig should be checked
+  const enabledGroups = fixtureGroups.filter(
+    (group) => cue.cueConfig.mode === "normal" && cue.cueConfig.enabledGroups.includes(group.id),
+  );
+
   const issues: CueValidationResult["issues"] = [];
 
-  for (const group of fixtureGroups) {
+  for (const group of enabledGroups) {
     const intensityAttributes = group.attributes.filter(
       (attribute) => attribute.type === AttributeTypes.PRESET_INTENSITY,
     );

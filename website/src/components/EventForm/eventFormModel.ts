@@ -128,6 +128,7 @@ export const createEmptyEventFormFixtureGroup = (fixtureGroupCount: number): Eve
 
   return {
     clientId,
+    description: "",
     id: undefined,
     name: "",
     attributeOrder: [],
@@ -165,6 +166,7 @@ export const eventToEventFormValues = (event: LightEventConfiguration): EventFor
     fixtureGroupOrder.push(fixtureGroupClientId);
     fixtureGroups[fixtureGroupClientId] = {
       clientId: fixtureGroupClientId,
+      description: fixtureGroup.description,
       id: fixtureGroup.id,
       name: fixtureGroup.name,
       attributeOrder,
@@ -203,6 +205,7 @@ export const eventFormValuesToCreateRequest = (values: EventFormValues): CreateE
     const fixtureGroup = values.fixtureGroups[fixtureGroupClientId];
 
     return {
+      description: fixtureGroup.description,
       name: fixtureGroup.name,
       attributes: fixtureGroup.attributeOrder.map((attributeClientId) => {
         const {
@@ -243,6 +246,7 @@ export const eventFormValuesToUpdateRequest = (values: EventFormValues): UpdateE
     return {
       ...(fixtureGroup.id ? { id: fixtureGroup.id } : {}),
       name: fixtureGroup.name,
+      description: fixtureGroup.description,
       order: fixtureGroupIndex,
       attributes: fixtureGroup.attributeOrder.map((attributeClientId, attributeIndex) => {
         const attribute = fixtureGroup.attributes[attributeClientId];

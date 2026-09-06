@@ -46,6 +46,7 @@ const createCue = ({
 }): Cue => ({
   id: "cue-id",
   comments: "",
+  cueConfig: { mode: "unknown" },
   assignments: {
     [fixtureGroup.id]: {
       name: fixtureGroup.name,
