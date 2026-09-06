@@ -109,6 +109,7 @@ export const CueContents = ({
                 index={index + 1}
                 form={form}
                 setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+                showEnableTooltip={true}
               />
             ))}
           </SimpleGrid>

@@ -18,7 +18,7 @@ interface FixtureGroupSectionProps {
   disabled?: boolean;
   readOnly?: boolean;
 
-  /** Whether to show a tooltip to enable the group first. */
+  /** Whether to show a tooltip to enable the group first. Only effective when disabled = true */
   showEnableTooltip?: boolean;
 }
 
@@ -28,7 +28,7 @@ export function FixtureGroupSection({
   form,
   showGroupInfo: showFieldsetWrapper = true,
   setIsAtLeastOneComboboxOpened,
-
+  showEnableTooltip = false,
   disabled = false,
   readOnly = false,
 }: FixtureGroupSectionProps) {
@@ -44,6 +44,7 @@ export function FixtureGroupSection({
           setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
           disabled={disabled}
           readOnly={readOnly}
+          showEnableTooltip={showEnableTooltip}
         />
       ))}
     </Stack>

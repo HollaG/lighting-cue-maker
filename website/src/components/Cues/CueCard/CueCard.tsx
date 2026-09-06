@@ -625,7 +625,7 @@ const CueCardInternal = ({
                 />
               </Stack>
 
-              {notices.length ? (
+              {cueValidationResult.issues.length ? (
                 <CueNotices
                   notices={notices}
                   warnings={warnings}

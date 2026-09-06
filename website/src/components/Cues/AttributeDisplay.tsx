@@ -1,4 +1,4 @@
-import { Input, MultiSelect, Select, Slider, Text } from "@mantine/core";
+import { Input, MultiSelect, Select, Slider, Text, Tooltip } from "@mantine/core";
 import type { UseFormReturnType } from "@mantine/form";
 import { IconCaretDown } from "@tabler/icons-react";
 import type { Cue } from "../../types/cues";
@@ -7,6 +7,7 @@ import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { BooleanSelect } from "./Selects/BooleanSelect";
 import { ColourSelect } from "./Selects/ColourSelect";
 import { PositionSelect } from "./Selects/PositionSelect";
+import type { JSX } from "react/jsx-runtime";
 
 interface AttributeDisplayProps {
   attribute: AttributeConfiguration;
@@ -16,6 +17,9 @@ interface AttributeDisplayProps {
 
   disabled?: boolean;
   readOnly?: boolean;
+
+  /** Show a tooltip asking the user to enable the group first. Only effective when disabled = true */
+  showEnableTooltip?: boolean;
   setIsAtLeastOneComboboxOpened: (value: boolean) => void;
 }
 
@@ -26,14 +30,18 @@ export function AttributeDisplay({
   groupId,
   disabled = false,
   readOnly = false,
+  showEnableTooltip = false,
+
   setIsAtLeastOneComboboxOpened,
 }: AttributeDisplayProps) {
   const { name, type, optionPossibleValues } = attribute;
   const baseFieldName = `assignments.${groupId}.assignment.${attribute.id}.value`;
 
+  let returnedComponent: JSX.Element | null = null;
+
   switch (type) {
     case AttributeTypes.TEXT:
-      return (
+      returnedComponent = (
         <CustomTextInput
           variant="default"
           label={name}
@@ -46,9 +54,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.SELECT:
-      return (
+      returnedComponent = (
         <Select
           comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
           searchable
@@ -66,9 +75,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.MULTISELECT:
-      return (
+      returnedComponent = (
         <MultiSelect
           searchable
           label={name}
@@ -82,9 +92,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.COLOUR:
-      return (
+      returnedComponent = (
         <ColourSelect
           fieldName={`${baseFieldName}.${AttributeTypes.COLOUR}`}
           form={form}
@@ -99,9 +110,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.PRESET_COLOUR:
-      return (
+      returnedComponent = (
         <ColourSelect
           fieldName={`${baseFieldName}.${AttributeTypes.PRESET_COLOUR}`}
           form={form}
@@ -118,9 +130,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.BOOLEAN:
-      return (
+      returnedComponent = (
         <BooleanSelect
           name={name}
           fieldName={`${baseFieldName}.${AttributeTypes.BOOLEAN}`}
@@ -131,9 +144,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.SLIDER_PRESETS:
-      return (
+      returnedComponent = (
         <SliderPresetInput
           name={name}
           fieldName={`${baseFieldName}.${AttributeTypes.SLIDER_PRESETS}`}
@@ -144,9 +158,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.PRESET_INTENSITY:
-      return (
+      returnedComponent = (
         <SliderPresetInput
           name={name}
           fieldName={`${baseFieldName}.${AttributeTypes.PRESET_INTENSITY}`}
@@ -157,9 +172,10 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
 
     case AttributeTypes.PRESET_POSITION:
-      return (
+      returnedComponent = (
         <PositionSelect
           name={name}
           fieldName={`${baseFieldName}.${AttributeTypes.PRESET_POSITION}`}
@@ -171,9 +187,21 @@ export function AttributeDisplay({
           readOnly={readOnly}
         />
       );
+      break;
+
+    default:
+      returnedComponent = <CustomTextInput label={attribute.name} disabled={disabled} readOnly={readOnly} />;
   }
 
-  return <CustomTextInput label={attribute.name} disabled={disabled} readOnly={readOnly} />;
+  if (showEnableTooltip && disabled) {
+    return (
+      <Tooltip label="Turn on this group first" position="top" withArrow>
+        <span style={{ display: "block" }}>{returnedComponent}</span>
+      </Tooltip>
+    );
+  }
+
+  return returnedComponent;
 }
 
 interface SliderPresetInputProps {

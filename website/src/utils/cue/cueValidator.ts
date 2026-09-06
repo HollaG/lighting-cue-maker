@@ -74,6 +74,8 @@ export const checkCueCorrectness = (cue: Cue, fixtureGroups: FixtureGroupConfigu
     (group) => cue.cueConfig.mode === "normal" && cue.cueConfig.enabledGroups.includes(group.id),
   );
 
+  console.log({ enabledGroups, cueConfig: cue.cueConfig, fixtureGroups });
+
   const issues: CueValidationResult["issues"] = [];
 
   for (const group of enabledGroups) {
@@ -144,6 +146,8 @@ export const checkCueCorrectness = (cue: Cue, fixtureGroups: FixtureGroupConfigu
       type: "error",
     });
   }
+
+  console.log({ issues });
 
   return {
     ok: !issues.some((issue) => issue.type === "error" || issue.type === "warning"),
