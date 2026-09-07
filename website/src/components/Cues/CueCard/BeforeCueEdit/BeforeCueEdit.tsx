@@ -31,6 +31,7 @@ export const BeforeCueEdit = ({
   fixtureGroups,
   onSaveCueConfig,
   onCopyCue,
+  onDeleteCue,
 }: {
   cue: Cue;
   cueConfig: CueConfig;
@@ -39,6 +40,7 @@ export const BeforeCueEdit = ({
   fixtureGroups: FixtureGroupConfiguration[];
   onSaveCueConfig: (cueConfig: CueConfig) => void;
   onCopyCue: (cueIdToCopyFrom: string, fixtureGroupIdsToCopy: string[], cueNumberToCopyFrom: number) => void;
+  onDeleteCue: () => void;
 }) => {
   // Internal state only. Only sync when "save" button pressed
   let initialCueType: CueMode = cueConfig.mode === "unknown" ? "normal" : cueConfig.mode; // default to normal if unknown
@@ -135,7 +137,7 @@ export const BeforeCueEdit = ({
 
       <Center>
         <Group>
-          <Button variant="subtle" color="red" size="sm">
+          <Button variant="subtle" color="red" size="sm" onClick={onDeleteCue}>
             Delete cue
           </Button>
 
@@ -144,7 +146,7 @@ export const BeforeCueEdit = ({
             <Menu.Target>
               <Button
                 variant="transparent"
-                size="xs"
+
                 // style={{
                 //   textDecoration: "underline dotted",
                 // }}
@@ -153,7 +155,7 @@ export const BeforeCueEdit = ({
                 Copy another cue
               </Button>
             </Menu.Target>
-            <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
+            <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
               <Menu.Search
                 value={query}
                 onChange={(event) => setQuery(event.currentTarget.value)}

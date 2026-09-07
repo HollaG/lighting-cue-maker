@@ -508,7 +508,7 @@ const CueCardInternal = ({
                       Copy another cue
                     </Button>
                   </Menu.Target>
-                  <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
+                  <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
                     <Menu.Search
                       value={query}
                       onChange={(event) => setQuery(event.currentTarget.value)}
@@ -614,6 +614,7 @@ const CueCardInternal = ({
               {/* Cue Contents */}
               <Collapse expanded={!isCollapsed}>
                 <CueContents
+                  onDeleteCue={handleDelete}
                   onCopyCue={onCopyCue}
                   cue={cue}
                   cueOrder={cueOrder}
@@ -680,6 +681,7 @@ const CueCardInternal = ({
               fixtureGroups={fixtureGroups}
               onSaveCueConfig={onSaveCueConfig}
               onCopyCue={onCopyCue}
+              onDeleteCue={handleDelete}
             />
           )}
         </CardBase>

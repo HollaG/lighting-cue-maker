@@ -49,6 +49,7 @@ export const CueContents = ({
   onSaveCueConfig,
   onCopyCue,
   cueOrder,
+  onDeleteCue,
 }: {
   cue: Cue;
   visualiser: Visualiser | null;
@@ -67,12 +68,14 @@ export const CueContents = ({
   setActiveFixtureGroupId: Dispatch<SetStateAction<string | null>>;
   onSaveCueConfig: (cueConfig: CueConfig) => void;
   onCopyCue: (cueIdToCopyFrom: string, fixtureGroupIdsToCopy: string[], cueNumberToCopyFrom: number) => void;
+  onDeleteCue: () => void;
 }) => {
   if (cue.cueConfig.mode === "unknown") {
     return (
       <BeforeCueEdit
         cue={cue}
         onCopyCue={onCopyCue}
+        onDeleteCue={onDeleteCue}
         cueOrder={cueOrder}
         cueConfig={cue.cueConfig}
         cueNumber={cueNumber}
