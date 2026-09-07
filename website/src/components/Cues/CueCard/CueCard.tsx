@@ -326,7 +326,6 @@ const CueCardInternal = ({
   };
 
   // --- Copy cue ---------
-
   const onCopyCue = (cueId: string, fixtureGroupIds: string[], cueNumberCopied: number) => {
     const activeItemId = useAppStore.getState().activeItemId;
     const cues = queryClient.getQueryData<Cue[]>(["cues", activeItemId]);
@@ -342,8 +341,33 @@ const CueCardInternal = ({
 
         // these assignments should override the current assignments in the form
         const currentAssigments = form.getValues().assignments;
+
+        // Rules:
+        // 1. If a group is copied, then if it is in enabledGroups, copy it, otherwise remove it from enabledGroups
+        // 2. If a group is not copied, do not add or remove it from this' enabledGroups
+        const cueConfig = form.getValues().cueConfig;
+        let finalEnabledGroups = cueConfig.mode === "normal" ? cueConfig.enabledGroups : [];
+
+        for (const groupId of fixtureGroupIds) {
+          // copy the state of the group.
+          // if it is enabled in the copied cue, then enable it in this cue, otherwise disable it.
+          if (cueWithoutId.cueConfig.mode === "normal" && cueWithoutId.cueConfig.enabledGroups.includes(groupId)) {
+            // enable it in this cue
+            if (!finalEnabledGroups.includes(groupId)) {
+              finalEnabledGroups.push(groupId);
+            }
+          } else {
+            // disable it in this cue
+            finalEnabledGroups = finalEnabledGroups.filter((id) => id !== groupId);
+          }
+        }
+
         form.setValues({
           ...form.getValues(),
+          cueConfig: {
+            mode: cueWithoutId.cueConfig.mode,
+            enabledGroups: cueWithoutId.cueConfig.mode === "normal" ? finalEnabledGroups : undefined,
+          },
           assignments: {
             ...currentAssigments,
             ...cueWithoutId.assignments,
@@ -382,6 +406,7 @@ const CueCardInternal = ({
   const notices = cueValidationResult.issues.filter((issue) => issue.type === "notice");
   const warnings = cueValidationResult.issues.filter((issue) => issue.type === "warning");
   const errors = cueValidationResult.issues.filter((issue) => issue.type === "error");
+  const customResults = cueValidationResult.issues.filter((issue) => issue.type === "custom");
 
   const [showNotices, setShowNotices] = useState<boolean>(false);
   const [showWarnings, setShowWarnings] = useState<boolean>(false);
@@ -589,7 +614,9 @@ const CueCardInternal = ({
               {/* Cue Contents */}
               <Collapse expanded={!isCollapsed}>
                 <CueContents
+                  onCopyCue={onCopyCue}
                   cue={cue}
+                  cueOrder={cueOrder}
                   cueNumber={cueNumber}
                   fixtureGroups={fixtureGroups}
                   viewMode={viewMode}
@@ -636,6 +663,9 @@ const CueCardInternal = ({
                   setShowNotices={setShowNotices}
                   setShowWarnings={setShowWarnings}
                   setShowErrors={setShowErrors}
+
+                  customResults={customResults}
+                  onCustomResultsClick={[() => onSaveCueConfig({ ...cue.cueConfig, mode: "blackout" })]}
                 />
               ) : (
                 <></>
@@ -643,10 +673,13 @@ const CueCardInternal = ({
             </Stack>
           ) : (
             <BeforeCueEdit
+              cue={cue}
+              cueOrder={cueOrder}
               cueConfig={cue.cueConfig}
               cueNumber={cueNumber}
               fixtureGroups={fixtureGroups}
               onSaveCueConfig={onSaveCueConfig}
+              onCopyCue={onCopyCue}
             />
           )}
         </CardBase>

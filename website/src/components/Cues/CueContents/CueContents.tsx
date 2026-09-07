@@ -18,7 +18,7 @@ import {
   Stack,
   Switch,
   Text,
-  Title,
+  Tooltip,
 } from "@mantine/core";
 import type { Cue, CueConfig } from "../../../types/cues";
 import type { FixtureGroupConfiguration } from "../../../types/types";
@@ -30,10 +30,12 @@ import { StaticStagePreview2D } from "../../Visualiser/Stage/2D/StagePreview2D";
 import type { Fixture } from "../../../types/fixtures";
 import type { Dispatch, SetStateAction } from "react";
 import { IconInfoCircle } from "@tabler/icons-react";
+import { BeforeCueEdit } from "../CueCard/BeforeCueEdit/BeforeCueEdit";
 
 export const CueContents = ({
   cue,
   visualiser,
+  cueNumber,
   fixtureGroups,
   viewMode,
   form,
@@ -45,6 +47,8 @@ export const CueContents = ({
   isDirty,
   setActiveFixtureGroupId,
   onSaveCueConfig,
+  onCopyCue,
+  cueOrder,
 }: {
   cue: Cue;
   visualiser: Visualiser | null;
@@ -56,22 +60,27 @@ export const CueContents = ({
   fixtures: Fixture[];
   activeFixtureGroupId: string | null;
   isDirty: boolean;
+  cueOrder: string[];
 
   setIsAtLeastOneComboboxOpened: (value: boolean) => void;
   onFixtureSelect: (_fixtureId: string, fixtureGroupId: string) => void;
   setActiveFixtureGroupId: Dispatch<SetStateAction<string | null>>;
   onSaveCueConfig: (cueConfig: CueConfig) => void;
+  onCopyCue: (cueIdToCopyFrom: string, fixtureGroupIdsToCopy: string[], cueNumberToCopyFrom: number) => void;
 }) => {
-  // if (cue.cueConfig.mode === "unknown") {
-  //   return (
-  //     <BeforeCueEdit
-  //       cueConfig={cue.cueConfig}
-  //       cueNumber={cueNumber}
-  //       fixtureGroups={fixtureGroups}
-  //       onSaveCueConfig={onSaveCueConfig}
-  //     />
-  //   );
-  // }
+  if (cue.cueConfig.mode === "unknown") {
+    return (
+      <BeforeCueEdit
+        cue={cue}
+        onCopyCue={onCopyCue}
+        cueOrder={cueOrder}
+        cueConfig={cue.cueConfig}
+        cueNumber={cueNumber}
+        fixtureGroups={fixtureGroups}
+        onSaveCueConfig={onSaveCueConfig}
+      />
+    );
+  }
 
   if (cue.cueConfig.mode === "blackout") {
     return (
@@ -93,6 +102,8 @@ export const CueContents = ({
   }
 
   if (cue.cueConfig.mode === "normal") {
+    const enabledGroups = cue.cueConfig.enabledGroups;
+
     if (viewMode === "Table") {
       return (
         <Switch.Group
@@ -118,6 +129,8 @@ export const CueContents = ({
     }
 
     if (viewMode === "2D View") {
+      const enabledFixtureGroups = fixtureGroups.filter((group) => enabledGroups.includes(group.id));
+      const disabledFixtureGroups = fixtureGroups.filter((group) => !enabledGroups.includes(group.id));
       return (
         <Box mb="md">
           {visualiser ? (
@@ -132,41 +145,117 @@ export const CueContents = ({
               onFixtureSelect={onFixtureSelect}
               isLoading={isDirty}
               controls={
-                <Accordion value={activeFixtureGroupId} onChange={setActiveFixtureGroupId}>
-                  {fixtureGroups.map((group, index) => (
-                    <Accordion.Item key={group.id} value={group.id}>
-                      <Accordion.Control>
-                        <Group>
-                          {group.name}
-                          <Flex flex={1} />
-                          {activeFixtureGroupId === group.id && (
-                            <Box
-                              style={{
-                                backgroundColor: "var(--mantine-color-lime-4)",
-                                width: "16px",
-                                height: "16px",
-                                borderRadius: "50%",
-                                border: "2px solid black",
-                              }}
-                              mr="md"
-                            />
-                          )}
-                        </Group>
-                      </Accordion.Control>
-                      <Accordion.Panel>
-                        <FixtureGroupSection
-                          showGroupInfo={false}
+                <Switch.Group
+                  name="cueConfig.enabledGroups"
+                  key={form.key("cueConfig.enabledGroups")}
+                  {...form.getInputProps("cueConfig.enabledGroups")}
+                >
+                  <Stack>
+                    <Stack gap={0}>
+                      <Text fw="bold">Active groups</Text>
+                      <Accordion value={activeFixtureGroupId} onChange={setActiveFixtureGroupId}>
+                        {enabledFixtureGroups.map((group, index) => (
+                          <Accordion.Item key={group.id} value={group.id}>
+                            <Accordion.Control>
+                              <Group>
+                                <Tooltip label={group.description}>
+                                  <Text>{group.name}</Text>
+                                </Tooltip>
+                                <Flex flex={1} />
+                                {activeFixtureGroupId === group.id && (
+                                  <Box
+                                    style={{
+                                      backgroundColor: "var(--mantine-color-lime-4)",
+                                      width: "16px",
+                                      height: "16px",
+                                      borderRadius: "50%",
+                                      border: "2px solid black",
+                                    }}
+                                  />
+                                )}
 
-                          key={group.id}
-                          group={group}
-                          index={index + 1}
-                          form={form}
-                          setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
-                        />
-                      </Accordion.Panel>
-                    </Accordion.Item>
-                  ))}
-                </Accordion>
+                                <Switch
+                                  styles={{
+                                    track: { cursor: "pointer" },
+                                    input: { cursor: "pointer" },
+                                  }}
+                                  value={group.id}
+                                  onLabel="ON"
+                                  offLabel="OFF"
+                                  mr="md"
+                                />
+                              </Group>
+                            </Accordion.Control>
+                            <Accordion.Panel>
+                              <FixtureGroupSection
+                                showGroupInfo={false}
+
+                                key={group.id}
+                                group={group}
+                                index={index + 1}
+                                form={form}
+                                setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+                              />
+                            </Accordion.Panel>
+                          </Accordion.Item>
+                        ))}
+                      </Accordion>
+                    </Stack>
+
+                    <Stack gap={0}>
+                      <Text fw="bold">Inactive groups</Text>
+                      <Accordion value={activeFixtureGroupId} onChange={setActiveFixtureGroupId}>
+                        {disabledFixtureGroups.map((group, index) => (
+                          <Accordion.Item key={group.id} value={group.id}>
+                            <Accordion.Control>
+                              <Group>
+                                <Tooltip label={group.description}>
+                                  <Text>{group.name}</Text>
+                                </Tooltip>
+                                <Flex flex={1} />
+
+                                {activeFixtureGroupId === group.id && (
+                                  <Box
+                                    style={{
+                                      backgroundColor: "var(--mantine-color-lime-4)",
+                                      width: "16px",
+                                      height: "16px",
+                                      borderRadius: "50%",
+                                      border: "2px solid black",
+                                    }}
+                                  />
+                                )}
+                                <Switch
+                                  styles={{
+                                    track: { cursor: "pointer" },
+                                    input: { cursor: "pointer" },
+                                  }}
+                                  value={group.id}
+                                  onLabel="ON"
+                                  offLabel="OFF"
+                                  mr="md"
+                                />
+                              </Group>
+                            </Accordion.Control>
+                            <Accordion.Panel>
+                              <FixtureGroupSection
+                                disabled={true}
+                                showEnableTooltip
+                                showGroupInfo={false}
+
+                                key={group.id}
+                                group={group}
+                                index={index + 1}
+                                form={form}
+                                setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+                              />
+                            </Accordion.Panel>
+                          </Accordion.Item>
+                        ))}
+                      </Accordion>
+                    </Stack>
+                  </Stack>
+                </Switch.Group>
               }
             />
           ) : (

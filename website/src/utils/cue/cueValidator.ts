@@ -9,7 +9,8 @@ export type CueValidationIssue = {
   // notice: cue is empty
   // warning: move-in-dark enabled (only position set)
   // error: cue is invalid (preset intensity or colour not set)
-  type: "warning" | "error" | "notice";
+  // custom: display the error message as passed, ignore everything else
+  type: "warning" | "error" | "notice" | "custom";
 };
 
 type CueValidationResult = {
@@ -74,9 +75,16 @@ export const checkCueCorrectness = (cue: Cue, fixtureGroups: FixtureGroupConfigu
     (group) => cue.cueConfig.mode === "normal" && cue.cueConfig.enabledGroups.includes(group.id),
   );
 
-  console.log({ enabledGroups, cueConfig: cue.cueConfig, fixtureGroups });
-
   const issues: CueValidationResult["issues"] = [];
+
+  if (enabledGroups.length === 0) {
+    issues.push({
+      group: { id: "", name: "" },
+      attributes: [],
+      message: "No fixture groups are enabled - change to blackout cue?",
+      type: "custom",
+    });
+  }
 
   for (const group of enabledGroups) {
     const intensityAttributes = group.attributes.filter(

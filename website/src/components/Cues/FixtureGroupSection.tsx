@@ -66,7 +66,7 @@ export function FixtureGroupSection({
     <Stack
       p="lg"
       style={{
-        borderRadius: "8px",
+        borderRadius: "6px",
         backgroundColor: disabled
           ? "transparent"
           : "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",

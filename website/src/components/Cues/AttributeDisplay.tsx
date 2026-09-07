@@ -102,7 +102,7 @@ export function AttributeDisplay({
           name={name}
           colourOptions={optionPossibleValues[AttributeTypes.COLOUR] || []}
           defaultValue={
-            form.getInitialValues().assignments?.[groupId]?.assignment?.[attribute.id]?.value[AttributeTypes.COLOUR]
+            form.getValues().assignments?.[groupId]?.assignment?.[attribute.id]?.value[AttributeTypes.COLOUR]
           }
           setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
           required={attribute.metadata.required}
@@ -120,9 +120,7 @@ export function AttributeDisplay({
           name={name}
           colourOptions={optionPossibleValues[AttributeTypes.PRESET_COLOUR] || []}
           defaultValue={
-            form.getInitialValues().assignments?.[groupId]?.assignment?.[attribute.id]?.value[
-              AttributeTypes.PRESET_COLOUR
-            ]
+            form.getValues().assignments?.[groupId]?.assignment?.[attribute.id]?.value[AttributeTypes.PRESET_COLOUR]
           }
           setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
           required={attribute.metadata.required}

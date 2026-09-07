@@ -1,4 +1,4 @@
-import { Alert, Box, Code, Collapse, Group, Stack, Text, Tooltip } from "@mantine/core";
+import { Alert, Box, Button, Code, Collapse, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { IconExclamationCircle, IconHelpCircle, IconInfoCircle } from "@tabler/icons-react";
 import type { CueValidationIssue } from "../../../utils/cue/cueValidator";
 
@@ -9,9 +9,13 @@ interface CueNoticesProps {
   showNotices: boolean;
   showWarnings: boolean;
   showErrors: boolean;
+
+  customResults: CueValidationIssue[];
+
   setShowNotices: (show: boolean) => void;
   setShowWarnings: (show: boolean) => void;
   setShowErrors: (show: boolean) => void;
+  onCustomResultsClick: ((...args: any[]) => void)[];
 }
 
 export const CueNotices = ({
@@ -24,8 +28,40 @@ export const CueNotices = ({
   setShowNotices,
   setShowWarnings,
   setShowErrors,
+  customResults,
+  onCustomResultsClick,
 }: CueNoticesProps) => (
   <Stack gap="xs">
+    {customResults.length > 0 && (
+      <Box key="custom">
+        <Collapse expanded={true}>
+          <Stack>
+            {customResults.map((result, index) => (
+              <Alert
+                style={{ cursor: "pointer" }}
+                icon={<IconInfoCircle />}
+                color="lime"
+                // withCloseButton
+                // closeButtonLabel="Dismiss"
+                // onClose={() => setShowNotices(false)}
+                // onClick={() => onCustomResultsClick[0]()}
+              >
+                <Group wrap="nowrap" mr="md">
+                  <Text flex={1} key={index}>
+                    {result.message}
+                  </Text>
+                  <Button size="xs" variant="outline" onClick={() => onCustomResultsClick[0]()}>
+                    {" "}
+                    Change to blackout{" "}
+                  </Button>
+                </Group>
+              </Alert>
+            ))}
+          </Stack>
+        </Collapse>
+      </Box>
+    )}
+
     {notices.length > 0 && (
       <Box key="notices">
         <Collapse expanded={showNotices}>
