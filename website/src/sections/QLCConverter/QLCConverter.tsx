@@ -16,7 +16,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { AttributeTypes, type AttributeConfiguration, type LightEventConfiguration } from "../../types/types";
 import { IconArrowRightBar, IconDownload } from "@tabler/icons-react";
 import type { QLCEventJson, QLCFunction } from "../../types/qlc";
@@ -81,6 +81,17 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
   // const {} = useFetch(`/api/v1/qlc/generate?lightEventId=${event?.id}`, false)
   const { executeRequest } = useRequest<unknown, { items: any[] }>(`/api/v1/qlc/${event?.id}/generate`, "POST");
 
+  const loadFromLocalstorage = useCallback(() => {
+    const storedValue = window.localStorage.getItem("qlc-mapping");
+    if (storedValue) {
+      try {
+        form.setValues(JSON.parse(storedValue));
+      } catch (e) {
+        console.error("Failed to parse stored value", e);
+      }
+    }
+  }, [form]);
+
   useEffect(() => {
     if (!file) return;
     file.text().then((xml) => {
@@ -118,18 +129,7 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
         loadFromLocalstorage();
       }
     });
-  }, [file]);
-
-  function loadFromLocalstorage() {
-    const storedValue = window.localStorage.getItem("qlc-mapping");
-    if (storedValue) {
-      try {
-        form.setValues(JSON.parse(storedValue));
-      } catch (e) {
-        console.error("Failed to parse stored value", e);
-      }
-    }
-  }
+  }, [file, form, loadFromLocalstorage]);
 
   async function exportPreviewToQlc() {
     if (!fileXml) {

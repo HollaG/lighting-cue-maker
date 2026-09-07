@@ -317,7 +317,7 @@ export const RunPage = () => {
           <div className={classes.settings}>
             {event && (
               <Accordion multiple defaultValue={event.fixtureGroups.map((group) => group.id) ?? []}>
-                {event.fixtureGroups.map((group, index) => (
+                {event.fixtureGroups.map((group) => (
                   <Accordion.Item key={group.id} value={group.id}>
                     <Accordion.Control>
                       <Group>
@@ -343,7 +343,6 @@ export const RunPage = () => {
 
                         key={group.id}
                         group={group}
-                        index={index + 1}
                         form={form}
                         setIsAtLeastOneComboboxOpened={() => {}}
 

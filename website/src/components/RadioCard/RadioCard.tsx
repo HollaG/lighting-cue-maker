@@ -1,4 +1,4 @@
-import { Checkbox, Group, Radio, Text } from "@mantine/core";
+import { Group, Radio, Text } from "@mantine/core";
 import classes from "./RadioCard.module.css";
 
 export const RadioCard = ({

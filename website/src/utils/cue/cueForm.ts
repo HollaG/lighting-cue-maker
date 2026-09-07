@@ -9,7 +9,7 @@ import {
 } from "../../types/types";
 import { convertUuidForDatabase, convertUuidForEmbedding } from "../convertUuid";
 
-export const CUE_MATCH_REGEX = /[\{<]cueId=(.*?)=cueId[\}>]/;
+export const CUE_MATCH_REGEX = /[{<]cueId=(.*?)=cueId[}>]/;
 export const CUE_START = "{cueId=";
 export const CUE_END = "=cueId}";
 
@@ -59,7 +59,7 @@ export const getCueOrder = (rawLyrics: string) => {
   const order: string[] = [];
   for (const line of rawLyrics.split("\n")) {
     for (const word of line.split(/[ -]/)) {
-      const match = word.match(/[\{<]cueId=(.*?)=cueId[\}>]/);
+      const match = word.match(/[{<]cueId=(.*?)=cueId[}>]/);
       if (match) order.push(convertUuidForDatabase(match[1]));
     }
   }

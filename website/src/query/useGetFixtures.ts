@@ -32,7 +32,9 @@ export const useGetFixturesByEventId = ({ event }: { event?: LightEventConfigura
   const query = useQuery({
     queryKey: ["fixtures", ...(event?.fixtureGroups.map((fg) => fg.id) || [])],
     queryFn: async () => {
-      const res = await api.get<GetFixturesRes>(`/api/v1/fixtures?eventId=${encodeURIComponent(event?.id!)}`);
+      if (!event) throw new Error("Event is required to fetch fixtures");
+
+      const res = await api.get<GetFixturesRes>(`/api/v1/fixtures?eventId=${encodeURIComponent(event.id)}`);
       return res.fixtures;
     },
 

@@ -1,4 +1,4 @@
-import { Center, Divider, Fieldset, Flex, Group, Stack, Switch, Text, Tooltip } from "@mantine/core";
+import { Divider, Flex, Group, Stack, Switch, Text, Tooltip } from "@mantine/core";
 import type { UseFormReturnType } from "@mantine/form";
 import type { Cue } from "../../types/cues";
 import type { FixtureGroupConfiguration } from "../../types/types";
@@ -7,7 +7,6 @@ import { IconInfoSquareRounded } from "@tabler/icons-react";
 
 interface FixtureGroupSectionProps {
   group: FixtureGroupConfiguration;
-  index: number;
   form: UseFormReturnType<Cue>;
 
   /** Whether to show the Fixture Group information rendered in a card, or just show the Attribute info */
@@ -24,7 +23,6 @@ interface FixtureGroupSectionProps {
 
 export function FixtureGroupSection({
   group,
-  index,
   form,
   showGroupInfo: showFieldsetWrapper = true,
   setIsAtLeastOneComboboxOpened,

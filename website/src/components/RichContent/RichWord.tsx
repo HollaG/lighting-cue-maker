@@ -38,7 +38,7 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected, inputMode, 
       // stand-alone
       if (isTagEnd) {
         // e.g. {cueId=xyz=cueId} or <cueId=xyz=cueId>
-        const rawId = word.split(/[\{<]/)[1].split(`=${idType}Id`)[0].replace(`${idType}Id=`, "");
+        const rawId = word.split(/[{<]/)[1].split(`=${idType}Id`)[0].replace(`${idType}Id=`, "");
         const id = convertUuidForDatabase(rawId);
 
         const bumpConfigurationName = idType === "bump" ? bumpNameMap?.[id] || "" : "";

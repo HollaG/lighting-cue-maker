@@ -35,7 +35,7 @@ export const CustomStepper = ({
         const isActive = index === activeIndex;
         const isCompleted = index < activeIndex;
         return (
-          <Group>
+          <Group key={step.name}>
             <Button
               size="xs"
               variant={isActive ? "outline" : isCompleted ? "light" : "transparent"}

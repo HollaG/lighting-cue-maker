@@ -25,7 +25,7 @@ import {
 import { useAppStore } from "../../store/appStore";
 import classes from "./EventPage.module.css";
 import { RichContentWrapper } from "../../components/RichContent/RichContentWrapper";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // import { CueList } from "./CueList/CueList";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItems } from "../../query/useGetItems";
@@ -134,15 +134,18 @@ export const EventPage = () => {
     const lyrics = item?.rawLyrics ?? "";
     setInternalRawLyrics(sanitize(lyrics));
     setDerivedLyrics(sanitize(lyrics));
-  }, [item?.rawLyrics, sanitize]);
+  }, [item?.rawLyrics, setDerivedLyrics]);
 
   // for the Item selection
   const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
   const [controlsRefs, setControlsRefs] = useState<Record<string, HTMLButtonElement | null>>({});
 
-  const setControlRef = (id: string) => (node: HTMLButtonElement | null) => {
-    setControlsRefs((prev) => ({ ...prev, [id]: node }));
-  };
+  const setControlRef = useCallback(
+    (id: string) => (node: HTMLButtonElement | null) => {
+      setControlsRefs((previous) => (previous[id] === node ? previous : { ...previous, [id]: node }));
+    },
+    [],
+  );
   const onClickFinishAddingLyricsButton = (switchTo: InputMode) => {
     // setRawLyrics(internalRawLyrics);
     saveUpdatedRawLyrics();
@@ -182,7 +185,7 @@ export const EventPage = () => {
         <span className={classes.controlLabel}>{item.name}</span>
       </UnstyledButton>
     ));
-  }, [items, activeItemId]);
+  }, [items, activeItemId, changeActiveItem, setControlRef]);
 
   const deleteExtraSpaces = () => {
     setInternalRawLyrics(internalRawLyrics.replaceAll("\n\n\n", "\n\n"));
@@ -192,7 +195,7 @@ export const EventPage = () => {
     if (item?.rawLyrics === "") {
       setInputMode("raw");
     }
-  }, [item?.rawLyrics]);
+  }, [item?.rawLyrics, setInputMode]);
 
   const navigate = useNavigate();
   const onEdit = () =>

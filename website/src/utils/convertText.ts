@@ -28,7 +28,7 @@ export const generateRich = (rawLyrics: string) => {
           .trim()
 
           // split by space within each line so each word is a individual item in the array
-          .split(/[\ ]+/g)
+          .split(/[ ]+/g)
           .filter((word) => !word.includes("<comment") && !word.includes("</comment>"))
 
           // Convert a "word"

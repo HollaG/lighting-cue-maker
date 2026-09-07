@@ -115,12 +115,11 @@ export const CueContents = ({
           {...form.getInputProps("cueConfig.enabledGroups")}
         >
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
-            {fixtureGroups.map((group, index) => (
+            {fixtureGroups.map((group) => (
               <FixtureGroupSection
                 disabled={cue.cueConfig.mode === "normal" && !cue.cueConfig.enabledGroups.includes(group.id)}
                 key={group.id}
                 group={group}
-                index={index + 1}
                 form={form}
                 setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
                 showEnableTooltip={true}
@@ -157,7 +156,7 @@ export const CueContents = ({
                     <Stack gap={0}>
                       <Text fw="bold">Active groups</Text>
                       <Accordion value={activeFixtureGroupId} onChange={setActiveFixtureGroupId}>
-                        {enabledFixtureGroups.map((group, index) => (
+                        {enabledFixtureGroups.map((group) => (
                           <Accordion.Item key={group.id} value={group.id}>
                             <Accordion.Control>
                               <Group>
@@ -195,7 +194,6 @@ export const CueContents = ({
 
                                 key={group.id}
                                 group={group}
-                                index={index + 1}
                                 form={form}
                                 setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
                               />
@@ -208,7 +206,7 @@ export const CueContents = ({
                     <Stack gap={0}>
                       <Text fw="bold">Inactive groups</Text>
                       <Accordion value={activeFixtureGroupId} onChange={setActiveFixtureGroupId}>
-                        {disabledFixtureGroups.map((group, index) => (
+                        {disabledFixtureGroups.map((group) => (
                           <Accordion.Item key={group.id} value={group.id}>
                             <Accordion.Control>
                               <Group>
@@ -248,7 +246,6 @@ export const CueContents = ({
 
                                 key={group.id}
                                 group={group}
-                                index={index + 1}
                                 form={form}
                                 setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
                               />

@@ -5,6 +5,8 @@ import type { Transformer as TransformerType } from "konva/lib/shapes/Transforme
 import type { Rect as RectType } from "konva/lib/shapes/Rect";
 import type { VisualiserRectangle } from "../../../types/visualiser";
 
+// This factory intentionally shares the file with its corresponding component.
+// oxlint-disable-next-line react/only-export-components
 export const createDefaultVisualiserRectangle = (id: string, x: number, y: number): VisualiserRectangle => {
   return {
     id,

@@ -128,14 +128,6 @@ const CueCardInternal = ({
     [cue, fixtureGroups],
   );
 
-  const enabledFixtureGroups = useMemo(
-    () =>
-      fixtureGroups.filter((group) =>
-        cue.cueConfig.mode === "normal" ? cue.cueConfig.enabledGroups.includes(group.id) : true,
-      ),
-    [cue.cueConfig, fixtureGroups],
-  );
-
   async function handleSave(shouldValidate = true) {
     // first, validate the form
     const validationResult = shouldValidate ? form.validate() : { hasErrors: false };
@@ -256,7 +248,7 @@ const CueCardInternal = ({
     setOffset(deltaY);
 
     // return () => setOffset(0);
-  }, [isCueSelected]);
+  }, [cue.id, isCueSelected, setOffset]);
 
   // This is required to set the z-index of the card that has the Combobox dropdown (colour select) open,
   // so that the dropdown is not hidden behind the next card.

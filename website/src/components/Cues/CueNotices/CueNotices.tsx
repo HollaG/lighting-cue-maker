@@ -38,6 +38,7 @@ export const CueNotices = ({
           <Stack>
             {customResults.map((result, index) => (
               <Alert
+                key={`${result.type}-${index}`}
                 style={{ cursor: "pointer" }}
                 icon={<IconInfoCircle />}
                 color="lime"
@@ -47,7 +48,7 @@ export const CueNotices = ({
                 // onClick={() => onCustomResultsClick[0]()}
               >
                 <Group wrap="nowrap" mr="md">
-                  <Text flex={1} key={index}>
+                  <Text flex={1}>
                     {result.message}
                   </Text>
                   <Button size="xs" variant="outline" onClick={() => onCustomResultsClick[0]()}>

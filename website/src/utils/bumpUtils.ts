@@ -1,6 +1,6 @@
 import { convertUuidForDatabase, convertUuidForEmbedding } from "./convertUuid";
 
-export const BUMP_MATCH_REGEX = /[\{<]bumpId=(.*?)=bumpId[\}>]/;
+export const BUMP_MATCH_REGEX = /[{<]bumpId=(.*?)=bumpId[}>]/;
 export const BUMP_START = "{bumpId=";
 export const BUMP_END = "=bumpId}";
 
@@ -49,7 +49,7 @@ export const getBumpOrder = (rawLyrics: string) => {
   const order: string[] = [];
   for (const line of rawLyrics.split("\n")) {
     for (const word of line.split(/[ -]/)) {
-      const match = word.match(/[\{<]bumpId=(.*?)=bumpId[\}>]/);
+      const match = word.match(/[{<]bumpId=(.*?)=bumpId[}>]/);
       if (match) order.push(convertUuidForDatabase(match[1]));
     }
   }

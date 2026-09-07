@@ -606,7 +606,7 @@ export const StaticStagePreview2D = ({
     if (stageRef.current) {
       stageRef.current.container().style.backgroundColor = "#141414";
     }
-  }, [stageRef.current]);
+  }, []);
 
   /**
    * Keep the saved viewport fitted to the measured preview width.

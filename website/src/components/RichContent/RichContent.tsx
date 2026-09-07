@@ -225,10 +225,10 @@ const RichContentInternal = ({
                 cueCount++;
                 cueNumber = cueCount;
                 if (word.endsWith("=cueId}") || word.endsWith("=cueId>")) {
-                  const rawId = word.split(/[\{<]cueId=/)[1].split(/=cueId[\}>]/)[0];
+                  const rawId = word.split(/[{<]cueId=/)[1].split(/=cueId[}>]/)[0];
                   cueId = convertUuidForDatabase(rawId);
                 } else {
-                  cueId = convertUuidForDatabase(word.match(/[\{<]cueId=(.*?)=cueId[\}>]/)?.[1] || "");
+                  cueId = convertUuidForDatabase(word.match(/[{<]cueId=(.*?)=cueId[}>]/)?.[1] || "");
                 }
               }
 

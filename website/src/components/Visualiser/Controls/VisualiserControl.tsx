@@ -47,7 +47,7 @@ const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
   const onSubmitTextChange = () => {
     if (obj.type !== "text") return;
 
-    isEditable &&
+    if (isEditable) {
       props.onUpdateElement({
         ...obj,
         props: {
@@ -55,6 +55,7 @@ const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
           text,
         },
       });
+    }
   };
   return (
     <>
@@ -154,7 +155,7 @@ const VisualiserObjectSection = ({
     if (objects.some((obj) => obj.id === selectedElementId)) {
       setStageElementAccordionValue(title);
     }
-  }, [selectedElementId, setStageElementAccordionValue]); // intentional excluded some deps
+  }, [objects, selectedElementId, setStageElementAccordionValue, title]);
 
   return (
     <Accordion.Item value={title}>
@@ -248,7 +249,7 @@ const VisualiserFixtureSection = ({
     if (fixtures.some((fixture) => fixture.id === selectedElementId)) {
       setFixtureAccordionValue(fixtureGroup.id);
     }
-  }, [selectedElementId, setFixtureAccordionValue]); // intentional excluded some deps
+  }, [fixtureGroup.id, fixtures, selectedElementId, setFixtureAccordionValue]);
 
   const getFixtureTextLabel = (fixture: Fixture, index: number) => {
     switch (fixture.type) {

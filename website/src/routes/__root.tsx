@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- TanStack route modules export route metadata with their component. */
 import * as React from "react";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

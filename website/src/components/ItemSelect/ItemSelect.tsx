@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button, Center, FloatingIndicator, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
 import type { Item } from "../../types/types";
@@ -28,11 +28,12 @@ export const ItemSelect = ({ items, eventId }: ItemSelectProps) => {
   const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
   const [controlsRefs, setControlsRefs] = useState<Record<string, HTMLButtonElement | null>>({});
 
-  const setControlRef = (id: string) => (node: HTMLButtonElement | null) => {
-    if (controlsRefs[id] !== node) {
-      setControlsRefs((prev) => ({ ...prev, [id]: node }));
-    }
-  };
+  const setControlRef = useCallback(
+    (id: string) => (node: HTMLButtonElement | null) => {
+      setControlsRefs((previous) => (previous[id] === node ? previous : { ...previous, [id]: node }));
+    },
+    [],
+  );
 
   const controls = useMemo(() => {
     return items.map((item) => (
@@ -47,7 +48,7 @@ export const ItemSelect = ({ items, eventId }: ItemSelectProps) => {
         <span className={classes.controlLabel}>{item.name}</span>
       </UnstyledButton>
     ));
-  }, [items, activeItemId, changeActiveItem]);
+  }, [items, activeItemId, changeActiveItem, setControlRef]);
 
   if (items.length !== 0) {
     return (
