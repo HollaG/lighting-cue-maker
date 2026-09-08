@@ -39,6 +39,9 @@ func updateFixtureGroupConfiguration(c *gin.Context) {
 		}
 		updates["name"] = *req.Name
 	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
 
 	if len(updates) > 0 {
 		if result := database.DB().Model(&models.FixtureGroupConfiguration{}).Where("uuid = ?", fixtureGroupId).Updates(updates); result.Error != nil {

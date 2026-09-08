@@ -9,12 +9,14 @@ import (
 
 // Request DTOs
 type CreateCueReq struct {
-	ItemId string `json:"itemId"`
+	ItemId    string         `json:"itemId"`
+	CueConfig datatypes.JSON `json:"cueConfig,omitempty"`
 }
 
 type UpdateCueReq struct {
 	Assignments *map[string]any `json:"assignments,omitempty"`
 	Comments    *string         `json:"comments,omitempty"`
+	CueConfig   datatypes.JSON  `json:"cueConfig,omitempty"`
 }
 
 // DB Model
@@ -24,6 +26,7 @@ type Cue struct {
 	ItemUuid string `json:"-" gorm:"type:uuid;not null"`
 
 	Assignments datatypes.JSON `json:"assignments" gorm:"serializer:json"`
+	CueConfig   datatypes.JSON `json:"cueConfig" gorm:"type:jsonb;not null;default:'{\"mode\":\"unknown\"}'"`
 
 	Comments string `json:"comments"`
 

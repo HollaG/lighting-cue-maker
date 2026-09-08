@@ -37,10 +37,11 @@ type UpdateLightEventReq struct {
 }
 
 type UpsertFixtureGroupConfigurationReq struct {
-	ID         *string                           `json:"id,omitempty"`
-	Name       string                            `json:"name"`
-	Attributes []UpsertAttributeConfigurationReq `json:"attributes"`
-	Order      int                               `json:"order"`
+	ID          *string                           `json:"id,omitempty"`
+	Name        string                            `json:"name"`
+	Description string                            `json:"description"`
+	Attributes  []UpsertAttributeConfigurationReq `json:"attributes"`
+	Order       int                               `json:"order"`
 }
 
 type UpsertAttributeConfigurationReq struct {
@@ -53,14 +54,16 @@ type UpsertAttributeConfigurationReq struct {
 }
 
 type CreateFixtureGroupConfigurationReq struct {
-	Name       string                            `json:"name"`
-	Attributes []CreateAttributeConfigurationReq `json:"attributes"`
-	Order      int                               `json:"order,omitempty"`
+	Name        string                            `json:"name"`
+	Description string                            `json:"description"`
+	Attributes  []CreateAttributeConfigurationReq `json:"attributes"`
+	Order       int                               `json:"order,omitempty"`
 }
 
 type UpdateFixtureGroupConfigurationReq struct {
-	Name  *string `json:"name,omitempty"`
-	Order *int    `json:"order,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Order       *int    `json:"order,omitempty"`
 }
 
 type CreateAttributeConfigurationReq struct {
@@ -105,6 +108,7 @@ type FixtureGroupConfiguration struct {
 
 	LightEventUuid string                   `json:"-" gorm:"type:uuid;not null"`
 	Name           string                   `json:"name"`
+	Description    string                   `json:"description"`
 	Attributes     []AttributeConfiguration `json:"attributes" gorm:"foreignKey:FixtureGroupConfigurationUuid;references:Uuid"`
 
 	Order int `json:"order" gorm:"default:0"`

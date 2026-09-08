@@ -107,8 +107,9 @@ func createEvent(c *gin.Context) {
 			attributes = append(attributes, attribute)
 		}
 		group := models.FixtureGroupConfiguration{
-			Name:       group.Name,
-			Attributes: attributes,
+			Name:        group.Name,
+			Description: group.Description,
+			Attributes:  attributes,
 		}
 		fixtureGroups = append(fixtureGroups, group)
 	}
@@ -393,6 +394,7 @@ func upsertEventFixtureGroups(
 			group = models.FixtureGroupConfiguration{
 				LightEventUuid: eventId,
 				Name:           groupReq.Name,
+				Description:    groupReq.Description,
 				Order:          groupReq.Order,
 			}
 			if err := tx.Create(&group).Error; err != nil {
@@ -411,10 +413,11 @@ func upsertEventFixtureGroups(
 
 			// Select includes zero values such as order 0 in the update.
 			if err := tx.Model(&group).
-				Select("Name", "Order").
+				Select("Name", "Description", "Order").
 				Updates(&models.FixtureGroupConfiguration{
-					Name:  groupReq.Name,
-					Order: groupReq.Order,
+					Name:        groupReq.Name,
+					Description: groupReq.Description,
+					Order:       groupReq.Order,
 				}).Error; err != nil {
 				return err
 			}

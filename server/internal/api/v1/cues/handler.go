@@ -51,10 +51,15 @@ func createCue(c *gin.Context) {
 		response.BadRequest(c, "Failed to parse assignments JSON", nil)
 		return
 	}
+	cueConfig := createReq.CueConfig
+	if len(cueConfig) == 0 || string(cueConfig) == "null" {
+		cueConfig = datatypes.JSON([]byte(`{"mode":"unknown"}`))
+	}
 
 	cue := models.Cue{
 		ItemUuid:    itemId,
 		Assignments: datatypes.JSON(assignmentsBytes),
+		CueConfig:   cueConfig,
 		Comments:    "",
 	}
 
@@ -98,6 +103,9 @@ func updateCue(c *gin.Context) {
 	}
 	if req.Assignments != nil {
 		updates["assignments"] = *req.Assignments
+	}
+	if len(req.CueConfig) > 0 && string(req.CueConfig) != "null" {
+		updates["cue_config"] = req.CueConfig
 	}
 
 	if len(updates) > 0 {
