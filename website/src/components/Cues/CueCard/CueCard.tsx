@@ -241,13 +241,78 @@ const CueCardInternal = ({
 
     // 2.375rem convert to px
     const pxOffset = px("3.375rem");
-    const deltaY = targetTopY - cardNaturalTopY - Number(pxOffset);
 
-    // setTranslateDistance(`${deltaY}px`);
-    // console.log("setting offset to ", deltaY);
-    setOffset(deltaY);
+    // Because offsetTop measures an element’s layout position relative to its offset parent.
+    // Scrolling changes where it appears on screen, but its layout position stays the same.
+    // Hence, we need to account for the current scroll pos of the container and subtract that as well.
+    const card = cueRef.current;
+    const container = card?.parentElement?.parentElement?.parentElement; // The scrollable cue Stack
+    const curScrollPos = container?.scrollTop || 0;
 
-    // return () => setOffset(0);
+    const deltaY = targetTopY - cardNaturalTopY - Number(pxOffset) + curScrollPos;
+
+    // setOffset(deltaY); temp cancel
+
+    // instead of setting the offset of which the whole div should move up,
+    // let this offset be the delta scroll pos of the cue list between now and desired.
+    // 1. Get the current scroll position of the container
+
+    console.log({ container });
+
+    // split logic: if deltaY is negative, then we need to "scroll down" or "move the cards up"
+    //              if deltaY is positive, then we need to "scroll up" or "move the cards down"
+
+    if (deltaY < 0) {
+      // 2. get the target scroll position
+      const targetScrollPos = curScrollPos + deltaY * -1;
+
+      console.log({ curScrollPos, targetScrollPos, deltaY });
+      // 3. scroll the container to the target scroll position
+      container?.scrollTo({
+        top: targetScrollPos,
+        behavior: "smooth",
+      });
+    } else {
+      // Need to scroll "up" or "move the cards down"
+      // Important note: it may be the case that scrolling simply doesn't work,
+      // as there is no 'offset' to scroll
+
+      // This means that we can't scroll up, so we need to insert a height element to push the whole cards down.
+
+      // the height of this element is calculated from `targetTopY`
+      // Note that first we scroll up, then move the cards down.
+      const targetScrollPos = curScrollPos + deltaY * -1;
+
+      console.log({ curScrollPos, targetScrollPos, deltaY });
+      // 3. scroll the container to the target scroll position
+      container?.scrollTo({
+        top: targetScrollPos,
+        behavior: "smooth",
+      });
+    }
+
+    // -- the below doesn't work 8/9
+
+    // scroll by offset
+    // cueRef.current.scrollTo({
+    //   top: deltaY,
+    // });
+
+    // NEW: just scroll into view
+    // cueRef.current.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+
+    // TODO: work on this!
+    // const card = cueRef.current;
+    // const container = card?.parentElement; // The scrollable cue Stack
+
+    // if (!element || !card || !container) return;
+
+    // const delta = card.getBoundingClientRect().top - element.getBoundingClientRect().top;
+
+    // container.scrollTo({
+    //   top: container.scrollTop + delta,
+    //   behavior: "smooth",
+    // });
   }, [cue.id, isCueSelected, setOffset]);
 
   // This is required to set the z-index of the card that has the Combobox dropdown (colour select) open,

@@ -372,11 +372,11 @@ export const EventPage = () => {
           </Center>
         )}
       </Container>
-      <Container fluid={showCues} size={!showCues ? "xl" : undefined}>
+      <Container fluid={showCues} size={!showCues ? "xl" : undefined} pb="12rem">
         {!!item && (
-          <Grid px="xl" mt="1.5rem" style={{ position: "relative" }}>
+          <Grid px="xl" mt="1.5rem" align="stretch" style={{ position: "relative" }}>
             <Grid.Col span={showCues ? 12 - Number(cueFraction) : 12}>
-              <Stack>
+              <Stack style={{ minHeight: "100vh", paddingBottom: "70rem" }}>
                 <Group>
                   <Flex flex={1}>
                     <ContentControl
@@ -474,17 +474,21 @@ export const EventPage = () => {
               </Stack>
             </Grid.Col>
             {showCues && evt ? (
-              <Grid.Col span={Number(cueFraction)}>
-                <CueList
-                  itemId={item.id}
-                  event={evt}
-                  showCueList={showCueList}
-                  isPendingRendering={isPendingCueListRendering}
-                  canIncreaseWidth={canIncreaseFraction}
-                  canDecreaseWidth={canDecreaseFraction}
-                  onIncreaseWidth={increaseFraction}
-                  onDecreaseWidth={decreaseFraction}
-                />
+              <Grid.Col span={Number(cueFraction)} className={classes.cueColumn}>
+                <Box className={classes.cueScrollArea}>
+                  <CueList
+                    key={item.id}
+                    itemId={item.id}
+                    rawLyrics={item.rawLyrics ?? ""}
+                    event={evt}
+                    showCueList={showCueList}
+                    isPendingRendering={isPendingCueListRendering}
+                    canIncreaseWidth={canIncreaseFraction}
+                    canDecreaseWidth={canDecreaseFraction}
+                    onIncreaseWidth={increaseFraction}
+                    onDecreaseWidth={decreaseFraction}
+                  />
+                </Box>
               </Grid.Col>
             ) : (
               <></>

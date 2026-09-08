@@ -1,0 +1,10 @@
+.cards {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Preserve card heights so excess content scrolls instead of shrinking. */
+.cards>* {
+  flex-shrink: 0;
+}
