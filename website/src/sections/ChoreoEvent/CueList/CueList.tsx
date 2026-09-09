@@ -70,9 +70,14 @@ export const CueList = memo(
         return;
       }
 
-      cueListScrollRef.current.scrollTo({ top: 5000, behavior: "instant" });
+      const container = cueListScrollRef.current;
+
+      cueListScrollRef.current.scrollTo({ top: container.clientHeight, behavior: "instant" });
       didInitialScroll.current = true;
-    }, [isCueListReady, itemId]);
+    }, [isCueListReady, itemId, cueListScrollRef.current]);
+
+    // Listen to the dimensions of the raw lyrics, because the cue list must be scrollable,
+    // so it must always be 5000px more than the raw lyrics height.
 
     return (
       <Stack h="100%" style={{ minHeight: 0 }}>
@@ -176,7 +181,7 @@ export const CueList = memo(
             {/* Hack to allow for scrolling "up" or "down" ""past"" the normal limits */}
             {/* Not sure what this does? Try removing it, add some lyrics and set ONE cue where the marker is far down the page. */}
             {/* You'll notice that the one cue doesn't move, cos it can't scroll anywhere. */}
-            <Box style={{ height: "5000px" }}> </Box>
+            <Box style={{ height: "100%" }}> </Box>
 
             {cueOrder.map((cueId, index) => {
               const cue = cues.find((c) => c.id === cueId);
@@ -199,7 +204,7 @@ export const CueList = memo(
             })}
 
             {/* Hack to allow for scrolling "up" or "down" ""past"" the normal limits */}
-            <Box style={{ height: "5000px" }}> </Box>
+            <Box style={{ height: "100%" }}> </Box>
           </Stack>
         ) : (
           <Center>

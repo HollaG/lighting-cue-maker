@@ -63,7 +63,10 @@ export const getCueOrder = (rawLyrics: string) => {
       if (match) order.push(convertUuidForDatabase(match[1]));
     }
   }
-  return order;
+
+  // In the event of a user messing with the raw lyrics and duplicating the cue id,
+  // make a unique set
+  return Array.from(new Set(order));
 };
 
 /**
