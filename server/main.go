@@ -5,6 +5,7 @@ import (
 
 	"lighting-cue-maker/server/config"
 	"lighting-cue-maker/server/internal/models"
+	"lighting-cue-maker/server/internal/realtime"
 	"lighting-cue-maker/server/internal/router"
 	"lighting-cue-maker/server/pkg/database"
 
@@ -46,6 +47,23 @@ func main() {
 
 	r := gin.Default()
 	router.Setup(r, cfg)
+
+	// WebTransport server
+	realtimeServer := realtime.NewServer(
+		cfg.WebTransportAddr,
+		cfg.TLSCertFile,
+		cfg.TLSKeyFile,
+		cfg.CORSURL,
+	)
+
+	go func() {
+		log.Printf("WebTransport server starting on %s", cfg.WebTransportAddr)
+		if err := realtimeServer.ListenAndServe(); err != nil {
+			log.Fatalf("WebTransport server failed: %v", err)
+		}
+	}()
+
+	defer realtimeServer.Close()
 
 	log.Printf("Server starting on :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

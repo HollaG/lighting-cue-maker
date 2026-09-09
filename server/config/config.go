@@ -9,6 +9,10 @@ type Config struct {
 	Port    string
 	CORSURL string
 
+	WebTransportAddr string
+	TLSCertFile      string
+	TLSKeyFile       string
+
 	// Postgres
 	DatabaseURL string
 }
@@ -42,9 +46,27 @@ func Load() *Config {
 		os.Getenv("POSTGRES_DB"),
 	)
 
+	webTransportAddr := os.Getenv("WEBTRANSPORT_ADDR")
+	if webTransportAddr == "" {
+		webTransportAddr = ":6121"
+	}
+
+	tlsCertFile := os.Getenv("TLS_CERT_FILE")
+	if tlsCertFile == "" {
+		tlsCertFile = "cert.pem"
+	}
+
+	tlsKeyFile := os.Getenv("TLS_KEY_FILE")
+	if tlsKeyFile == "" {
+		tlsKeyFile = "key.pem"
+	}
+
 	return &Config{
-		Port:        port,
-		CORSURL:     corsURL,
-		DatabaseURL: dsn,
+		Port:             port,
+		CORSURL:          corsURL,
+		WebTransportAddr: webTransportAddr,
+		TLSCertFile:      tlsCertFile,
+		TLSKeyFile:       tlsKeyFile,
+		DatabaseURL:      dsn,
 	}
 }
