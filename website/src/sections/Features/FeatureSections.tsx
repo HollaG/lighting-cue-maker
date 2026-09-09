@@ -179,6 +179,7 @@ const DEMO_FIXTURE_GROUPS: FixtureGroupConfiguration[] = [
   {
     id: "mhGroup",
     name: "Spotlight Moving Heads",
+    description: "Moving head spotlights that can pan and tilt.",
     order: 0,
     attributes: [
       {
@@ -211,6 +212,7 @@ const DEMO_FIXTURE_GROUPS: FixtureGroupConfiguration[] = [
   {
     id: "ledGroup",
     name: "LED RGB Pars",
+    description: "LED PAR lights that can change colour.",
     order: 1,
     attributes: [
       {

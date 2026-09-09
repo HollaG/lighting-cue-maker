@@ -262,6 +262,7 @@ const CueCardInternal = ({
     // split logic: if deltaY is negative, then we need to "scroll down" or "move the cards up"
     //              if deltaY is positive, then we need to "scroll up" or "move the cards down"
 
+    console.log("scrolling!!");
     if (deltaY < 0) {
       // 2. get the target scroll position
       const targetScrollPos = curScrollPos + deltaY * -1;
@@ -313,7 +314,7 @@ const CueCardInternal = ({
     //   top: container.scrollTop + delta,
     //   behavior: "smooth",
     // });
-  }, [cue.id, isCueSelected, setOffset]);
+  }, [cue.id, isCueSelected, setOffset, cueRef.current]);
 
   // This is required to set the z-index of the card that has the Combobox dropdown (colour select) open,
   // so that the dropdown is not hidden behind the next card.

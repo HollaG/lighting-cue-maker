@@ -584,6 +584,7 @@ export const StaticStagePreview2D = ({
   onFixtureSelect,
 
   isLoading,
+  isBlackout = false,
 }: {
   eventId: string;
   visualiser: Visualiser;
@@ -596,6 +597,9 @@ export const StaticStagePreview2D = ({
 
   /**  use this to see if the cue is saving, cos the cue needs to save before the visualiser updates */
   isLoading: boolean;
+
+  /** If true, then the visualiser will be blacked out, nothing will be displayed regardless of assignments.  */
+  isBlackout?: boolean;
 }) => {
   const { ref: containerRef, width: containerWidth, height: containerHeight } = useElementSize<HTMLDivElement>();
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -771,14 +775,20 @@ export const StaticStagePreview2D = ({
                                 // There are some attributes that are specific to certain fixture types, but those will be handled in the individual fixture components,
                                 // NOT passed down from here.
                                 colourAttribute={
-                                  getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
-                                    ?.value?.[AttributeTypes.PRESET_COLOUR]
+                                  isBlackout
+                                    ? undefined
+                                    : getSpecificAttributeGivenTheType(
+                                        fixture.fixtureGroupId,
+                                        AttributeTypes.PRESET_COLOUR,
+                                      )?.value?.[AttributeTypes.PRESET_COLOUR]
                                 }
                                 intensityAttribute={
-                                  getSpecificAttributeGivenTheType(
-                                    fixture.fixtureGroupId,
-                                    AttributeTypes.PRESET_INTENSITY,
-                                  )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                                  isBlackout
+                                    ? undefined
+                                    : getSpecificAttributeGivenTheType(
+                                        fixture.fixtureGroupId,
+                                        AttributeTypes.PRESET_INTENSITY,
+                                      )?.value?.[AttributeTypes.PRESET_INTENSITY]
                                 }
                               />
                             ) : fixture.type === "bar" ? (
@@ -793,14 +803,20 @@ export const StaticStagePreview2D = ({
                                 viewOnly
 
                                 colourAttribute={
-                                  getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
-                                    ?.value?.[AttributeTypes.PRESET_COLOUR]
+                                  isBlackout
+                                    ? undefined
+                                    : getSpecificAttributeGivenTheType(
+                                        fixture.fixtureGroupId,
+                                        AttributeTypes.PRESET_COLOUR,
+                                      )?.value?.[AttributeTypes.PRESET_COLOUR]
                                 }
                                 intensityAttribute={
-                                  getSpecificAttributeGivenTheType(
-                                    fixture.fixtureGroupId,
-                                    AttributeTypes.PRESET_INTENSITY,
-                                  )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                                  isBlackout
+                                    ? undefined
+                                    : getSpecificAttributeGivenTheType(
+                                        fixture.fixtureGroupId,
+                                        AttributeTypes.PRESET_INTENSITY,
+                                      )?.value?.[AttributeTypes.PRESET_INTENSITY]
                                 }
                               />
                             ) : fixture.type === "moving_head" ? (
@@ -815,24 +831,32 @@ export const StaticStagePreview2D = ({
                                 viewOnly
 
                                 colourAttribute={
-                                  getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR)
-                                    ?.value?.[AttributeTypes.PRESET_COLOUR]
+                                  isBlackout
+                                    ? undefined
+                                    : getSpecificAttributeGivenTheType(
+                                        fixture.fixtureGroupId,
+                                        AttributeTypes.PRESET_COLOUR,
+                                      )?.value?.[AttributeTypes.PRESET_COLOUR]
                                 }
                                 intensityAttribute={
-                                  getSpecificAttributeGivenTheType(
-                                    fixture.fixtureGroupId,
-                                    AttributeTypes.PRESET_INTENSITY,
-                                  )?.value?.[AttributeTypes.PRESET_INTENSITY]
+                                  isBlackout
+                                    ? undefined
+                                    : getSpecificAttributeGivenTheType(
+                                        fixture.fixtureGroupId,
+                                        AttributeTypes.PRESET_INTENSITY,
+                                      )?.value?.[AttributeTypes.PRESET_INTENSITY]
                                 }
                                 positionAttribute={
-                                  getPositionOfFixture(
-                                    fixture.id,
-                                    fixture.fixtureGroupId,
-                                    getSpecificAttributeGivenTheType(
-                                      fixture.fixtureGroupId,
-                                      AttributeTypes.PRESET_POSITION,
-                                    )?.value?.[AttributeTypes.PRESET_POSITION]?.id || "",
-                                  ) || undefined
+                                  isBlackout
+                                    ? undefined
+                                    : getPositionOfFixture(
+                                        fixture.id,
+                                        fixture.fixtureGroupId,
+                                        getSpecificAttributeGivenTheType(
+                                          fixture.fixtureGroupId,
+                                          AttributeTypes.PRESET_POSITION,
+                                        )?.value?.[AttributeTypes.PRESET_POSITION]?.id || "",
+                                      ) || undefined
                                 }
 
                                 showGuideLines={false}

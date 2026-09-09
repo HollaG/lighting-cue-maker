@@ -6,7 +6,20 @@ import { useEffect, useMemo, useState } from "react";
 import { useGetCues } from "../../query/useGetCues";
 import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
 import { useGetFixturesByEventId } from "../../query/useGetFixtures";
-import { Accordion, Box, Button, Divider, Flex, Group, Loader, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import {
+  Accordion,
+  Alert,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Group,
+  Loader,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 import { useFullscreenDocument } from "@mantine/hooks";
 
 import classes from "./RunPage.module.css";
@@ -18,7 +31,7 @@ import { RichContent } from "../../components/RichContent/RichContent";
 import { generateRich } from "../../utils/convertText";
 import { StaticStagePreview2D } from "../../components/Visualiser/Stage/2D/StagePreview2D";
 import { CustomCoverLoader } from "../../components/Loader/CustomCoverLoader";
-import { IconArrowLeft, IconMinimize } from "@tabler/icons-react";
+import { IconAlertCircle, IconArrowLeft, IconInfoCircle, IconMinimize } from "@tabler/icons-react";
 import { useForm } from "@mantine/form";
 import type { Cue } from "../../types/cues";
 import { FixtureGroupSection } from "../../components/Cues/FixtureGroupSection";
@@ -120,6 +133,13 @@ export const RunPage = () => {
   };
 
   // --- Cue information ---------
+  // only show the enabled fixture groups
+  const enabledGroupIds = currentCue?.cueConfig.mode === "normal" ? currentCue.cueConfig.enabledGroups : [];
+  const enabledFixtureGroups = useMemo(
+    () => event?.fixtureGroups.filter((group) => enabledGroupIds.includes(group.id)) ?? [],
+    [event?.fixtureGroups, enabledGroupIds],
+  );
+
   // --- Form ---------
   const initialValues: Cue = useMemo(
     () => ({
@@ -178,6 +198,14 @@ export const RunPage = () => {
   useHotkey("ArrowDown", goNext);
   useHotkey("ArrowUp", goBack);
 
+  // --- Warnings / validations when running ---------
+  const unconfiguredCues = useMemo(() => {
+    if (cues && cues.length > 0) {
+      return cues.filter((cue) => cue.cueConfig.mode === "unknown");
+    }
+    return [];
+  }, [cues]);
+
   return (
     <Flex
       style={{
@@ -192,6 +220,13 @@ export const RunPage = () => {
       {!isPageLoading ? (
         <div className={clsx(classes["grid"], classes[`priority-${displayMode}`])}>
           <div className={classes.lyrics}>
+            {unconfiguredCues.length > 0 && (
+              <Alert my="lg" color="red" title="Missing cue assignments" icon={<IconAlertCircle width="1rem" />}>
+                <Stack>
+                  <Text>There are some unconfigured cues!</Text>
+                </Stack>
+              </Alert>
+            )}
             {itemId ? (
               <Stack style={{ height: "stretch", maxHeight: "100%", width: "stretch" }} gap={"md"}>
                 <Group>
@@ -285,6 +320,7 @@ export const RunPage = () => {
               >
                 <Box>
                   <StaticStagePreview2D
+                    isBlackout={currentCue?.cueConfig.mode === "blackout"}
                     eventId={eventId}
                     visualiser={visualiser}
                     fixtures={fixtures}
@@ -316,15 +352,33 @@ export const RunPage = () => {
           </div>
           <div className={classes.settings}>
             {event && (
-              <Accordion multiple defaultValue={event.fixtureGroups.map((group) => group.id) ?? []}>
-                {event.fixtureGroups.map((group) => (
-                  <Accordion.Item key={group.id} value={group.id}>
-                    <Accordion.Control>
-                      <Group>
-                        {group.name}
-                        <Flex flex={1} />
-                        {/* {activeFixtureGroupId === group.id && ( */}
-                        {/* <Box
+              <Accordion multiple defaultValue={enabledFixtureGroups.map((group) => group.id) ?? []}>
+                {currentCue?.cueConfig.mode === "blackout" && (
+                  <Box p="md">
+                    <Alert
+                      mt="xl"
+                      py="lg"
+                      variant="light"
+                      color="gray"
+                      title="Blackout cue"
+                      icon={<IconInfoCircle width="1rem" />}
+                    >
+                      <Stack>
+                        <Text>This is a blackout cue. All fixtures will be turned off when this cue is activated.</Text>
+                      </Stack>
+                    </Alert>
+                  </Box>
+                )}
+                {currentCue?.cueConfig.mode === "normal" &&
+                  (enabledFixtureGroups.length ? (
+                    enabledFixtureGroups.map((group) => (
+                      <Accordion.Item key={group.id} value={group.id}>
+                        <Accordion.Control>
+                          <Group>
+                            {group.name}
+                            <Flex flex={1} />
+                            {/* {activeFixtureGroupId === group.id && ( */}
+                            {/* <Box
                       style={{
                         backgroundColor: "var(--mantine-color-lime-4)",
                         width: "16px",
@@ -334,24 +388,53 @@ export const RunPage = () => {
                       }}
                       mr="md"
                     /> */}
-                        {/* )} */}
-                      </Group>
-                    </Accordion.Control>
-                    <Accordion.Panel>
-                      <FixtureGroupSection
-                        showGroupInfo={false}
+                            {/* )} */}
+                          </Group>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <FixtureGroupSection
+                            showGroupInfo={false}
 
-                        key={group.id}
-                        group={group}
-                        form={form}
-                        setIsAtLeastOneComboboxOpened={() => {}}
+                            key={group.id}
+                            group={group}
+                            form={form}
+                            setIsAtLeastOneComboboxOpened={() => {}}
 
-                        // disabled={true}
-                        readOnly
-                      />
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                ))}
+                            // disabled={true}
+                            readOnly
+                          />
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    ))
+                  ) : (
+                    <Box p="md">
+                      <Alert
+                        my="lg"
+                        color="red"
+                        title="Missing cue assignments"
+                        icon={<IconAlertCircle width="1rem" />}
+                      >
+                        <Stack>
+                          <Text>
+                            This cue is unconfigured - user did not select any settings. Please confirm with them if on
+                            their intentions.
+                          </Text>
+                        </Stack>
+                      </Alert>
+                    </Box>
+                  ))}
+                {currentCue?.cueConfig.mode === "unknown" && (
+                  <Box p="md">
+                    <Alert my="lg" color="red" title="Missing cue assignments" icon={<IconAlertCircle width="1rem" />}>
+                      <Stack>
+                        <Text>
+                          This cue is unconfigured - user did not select any settings. Please confirm with them if on
+                          their intentions.
+                        </Text>
+                      </Stack>
+                    </Alert>
+                  </Box>
+                )}
               </Accordion>
             )}
           </div>
@@ -392,6 +475,7 @@ export const RunPage = () => {
               <Box>
                 <CustomCoverLoader isLoading={itemId === null} content={<div>Please select a cue!</div>}>
                   <StaticStagePreview2D
+                    isBlackout={nextCue?.cueConfig.mode === "blackout"}
                     eventId={eventId}
                     visualiser={visualiser}
                     fixtures={fixtures}

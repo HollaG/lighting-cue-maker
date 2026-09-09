@@ -1,6 +1,6 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ActionIcon, Box, Center, Flex, Group, Loader, Stack, Text, Title } from "@mantine/core";
-import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { ActionIcon, Alert, Box, Center, Flex, Group, Loader, Stack, Text, Title } from "@mantine/core";
+import { IconChevronLeft, IconChevronRight, IconInfoCircle } from "@tabler/icons-react";
 import { CueCard } from "../../../components/Cues/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
 import { useAppStore } from "../../../store/appStore";
@@ -160,7 +160,8 @@ export const CueList = memo(
             </CustomCoverLoader>
           </Stack>
         )}
-        {showCueList && itemId && cues && cues.length > 0 && (
+        {showCueList && itemId && <></>}
+        {cues && cues.length > 0 ? (
           <Stack
             ref={cueListScrollRef}
             className={classes.cards}
@@ -200,6 +201,12 @@ export const CueList = memo(
             {/* Hack to allow for scrolling "up" or "down" ""past"" the normal limits */}
             <Box style={{ height: "5000px" }}> </Box>
           </Stack>
+        ) : (
+          <Center>
+            <Alert icon={<IconInfoCircle />} variant="transparent" color="white">
+              No cues yet, add them to lyrics on the left panel.
+            </Alert>
+          </Center>
         )}
         {isPendingRendering && (
           <Center>

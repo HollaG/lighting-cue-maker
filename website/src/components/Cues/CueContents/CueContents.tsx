@@ -137,6 +137,8 @@ export const CueContents = ({
         <Box mb="md">
           {visualiser ? (
             <StaticStagePreview2D
+              // No need for this, because we will never reach this case when in blackout mode
+              // isBlackout={cue.cueConfig.mode === "blackout"}
               eventId={eventId}
               visualiser={visualiser}
               fixtures={fixtures}
