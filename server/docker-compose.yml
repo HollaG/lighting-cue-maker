@@ -37,8 +37,16 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       PORT: ${PORT}
       CORS_URL: ${CORS_URL}
+      TLS_CERT_FILE: ${TLS_CERT_FILE:-/certs/fullchain.pem}
+      TLS_KEY_FILE: ${TLS_KEY_FILE:-/certs/privkey.pem}
     ports:
       - "${PORT}:${PORT}"
+      - "6121:6121/udp"
+    volumes:
+      - type: bind
+        source: ${TLS_CERTS_HOST_DIR:-./certs}
+        target: /certs
+        read_only: true
     depends_on:
       db:
         condition: service_healthy

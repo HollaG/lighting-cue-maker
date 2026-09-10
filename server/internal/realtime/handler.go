@@ -16,7 +16,7 @@ func (s *Server) handleConnect(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("New WebTransport session established: %v with protocol %q", session.RemoteAddr(), session.SessionState().ApplicationProtocol)
 
-	if err := handleSession(session); err != nil {
+	if err := handleSession(session, s.hub); err != nil {
 		log.Printf("WebTransport session failed: %v", err)
 		_ = session.CloseWithError(1, "session failed")
 		return

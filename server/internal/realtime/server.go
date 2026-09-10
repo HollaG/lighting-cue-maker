@@ -16,6 +16,7 @@ type Server struct {
 	transport *webtransport.Server
 	certFile  string
 	keyFile   string
+	hub       *Hub
 }
 
 // Make a server instance and return a pointer to it
@@ -52,6 +53,7 @@ func NewServer(
 		transport: transport,
 		certFile:  certFile,
 		keyFile:   keyFile,
+		hub:       NewHub(),
 	}
 
 	mux.HandleFunc("/api/v1/realtime", server.handleConnect)
