@@ -4,7 +4,7 @@ import type { UpdateCueReq, UpdateCueRes } from "../types/http";
 import type { Cue } from "../types/cues";
 import { makeGetCuesQueryKey } from "./useGetCues";
 import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime";
-import { useWebTransport } from "../context/webtransport";
+import { useRealtime } from "../context/realtime";
 
 export type UpdateCueParams = {
   cueId: string;
@@ -14,7 +14,7 @@ export type UpdateCueParams = {
 
 export const useUpdateCue = () => {
   const queryClient = useQueryClient();
-  const { sendMessage } = useWebTransport();
+  const { sendMessage } = useRealtime();
 
   return useMutation({
     mutationFn: ({ cueId, requestBody }: UpdateCueParams) =>

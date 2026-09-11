@@ -1,20 +1,12 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ServerMessageType, type ServerMessageInvalidateQueryData } from "../../types/realtime";
-import { useWebTransport } from "../../context/webtransport";
+import { useRealtime } from "../../context/realtime";
 
-/**
- * This hook listens for server messages indicating that a query should be invalidated.
- * When such a message is received, it invalidates the corresponding query in the React Query cache.
- *
- * Use this hook in pages that have WebTransport query invalidation.
- * This should only be called once per page.
- *
- *
- */
+/** Listens for realtime messages that invalidate entries in the React Query cache. */
 export function useLiveQueryUpdates() {
   const queryClient = useQueryClient();
-  const { registerListener } = useWebTransport();
+  const { registerListener } = useRealtime();
 
   useEffect(() => {
     return registerListener(ServerMessageType.ServerMessageInvalidateQuery, (data) => {

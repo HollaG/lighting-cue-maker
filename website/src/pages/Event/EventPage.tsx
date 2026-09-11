@@ -54,7 +54,7 @@ import { CueList } from "../../sections/ChoreoEvent/CueList/CueList";
 import { QLCConverter } from "../../sections/QLCConverter/QLCConverter";
 
 import QlcLogo from "../../assets/qlc_logo.svg";
-import { useLiveQueryUpdates } from "../../hooks/webTransport/useLiveQueryUpdates";
+import { useLiveQueryUpdates } from "../../hooks/realtime/useLiveQueryUpdates";
 
 export const EventPage = () => {
   useLiveQueryUpdates();

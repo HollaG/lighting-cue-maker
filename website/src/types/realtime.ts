@@ -33,7 +33,7 @@ export type ServerMessageHistory = Partial<Record<ServerMessageType, unknown[]>>
 
 export type ClientMessage = {
   type: ClientMessageType;
-  data: any;
+  data: unknown;
 };
 
 export type ServerMessage = {
