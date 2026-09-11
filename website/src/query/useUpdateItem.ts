@@ -2,8 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { UpdateItemReq, UpdateItemRes } from "../types/http";
 import { sanitize } from "../utils/sanitize";
-import { ClientMessageType, useWebTransport, type ClientMessageInvalidateQueryData } from "../context/webtransport";
 import { makeGetItemQueryKey } from "./useGetItem";
+import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime";
+import { useWebTransport } from "../context/webtransport";
 
 export type UpdateItemParams = {
   itemId: string;

@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { WebTransportContext, type WebTransportContextValue, type WebTransportSession } from "./webtransport";
+import { useAppStore } from "../store/appStore";
 import {
   ClientMessageType,
-  ServerMessageType,
-  WebTransportContext,
   type ServerMessage,
   type ServerMessageHistory,
-  type WebTransportContextValue,
-  type WebTransportSession,
-} from "./webtransport";
-import { useAppStore } from "../store/appStore";
+  type ServerMessageType,
+} from "../types/realtime";
 
 const REALTIME_URL = import.meta.env.VITE_PUBLIC_WEBTRANSPORT_URL ?? "https://localhost:6121/api/v1/realtime";
 

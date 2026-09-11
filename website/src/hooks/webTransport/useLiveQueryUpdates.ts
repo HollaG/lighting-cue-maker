@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ServerMessageType, useWebTransport, type ServerMessageInvalidateQueryData } from "../../context/webtransport";
+import { ServerMessageType, type ServerMessageInvalidateQueryData } from "../../types/realtime";
+import { useWebTransport } from "../../context/webtransport";
 
 /**
  * This hook listens for server messages indicating that a query should be invalidated.
