@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { GetItemRes } from "../types/http";
 
+export const makeGetItemQueryKey = (itemId: string | null | undefined) => ["item", itemId];
+
 export const useGetItem = ({ itemId }: { itemId?: string | null }) => {
   const query = useQuery({
-    queryKey: ["item", itemId],
+    queryKey: makeGetItemQueryKey(itemId),
     queryFn: async () => {
       const res = await api.get<GetItemRes>(`/api/v1/items/${itemId}`);
 

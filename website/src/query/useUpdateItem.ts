@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { UpdateItemReq, UpdateItemRes } from "../types/http";
 import { sanitize } from "../utils/sanitize";
+import { ClientMessageType, useWebTransport, type ClientMessageInvalidateQueryData } from "../context/webtransport";
+import { makeGetItemQueryKey } from "./useGetItem";
 
 export type UpdateItemParams = {
   itemId: string;
@@ -10,6 +12,7 @@ export type UpdateItemParams = {
 
 export const useUpdateItem = () => {
   const queryClient = useQueryClient();
+  const { sendMessage } = useWebTransport();
 
   return useMutation({
     mutationFn: ({ itemId, requestBody }: UpdateItemParams) => {
@@ -21,7 +24,11 @@ export const useUpdateItem = () => {
     },
 
     onSuccess: (res, variables) => {
-      queryClient.setQueryData(["item", variables.itemId], res.item);
+      const queryKey = makeGetItemQueryKey(variables.itemId);
+      queryClient.setQueryData(queryKey, res.item);
+      void sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey,
+      } as ClientMessageInvalidateQueryData);
       // queryClient.invalidateQueries({ queryKey: ["items"] });
     },
   });

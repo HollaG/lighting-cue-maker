@@ -1,19 +1,27 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { DeleteCuesRes } from "../types/http";
+import { ClientMessageType, useWebTransport, type ClientMessageInvalidateQueryData } from "../context/webtransport";
+import { makeGetCuesQueryKey } from "./useGetCues";
 
 export type DeleteCueParams = {
   cueId: string;
+  itemId: string;
 };
 
 export const useDeleteCue = () => {
   const queryClient = useQueryClient();
+  const { sendMessage } = useWebTransport();
 
   return useMutation({
     mutationFn: ({ cueId }: DeleteCueParams) => api.delete<void, DeleteCuesRes>(`/api/v1/cues/${cueId}`),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cues"] });
+    onSuccess: (_res, variables) => {
+      const queryKey = makeGetCuesQueryKey(variables.itemId);
+      void queryClient.invalidateQueries({ queryKey });
+      void sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey,
+      } as ClientMessageInvalidateQueryData);
     },
   });
 };

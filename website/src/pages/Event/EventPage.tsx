@@ -54,8 +54,10 @@ import { CueList } from "../../sections/ChoreoEvent/CueList/CueList";
 import { QLCConverter } from "../../sections/QLCConverter/QLCConverter";
 
 import QlcLogo from "../../assets/qlc_logo.svg";
+import { useLiveQueryUpdates } from "../../hooks/webTransport/useLiveQueryUpdates";
 
 export const EventPage = () => {
+  useLiveQueryUpdates();
   // NOTE: evt is nullable!! remember to check
 
   const { eventId } = useParams({

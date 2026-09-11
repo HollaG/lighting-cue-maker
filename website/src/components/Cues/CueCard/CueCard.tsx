@@ -78,6 +78,7 @@ const CueCardInternal = ({
 
   const [isCollapsed, setIsCollapsed] = useLocalStorage({ key: `cue-${cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
+  const isApplyingRemoteValuesRef = useRef(false);
 
   // --- Form ---------
   const initialValues: FormData = useMemo(
@@ -205,6 +206,9 @@ const CueCardInternal = ({
     initialValues,
 
     onValuesChange: () => {
+      // Remote query updates must not be treated as local edits and saved back to the server.
+      if (isApplyingRemoteValuesRef.current) return;
+
       setIsDirty(true);
       debouncedSave();
     },
@@ -284,36 +288,12 @@ const CueCardInternal = ({
       // Note that first we scroll up, then move the cards down.
       const targetScrollPos = curScrollPos + deltaY * -1;
 
-      console.log({ curScrollPos, targetScrollPos, deltaY });
       // 3. scroll the container to the target scroll position
       container?.scrollTo({
         top: targetScrollPos,
         behavior: "smooth",
       });
     }
-
-    // -- the below doesn't work 8/9
-
-    // scroll by offset
-    // cueRef.current.scrollTo({
-    //   top: deltaY,
-    // });
-
-    // NEW: just scroll into view
-    // cueRef.current.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
-
-    // TODO: work on this!
-    // const card = cueRef.current;
-    // const container = card?.parentElement; // The scrollable cue Stack
-
-    // if (!element || !card || !container) return;
-
-    // const delta = card.getBoundingClientRect().top - element.getBoundingClientRect().top;
-
-    // container.scrollTo({
-    //   top: container.scrollTop + delta,
-    //   behavior: "smooth",
-    // });
   }, [cue.id, isCueSelected, setOffset, cueRef.current]);
 
   // This is required to set the z-index of the card that has the Combobox dropdown (colour select) open,
@@ -363,7 +343,7 @@ const CueCardInternal = ({
       const activeItemId = useAppStore.getState().activeItemId;
       const item = queryClient.getQueryData<Item>(["item", activeItemId]);
       if (!item) return;
-      await deleteCue({ cueId: cue.id });
+      await deleteCue({ cueId: cue.id, itemId: item.id });
       const updatedRawLyrics = removeCueFromRawLyrics(item.rawLyrics, cue.id);
 
       // update Item to remove from rawlyrics
@@ -490,6 +470,38 @@ const CueCardInternal = ({
   const onFixtureSelect = (_fixtureId: string, fixtureGroupId: string) => {
     setActiveFixtureGroupId(fixtureGroupId);
   };
+
+  // --- Realtime sync ---------
+  // Update the form values if `updatedAt` of cue is later than the form's cue's updatedAt AND form isDirty is false
+  useEffect(() => {
+    const formValues = form.getValues();
+
+    // TODO: do we want to OVERRIDE user unsaved form values?
+    // pros
+    // - can show the warnings per cue (since they depend on isDirty)
+    // cons
+    // - user may be mid-editing and lose their unsaved changes. However, as our debounce is 200ms, this MAY not happen?
+    //   we can decrease the debounce time in future if this feature is stable.
+    // Conclusion: no need to check for dirty state.
+    if (cue.updatedAt > formValues.updatedAt) {
+      // guard against the form's onValuesChange triggering a save, which then triggers another WebTransport message
+      isApplyingRemoteValuesRef.current = true;
+      try {
+        form.setInitialValues(initialValues);
+        form.setValues(initialValues);
+
+        // if receiving an updated cue, always show the notices/warnings/errors again.
+        // this is the correct behaviour as this path only fires when user A makes changes.
+        // when user A makes changes, their client will also show the notices.
+        // thus, user B should also have their client show notices
+        setShowNotices(true);
+        setShowWarnings(true);
+        setShowErrors(true);
+      } finally {
+        isApplyingRemoteValuesRef.current = false;
+      }
+    }
+  }, [cue.updatedAt, form, initialValues, isDirty]);
 
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>

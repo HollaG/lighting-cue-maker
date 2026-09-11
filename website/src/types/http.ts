@@ -1,5 +1,5 @@
 import type { Bump } from "./bumps";
-import type { Cue } from "./cues";
+import type { Cue, CueConfig } from "./cues";
 import type {
   AttributeConfiguration,
   BumpConfiguration,
@@ -34,7 +34,10 @@ export type CreateItemRes = {
   item: Item;
 };
 
-export type CreateCueReq = {};
+export type CreateCueReq = {
+  itemId: string;
+  cueConfig?: CueConfig;
+};
 export type CreateCueRes = {
   cue: Cue;
   //  item: Item

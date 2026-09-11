@@ -4,9 +4,11 @@ import type { GetCuesRes } from "../types/http";
 
 export type UseGetCuesReturnType = ReturnType<typeof useGetCues>;
 
+export const makeGetCuesQueryKey = (itemId: string | null | undefined) => ["cues", itemId];
+
 export const useGetCues = ({ itemId }: { itemId?: string | null }) => {
   const query = useQuery({
-    queryKey: ["cues", itemId],
+    queryKey: makeGetCuesQueryKey(itemId),
     queryFn: async () => {
       const res = await api.get<GetCuesRes>(`/api/v1/cues?itemId=${itemId}`);
       return res.cues;

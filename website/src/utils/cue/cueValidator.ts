@@ -155,8 +155,6 @@ export const checkCueCorrectness = (cue: Cue, fixtureGroups: FixtureGroupConfigu
     });
   }
 
-  console.log({ issues });
-
   return {
     ok: !issues.some((issue) => issue.type === "error" || issue.type === "warning"),
     issues,

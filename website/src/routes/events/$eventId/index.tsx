@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAppStore } from "../../../store/appStore";
 import { EventPage } from "../../../pages/Event/EventPage";
+import { WebTransportProvider } from "../../../context/WebTransportProvider";
 
 export const Route = createFileRoute("/events/$eventId/")({
   // Always update the store with the eventId from the URL params.
@@ -12,8 +13,12 @@ export const Route = createFileRoute("/events/$eventId/")({
     }
   },
 
-  component: () => {
-    // const { EventPage } = await import("../../../pages/EventPage/EventPage");
-    return <EventPage />;
+  component: function EventRoute() {
+    const { eventId } = Route.useParams();
+    return (
+      <WebTransportProvider eventId={eventId}>
+        <EventPage />
+      </WebTransportProvider>
+    );
   },
 });

@@ -1,19 +1,22 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { CreateCueReq, CreateCueRes } from "../types/http";
-
-export type CreateCueParams = {
-  itemId: string;
-};
+import { ClientMessageType, useWebTransport, type ClientMessageInvalidateQueryData } from "../context/webtransport";
+import { makeGetCuesQueryKey } from "./useGetCues";
 
 export const useCreateCue = () => {
   const queryClient = useQueryClient();
+  const { sendMessage } = useWebTransport();
 
   return useMutation({
     mutationFn: (params: CreateCueReq) => api.post<CreateCueReq, CreateCueRes>("/api/v1/cues", params),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cues"] });
+    onSuccess: (_res, variables) => {
+      const queryKey = makeGetCuesQueryKey(variables.itemId);
+      void queryClient.invalidateQueries({ queryKey });
+      void sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey,
+      } as ClientMessageInvalidateQueryData);
     },
   });
 };
