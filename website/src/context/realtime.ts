@@ -1,6 +1,14 @@
 import { createContext, useContext } from "react";
 import type { RealtimeTransportKind } from "../realtime/connection";
-import type { ClientMessageType, ServerMessageHistory, ServerMessageType } from "../types/realtime";
+import type {
+  ClientMessageDataMap,
+  ClientMessageType,
+  PresenceInformationMap,
+  ServerMessageDataMap,
+  ServerMessageHistory,
+  ServerMessageLastMessageMap,
+  ServerMessageType,
+} from "../types/realtime";
 
 export interface RealtimeContextValue {
   eventId: string;
@@ -8,8 +16,13 @@ export interface RealtimeContextValue {
   transport: RealtimeTransportKind | null;
   error: Error | null;
   history: ServerMessageHistory;
-  sendMessage: (type: ClientMessageType, data: unknown) => void;
-  registerListener: (type: ServerMessageType, listener: (data: unknown) => void) => () => void;
+  // lastMessageMap: ServerMessageLastMessageMap;
+  presenceInformationMap: PresenceInformationMap;
+  sendMessage: (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => void;
+  registerListener: (
+    type: ServerMessageType,
+    listener: (data: ServerMessageDataMap[ServerMessageType]) => void,
+  ) => () => void;
 }
 
 export const RealtimeContext = createContext<RealtimeContextValue | undefined>(undefined);

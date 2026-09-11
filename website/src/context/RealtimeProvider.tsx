@@ -4,9 +4,12 @@ import { connectRealtime } from "../realtime/connectRealtime";
 import type { RealtimeConnection, RealtimeTransportKind } from "../realtime/connection";
 import {
   ClientMessageType,
+  ServerMessageType,
+  type ClientMessageDataMap,
+  type PresenceInformationMap,
   type ServerMessage,
+  type ServerMessageDataMap,
   type ServerMessageHistory,
-  type ServerMessageType,
 } from "../types/realtime";
 import { RealtimeContext, type RealtimeContextValue } from "./realtime";
 
@@ -17,8 +20,21 @@ type RealtimeConnectionState = Pick<RealtimeContextValue, "eventId" | "status" |
 /** Owns one realtime connection for the mounted event page. */
 export function RealtimeProvider({ eventId, children }: { eventId: string; children: ReactNode }) {
   const itemId = useAppStore((state) => state.activeItemId);
+
+  // History is only used for persistent stuff, such as the chat history.
   const [history, setHistory] = useState<ServerMessageHistory>({});
-  const listenersRef = useRef(new Map<ServerMessageType, Set<(data: unknown) => void>>());
+
+  // lastMessage is used for live updates, such as cursor position.
+  // const [lastMessageMap, setLastMessageMap] = useState<
+  //   Partial<Record<ServerMessageType, ServerMessageDataMap[ServerMessageType]>>
+  // >({});
+
+  // Presence information needs to be keyed by userId
+  const [presenceInformationMap, setPresenceInformationMap] = useState<PresenceInformationMap>({});
+
+  const listenersRef = useRef(
+    new Map<ServerMessageType, Set<(data: ServerMessageDataMap[ServerMessageType]) => void>>(),
+  );
   const [connectionState, setConnectionState] = useState<RealtimeConnectionState>({
     eventId,
     status: "connecting",
@@ -27,27 +43,51 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
     connection: null,
   });
 
-  const registerListener = useCallback((type: ServerMessageType, listener: (data: unknown) => void) => {
-    const listeners = listenersRef.current.get(type) ?? new Set();
-    listeners.add(listener);
-    listenersRef.current.set(type, listeners);
+  const registerListener = useCallback(
+    (type: ServerMessageType, listener: (data: ServerMessageDataMap[ServerMessageType]) => void) => {
+      const listeners = listenersRef.current.get(type) ?? new Set();
+      listeners.add(listener);
+      listenersRef.current.set(type, listeners);
 
-    return () => {
-      listeners.delete(listener);
-      if (listeners.size === 0) listenersRef.current.delete(type);
-    };
-  }, []);
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) listenersRef.current.delete(type);
+      };
+    },
+    [],
+  );
 
   const dispatchMessage = useCallback((message: ServerMessage) => {
-    setHistory((current) => ({
-      ...current,
-      [message.type]: [...(current[message.type] ?? []), message.data],
-    }));
     listenersRef.current.get(message.type)?.forEach((listener) => listener(message.data));
+
+    const { type, data } = message;
+    switch (type) {
+      case ServerMessageType.ServerMessagePresenceUpdate:
+        setPresenceInformationMap((current) => ({
+          ...current,
+          [data.id]: {
+            ...current[data.id],
+            ...data,
+          },
+        }));
+        break;
+
+      default:
+        setHistory((current) => ({
+          ...current,
+          [message.type]: [...(current[message.type] ?? []), message.data],
+        }));
+    }
+
+    // update it in the map
+    // setLastMessageMap((current) => ({
+    //   ...current,
+    //   [message.type]: message.data,
+    // }));
   }, []);
 
   const sendMessage = useCallback(
-    (type: ClientMessageType, data: unknown) => {
+    (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => {
       if (connectionState.status !== "connected" || !connectionState.connection) return;
       void connectionState.connection.send({ type, data }).catch((error) => {
         console.error("Failed to send realtime message:", error);
@@ -152,6 +192,8 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
         transport: currentState.transport,
         error: currentState.error,
         history,
+        presenceInformationMap,
+        // lastMessageMap,
         registerListener,
         sendMessage,
       }}

@@ -11,6 +11,10 @@ import { CustomCoverLoader } from "../../../components/Loader/CustomCoverLoader"
 import { ViewModeSelect, type ViewMode } from "../../../components/Cues/CueCard/ViewModeSelect";
 import classes from "./CueList.module.css";
 import { getCueOrder } from "../../../utils/cue/cueForm";
+import { Cursor, type CursorPoint } from "../../../components/Cursor/Cursor";
+import { ClientMessageType, type ClientMessagePresenceUpdateData } from "../../../types/realtime";
+import { useRealtime } from "../../../context/realtime";
+import { useThrottledCallback } from "@mantine/hooks";
 
 type CueListProps = {
   itemId: string;
@@ -60,6 +64,8 @@ export const CueList = memo(
     const scrollItemId = useRef(itemId);
     const isCueListReady = Boolean(showCueList && itemId && cues?.length);
 
+    const { sendMessage } = useRealtime();
+
     useLayoutEffect(() => {
       if (scrollItemId.current !== itemId) {
         scrollItemId.current = itemId;
@@ -76,9 +82,45 @@ export const CueList = memo(
       didInitialScroll.current = true;
     }, [isCueListReady, itemId, cueListScrollRef.current]);
 
-    // Listen to the dimensions of the raw lyrics, because the cue list must be scrollable,
-    // so it must always be 5000px more than the raw lyrics height.
+    // realtime cursors
+    // use a ref
+    function handleCueListPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+      event.stopPropagation(); // prevent the handler in the EventPage from firing, which would send a cursor update for the page instead of the cueList
 
+      const element = event.currentTarget;
+      const rect = element.getBoundingClientRect();
+
+      const point: CursorPoint = [
+        event.clientX - rect.left + element.scrollLeft,
+        event.clientY - rect.top + element.scrollTop,
+      ];
+
+      // console.log("cueList pointer cursor  " + point);
+      throttledSendMessage({
+        cursor: {
+          surface: "cueList",
+          point,
+        },
+      });
+      // sendMessage(ClientMessageType.ClientMessagePresenceUpdate, {
+      //   cursor: {
+      //     surface: "cueList",
+      //     point,
+      //   },
+      // });
+    }
+
+    const throttledSendMessage = useThrottledCallback(
+      (data: ClientMessagePresenceUpdateData) => sendMessage(ClientMessageType.ClientMessagePresenceUpdate, data),
+      1000 / 24,
+    );
+
+    const presenceMap = useRealtime().presenceInformationMap;
+    const cursorUserIds = Object.values(presenceMap)
+      .filter((p) => p.cursor !== null && p.cursor.surface === "cueList")
+      .map((p) => p.id);
+
+    // only send every 80ms
     return (
       <Stack h="100%" style={{ minHeight: 0 }}>
         <Group style={{ flexShrink: 0 }}>
@@ -174,10 +216,22 @@ export const CueList = memo(
               transition: "all 0.3s ease-in-out",
               transform: `translateY(${calculatedOffset}px)`,
               zIndex: 10,
+              position: "relative",
             }}
+
+            onPointerMove={handleCueListPointerMove}
 
             gap={0}
           >
+            {/* Cursors */}
+            {cursorUserIds.map((userId) => {
+              const presence = presenceMap[userId];
+              const cursor = presence.cursor;
+              if (!cursor) return null;
+
+              return <Cursor key={presence.id} point={cursor.point} />;
+            })}
+
             {/* Hack to allow for scrolling "up" or "down" ""past"" the normal limits */}
             {/* Not sure what this does? Try removing it, add some lyrics and set ONE cue where the marker is far down the page. */}
             {/* You'll notice that the one cue doesn't move, cos it can't scroll anywhere. */}

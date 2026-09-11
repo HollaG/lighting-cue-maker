@@ -23,6 +23,7 @@
     "clsx": "^2.1.1",
     "dompurify": "^3.4.12",
     "konva": "^10.3.0",
+    "perfect-cursors": "^1.0.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-konva": "^19.2.5",
