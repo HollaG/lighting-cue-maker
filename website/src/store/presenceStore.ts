@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { PresenceInformation, PresenceInformationMap } from "../types/presence";
+import type { PresenceInformation, PresenceInformationMap } from "../types/realtime/presence";
 
 type PresenceStore = {
   presenceInformationMap: PresenceInformationMap;
@@ -14,8 +14,8 @@ export const usePresenceStore = create<PresenceStore>((set) => ({
     set((state) => ({
       presenceInformationMap: {
         ...state.presenceInformationMap,
-        [presence.id]: {
-          ...state.presenceInformationMap[presence.id],
+        [presence.userId]: {
+          ...state.presenceInformationMap[presence.userId],
           ...presence,
         },
       },

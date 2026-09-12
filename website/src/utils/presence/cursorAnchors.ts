@@ -1,4 +1,4 @@
-import { CURSOR_SURFACES, type CursorAnchor, type CursorPoint } from "../../types/cursors";
+import { CURSOR_SURFACES, type CursorAnchor, type CursorPoint } from "../../types/realtime/cursors";
 
 const SURFACE_SELECTOR = "[data-cursor-surface][data-cursor-item-id]";
 const ANCHOR_SELECTOR = "[data-cursor-anchor]";

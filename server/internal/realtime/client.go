@@ -32,11 +32,12 @@ var anonymousAnimals = []string{
 
 // Represents a web client / user.
 type Client struct {
-	id      string
-	name    string
-	session *webtransport.Session
-	stream  *webtransport.Stream
-	hub     *Hub
+	userId       string
+	connectionId string
+	name         string
+	session      *webtransport.Session
+	stream       *webtransport.Stream
+	hub          *Hub
 
 	send chan ServerMessage // message channel for sending
 
@@ -46,8 +47,9 @@ type Client struct {
 
 // The bare information that the Web client needs to know
 type BareClient struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	UserId       string `json:"userId"`
+	ConnectionId string `json:"connectionId"`
+	Name         string `json:"name"`
 }
 
 func newClient(session *webtransport.Session, hub *Hub) (*Client, error) {
@@ -61,14 +63,14 @@ func newClient(session *webtransport.Session, hub *Hub) (*Client, error) {
 	ctx, cancel := context.WithCancel(session.Context())
 
 	return &Client{
-		id:      uuid.NewString(),
-		session: session,
-		stream:  stream,
-		hub:     hub,
-		send:    make(chan ServerMessage, 16), // buffered channel for sending messages
-		ctx:     ctx,
-		cancel:  cancel,
-		name:    randomAnonymousName(),
+		connectionId: uuid.NewString(),
+		session:      session,
+		stream:       stream,
+		hub:          hub,
+		send:         make(chan ServerMessage, 16), // buffered channel for sending messages
+		ctx:          ctx,
+		cancel:       cancel,
+		name:         randomAnonymousName(),
 	}, nil
 
 }
@@ -84,16 +86,13 @@ func (c *Client) Run() error {
 
 	errs := make(chan error, 2)
 
-	// send the client an acknowledgement message that involves the user's name
-	c.Send(ServerMessage{
-		Type: ServerMessageClientRegisteredAck,
-		Data: ServerMessageClientRegisteredAckData{
-			ClientInfo: BareClient{
-				ID:   c.id,
-				Name: c.name,
-			},
-		},
-	})
+	// send the client an acknowledgement message that involves the user's name (if not sent)
+	// c.Send(ServerMessage{
+	// 	Type: ServerMessageClientRegisteredAck,
+	// 	Data: ServerMessageClientRegisteredAckData{
+	// 		Ok: true,
+	// 	},
+	// })
 
 	// go routine, make an 'errs' channel
 	go func() {
@@ -156,6 +155,37 @@ func (c *Client) readLoop() error {
 		timestamp := message.Timestamp
 
 		switch message.Type { // decide what to do basd on the incoming message type
+		case ClientMessageHello:
+			data, err := decodeMessageData[ClientMessageHelloData](message.Data)
+			if err != nil || data.UserId == "" {
+				log.Printf("Error decoding hello message data: %v", err)
+				continue
+			}
+
+			// assign the user ID and name, if present
+			userId := data.UserId
+			name := data.Name
+			if name == "" {
+				name = randomAnonymousName()
+			}
+
+			c.userId = userId
+			c.name = name
+
+			// reply with an acknowledgement message
+			c.Send(ServerMessage{
+				Type: ServerMessageHelloAck,
+				Data: ServerMessageClientHelloAckData{
+					BareClient: BareClient{
+						ConnectionId: c.connectionId,
+						UserId:       c.userId,
+						Name:         c.name,
+					},
+				},
+				Timestamp: timestamp,
+			})
+
+			continue
 
 		case ClientMessageRoomJoin: // User emit room join event
 			data, err := decodeMessageData[ClientMessageRoomJoinData](message.Data)
@@ -181,7 +211,7 @@ func (c *Client) readLoop() error {
 			if err != nil || len(data.QueryKey) == 0 {
 				continue
 			}
-			log.Printf("Client %s sent invalidate query for key: %v", c.id, data.QueryKey)
+			log.Printf("Client %s sent invalidate query for key: %v", c.connectionId, data.QueryKey)
 			// forward it along to the clients
 			c.hub.SendToRoomPeers(c, ServerMessage{
 				Type: ServerMessageInvalidateQuery,
@@ -203,8 +233,8 @@ func (c *Client) readLoop() error {
 			presenceUpdateData := ServerMessagePresenceUpdateData{
 				ClientMessagePresenceUpdateData: data,
 				BareClient: BareClient{
-					ID:   c.id,
-					Name: c.name,
+					UserId: c.userId,
+					Name:   c.name,
 				},
 			}
 
@@ -212,6 +242,27 @@ func (c *Client) readLoop() error {
 			c.hub.SendToRoomPeers(c, ServerMessage{
 				Type:      ServerMessagePresenceUpdate,
 				Data:      presenceUpdateData,
+				Timestamp: timestamp,
+			})
+
+		case ClientMessageChatMessage: // User emit chat message event
+			data, err := decodeMessageData[ClientMessageChatMessageData](message.Data)
+
+			if err != nil || data.Content == "" || data.MessageId == "" {
+				log.Printf("Error decoding chat message data: %v", err) // don't send empty messages
+				continue
+			}
+
+			// add the client ID
+			chatMessageData := ServerMessageChatMessageData{
+				ClientMessageChatMessageData: data,
+				FromId:                       c.connectionId,
+			}
+
+			// forward it along to the clients
+			c.hub.SendToRoomPeers(c, ServerMessage{
+				Type:      ServerMessageChatMessage,
+				Data:      chatMessageData,
 				Timestamp: timestamp,
 			})
 		}

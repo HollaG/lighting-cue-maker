@@ -8,7 +8,7 @@ export const CURSOR_COLORS = [
   "cyan",
   "teal",
   // "lime",
-  "green",
+  // "green",
   // "yellow",
   // "orange",
 ] as const;

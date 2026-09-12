@@ -1,6 +1,14 @@
+import type { ChatMessageData } from "./chat";
 import type { CursorAnchor } from "./cursors";
 
+export type LiveUser = {
+  userId: string;
+  name: string;
+};
+
 export const ClientMessageType = {
+  ClientMessageHello: "client.hello",
+
   ClientMessageSetName: "client.setName",
 
   ClientMessageRoomJoin: "client.room.join",
@@ -10,9 +18,16 @@ export const ClientMessageType = {
 
   ClientMessagePresenceFollow: "client.presence.follow",
   ClientMessagePresenceUpdate: "client.presence.update",
+
+  ClientMessageChatMessage: "client.chat.message",
 } as const;
 
 export type ClientMessageType = (typeof ClientMessageType)[keyof typeof ClientMessageType];
+
+export type ClientMessageHelloData = {
+  userId: string;
+  name: string;
+};
 
 export type ClientMessageInvalidateQueryData = {
   queryKey: string[];
@@ -28,7 +43,11 @@ export type ClientMessagePresenceUpdateData = {
   cursor?: CursorAnchor | null;
 };
 
+export type ClientMessageChatMessageData = Omit<ChatMessageData, "fromId">;
+
 export type ClientMessageDataMap = {
+  [ClientMessageType.ClientMessageHello]: ClientMessageHelloData;
+
   [ClientMessageType.ClientMessageSetName]: {
     name: string;
   };
@@ -46,11 +65,15 @@ export type ClientMessageDataMap = {
   [ClientMessageType.ClientMessagePresenceFollow]: ClientMessagePresenceFollowData;
 
   [ClientMessageType.ClientMessagePresenceUpdate]: ClientMessagePresenceUpdateData;
+
+  [ClientMessageType.ClientMessageChatMessage]: ClientMessageChatMessageData;
 };
 
 export const ServerMessageType = {
   ServerMessageClientRegisteredAck: "server.client.register.ack",
-  ServerMessageClientSetNameAck: "server.client.name.ack",
+  ServerMessageClientHelloAck: "server.hello.ack",
+  ServerMessageClientSetNameAck: "server.name.ack",
+
   ServerMessageRoomJoined: "server.room.joined",
   ServerMessageRoomLeft: "server.room.left",
   ServerMessageHelloAck: "server.hello.ack",
@@ -58,16 +81,22 @@ export const ServerMessageType = {
   ServerMessageInvalidateQuery: "server.invalidateQuery",
 
   ServerMessagePresenceUpdate: "server.presence.update",
+
+  ServerMessageChatMessage: "server.chat.message",
 } as const;
 
 export type ServerMessageType = (typeof ServerMessageType)[keyof typeof ServerMessageType];
+
+export type ServerMessageHelloAckData = ClientMessageHelloData & {
+  connectionId: string;
+};
 
 export type ServerMessageInvalidateQueryData = {
   queryKey: string[];
 };
 
 export type ServerMessagePresenceUpdateData = ClientMessagePresenceUpdateData & {
-  id: string;
+  userId: string;
   name: string;
 };
 
@@ -82,8 +111,9 @@ export type ClientMessage = {
 
 export type ServerMessageDataMap = {
   [ServerMessageType.ServerMessageClientRegisteredAck]: {
-    userId: string;
+    ok: boolean;
   };
+  [ServerMessageType.ServerMessageClientHelloAck]: ServerMessageHelloAckData;
   [ServerMessageType.ServerMessageClientSetNameAck]: {
     name: string;
   };
@@ -93,11 +123,11 @@ export type ServerMessageDataMap = {
   [ServerMessageType.ServerMessageRoomLeft]: {
     itemId: string;
   };
-  [ServerMessageType.ServerMessageHelloAck]: {
-    serverTime: number;
-  };
+
   [ServerMessageType.ServerMessageInvalidateQuery]: ServerMessageInvalidateQueryData;
   [ServerMessageType.ServerMessagePresenceUpdate]: ServerMessagePresenceUpdateData;
+
+  [ServerMessageType.ServerMessageChatMessage]: ChatMessageData;
 };
 
 export type ServerMessage = {

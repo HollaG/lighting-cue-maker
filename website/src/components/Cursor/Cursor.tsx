@@ -1,6 +1,6 @@
 import * as React from "react";
 import { usePerfectCursor } from "../../hooks/usePerfectCursor";
-import type { CursorAnchor, CursorPoint } from "../../types/cursors";
+import type { CursorAnchor, CursorPoint } from "../../types/realtime/cursors";
 import { resolveCursorAnchor } from "../../utils/presence/cursorAnchors";
 import type { CURSOR_COLORS } from "../../utils/presence/cursorColors";
 import { Badge, Box } from "@mantine/core";

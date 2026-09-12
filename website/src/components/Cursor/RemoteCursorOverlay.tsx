@@ -17,9 +17,9 @@ export function RemoteCursorOverlay({ itemId }: { itemId: string | undefined }) 
     >
       {Object.values(presenceInformationMap).map((presence) => (
         <Cursor
-          key={presence.id}
+          key={presence.userId}
           anchor={presence.cursor?.itemId === itemId ? presence.cursor : null}
-          color={getColorFromId(presence.id)}
+          color={getColorFromId(presence.userId)}
           label={presence.name}
         />
       ))}

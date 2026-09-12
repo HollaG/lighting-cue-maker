@@ -4,16 +4,14 @@ import type {
   ClientMessageDataMap,
   ClientMessageType,
   ServerMessageDataMap,
-  ServerMessageHistory,
   ServerMessageType,
-} from "../types/realtime";
+} from "../types/realtime/realtime";
 
 export interface RealtimeContextValue {
   eventId: string;
   status: "connecting" | "connected" | "closed" | "error";
   transport: RealtimeTransportKind | null;
   error: Error | null;
-  history: ServerMessageHistory;
   sendMessage: (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => void;
   registerListener: (
     type: ServerMessageType,

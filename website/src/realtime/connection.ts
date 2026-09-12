@@ -1,4 +1,4 @@
-import type { ClientMessage, ServerMessage } from "../types/realtime";
+import type { ClientMessage, ServerMessage } from "../types/realtime/realtime";
 
 export type RealtimeTransportKind = "webtransport" | "websocket";
 

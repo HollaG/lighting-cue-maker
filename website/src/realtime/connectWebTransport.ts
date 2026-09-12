@@ -1,4 +1,4 @@
-import type { ClientMessage, ServerMessage } from "../types/realtime";
+import type { ClientMessage, ServerMessage } from "../types/realtime/realtime";
 import type { RealtimeConnection, RealtimeConnectionOptions } from "./connection";
 
 /** Opens a WebTransport connection and hides its stream details from React. */

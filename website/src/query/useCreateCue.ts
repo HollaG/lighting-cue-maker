@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { CreateCueReq, CreateCueRes } from "../types/http";
 import { makeGetCuesQueryKey } from "./useGetCues";
-import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime";
+import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime/realtime";
 import { useRealtime } from "../context/realtime";
 
 export const useCreateCue = () => {

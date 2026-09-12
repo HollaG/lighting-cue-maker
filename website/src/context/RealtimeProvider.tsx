@@ -8,23 +8,24 @@ import {
   type ClientMessageDataMap,
   type ServerMessage,
   type ServerMessageDataMap,
-  type ServerMessageHistory,
-} from "../types/realtime";
+} from "../types/realtime/realtime";
 import { RealtimeContext, type RealtimeContextValue } from "./realtime";
 import { isCursorAnchor } from "../utils/presence/cursorAnchors";
 import { usePresenceStore } from "../store/presenceStore";
 import { convertServerPresenceInformation } from "../utils/presence/presence";
+import { useRealtimeStore } from "../store/realtimeStore";
 
 type RealtimeConnectionState = Pick<RealtimeContextValue, "eventId" | "status" | "transport" | "error"> & {
   connection: RealtimeConnection | null;
 };
 
-/** Owns one realtime connection for the mounted event page. */
+/** Owns one realtime connection for the mounted event page.
+ *  Do NOT store any business data in this Provider.
+ *  as it causes all components who called `useRealtime()` to re-render on every change.
+ *
+ */
 export function RealtimeProvider({ eventId, children }: { eventId: string; children: ReactNode }) {
   const itemId = useAppStore((state) => state.activeItemId);
-
-  // History is only used for persistent stuff, such as the chat history.
-  const [history, setHistory] = useState<ServerMessageHistory>({});
 
   const listenersRef = useRef(
     new Map<ServerMessageType, Set<(data: ServerMessageDataMap[ServerMessageType]) => void>>(),
@@ -56,19 +57,31 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
 
     const { type, data } = message;
     switch (type) {
+      case ServerMessageType.ServerMessageClientHelloAck:
+        const { userId, name } = data;
+        console.log("settng current user to ", data);
+        useRealtimeStore.getState().setCurrentUser({ userId, name });
+
+        break;
+
+      // do NOT store presence data in the Provider! It causes updates to all components.
       case ServerMessageType.ServerMessagePresenceUpdate:
-        if (typeof data.id !== "string" || (data.cursor != null && !isCursorAnchor(data.cursor))) break;
+        if (typeof data.userId !== "string" || (data.cursor != null && !isCursorAnchor(data.cursor))) break;
         usePresenceStore.getState().mergePresence(convertServerPresenceInformation(data));
         break;
 
+      case ServerMessageType.ServerMessageChatMessage:
+        useRealtimeStore.getState().onMessageReceived(data);
+        break;
       default:
-        setHistory((current) => ({
-          ...current,
-          [message.type]: [...(current[message.type] ?? []), message.data],
-        }));
+      // setHistory((current) => ({
+      //   ...current,
+      //   [message.type]: [...(current[message.type] ?? []), message.data],
+      // }));
     }
   }, []);
 
+  /** Send a message to the server */
   const sendMessage = useCallback(
     (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => {
       if (connectionState.status !== "connected" || !connectionState.connection) return;
@@ -131,7 +144,20 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
           onError: fail,
         });
 
-        if (!abortController.signal.aborted) {
+        if (abortController.signal.aborted || failed) return;
+
+        const store = useRealtimeStore.getState();
+        const user = store.user ?? { userId: crypto.randomUUID(), name: "" };
+
+        // manually send a hello message, no need to wait for state to be re-rendered and updated.
+        await connection.send({
+          type: ClientMessageType.ClientMessageHello,
+          data: user,
+          timestamp: Date.now(),
+        });
+
+        if (!abortController.signal.aborted && !failed) {
+          console.log("Realtime connection established:", connection.kind);
           setConnectionState({
             eventId,
             status: "connected",
@@ -165,7 +191,6 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
         status: currentState.status,
         transport: currentState.transport,
         error: currentState.error,
-        history,
         registerListener,
         sendMessage,
       }}

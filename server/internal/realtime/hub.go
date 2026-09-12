@@ -35,17 +35,17 @@ func NewHub() *Hub {
 func (h *Hub) RegisterClient(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.clients[client.id] = client
+	h.clients[client.connectionId] = client
 
-	log.Printf("Realtime client registered: %s", client.id)
+	log.Printf("Realtime client registered: %s", client.connectionId)
 }
 
 // Unregister a client in a Hub, when they leave
 func (h *Hub) UnregisterClient(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	delete(h.clients, client.id)
-	delete(h.clientRooms, client.id) // remove the client from any room they were in
+	delete(h.clients, client.connectionId)
+	delete(h.clientRooms, client.connectionId) // remove the client from any room they were in
 }
 
 // --- Client naming --- --- ---
@@ -54,7 +54,7 @@ func (h *Hub) SetClientName(client *Client, name string) {
 	defer h.mu.Unlock()
 
 	client.name = name
-	log.Printf("Client %s set name to %s", client.id, name)
+	log.Printf("Client %s set name to %s", client.connectionId, name)
 }
 
 // --- Room functionality --- --- ---
@@ -64,13 +64,13 @@ func (h *Hub) JoinRoom(client *Client, roomJoin ClientMessageRoomJoinData) {
 
 	roomId := roomJoin.ItemId
 
-	if currentRoom, ok := h.clientRooms[client.id]; ok && currentRoom == roomId {
+	if currentRoom, ok := h.clientRooms[client.connectionId]; ok && currentRoom == roomId {
 		return
 	}
 
 	// else, join the new room
-	h.clientRooms[client.id] = roomId
-	log.Printf("Client %s joined room %s", client.id, roomId)
+	h.clientRooms[client.connectionId] = roomId
+	log.Printf("Client %s joined room %s", client.connectionId, roomId)
 }
 
 func (h *Hub) LeaveRoom(client *Client) {
@@ -78,9 +78,9 @@ func (h *Hub) LeaveRoom(client *Client) {
 	defer h.mu.Unlock()
 
 	// Remove the client from the room
-	if roomId, ok := h.clientRooms[client.id]; ok {
-		delete(h.clientRooms, client.id)
-		log.Printf("Client %s left room %s", client.id, roomId)
+	if roomId, ok := h.clientRooms[client.connectionId]; ok {
+		delete(h.clientRooms, client.connectionId)
+		log.Printf("Client %s left room %s", client.connectionId, roomId)
 	}
 
 }
@@ -91,7 +91,7 @@ func (h *Hub) BroadcastToRoom(sender *Client, message ServerMessage) {
 
 	recipients := make([]*Client, 0, len(h.clients)) // just nice to hold all clients
 
-	clientId := sender.id
+	clientId := sender.connectionId
 	roomId, ok := h.clientRooms[clientId]
 
 	if !ok {
@@ -102,7 +102,7 @@ func (h *Hub) BroadcastToRoom(sender *Client, message ServerMessage) {
 
 	// find the clients in this room
 	for _, client := range h.clients {
-		clientId := client.id
+		clientId := client.connectionId
 
 		// only keep the clients that are in the same room as the sender
 		if clientRoomId, ok := h.clientRooms[clientId]; ok && clientRoomId == roomId {
@@ -115,7 +115,7 @@ func (h *Hub) BroadcastToRoom(sender *Client, message ServerMessage) {
 	for _, client := range recipients {
 		if !client.TrySend(message) {
 			// can't send for some reason
-			log.Printf("Unable to queue message for client: %s", client.id)
+			log.Printf("Unable to queue message for client: %s", client.connectionId)
 		}
 	}
 
@@ -127,16 +127,16 @@ func (h *Hub) SendToRoomPeers(sender *Client, message ServerMessage) {
 
 	recipients := make([]*Client, 0, len(h.clients))
 
-	roomId, ok := h.clientRooms[sender.id]
+	roomId, ok := h.clientRooms[sender.connectionId]
 	if !ok {
-		log.Printf("Client %s is not in a room, cannot send to room peers", sender.id)
+		log.Printf("Client %s is not in a room, cannot send to room peers", sender.connectionId)
 		h.mu.RUnlock()
 		return
 	}
 
 	for _, client := range h.clients {
-		clientRoomId, isInRoom := h.clientRooms[client.id]
-		if isInRoom && clientRoomId == roomId && client.id != sender.id {
+		clientRoomId, isInRoom := h.clientRooms[client.connectionId]
+		if isInRoom && clientRoomId == roomId && client.connectionId != sender.connectionId {
 			recipients = append(recipients, client)
 		}
 	}
@@ -145,7 +145,7 @@ func (h *Hub) SendToRoomPeers(sender *Client, message ServerMessage) {
 
 	for _, client := range recipients {
 		if !client.TrySend(message) {
-			log.Printf("Unable to queue message for client: %s", client.id)
+			log.Printf("Unable to queue message for client: %s", client.connectionId)
 		}
 	}
 }
@@ -158,7 +158,7 @@ func (h *Hub) Broadcast(sender *Client, message ServerMessage) {
 
 	// don't re-send back to the sender
 	for _, client := range h.clients {
-		if client.id != sender.id {
+		if client.connectionId != sender.connectionId {
 			recipients = append(recipients, client)
 		}
 	}
@@ -168,7 +168,7 @@ func (h *Hub) Broadcast(sender *Client, message ServerMessage) {
 	for _, client := range recipients {
 		if !client.TrySend(message) {
 			// can't send for some reason
-			log.Printf("Unable to queue message for client: %s", client.id)
+			log.Printf("Unable to queue message for client: %s", client.connectionId)
 		}
 	}
 

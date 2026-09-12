@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ServerMessageType, type ServerMessageInvalidateQueryData } from "../../types/realtime";
+import { ServerMessageType, type ServerMessageInvalidateQueryData } from "../../types/realtime/realtime";
 import { useRealtime } from "../../context/realtime";
 
 /** Listens for realtime messages that invalidate entries in the React Query cache. */

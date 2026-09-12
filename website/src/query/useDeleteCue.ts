@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 import type { DeleteCuesRes } from "../types/http";
 import { makeGetCuesQueryKey } from "./useGetCues";
 import { useRealtime } from "../context/realtime";
-import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime";
+import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime/realtime";
 
 export type DeleteCueParams = {
   cueId: string;
