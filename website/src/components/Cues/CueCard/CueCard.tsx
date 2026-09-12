@@ -79,7 +79,6 @@ const CueCardInternal = ({
   const [isCollapsed, setIsCollapsed] = useLocalStorage({ key: `cue-${cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
   const isApplyingRemoteValuesRef = useRef(false);
-
   // --- Form ---------
   const initialValues: FormData = useMemo(
     () => ({

@@ -3,7 +3,6 @@ import type { RealtimeTransportKind } from "../realtime/connection";
 import type {
   ClientMessageDataMap,
   ClientMessageType,
-  PresenceInformationMap,
   ServerMessageDataMap,
   ServerMessageHistory,
   ServerMessageType,
@@ -15,7 +14,6 @@ export interface RealtimeContextValue {
   transport: RealtimeTransportKind | null;
   error: Error | null;
   history: ServerMessageHistory;
-  presenceInformationMap: PresenceInformationMap;
   sendMessage: (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => void;
   registerListener: (
     type: ServerMessageType,
