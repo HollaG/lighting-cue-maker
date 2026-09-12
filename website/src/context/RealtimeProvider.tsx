@@ -102,7 +102,7 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
   const sendMessage = useCallback(
     (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => {
       if (connectionState.status !== "connected" || !connectionState.connection) return;
-      void connectionState.connection.send({ type, data }).catch((error) => {
+      void connectionState.connection.send({ type, data, timestamp: Date.now() }).catch((error) => {
         console.error("Failed to send realtime message:", error);
       });
     },
@@ -114,23 +114,12 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
     presenceLastSeenRef.current.clear();
     if (!itemId || connectionState.status !== "connected" || !connectionState.connection) return;
 
-    const connection = connectionState.connection;
-    void connection
-      .send({
-        type: ClientMessageType.ClientMessageRoomJoin,
-        data: { itemId },
-      })
-      .catch((error) => console.error("Failed to join realtime room:", error));
+    sendMessage(ClientMessageType.ClientMessageRoomJoin, { itemId });
 
     return () => {
-      void connection
-        .send({
-          type: ClientMessageType.ClientMessageRoomLeave,
-          data: { itemId },
-        })
-        .catch((error) => console.error("Failed to leave realtime room:", error));
+      sendMessage(ClientMessageType.ClientMessageRoomLeave, { itemId });
     };
-  }, [connectionState.connection, connectionState.status, itemId]);
+  }, [sendMessage, itemId]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -163,7 +152,7 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
         connection = await connectRealtime({
           signal: abortController.signal,
           onMessage: (message) => {
-            console.log("Received message:", message);
+            console.log(`Received message at timestamp ${message.timestamp}`, message);
             dispatchMessage(message);
           },
           onClose: () => {

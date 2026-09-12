@@ -69,7 +69,6 @@ export type ServerMessageInvalidateQueryData = {
 export type ServerMessagePresenceUpdateData = ClientMessagePresenceUpdateData & {
   id: string;
   name: string;
-  timestamp: number;
 };
 
 export type ServerMessageHistory = Partial<Record<ServerMessageType, unknown[]>>;
@@ -79,6 +78,7 @@ export type PresenceInformationMap = Record<string, ServerMessagePresenceUpdateD
 export type ClientMessage = {
   type: ClientMessageType;
   data: ClientMessageDataMap[ClientMessageType];
+  timestamp: number;
 };
 
 export type ServerMessageDataMap = {
@@ -105,5 +105,6 @@ export type ServerMessage = {
   [Type in ServerMessageType]: {
     type: Type;
     data: ServerMessageDataMap[Type];
+    timestamp: number;
   };
 }[ServerMessageType];

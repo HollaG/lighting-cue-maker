@@ -63,7 +63,7 @@ export async function connectWebTransport(
       send: async (message: ClientMessage) => {
         if (!writer) throw new Error("WebTransport writer is not available");
         const json = JSON.stringify(message);
-        console.log("Sending message:", json);
+        // console.log("Sending message:", json);
         await writer.write(new TextEncoder().encode(json + "\n"));
       },
       close,

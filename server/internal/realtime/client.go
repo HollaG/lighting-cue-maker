@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"math/rand/v2"
-	"time"
 
 	"github.com/google/uuid"
 	webtransport "github.com/quic-go/webtransport-go"
@@ -154,6 +153,8 @@ func (c *Client) readLoop() error {
 
 		}
 
+		timestamp := message.Timestamp
+
 		switch message.Type { // decide what to do basd on the incoming message type
 
 		case ClientMessageRoomJoin: // User emit room join event
@@ -187,6 +188,7 @@ func (c *Client) readLoop() error {
 				Data: ServerMessageInvalidateQueryData{
 					QueryKey: data.QueryKey,
 				},
+				Timestamp: timestamp,
 			})
 
 		case ClientMessagePresenceUpdate: // User emit presence update event
@@ -204,14 +206,13 @@ func (c *Client) readLoop() error {
 					ID:   c.id,
 					Name: c.name,
 				},
-				// unix epoch
-				Timestamp: time.Now().Unix(),
 			}
 
 			// forward it along to the clients
 			c.hub.SendToRoomPeers(c, ServerMessage{
-				Type: ServerMessagePresenceUpdate,
-				Data: presenceUpdateData,
+				Type:      ServerMessagePresenceUpdate,
+				Data:      presenceUpdateData,
+				Timestamp: timestamp,
 			})
 		}
 

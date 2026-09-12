@@ -3,13 +3,15 @@ package realtime
 import "encoding/json"
 
 type ClientMessage struct {
-	Type ClientMessageType `json:"type"`
-	Data json.RawMessage   `json:"data,omitempty"`
+	Type      ClientMessageType `json:"type"`
+	Data      json.RawMessage   `json:"data,omitempty"`
+	Timestamp int64             `json:"timestamp,omitempty"`
 }
 
 type ServerMessage struct {
-	Type ServerMessageType `json:"type"`
-	Data any               `json:"data,omitempty"`
+	Type      ServerMessageType `json:"type"`
+	Data      any               `json:"data,omitempty"`
+	Timestamp int64             `json:"timestamp,omitempty"`
 }
 
 type ClientMessageType string
@@ -72,8 +74,6 @@ type ServerMessagePresenceUpdateData struct {
 	ClientMessagePresenceUpdateData
 
 	BareClient
-
-	Timestamp int64 `json:"timestamp"`
 }
 
 type CursorPoint [2]float64
