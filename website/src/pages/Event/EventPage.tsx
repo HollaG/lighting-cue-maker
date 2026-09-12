@@ -56,6 +56,7 @@ import { QLCConverter } from "../../sections/QLCConverter/QLCConverter";
 import QlcLogo from "../../assets/qlc_logo.svg";
 import { useLiveQueryUpdates } from "../../hooks/realtime/useLiveQueryUpdates";
 import { RemoteCursorOverlay } from "../../components/Cursor/RemoteCursorOverlay";
+import { ChatContainer } from "../../components/Chat/ChatContainer";
 
 export const EventPage = () => {
   useLiveQueryUpdates();
@@ -227,7 +228,9 @@ export const EventPage = () => {
 
   return (
     <Box>
+      {/* Live elements */}
       <RemoteCursorOverlay itemId={validActiveItemId ?? undefined} />
+      <ChatContainer key={validActiveItemId} />
 
       <Container size={"xl"} mt="4rem">
         <Group mb="2rem">
