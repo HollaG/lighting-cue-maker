@@ -514,6 +514,8 @@ const CueCardInternal = ({
           // marginTop: marginPushDownCue,
           // top: cueRefTop + 100,
         }}
+
+        data-cursor-surface="cueCard"
       >
         <CardBase isActive={isCueSelected} shadow={isCueSelected ? "lg" : "none"}>
           {(cue.cueConfig?.mode ?? "unknown") !== "unknown" ? (

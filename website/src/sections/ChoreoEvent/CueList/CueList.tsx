@@ -186,7 +186,7 @@ export const CueList = memo(
               const cue = cues.find((c) => c.id === cueId);
               if (!cue) return null;
               return (
-                <Box key={cue.id} mb="md" data-cursor-anchor={cue.id}>
+                <Box key={cue.id} mb="md">
                   <CueCard
                     cue={cue}
                     cueNumber={index + 1}

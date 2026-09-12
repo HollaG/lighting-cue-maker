@@ -52,11 +52,18 @@ export function useCursorTracking(itemId: string | undefined) {
       pointer = [event.clientX, event.clientY];
       schedulePublish();
     };
+
+    /**
+     * Listen to window changes such as scroll or resize effects
+     */
     const layoutChanged = () => {
       if (pointer) schedulePublish();
     };
+
+    /**
+     *
+     */
     const hide = () => {
-      console.log("hide is running");
       pointer = null;
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);

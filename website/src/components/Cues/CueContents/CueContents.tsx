@@ -51,13 +51,15 @@ export const CueContents = ({
   cueOrder,
   onDeleteCue,
 }: {
+  eventId: string;
+
   cue: Cue;
-  visualiser: Visualiser | null;
   cueNumber: number;
   fixtureGroups: FixtureGroupConfiguration[];
+
+  visualiser: Visualiser | null;
   viewMode: ViewMode;
   form: UseFormReturnType<Cue>;
-  eventId: string;
   fixtures: Fixture[];
   activeFixtureGroupId: string | null;
   isDirty: boolean;
@@ -116,14 +118,15 @@ export const CueContents = ({
         >
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
             {fixtureGroups.map((group) => (
-              <FixtureGroupSection
-                disabled={cue.cueConfig.mode === "normal" && !cue.cueConfig.enabledGroups.includes(group.id)}
-                key={group.id}
-                group={group}
-                form={form}
-                setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
-                showEnableTooltip={true}
-              />
+              <Box key={group.id} data-cursor-anchor={`fixture-group-${cue.id}-${group.id}`}>
+                <FixtureGroupSection
+                  disabled={cue.cueConfig.mode === "normal" && !cue.cueConfig.enabledGroups.includes(group.id)}
+                  group={group}
+                  form={form}
+                  setIsAtLeastOneComboboxOpened={setIsAtLeastOneComboboxOpened}
+                  showEnableTooltip={true}
+                />
+              </Box>
             ))}
           </SimpleGrid>
         </Switch.Group>
