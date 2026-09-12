@@ -33,13 +33,12 @@ Capture, throttling, coordinate resolution and rendering are shared; no extra li
 
 ## Lifecycle and limitations
 
-- Capture runs at up to 24 updates/second and sends only changed anchors, plus a heartbeat every 5 seconds. It rechecks the element under a stationary pointer when layout or scroll changes. Blank space and leaving the window send `cursor: null`.
+- Capture runs at up to 24 updates/second and sends only changed anchors. It rechecks the element under a stationary pointer when layout or scroll changes. Blank space keeps the last cursor position; leaving the window sends `cursor: null`.
 - The provider merges optional presence fields. Omitted `cursor` preserves it; explicit `null` hides it. Future scroll state can be added alongside `cursor`.
 - Each visible peer's anchor is measured on animation frames to follow scrolling, reflow and CSS transitions without React layout-state updates. Hit-testing hides destinations clipped by scroll containers or covered by dialogs. Interpolation between distant anchors is a visual approximation.
-- Peers expire after roughly 15–20 seconds without a heartbeat; room changes clear presence. Background-tab throttling may cause a peer to expire and reappear.
 - Word indexes assume the same lyric revision on both clients. Editing lyrics can shift indexes. Cue-card ratios point within the same card, but different collapsed states or field layouts may require finer field anchors later.
 - The Go server forwards `cursor` as `json.RawMessage`, preserving arbitrary anchors, omitted values and `null`, while adding its own client identity. Restart it after changing that DTO. Older clients using `{surface, point}` are ignored by the new frontend.
 
 ## Manual check
 
-Open the same item in two windows with different widths. Move across lyric words and cue cards; resize and scroll both the page and the cue list. Confirm hidden cards hide their cursor, returning to a surface resumes movement, and closing a peer removes its cursor after the heartbeat timeout.
+Open the same item in two windows with different widths. Move across lyric words and cue cards; resize and scroll both the page and the cue list. Confirm hidden cards hide their cursor and returning to a surface resumes movement.

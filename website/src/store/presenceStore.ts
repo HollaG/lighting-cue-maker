@@ -4,7 +4,6 @@ import type { PresenceInformationMap, ServerMessagePresenceUpdateData } from "..
 type PresenceStore = {
   presenceInformationMap: PresenceInformationMap;
   mergePresence: (presence: ServerMessagePresenceUpdateData) => void;
-  removePresence: (ids: string[]) => void;
   clearPresence: () => void;
 };
 
@@ -21,11 +20,5 @@ export const usePresenceStore = create<PresenceStore>((set) => ({
         },
       },
     })),
-  removePresence: (ids) =>
-    set((state) => {
-      const next = { ...state.presenceInformationMap };
-      for (const id of ids) delete next[id];
-      return { presenceInformationMap: next };
-    }),
   clearPresence: () => set({ presenceInformationMap: {} }),
 }));

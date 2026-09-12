@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRealtime } from "../../context/realtime";
 import { ClientMessageType } from "../../types/realtime";
-import { CURSOR_UPDATE_INTERVAL_MS, PRESENCE_HEARTBEAT_MS, type CursorPoint } from "../../types/cursors";
+import { CURSOR_UPDATE_INTERVAL_MS, type CursorPoint } from "../../types/cursors";
 import { captureCursorAnchor } from "../../utils/cursorAnchors";
 
 /** One event-driven publisher for all marked cursor surfaces. */
@@ -16,13 +16,19 @@ export function useCursorTracking(itemId: string | undefined) {
     let lastPublishedAt = 0;
     let lastSent = "";
 
-    const publish = (heartbeat = false) => {
-      const cursor =
-        pointer && !document.hidden
-          ? captureCursorAnchor(document.elementFromPoint(...pointer), pointer, itemId)
-          : null;
+    const publish = () => {
+      if (!pointer || document.hidden) return;
+
+      const cursor = captureCursorAnchor(document.elementFromPoint(...pointer), pointer, itemId);
+
+      if (cursor === null) {
+        // no anchor found, but we don't want to hide the cursor.
+        // so we don't send anything
+        return;
+      }
+
       const serialized = JSON.stringify(cursor);
-      if (!heartbeat && serialized === lastSent) return;
+      if (serialized === lastSent) return;
       lastSent = serialized;
       sendMessage(ClientMessageType.ClientMessagePresenceUpdate, { cursor });
     };
@@ -50,20 +56,23 @@ export function useCursorTracking(itemId: string | undefined) {
       if (pointer) schedulePublish();
     };
     const hide = () => {
+      console.log("hide is running");
       pointer = null;
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
       frame = 0;
       timer = 0;
       lastPublishedAt = performance.now();
-      publish();
+      lastSent = "null";
+
+      sendMessage(ClientMessageType.ClientMessagePresenceUpdate, {
+        cursor: null,
+      });
     };
     const visibilityChanged = () => {
       if (document.hidden) hide();
     };
 
-    // Heartbeats let receivers remove disconnected peers without expiring a still cursor.
-    const heartbeat = window.setInterval(() => publish(true), PRESENCE_HEARTBEAT_MS);
     document.addEventListener("pointermove", move, true);
     document.addEventListener("scroll", layoutChanged, true);
     document.addEventListener("pointercancel", hide, true);
@@ -75,7 +84,6 @@ export function useCursorTracking(itemId: string | undefined) {
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
-      window.clearInterval(heartbeat);
       document.removeEventListener("pointermove", move, true);
       document.removeEventListener("scroll", layoutChanged, true);
       document.removeEventListener("pointercancel", hide, true);

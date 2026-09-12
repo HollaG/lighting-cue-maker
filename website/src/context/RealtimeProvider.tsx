@@ -11,7 +11,6 @@ import {
   type ServerMessageHistory,
 } from "../types/realtime";
 import { RealtimeContext, type RealtimeContextValue } from "./realtime";
-import { PRESENCE_HEARTBEAT_MS, PRESENCE_TIMEOUT_MS } from "../types/cursors";
 import { isCursorAnchor } from "../utils/cursorAnchors";
 import { usePresenceStore } from "../store/presenceStore";
 
@@ -25,23 +24,6 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
 
   // History is only used for persistent stuff, such as the chat history.
   const [history, setHistory] = useState<ServerMessageHistory>({});
-
-  const presenceLastSeenRef = useRef(new Map<string, number>());
-
-  // A stale presence backup: usually, when a client leaves, the React cleanup function will send
-  // { cursor: null }, which will remove the cursor. This useEffect() simply is a backup
-  // in case the client leaves but the cleanup function doesn't run.
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      const expired = [...presenceLastSeenRef.current]
-        .filter(([, time]) => Date.now() - time > PRESENCE_TIMEOUT_MS)
-        .map(([id]) => id);
-      if (!expired.length) return;
-      for (const id of expired) presenceLastSeenRef.current.delete(id);
-      usePresenceStore.getState().removePresence(expired);
-    }, PRESENCE_HEARTBEAT_MS);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const listenersRef = useRef(
     new Map<ServerMessageType, Set<(data: ServerMessageDataMap[ServerMessageType]) => void>>(),
@@ -75,7 +57,6 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
     switch (type) {
       case ServerMessageType.ServerMessagePresenceUpdate:
         if (typeof data.id !== "string" || (data.cursor != null && !isCursorAnchor(data.cursor))) break;
-        presenceLastSeenRef.current.set(data.id, Date.now());
         usePresenceStore.getState().mergePresence(data);
         break;
 
@@ -100,7 +81,6 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
 
   useEffect(() => {
     usePresenceStore.getState().clearPresence();
-    presenceLastSeenRef.current.clear();
     if (!itemId || connectionState.status !== "connected" || !connectionState.connection) return;
 
     sendMessage(ClientMessageType.ClientMessageRoomJoin, { itemId });

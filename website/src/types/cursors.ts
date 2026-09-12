@@ -13,5 +13,3 @@ export type CursorAnchor = {
 };
 
 export const CURSOR_UPDATE_INTERVAL_MS = 1000 / 24;
-export const PRESENCE_HEARTBEAT_MS = 5000;
-export const PRESENCE_TIMEOUT_MS = 15000;
