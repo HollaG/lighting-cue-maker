@@ -36,13 +36,16 @@ const (
 type ServerMessageType string
 
 const (
+	ServerMessageHelloAck ServerMessageType = "server.hello.ack"
+
 	ServerMessageClientRegisteredAck ServerMessageType = "server.client.register.ack"
 	ServerMessageClientHelloAck      ServerMessageType = "server.client.hello.ack"
 	ServerMessageClientSetNameAck    ServerMessageType = "server.client.name.ack"
 
-	ServerMessageRoomJoined ServerMessageType = "server.room.joined"
-	ServerMessageRoomLeft   ServerMessageType = "server.room.left"
-	ServerMessageHelloAck   ServerMessageType = "server.hello.ack"
+	ServerMessageRoomJoined       ServerMessageType = "server.room.joined"
+	ServerMessageRoomUsersUpdate  ServerMessageType = "server.room.users.update"
+	ServerMessageRoomLeft         ServerMessageType = "server.room.left"
+	ServerMessageSyncRoomMessages ServerMessageType = "server.room.messages"
 
 	ServerMessageInvalidateQuery ServerMessageType = "server.invalidateQuery"
 
@@ -50,6 +53,8 @@ const (
 
 	ServerMessageChatMessage ServerMessageType = "server.chat.message"
 )
+
+// ------------------- CLIENT MESSAGE DATA -------------------
 
 // Client will send a `Hello` message on first join. Associate this ID with the connectionID.
 type ClientMessageHelloData struct {
@@ -74,11 +79,14 @@ type ClientMessagePresenceUpdateData struct {
 }
 
 type ClientMessageChatMessageData struct {
-	Content   string `json:"content"` // opaque string, frontend can parse it as needed
-	MessageId string `json:"messageId"`
-	ToId      string `json:"toId,omitempty"` // optional, if present, this is a private message to a specific client
+	Content   json.RawMessage `json:"content"` // opaque string, frontend can parse it as needed
+	MessageId string          `json:"messageId"`
+	ToId      string          `json:"toId,omitempty"` // optional, if present, this is a private message to a specific client
+	FromId    string          `json:"fromId"`
+	SentAt    int64           `json:"sentAt"` // timestamp in milliseconds
 }
 
+// ------------------- SERVER MESSAGE DATA -------------------
 // only tells you that connection was established
 type ServerMessageClientRegisteredAckData struct {
 	// ClientInfo BareClient `json:"clientInfo"`
@@ -86,7 +94,7 @@ type ServerMessageClientRegisteredAckData struct {
 }
 
 type ServerMessageClientHelloAckData struct {
-	BareClient
+	LiveUser
 }
 
 type ServerMessageInvalidateQueryData struct {
@@ -99,13 +107,21 @@ type RoomJoinedBroadcast struct {
 
 type ServerMessagePresenceUpdateData struct {
 	ClientMessagePresenceUpdateData
-
-	BareClient
+	LiveUser
 }
 
 type ServerMessageChatMessageData struct {
 	ClientMessageChatMessageData
-	FromId string `json:"fromId"`
+	FromId string `json:"fromId"` // Overwrite the FromId
+}
+
+type ServerMessageRoomUsersUpdateData struct {
+	Users []LiveUser `json:"users"`
+}
+
+// only for sending back the messages on first join
+type ServerMessageSyncRoomMessagesData struct {
+	Messages []json.RawMessage `json:"messages"`
 }
 
 type CursorPoint [2]float64

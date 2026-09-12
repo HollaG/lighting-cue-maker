@@ -14,8 +14,12 @@ export const usePresenceStore = create<PresenceStore>((set) => ({
     set((state) => ({
       presenceInformationMap: {
         ...state.presenceInformationMap,
-        [presence.userId]: {
-          ...state.presenceInformationMap[presence.userId],
+
+        // Key by userId OR connectionId.
+        // Benefits of userId: only one copy of a user in the map at a time.
+        // Benefits of connectionId: allows multiple connections per user, which is useful for debugging.
+        [presence.connectionId]: {
+          ...state.presenceInformationMap[presence.connectionId],
           ...presence,
         },
       },

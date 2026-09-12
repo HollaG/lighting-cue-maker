@@ -46,7 +46,7 @@ type Client struct {
 }
 
 // The bare information that the Web client needs to know
-type BareClient struct {
+type LiveUser struct {
 	UserId       string `json:"userId"`
 	ConnectionId string `json:"connectionId"`
 	Name         string `json:"name"`
@@ -176,7 +176,7 @@ func (c *Client) readLoop() error {
 			c.Send(ServerMessage{
 				Type: ServerMessageHelloAck,
 				Data: ServerMessageClientHelloAckData{
-					BareClient: BareClient{
+					LiveUser: LiveUser{
 						ConnectionId: c.connectionId,
 						UserId:       c.userId,
 						Name:         c.name,
@@ -232,9 +232,10 @@ func (c *Client) readLoop() error {
 			// add the client's ID and name to the presence update data
 			presenceUpdateData := ServerMessagePresenceUpdateData{
 				ClientMessagePresenceUpdateData: data,
-				BareClient: BareClient{
-					UserId: c.userId,
-					Name:   c.name,
+				LiveUser: LiveUser{
+					UserId:       c.userId,
+					ConnectionId: c.connectionId,
+					Name:         c.name,
 				},
 			}
 
@@ -248,7 +249,7 @@ func (c *Client) readLoop() error {
 		case ClientMessageChatMessage: // User emit chat message event
 			data, err := decodeMessageData[ClientMessageChatMessageData](message.Data)
 
-			if err != nil || data.Content == "" || data.MessageId == "" {
+			if err != nil || data.Content == nil || data.MessageId == "" {
 				log.Printf("Error decoding chat message data: %v", err) // don't send empty messages
 				continue
 			}
@@ -256,15 +257,19 @@ func (c *Client) readLoop() error {
 			// add the client ID
 			chatMessageData := ServerMessageChatMessageData{
 				ClientMessageChatMessageData: data,
-				FromId:                       c.connectionId,
+				// overwrite c.userId to make sure client's can't falsly send
+				FromId: c.userId,
 			}
 
 			// forward it along to the clients
-			c.hub.SendToRoomPeers(c, ServerMessage{
+			c.hub.BroadcastToRoom(c, ServerMessage{
 				Type:      ServerMessageChatMessage,
 				Data:      chatMessageData,
 				Timestamp: timestamp,
 			})
+
+			// Save it to the room's message history
+			c.hub.SaveRoomMessage(c, chatMessageData)
 		}
 
 	}

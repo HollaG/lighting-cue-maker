@@ -66,18 +66,31 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
 
       // do NOT store presence data in the Provider! It causes updates to all components.
       case ServerMessageType.ServerMessagePresenceUpdate:
-        if (typeof data.userId !== "string" || (data.cursor != null && !isCursorAnchor(data.cursor))) break;
+        if (
+          typeof data.userId !== "string" ||
+          typeof data.connectionId !== "string" ||
+          (data.cursor != null && !isCursorAnchor(data.cursor))
+        )
+          break;
+
         usePresenceStore.getState().mergePresence(convertServerPresenceInformation(data));
         break;
 
       case ServerMessageType.ServerMessageChatMessage:
         useRealtimeStore.getState().onMessageReceived(data);
         break;
+      case ServerMessageType.ServerMessageSyncRoomMessagesData:
+        useRealtimeStore.getState().setMessageHistory(data.messages);
+        break;
+
+      case ServerMessageType.ServerMessageRoomUsersUpdate:
+        if (!Array.isArray(data.users)) break;
+        useRealtimeStore.getState().setConnectedUsers(data.users);
+        useRealtimeStore
+          .getState()
+          .setCurrentUser(data.users.find((user) => user.userId === useRealtimeStore.getState().user?.userId) ?? null);
+        break;
       default:
-      // setHistory((current) => ({
-      //   ...current,
-      //   [message.type]: [...(current[message.type] ?? []), message.data],
-      // }));
     }
   }, []);
 

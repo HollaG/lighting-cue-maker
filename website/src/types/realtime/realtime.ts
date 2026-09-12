@@ -24,10 +24,7 @@ export const ClientMessageType = {
 
 export type ClientMessageType = (typeof ClientMessageType)[keyof typeof ClientMessageType];
 
-export type ClientMessageHelloData = {
-  userId: string;
-  name: string;
-};
+export type ClientMessageHelloData = LiveUser;
 
 export type ClientMessageInvalidateQueryData = {
   queryKey: string[];
@@ -75,14 +72,15 @@ export const ServerMessageType = {
   ServerMessageClientSetNameAck: "server.name.ack",
 
   ServerMessageRoomJoined: "server.room.joined",
+  ServerMessageRoomUsersUpdate: "server.room.users.update",
   ServerMessageRoomLeft: "server.room.left",
-  ServerMessageHelloAck: "server.hello.ack",
 
   ServerMessageInvalidateQuery: "server.invalidateQuery",
 
   ServerMessagePresenceUpdate: "server.presence.update",
 
   ServerMessageChatMessage: "server.chat.message",
+  ServerMessageSyncRoomMessagesData: "server.room.messages",
 } as const;
 
 export type ServerMessageType = (typeof ServerMessageType)[keyof typeof ServerMessageType];
@@ -97,6 +95,7 @@ export type ServerMessageInvalidateQueryData = {
 
 export type ServerMessagePresenceUpdateData = ClientMessagePresenceUpdateData & {
   userId: string;
+  connectionId: string;
   name: string;
 };
 
@@ -118,7 +117,10 @@ export type ServerMessageDataMap = {
     name: string;
   };
   [ServerMessageType.ServerMessageRoomJoined]: {
-    itemId: string;
+    messages: ChatMessageData[];
+  };
+  [ServerMessageType.ServerMessageRoomUsersUpdate]: {
+    users: LiveUser[]; // all users
   };
   [ServerMessageType.ServerMessageRoomLeft]: {
     itemId: string;
@@ -128,6 +130,9 @@ export type ServerMessageDataMap = {
   [ServerMessageType.ServerMessagePresenceUpdate]: ServerMessagePresenceUpdateData;
 
   [ServerMessageType.ServerMessageChatMessage]: ChatMessageData;
+  [ServerMessageType.ServerMessageSyncRoomMessagesData]: {
+    messages: ChatMessageData[];
+  };
 };
 
 export type ServerMessage = {

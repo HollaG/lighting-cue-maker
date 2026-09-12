@@ -6,7 +6,8 @@ import type { LiveUser } from "../types/realtime/realtime";
 type RealtimeStore = {
   roomId: string;
   user: LiveUser | null;
-  connectedUsers: LiveUser[];
+  connectedUsers: LiveUser[]; // INCLUDES the current user.
+  seenUserMap: Record<string, LiveUser>;
 
   messageHistory: ChatMessageData[];
 
@@ -27,14 +28,27 @@ export const useRealtimeStore = create<RealtimeStore>()(
         name: "",
       },
       connectedUsers: [],
-
+      seenUserMap: {}, // keep track of all seen users and their latest state
       messageHistory: [],
 
-      setCurrentUser: (user) => {
-        set({ user });
-        console.log("setCurrentUser", user);
-      },
-      setConnectedUsers: (users) => set({ connectedUsers: users }),
+      setCurrentUser: (user) =>
+        set((state) => ({
+          user,
+          seenUserMap: user ? { ...state.seenUserMap, [user.userId]: user } : state.seenUserMap,
+        })),
+      setConnectedUsers: (users) =>
+        set((state) => {
+          const seenUserMap = { ...state.seenUserMap };
+
+          for (const user of users) {
+            seenUserMap[user.userId] = user;
+          }
+
+          return {
+            connectedUsers: users,
+            seenUserMap,
+          };
+        }),
 
       setMessageHistory: (messages) => set({ messageHistory: messages }),
       onMessageReceived: (message) =>
@@ -47,7 +61,8 @@ export const useRealtimeStore = create<RealtimeStore>()(
       partialize: (state) => ({
         user: state.user,
         roomId: state.roomId,
-        messageHistory: state.messageHistory,
+        // messageHistory: state.messageHistory,
+        seenUserMap: state.seenUserMap,
       }),
     },
   ),

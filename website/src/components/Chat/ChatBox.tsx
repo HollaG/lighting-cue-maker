@@ -41,11 +41,18 @@ export function ChatBox({ draft, onDraftChange, onSend, inputRef }: ChatBoxProps
             }
           }}
         />
-        <ActionIcon type="submit" size={38} radius="xl" variant="filled" autoContrast disabled={!draft.trim()} aria-label="Send message">
+        <ActionIcon
+          type="submit"
+          size={"lg"}
+          radius="xl"
+          variant="filled"
+          autoContrast
+          disabled={!draft.trim()}
+          aria-label="Send message"
+        >
           <IconArrowRight size={21} />
         </ActionIcon>
       </div>
-      <Text size="xs" c="dimmed" mt={8}>Preview only · Messages are not shared</Text>
     </form>
   );
 }

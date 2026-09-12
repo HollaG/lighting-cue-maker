@@ -8,7 +8,6 @@ import { getColorFromId } from "../../utils/presence/cursorColors";
 export function RemoteCursorOverlay({ itemId }: { itemId: string | undefined }) {
   const presenceInformationMap = usePresenceStore((state) => state.presenceInformationMap);
   useCursorTracking(itemId);
-
   return createPortal(
     <div
       aria-hidden="true"
@@ -17,7 +16,7 @@ export function RemoteCursorOverlay({ itemId }: { itemId: string | undefined }) 
     >
       {Object.values(presenceInformationMap).map((presence) => (
         <Cursor
-          key={presence.userId}
+          key={presence.connectionId}
           anchor={presence.cursor?.itemId === itemId ? presence.cursor : null}
           color={getColorFromId(presence.userId)}
           label={presence.name}
