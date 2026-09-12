@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useRealtime } from "../../context/realtime";
 import { ClientMessageType } from "../../types/realtime";
 import { CURSOR_UPDATE_INTERVAL_MS, type CursorPoint } from "../../types/cursors";
-import { captureCursorAnchor } from "../../utils/cursorAnchors";
+import { captureCursorAnchor } from "../../utils/presence/cursorAnchors";
 
 /** One event-driven publisher for all marked cursor surfaces. */
 export function useCursorTracking(itemId: string | undefined) {

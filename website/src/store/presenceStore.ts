@@ -1,9 +1,9 @@
 import { create } from "zustand";
-import type { PresenceInformationMap, ServerMessagePresenceUpdateData } from "../types/realtime";
+import type { PresenceInformation, PresenceInformationMap } from "../types/presence";
 
 type PresenceStore = {
   presenceInformationMap: PresenceInformationMap;
-  mergePresence: (presence: ServerMessagePresenceUpdateData) => void;
+  mergePresence: (presence: PresenceInformation) => void;
   clearPresence: () => void;
 };
 

@@ -1,4 +1,4 @@
-import { CURSOR_SURFACES, type CursorAnchor, type CursorPoint } from "../types/cursors";
+import { CURSOR_SURFACES, type CursorAnchor, type CursorPoint } from "../../types/cursors";
 
 const SURFACE_SELECTOR = "[data-cursor-surface][data-cursor-item-id]";
 const ANCHOR_SELECTOR = "[data-cursor-anchor]";
@@ -10,10 +10,14 @@ export function isCursorAnchor(value: unknown): value is CursorAnchor {
     typeof anchor.itemId === "string" &&
     typeof anchor.anchorId === "string" &&
     CURSOR_SURFACES.some((surface) => surface === anchor.surface) &&
-    typeof anchor.xRatio === "number" && Number.isFinite(anchor.xRatio) &&
-    typeof anchor.yRatio === "number" && Number.isFinite(anchor.yRatio) &&
-    anchor.xRatio >= 0 && anchor.xRatio <= 1 &&
-    anchor.yRatio >= 0 && anchor.yRatio <= 1
+    typeof anchor.xRatio === "number" &&
+    Number.isFinite(anchor.xRatio) &&
+    typeof anchor.yRatio === "number" &&
+    Number.isFinite(anchor.yRatio) &&
+    anchor.xRatio >= 0 &&
+    anchor.xRatio <= 1 &&
+    anchor.yRatio >= 0 &&
+    anchor.yRatio <= 1
   );
 }
 
@@ -43,20 +47,14 @@ export function captureCursorAnchor(target: Element | null, point: CursorPoint, 
 export function resolveCursorAnchor(anchor: CursorAnchor, root: Document = document): CursorPoint | null {
   if (!isCursorAnchor(anchor)) return null;
   const surface = root.querySelector<HTMLElement>(
-    `[data-cursor-surface="${CSS.escape(anchor.surface)}"]` +
-    `[data-cursor-item-id="${CSS.escape(anchor.itemId)}"]`,
+    `[data-cursor-surface="${CSS.escape(anchor.surface)}"]` + `[data-cursor-item-id="${CSS.escape(anchor.itemId)}"]`,
   );
-  const element = surface?.querySelector<HTMLElement>(
-    `[data-cursor-anchor="${CSS.escape(anchor.anchorId)}"]`,
-  );
+  const element = surface?.querySelector<HTMLElement>(`[data-cursor-anchor="${CSS.escape(anchor.anchorId)}"]`);
   if (!element) return null;
 
   const rect = element.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return null;
-  const point: CursorPoint = [
-    rect.left + rect.width * anchor.xRatio,
-    rect.top + rect.height * anchor.yRatio,
-  ];
+  const point: CursorPoint = [rect.left + rect.width * anchor.xRatio, rect.top + rect.height * anchor.yRatio];
   const hit = root.elementFromPoint(point[0], point[1]);
   return hit && element.contains(hit) ? point : null;
 }

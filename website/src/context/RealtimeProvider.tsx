@@ -11,8 +11,9 @@ import {
   type ServerMessageHistory,
 } from "../types/realtime";
 import { RealtimeContext, type RealtimeContextValue } from "./realtime";
-import { isCursorAnchor } from "../utils/cursorAnchors";
+import { isCursorAnchor } from "../utils/presence/cursorAnchors";
 import { usePresenceStore } from "../store/presenceStore";
+import { convertServerPresenceInformation } from "../utils/presence/presence";
 
 type RealtimeConnectionState = Pick<RealtimeContextValue, "eventId" | "status" | "transport" | "error"> & {
   connection: RealtimeConnection | null;
@@ -57,7 +58,7 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
     switch (type) {
       case ServerMessageType.ServerMessagePresenceUpdate:
         if (typeof data.id !== "string" || (data.cursor != null && !isCursorAnchor(data.cursor))) break;
-        usePresenceStore.getState().mergePresence(data);
+        usePresenceStore.getState().mergePresence(convertServerPresenceInformation(data));
         break;
 
       default:

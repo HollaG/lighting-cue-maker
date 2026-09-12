@@ -2,6 +2,7 @@ import { createPortal } from "react-dom";
 import { useCursorTracking } from "../../hooks/realtime/useCursorTracking";
 import { usePresenceStore } from "../../store/presenceStore";
 import { Cursor } from "./Cursor";
+import { getColorFromId } from "../../utils/presence/cursorColors";
 
 /** Owns the sole Cursor instance for each peer, across every tracked surface. */
 export function RemoteCursorOverlay({ itemId }: { itemId: string | undefined }) {
@@ -18,6 +19,8 @@ export function RemoteCursorOverlay({ itemId }: { itemId: string | undefined }) 
         <Cursor
           key={presence.id}
           anchor={presence.cursor?.itemId === itemId ? presence.cursor : null}
+          color={getColorFromId(presence.id)}
+          label={presence.name}
         />
       ))}
     </div>,

@@ -73,7 +73,6 @@ export type ServerMessagePresenceUpdateData = ClientMessagePresenceUpdateData & 
 
 export type ServerMessageHistory = Partial<Record<ServerMessageType, unknown[]>>;
 export type ServerMessageLastMessageMap = Partial<Record<ServerMessageType, unknown>>;
-export type PresenceInformationMap = Record<string, ServerMessagePresenceUpdateData>;
 
 export type ClientMessage = {
   type: ClientMessageType;
