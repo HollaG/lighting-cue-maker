@@ -45,7 +45,7 @@ import {
   IconLayoutSidebarRightCollapse,
   IconPlayerPlay,
 } from "@tabler/icons-react";
-import { useDisclosure, useHotkeys, useLocalStorage, useThrottledCallback, type HotkeyItem } from "@mantine/hooks";
+import { useDisclosure, useHotkeys, useLocalStorage, type HotkeyItem } from "@mantine/hooks";
 import { sanitize } from "../../utils/sanitize";
 import { ContentControl } from "../../components/ContentControl/ContentControl";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -55,13 +55,10 @@ import { QLCConverter } from "../../sections/QLCConverter/QLCConverter";
 
 import QlcLogo from "../../assets/qlc_logo.svg";
 import { useLiveQueryUpdates } from "../../hooks/realtime/useLiveQueryUpdates";
-import { Cursor, type CursorPoint } from "../../components/Cursor/Cursor";
-import { useRealtime } from "../../context/realtime";
-import { ClientMessageType, ServerMessageType, type ClientMessagePresenceUpdateData } from "../../types/realtime";
+import { RemoteCursorOverlay } from "../../components/Cursor/RemoteCursorOverlay";
 
 export const EventPage = () => {
   useLiveQueryUpdates();
-  const { sendMessage } = useRealtime();
   // NOTE: evt is nullable!! remember to check
 
   const { eventId } = useParams({
@@ -228,43 +225,9 @@ export const EventPage = () => {
     });
   };
 
-  // Live Cursors
-  function handlePagePointerMove(event: React.PointerEvent) {
-    const point: CursorPoint = [event.clientX + window.scrollX, event.clientY + window.scrollY];
-    throttledSendMessage({
-      cursor: {
-        surface: "page",
-        point,
-      },
-    });
-  }
-
-  const throttledSendMessage = useThrottledCallback(
-    (data: ClientMessagePresenceUpdateData) => sendMessage(ClientMessageType.ClientMessagePresenceUpdate, data),
-    1000 / 24,
-  );
-
-  const presenceMap = useRealtime().presenceInformationMap;
-  const cursorUserIds = Object.values(presenceMap)
-    .filter((p) => p.cursor !== null && p.cursor.surface === "page")
-    .map((p) => p.id);
-
   return (
-    <Box
-      onPointerMove={handlePagePointerMove}
-      onPointerLeave={() =>
-        sendMessage(ClientMessageType.ClientMessagePresenceUpdate, {
-          cursor: null,
-        })
-      }
-    >
-      {/* Live Cursors */}
-      {cursorUserIds.map((userId) => {
-        const presence = presenceMap[userId];
-        const point = presence.cursor?.point;
-        if (!point) return null;
-        return <Cursor key={userId} point={point} />;
-      })}
+    <Box>
+      <RemoteCursorOverlay itemId={validActiveItemId ?? undefined} />
 
       <Container size={"xl"} mt="4rem">
         <Group mb="2rem">

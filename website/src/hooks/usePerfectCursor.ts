@@ -1,18 +1,22 @@
-// hooks/usePerfectCursor
-
 import { PerfectCursor } from "perfect-cursors";
-import React from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
+import type { CursorPoint } from "../types/cursors";
 
-export function usePerfectCursor(cb: (point: number[]) => void, point?: number[]) {
-  const [pc] = React.useState(() => new PerfectCursor(cb));
+/** Pass a stable callback; the animator is created and disposed with the owning cursor. */
+export function usePerfectCursor(callback: (point: number[]) => void) {
+  const animatorRef = useRef<PerfectCursor | null>(null);
 
-  React.useLayoutEffect(() => {
-    if (point) pc.addPoint(point);
-    return () => pc.dispose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pc]);
+  useLayoutEffect(() => {
+    // Creating it in the effect also handles React StrictMode's setup/cleanup replay.
+    const animator = new PerfectCursor(callback);
+    animatorRef.current = animator;
+    return () => {
+      // perfect-cursors 1.0.5 only clears its timeout in dispose().
+      cancelAnimationFrame(animator.lastRequestId);
+      animator.dispose();
+      animatorRef.current = null;
+    };
+  }, [callback]);
 
-  const onPointChange = React.useCallback((point: number[]) => pc.addPoint(point), [pc]);
-
-  return onPointChange;
+  return useCallback((point: CursorPoint) => animatorRef.current?.addPoint(point), []);
 }

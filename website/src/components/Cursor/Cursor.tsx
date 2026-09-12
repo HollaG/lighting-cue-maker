@@ -1,11 +1,10 @@
-// components/Cursor
-
 import * as React from "react";
 import { usePerfectCursor } from "../../hooks/usePerfectCursor";
+import type { CursorAnchor, CursorPoint } from "../../types/cursors";
+import { resolveCursorAnchor } from "../../utils/cursorAnchors";
 
-export type CursorPoint = [number, number];
-
-export function Cursor({ point }: { point: CursorPoint }) {
+/** Remains mounted when hidden or when its user moves to a different surface. */
+export function Cursor({ anchor }: { anchor: CursorAnchor | null | undefined }) {
   const rCursor = React.useRef<SVGSVGElement>(null);
 
   const animateCursor = React.useCallback((point: number[]) => {
@@ -16,7 +15,30 @@ export function Cursor({ point }: { point: CursorPoint }) {
 
   const onPointMove = usePerfectCursor(animateCursor);
 
-  React.useLayoutEffect(() => onPointMove(point), [onPointMove, point]);
+  React.useLayoutEffect(() => {
+    const element = rCursor.current;
+    if (!element) return;
+    if (!anchor) {
+      element.style.visibility = "hidden";
+      return;
+    }
+
+    let frame = 0;
+    let previous: CursorPoint | null = null;
+    const update = () => {
+      const point = resolveCursorAnchor(anchor);
+      element.style.visibility = point ? "visible" : "hidden";
+      if (point && (!previous || point[0] !== previous[0] || point[1] !== previous[1])) {
+        onPointMove(point);
+      }
+      previous = point;
+      // DOM measurements follow nested scrolling, wrapping and animated card expansion.
+      // They do not update React state or send network traffic.
+      frame = requestAnimationFrame(update);
+    };
+    update();
+    return () => cancelAnimationFrame(frame);
+  }, [anchor, onPointMove]);
 
   return (
     <svg
@@ -27,7 +49,7 @@ export function Cursor({ point }: { point: CursorPoint }) {
         left: -15,
         width: 35,
         height: 35,
-        zIndex: 1000,
+        pointerEvents: "none",
       }}
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 35 35"

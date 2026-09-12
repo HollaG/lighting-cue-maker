@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"math/rand/v2"
+	"time"
 
 	"github.com/google/uuid"
 	webtransport "github.com/quic-go/webtransport-go"
@@ -186,6 +187,31 @@ func (c *Client) readLoop() error {
 				Data: ServerMessageInvalidateQueryData{
 					QueryKey: data.QueryKey,
 				},
+			})
+
+		case ClientMessagePresenceUpdate: // User emit presence update event
+			data, err := decodeMessageData[ClientMessagePresenceUpdateData](message.Data)
+
+			if err != nil {
+				log.Printf("Error decoding presence update data: %v", err)
+				continue
+			}
+
+			// add the client's ID and name to the presence update data
+			presenceUpdateData := ServerMessagePresenceUpdateData{
+				ClientMessagePresenceUpdateData: data,
+				BareClient: BareClient{
+					ID:   c.id,
+					Name: c.name,
+				},
+				// unix epoch
+				Timestamp: time.Now().Unix(),
+			}
+
+			// forward it along to the clients
+			c.hub.SendToRoomPeers(c, ServerMessage{
+				Type: ServerMessagePresenceUpdate,
+				Data: presenceUpdateData,
 			})
 		}
 

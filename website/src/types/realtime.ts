@@ -1,4 +1,4 @@
-import type { CursorPoint } from "../components/Cursor/Cursor";
+import type { CursorAnchor } from "./cursors";
 
 export const ClientMessageType = {
   ClientMessageSetName: "client.setName",
@@ -24,19 +24,8 @@ export type ClientMessagePresenceFollowData = {
 };
 
 export type ClientMessagePresenceUpdateData = {
-  cursor: {
-    surface: "page" | "cueList";
-    point: CursorPoint;
-  } | null;
-
-  // scroll: {
-  //   page: { x: number; y: number };
-  //   cueList: { y: number };
-  // }
-  // pageScroll: { x: number; y: number };
-
-  // specialist fields
-  // cueListScroll: { y: number };
+  // Omitted means unchanged; null hides the cursor. Scroll fields can be added here later.
+  cursor?: CursorAnchor | null;
 };
 
 export type ClientMessageDataMap = {

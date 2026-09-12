@@ -21,6 +21,8 @@ const (
 	ClientMessageRoomLeave ClientMessageType = "client.room.leave"
 
 	ClientMessageInvalidateQuery ClientMessageType = "client.invalidateQuery"
+
+	ClientMessagePresenceUpdate ClientMessageType = "client.presence.update"
 )
 
 type ServerMessageType string
@@ -34,6 +36,8 @@ const (
 	ServerMessageHelloAck   ServerMessageType = "server.hello.ack"
 
 	ServerMessageInvalidateQuery ServerMessageType = "server.invalidateQuery"
+
+	ServerMessagePresenceUpdate ServerMessageType = "server.presence.update"
 )
 
 type ClientMessageSetNameData struct {
@@ -45,6 +49,11 @@ type ClientMessageRoomJoinData struct {
 
 type ClientMessageInvalidateQueryData struct {
 	QueryKey []string `json:"queryKey"`
+}
+
+type ClientMessagePresenceUpdateData struct {
+	// Keep frontend anchors opaque, including explicit null when a cursor is hidden.
+	Cursor json.RawMessage `json:"cursor,omitempty"`
 }
 
 type ServerMessageClientRegisteredAckData struct {
@@ -59,7 +68,17 @@ type RoomJoinedBroadcast struct {
 	ItemId string `json:"itemId"`
 }
 
+type ServerMessagePresenceUpdateData struct {
+	ClientMessagePresenceUpdateData
+
+	BareClient
+
+	Timestamp int64 `json:"timestamp"`
+}
+
+type CursorPoint [2]float64
+
 type CursorData struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
+	Point   CursorPoint `json:"point"`
+	Surface string      `json:"surface"` // page | cueList
 }

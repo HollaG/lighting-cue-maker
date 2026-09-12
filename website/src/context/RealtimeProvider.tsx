@@ -12,6 +12,8 @@ import {
   type ServerMessageHistory,
 } from "../types/realtime";
 import { RealtimeContext, type RealtimeContextValue } from "./realtime";
+import { PRESENCE_HEARTBEAT_MS, PRESENCE_TIMEOUT_MS } from "../types/cursors";
+import { isCursorAnchor } from "../utils/cursorAnchors";
 
 type RealtimeConnectionState = Pick<RealtimeContextValue, "eventId" | "status" | "transport" | "error"> & {
   connection: RealtimeConnection | null;
@@ -24,13 +26,28 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
   // History is only used for persistent stuff, such as the chat history.
   const [history, setHistory] = useState<ServerMessageHistory>({});
 
-  // lastMessage is used for live updates, such as cursor position.
-  // const [lastMessageMap, setLastMessageMap] = useState<
-  //   Partial<Record<ServerMessageType, ServerMessageDataMap[ServerMessageType]>>
-  // >({});
-
-  // Presence information needs to be keyed by userId
+  // A peer keeps its cursor instance until it leaves or stops sending heartbeats.
   const [presenceInformationMap, setPresenceInformationMap] = useState<PresenceInformationMap>({});
+  const presenceLastSeenRef = useRef(new Map<string, number>());
+
+  // A stale presence backup: usually, when a client leaves, the React cleanup function will send
+  // { cursor: null }, which will remove the cursor. This useEffect() simply is a backup
+  // in case the client leaves but the cleanup function doesn't run.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const expired = [...presenceLastSeenRef.current]
+        .filter(([, time]) => Date.now() - time > PRESENCE_TIMEOUT_MS)
+        .map(([id]) => id);
+      if (!expired.length) return;
+      for (const id of expired) presenceLastSeenRef.current.delete(id);
+      setPresenceInformationMap((current) => {
+        const next = { ...current };
+        for (const id of expired) delete next[id];
+        return next;
+      });
+    }, PRESENCE_HEARTBEAT_MS);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const listenersRef = useRef(
     new Map<ServerMessageType, Set<(data: ServerMessageDataMap[ServerMessageType]) => void>>(),
@@ -63,6 +80,8 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
     const { type, data } = message;
     switch (type) {
       case ServerMessageType.ServerMessagePresenceUpdate:
+        if (typeof data.id !== "string" || (data.cursor != null && !isCursorAnchor(data.cursor))) break;
+        presenceLastSeenRef.current.set(data.id, Date.now());
         setPresenceInformationMap((current) => ({
           ...current,
           [data.id]: {
@@ -78,12 +97,6 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
           [message.type]: [...(current[message.type] ?? []), message.data],
         }));
     }
-
-    // update it in the map
-    // setLastMessageMap((current) => ({
-    //   ...current,
-    //   [message.type]: message.data,
-    // }));
   }, []);
 
   const sendMessage = useCallback(
@@ -97,6 +110,8 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
   );
 
   useEffect(() => {
+    setPresenceInformationMap({});
+    presenceLastSeenRef.current.clear();
     if (!itemId || connectionState.status !== "connected" || !connectionState.connection) return;
 
     const connection = connectionState.connection;
@@ -193,7 +208,6 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
         error: currentState.error,
         history,
         presenceInformationMap,
-        // lastMessageMap,
         registerListener,
         sendMessage,
       }}

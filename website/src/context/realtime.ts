@@ -6,7 +6,6 @@ import type {
   PresenceInformationMap,
   ServerMessageDataMap,
   ServerMessageHistory,
-  ServerMessageLastMessageMap,
   ServerMessageType,
 } from "../types/realtime";
 
@@ -16,7 +15,6 @@ export interface RealtimeContextValue {
   transport: RealtimeTransportKind | null;
   error: Error | null;
   history: ServerMessageHistory;
-  // lastMessageMap: ServerMessageLastMessageMap;
   presenceInformationMap: PresenceInformationMap;
   sendMessage: (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => void;
   registerListener: (

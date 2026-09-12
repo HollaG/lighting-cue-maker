@@ -210,7 +210,7 @@ const RichContentInternal = ({
   };
 
   return (
-    <Stack gap={0} onClick={handleContainerClick}>
+    <Stack gap={0} onClick={handleContainerClick} data-cursor-surface="lyrics" data-cursor-item-id={itemId}>
       {(() => {
         let cueCount = 0;
         let bumpCount = 0;
@@ -241,7 +241,7 @@ const RichContentInternal = ({
               const isSelected = !!cueId && currentlySelectedCueId === cueId;
 
               return (
-                <Flex key={index2}>
+                <Flex key={index2} data-cursor-anchor={`${index1}:${index2}`}>
                   <RichWord
                     word={word}
                     index1={index1}
