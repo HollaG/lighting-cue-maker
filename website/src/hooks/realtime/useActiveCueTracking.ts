@@ -38,6 +38,27 @@ export function useActiveCueTracking({ isFollowing }: { isFollowing: boolean }) 
           // undefined=no update, null = unselect
           // this update did change the currently selected cue
           setCurrentlySelectedCueId(data.currentlySelectedCueId ?? undefined);
+
+          // Special: we need to scroll the Lyric into view.
+          // This is done intentionally in CueCard/ContentControl, which is unlike that of the CueCard.
+          const element = document.getElementById(`ref-${data.currentlySelectedCueId}`);
+          console.log("Scrolling to cue", data.currentlySelectedCueId, element);
+          if (!element) return;
+
+          const rect = element.getBoundingClientRect();
+          const isFullyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+
+          if (!isFullyVisible) {
+            // element.scrollIntoView({
+            //   behavior: "smooth",
+            //   block: "nearest",
+            // });
+            const y = element.getBoundingClientRect().top + window.scrollY - 128;
+            window.scrollTo({ top: y, behavior: "smooth" });
+          }
+
+          // const y = element.getBoundingClientRect().top + window.scrollY - 128;
+          // window.scrollTo({ top: y, behavior: "smooth" });
         }
       }
     });

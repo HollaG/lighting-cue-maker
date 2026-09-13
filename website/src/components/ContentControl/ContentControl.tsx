@@ -108,7 +108,7 @@ export const ContentControl = ({
         />
       </Box>
 
-      {/* <Transition
+      <Transition
         mounted={(!inViewport || alwaysShow) && showCues}
         transition="fade-up"
         duration={250}
@@ -117,11 +117,11 @@ export const ContentControl = ({
         {(styles) => (
           <Box
             pos="fixed"
-            bottom={"32px"}
-            right={showCues ? `${floatingControlRightPercent}%` : "64px"}
+            top={"32px"}
+            right={showCues ? `${floatingControlRightPercent}%` : "32px"}
             style={{
               ...styles,
-              width: showCues ? `${floatingControlWidthPercent}%` : "calc(100% - 128px)",
+              width: showCues ? `${floatingControlWidthPercent}%` : "calc(100% - 64px)",
               marginLeft: "auto",
               marginRight: "auto",
               backgroundColor: "light-dark(var(--mantine-color-white), var(--mantine-color-dark-6))",
@@ -202,7 +202,7 @@ export const ContentControl = ({
             </Group>
           </Box>
         )}
-      </Transition> */}
+      </Transition>
     </Box>
   );
 };
