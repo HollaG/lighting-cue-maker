@@ -1,5 +1,5 @@
 import type { ChatMessageData } from "./chat";
-import type { CursorAnchor } from "./cursors";
+import type { CursorAnchor, CursorSurface } from "./cursors";
 
 export type LiveUser = {
   userId: string;
@@ -24,20 +24,26 @@ export const ClientMessageType = {
 
 export type ClientMessageType = (typeof ClientMessageType)[keyof typeof ClientMessageType];
 
+// Meta information: connection nego, etc
 export type ClientMessageHelloData = LiveUser;
 
+// Live Update for data modifications
 export type ClientMessageInvalidateQueryData = {
   queryKey: string[];
 };
 
-// Who to follow. pass null to stop following
-export type ClientMessagePresenceFollowData = {
-  userId: string | null;
-};
-
+// Cursor & scroll data
 export type ClientMessagePresenceUpdateData = {
   // Omitted means unchanged; null hides the cursor. Scroll fields can be added here later.
-  cursor?: CursorAnchor | null;
+  cursor: CursorAnchor | null;
+
+  scroll?: Record<CursorSurface, { x: number; y: number }> | null; // each client can choose to follow, or not
+};
+
+// "Live View" data
+// Updates each client on who is following who. This is not needed for the own client, but rather to inform others.
+export type ClientMessagePresenceFollowData = {
+  followedUserId: string | null; // null means unfollow
 };
 
 export type ClientMessageChatMessageData = Omit<ChatMessageData, "fromId">;
@@ -101,6 +107,9 @@ export type ServerMessagePresenceUpdateData = ClientMessagePresenceUpdateData & 
 
 export type ServerMessageHistory = Partial<Record<ServerMessageType, unknown[]>>;
 export type ServerMessageLastMessageMap = Partial<Record<ServerMessageType, unknown>>;
+export type ServerMessagePresenceFollowInformation = ClientMessagePresenceFollowData; // followerId -> followingId
+
+// ----------------------
 
 export type ClientMessage = {
   type: ClientMessageType;

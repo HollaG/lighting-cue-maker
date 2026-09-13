@@ -1,11 +1,12 @@
-import { ActionIcon, Avatar, Box, Group, Text } from "@mantine/core";
+import { ActionIcon, Avatar, Box, Button, Group, HoverCard, Stack, Text } from "@mantine/core";
 import { IconChevronDown, IconMessages } from "@tabler/icons-react";
 import classes from "./Chat.module.css";
 import { ClientMessageType, type LiveUser } from "../../types/realtime/realtime";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { useDebouncedState } from "@mantine/hooks";
 import { useRealtime } from "../../context/realtime";
+import { getColorFromId } from "../../utils/presence/cursorColors";
 
 type ChatInfoProps = {
   titleId: string;
@@ -13,6 +14,7 @@ type ChatInfoProps = {
   participants: LiveUser[];
   onClose: () => void;
 };
+const SHOW_MAX_PEERS = 1;
 
 /** Chat heading and participant summary, without connection-status indicators. */
 export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatInfoProps) {
@@ -23,6 +25,9 @@ export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatIn
   useEffect(() => {
     sendMessage(ClientMessageType.ClientMessageSetName, { name: internalUserName });
   }, [internalUserName, currentUser.name]);
+
+  const displayedPeers = peers.slice(0, SHOW_MAX_PEERS);
+  const hiddenPeers = peers.slice(SHOW_MAX_PEERS);
 
   return (
     <header className={classes.info}>
@@ -39,47 +44,114 @@ export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatIn
       </Group>
 
       <Group justify="space-between" wrap="nowrap" className={classes.participants}>
+        {peers.length > 0 ? (
+          <Avatar.Group spacing="sm" className={classes.avatarGroup}>
+            {displayedPeers.map((participant) => (
+              <HoverCard shadow="md" position="top" withArrow key={participant.userId}>
+                <HoverCard.Target>
+                  <Avatar
+                    name={participant.name}
+                    title={participant.name}
+                    aria-label={participant.name}
+                    size={32}
+                    radius="xl"
+                    variant="light"
+                    color={getColorFromId(participant.userId)}
+                  />
+                </HoverCard.Target>
+                <HoverCard.Dropdown>
+                  <Stack>
+                    <Group gap="xs" align="center">
+                      <Avatar
+                        key={participant.userId}
+                        name={participant.name}
+                        title={participant.name}
+                        aria-label={participant.name}
+                        size={32}
+                        radius="xl"
+                        variant="light"
+                        color={getColorFromId(participant.userId)}
+                      />
+                      <Text size="sm" fw={600}>
+                        {participant.name}
+                      </Text>
+                      <Button variant="light" size="xs">
+                        Follow view
+                      </Button>
+                    </Group>
+                  </Stack>
+                </HoverCard.Dropdown>
+              </HoverCard>
+            ))}
+            {hiddenPeers.length > 0 && (
+              <HoverCard shadow="md" position="top" withArrow>
+                <HoverCard.Target>
+                  <Avatar size={32} radius="xl" title={hiddenPeers.map((peer) => peer.name).join(", ")}>
+                    +{hiddenPeers.length}
+                  </Avatar>
+                </HoverCard.Target>
+                <HoverCard.Dropdown>
+                  <Stack>
+                    {hiddenPeers.map((peer, index) => (
+                      <Group gap="xs" align="center" key={peer.userId}>
+                        <Avatar
+                          name={peer.name}
+                          title={peer.name}
+                          aria-label={peer.name}
+                          size={32}
+                          radius="xl"
+                          variant="light"
+                          color={getColorFromId(peer.userId)}
+                        />
+                        <Text size="sm" fw={600} flex={1} truncate>
+                          {peer.name}
+                        </Text>
+
+                        <Button variant="light" size="xs">
+                          Follow view
+                        </Button>
+                      </Group>
+                    ))}
+                  </Stack>
+                </HoverCard.Dropdown>
+              </HoverCard>
+            )}
+          </Avatar.Group>
+        ) : (
+          <Text fz="xs" c="dark.1">
+            No one's online
+          </Text>
+        )}
         <Group gap="sm" wrap="nowrap" className={classes.identity}>
-          <Avatar name={currentUser.name} size={38} radius="xl" variant="light" />
           <Box miw={0}>
             <Group gap="6px">
               {/* <Text size="sm" fw={600} truncate>
                 {currentUser.name}
               </Text> */}
-              <CustomTextInput defaultValue={internalUserName} onChange={(e) => setInternalUserName(e.target.value)} />
+              <CustomTextInput
+                defaultValue={internalUserName}
+                onChange={(e) => setInternalUserName(e.target.value)}
+                // style={{ textAlign: "right" }}
+                styles={{
+                  input: {
+                    textAlign: "right",
+                    fieldSizing: "content",
+                  },
+                }}
+              />
               <Text c="dimmed" size="xs">
-                (You){" "}
+                (You)
               </Text>
             </Group>
           </Box>
+          <Avatar
+            name={currentUser.name}
+            size={38}
+            radius="xl"
+            variant="light"
+            color={getColorFromId(currentUser.userId)}
+          />
         </Group>
-        {peers.length > 0 && (
-          <Avatar.Group spacing="sm" className={classes.avatarGroup}>
-            {peers.slice(0, 3).map((participant) => (
-              <Avatar
-                key={participant.userId}
-                name={participant.name}
-                title={participant.name}
-                aria-label={participant.name}
-                size={32}
-                radius="xl"
-                variant="light"
-              />
-            ))}
-            {peers.length > 3 && (
-              <Avatar
-                size={32}
-                radius="xl"
-                title={peers
-                  .slice(3)
-                  .map((peer) => peer.name)
-                  .join(", ")}
-              >
-                +{peers.length - 3}
-              </Avatar>
-            )}
-          </Avatar.Group>
-        )}
       </Group>
     </header>
   );

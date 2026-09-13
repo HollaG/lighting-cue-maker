@@ -1,45 +1,19 @@
-import { ActionIcon, Indicator, Loader, Paper, Transition } from "@mantine/core";
-import { IconMessages } from "@tabler/icons-react";
+import { ActionIcon, Indicator, Loader, Paper, Tooltip, Transition } from "@mantine/core";
+import { IconMessages, IconScreenShare } from "@tabler/icons-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { ChatBox } from "./ChatBox";
 import { ChatContents } from "./ChatContents";
 import { ChatInfo } from "./ChatInfo";
 import classes from "./Chat.module.css";
-import { ClientMessageType, type LiveUser } from "../../types/realtime/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 import { useRealtimeStore } from "../../store/realtimeStore";
 import type { ChatMessageData } from "../../types/realtime/chat";
 import { useRealtime } from "../../context/realtime";
 
-// Preview data until chat messages are supported by the realtime protocol.
-
-// function createPreviewMessages(): ChatMessageData[] {
-//   const now = Date.now();
-//   return [
-//     {
-//       messageId: "preview-1",
-//       fromId: participants[1].userId,
-//       text: "Hey! Have you had a chance to check the lighting cues for the chorus?",
-//       sentAt: now - 4 * 60_000,
-//     },
-//     {
-//       messageId: "preview-2",
-//       sender: currentUser,
-//       text: "Yes, they look good! I've softened the fade into the next verse.",
-//       sentAt: now - 2 * 60_000,
-//     },
-//     {
-//       messageId: "preview-3",
-//       sender: participants[2],
-//       text: "Nice! Let's run through it together before rehearsal.",
-//       sentAt: now - 60_000,
-//     },
-//   ];
-// }
-
 /** A chat box, positioned at the right side of the screen */
-export const ChatContainer = () => {
+export const ChatContainer = ({ itemId }: { itemId?: string }) => {
   const [chatIsOpen, setChatIsOpen] = useState(false);
-  const { sendMessage: sendToServer } = useRealtime();
+  const { sendMessage: sendToServer, status } = useRealtime();
   const currentUser = useRealtimeStore((state) => state.user);
   const participants = useRealtimeStore((state) => state.connectedUsers);
   // const [messages, setMessages] = useState(createPreviewMessages);
@@ -87,9 +61,31 @@ export const ChatContainer = () => {
   };
 
   const unreadCount = messages.length - messageCountSinceLastOpen;
+  const isConnected = status === "connected";
+  const canUseChat = currentUser !== null && itemId !== undefined && isConnected;
+
+  const disabledReason = !itemId
+    ? "Please select an Item first"
+    : isConnected
+      ? "Connection error - please try refreshing"
+      : "Unknown error - please try refreshing";
 
   return (
     <>
+      <Tooltip label="Follow view" position="left" withArrow>
+        <ActionIcon
+          className={classes.screenShareLauncher}
+          onClick={() => console.log("Screen share clicked")}
+          size={48}
+          radius="lg"
+          variant="light"
+          autoContrast
+          aria-label="Follow someone's view"
+        >
+          <IconScreenShare size={24} />
+        </ActionIcon>
+      </Tooltip>
+
       <Indicator
         color="red"
         inline
@@ -99,23 +95,30 @@ export const ChatContainer = () => {
         className={classes.launcher}
         offset={4}
       >
-        <ActionIcon
-          ref={launcherRef}
-
-          onClick={() => {
-            if (chatIsOpen) closeChat();
-            else openChat();
-          }}
-          size={48}
-          radius="lg"
-          variant="filled"
-          autoContrast
-          aria-label={chatIsOpen ? "Close chat" : "Open chat"}
-          aria-expanded={chatIsOpen}
-          aria-controls={chatIsOpen ? panelId : undefined}
+        <Tooltip
+          label={canUseChat ? (chatIsOpen ? "Close chat" : "Open chat") : disabledReason}
+          position="left"
+          withArrow
         >
-          <IconMessages size={24} />
-        </ActionIcon>
+          <ActionIcon
+            ref={launcherRef}
+            onClick={() => {
+              if (chatIsOpen) closeChat();
+              else openChat();
+            }}
+            size={48}
+            radius="lg"
+            variant="filled"
+            autoContrast
+            aria-label={chatIsOpen ? "Close chat" : "Open chat"}
+            aria-expanded={chatIsOpen}
+            aria-controls={chatIsOpen ? panelId : undefined}
+
+            disabled={!canUseChat}
+          >
+            <IconMessages size={24} />
+          </ActionIcon>
+        </Tooltip>
       </Indicator>
 
       <Transition

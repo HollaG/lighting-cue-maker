@@ -1,4 +1,4 @@
-import { ActionIcon, Text, Textarea } from "@mantine/core";
+import { ActionIcon, Textarea } from "@mantine/core";
 import { IconArrowRight } from "@tabler/icons-react";
 import type { Ref } from "react";
 import classes from "./Chat.module.css";

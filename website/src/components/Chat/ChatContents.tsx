@@ -3,6 +3,7 @@ import { Fragment, useEffect, useRef } from "react";
 import classes from "./Chat.module.css";
 import type { ChatMessageData } from "../../types/realtime/chat";
 import { useRealtimeStore } from "../../store/realtimeStore";
+import { getColorFromId } from "../../utils/presence/cursorColors";
 
 type ChatContentsProps = {
   messages: ChatMessageData[];
@@ -55,19 +56,25 @@ export function ChatContents({ messages, currentUserId }: ChatContentsProps) {
             )}
             <div className={classes.message} data-own={ownMessage || undefined}>
               {!ownMessage && (
-                <Avatar name={seenUserMap[message.fromId]?.name || "Unknown"} size={32} radius="xl" variant="light" />
+                <Avatar
+                  name={seenUserMap[message.fromId]?.name || "Unknown"}
+                  size={32}
+                  radius="xl"
+                  variant="light"
+                  color={getColorFromId(message.fromId)}
+                />
               )}
               <div className={classes.messageBody}>
                 <Group gap={8} className={classes.messageMeta}>
                   <Text size="xs" fw={600}>
-                    {ownMessage ? "" : currentUser?.name || "Unknown"}
+                    {ownMessage ? "" : seenUserMap[message.fromId]?.name || "Unknown"}
                   </Text>
                   <Text component="time" dateTime={date.toISOString()} size="xs" c="dimmed">
                     {timeFormatter.format(date)}
                   </Text>
                 </Group>
                 <Text className={classes.bubble} size="sm">
-                  {message.content.map((block, blockIndex) => (block.type === "text" ? block.text : null)).join("")}
+                  {message.content.map((block) => (block.type === "text" ? block.text : null)).join("")}
                 </Text>
               </div>
             </div>

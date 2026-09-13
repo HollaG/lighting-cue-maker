@@ -70,6 +70,13 @@ profile from PowerShell:
   --user-data-dir="$env:TEMP\chrome-webtransport-test"
 ```
 
+```powershell
+& "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe" `
+  --origin-to-force-quic-on=localhost:6121 `
+  --ignore-certificate-errors `
+  --user-data-dir="$env:TEMP\edge-webtransport-test"
+```
+
 The flags do the following:
 
 - `--origin-to-force-quic-on` forces QUIC for the WebTransport listener.
