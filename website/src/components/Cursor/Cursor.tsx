@@ -8,8 +8,7 @@ import type { CURSOR_COLORS } from "../../utils/presence/cursorColors";
 import { Badge, Box } from "@mantine/core";
 import { useRealtimeStore } from "../../store/realtimeStore";
 import { useInViewport, useMergedRef } from "@mantine/hooks";
-import { Group } from "react-konva";
-import { IconCaretDown, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 
 export function Cursor({
   anchor,

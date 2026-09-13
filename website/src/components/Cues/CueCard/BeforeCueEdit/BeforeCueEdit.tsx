@@ -96,7 +96,7 @@ export const BeforeCueEdit = ({
         </Grid.Col>
         <Grid.Col span={9}>
           <Radio.Group value={tempCueType} onChange={setTempCueType}>
-            <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4, lg: 4 }} spacing="xs">
+            <SimpleGrid cols={{ base: 1, xs: 2, xl: 4 }} spacing="xs">
               <RadioCard name="Normal cue" description="Standard lighting cue" value="normal" />
               <RadioCard name="Blackout cue" description="Completely darken the stage" value="blackout" />
             </SimpleGrid>
@@ -124,7 +124,7 @@ export const BeforeCueEdit = ({
             </Grid.Col>
             <Grid.Col span={9}>
               <Checkbox.Group value={tempEnabledGroups} onChange={setTempEnabledGroups}>
-                <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4, lg: 4 }} spacing="xs">
+                <SimpleGrid cols={{ base: 1, xs: 2, xl: 4 }} spacing="xs">
                   {fixtureGroups.map((group) => (
                     <CheckboxCard key={group.id} name={group.name} description={group.description} value={group.id} />
                   ))}

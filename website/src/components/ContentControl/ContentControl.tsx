@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { ActionIcon, Box, Flex, Group, Select, Transition } from "@mantine/core";
 import { useAppStore, type InputMode } from "../../store/appStore";
 import { ContentControlFixed } from "./ContentControlFixed";

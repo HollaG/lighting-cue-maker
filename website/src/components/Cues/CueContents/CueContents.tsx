@@ -76,22 +76,30 @@ export const CueContents = ({
 }) => {
   if (cue.cueConfig.mode === "unknown") {
     return (
-      <BeforeCueEdit
-        cue={cue}
-        onCopyCue={onCopyCue}
-        onDeleteCue={onDeleteCue}
-        cueOrder={cueOrder}
-        cueConfig={cue.cueConfig}
-        cueNumber={cueNumber}
-        fixtureGroups={fixtureGroups}
-        onSaveCueConfig={onSaveCueConfig}
-      />
+      <Box data-cursor-anchor={`fixture-group-${cue.id}`}>
+        <BeforeCueEdit
+          cue={cue}
+          onCopyCue={onCopyCue}
+          onDeleteCue={onDeleteCue}
+          cueOrder={cueOrder}
+          cueConfig={cue.cueConfig}
+          cueNumber={cueNumber}
+          fixtureGroups={fixtureGroups}
+          onSaveCueConfig={onSaveCueConfig}
+        />
+      </Box>
     );
   }
 
   if (cue.cueConfig.mode === "blackout") {
     return (
-      <Alert variant="light" color="gray" title="Blackout cue" icon={<IconInfoCircle width="1rem" />}>
+      <Alert
+        variant="light"
+        color="gray"
+        title="Blackout cue"
+        icon={<IconInfoCircle width="1rem" />}
+        data-cursor-anchor={`fixture-group-${cue.id}`}
+      >
         <Stack>
           This is a blackout cue. All fixtures will be turned off when this cue is activated.
           <Box>
@@ -139,7 +147,7 @@ export const CueContents = ({
       const enabledFixtureGroups = fixtureGroups.filter((group) => enabledGroups.includes(group.id));
       const disabledFixtureGroups = fixtureGroups.filter((group) => !enabledGroups.includes(group.id));
       return (
-        <Box mb="md">
+        <Box mb="md" data-cursor-anchor={`fixture-group-${cue.id}`}>
           {visualiser ? (
             <StaticStagePreview2D
               // No need for this, because we will never reach this case when in blackout mode

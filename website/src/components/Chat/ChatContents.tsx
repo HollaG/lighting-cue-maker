@@ -18,9 +18,7 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: 
 /** Scrolls the conversation independently of the page and keeps new replies in view. */
 export function ChatContents({ messages, currentUserId }: ChatContentsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const currentUser = useRealtimeStore((state) => state.user);
   const seenUserMap = useRealtimeStore((state) => state.seenUserMap);
-  // const otherUsers = useRealtimeStore((state) => state.connectedUsers.filter((u) => u.userId !== currentUser?.userId));
 
   useEffect(() => {
     const container = scrollRef.current;

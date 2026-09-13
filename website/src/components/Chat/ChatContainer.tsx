@@ -3,7 +3,6 @@
 import {
   ActionIcon,
   Avatar,
-  Box,
   Button,
   Group,
   HoverCard,
@@ -26,8 +25,6 @@ import { useRealtimeStore } from "../../store/realtimeStore";
 import type { ChatMessageData } from "../../types/realtime/chat";
 import { useRealtime } from "../../context/realtime";
 
-import FollowViewIcon from "../../assets/follow-view.svg";
-import StopFollowingIcon from "../../assets/stop-following.svg";
 import { getColorFromId } from "../../utils/presence/cursorColors";
 
 /** A chat box, positioned at the right side of the screen */
@@ -38,7 +35,6 @@ export const ChatContainer = ({ itemId }: { itemId?: string }) => {
   const participants = useRealtimeStore((state) => state.connectedUsers);
   const peers = participants.filter((participant) => participant.userId !== currentUser?.userId);
   const followingMap = useRealtimeStore((state) => state.followingMap);
-  const userMap = useRealtimeStore((state) => state.seenUserMap);
   const messages = useRealtimeStore((state) => state.messageHistory);
   const followingUserId = useRealtimeStore((state) => state.followingUserId);
   const setFollowingUserId = useRealtimeStore((state) => state.setFollowingUserId);
@@ -167,7 +163,7 @@ export const ChatContainer = ({ itemId }: { itemId?: string }) => {
         <HoverCard.Dropdown>
           <Stack>
             {peers.length ? (
-              peers.map((peer, index) => (
+              peers.map((peer) => (
                 <Group gap="xs" align="center" key={peer.userId} wrap="nowrap">
                   <Avatar
                     name={peer.name}

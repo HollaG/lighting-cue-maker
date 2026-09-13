@@ -130,7 +130,7 @@ export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatIn
                 </HoverCard.Target>
                 <HoverCard.Dropdown>
                   <Stack>
-                    {hiddenPeers.map((peer, index) => (
+                    {hiddenPeers.map((peer) => (
                       <Group gap="xs" align="center" key={peer.userId}>
                         <Avatar
                           name={peer.name}

@@ -39,7 +39,6 @@ import type { Visualiser } from "../../../types/visualiser";
 import type { Fixture } from "../../../types/fixtures";
 import { checkCueCorrectness } from "../../../utils/cue/cueValidator";
 import { ViewModeSelect, type ViewMode } from "./ViewModeSelect";
-import { BeforeCueEdit } from "./BeforeCueEdit/BeforeCueEdit";
 import { CueContents } from "../CueContents/CueContents";
 import { CueNotices } from "../CueNotices/CueNotices";
 
@@ -520,43 +519,40 @@ const CueCardInternal = ({
         data-cursor-surface="cueCard"
       >
         <CardBase isActive={isCueSelected} shadow={isCueSelected ? "lg" : "none"}>
-          {(cue.cueConfig?.mode ?? "unknown") !== "unknown" ? (
-            <Stack gap={"md"}>
-              <Group>
-                <Title
-                  order={4}
-                  style={{
-                    backgroundColor: isCueSelected
-                      ? "light-dark(yellow, var(--mantine-color-yellow-9))"
-                      : "transparent",
-                  }}
+          <Stack gap={"md"}>
+            <Group>
+              <Title
+                order={4}
+                style={{
+                  backgroundColor: isCueSelected ? "light-dark(yellow, var(--mantine-color-yellow-9))" : "transparent",
+                }}
+              >
+                {" "}
+                Cue {cueNumber}
+              </Title>
+              {showCueIdentifiers && (
+                <Tooltip label={`Cue ID: ${cue.id}`}>
+                  <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
+                    {cue.id.slice(0, 4)}
+                  </Text>
+                </Tooltip>
+              )}
+              {isCueSelected ? (
+                <Button size="xs" variant="light" onClick={() => setSelectedCueId(undefined)}>
+                  Reset view
+                </Button>
+              ) : (
+                <Button
+                  variant="transparent"
+                  size="xs"
+
+                  onClick={() => onJumpToCue()}
                 >
-                  {" "}
-                  Cue {cueNumber}
-                </Title>
-                {showCueIdentifiers && (
-                  <Tooltip label={`Cue ID: ${cue.id}`}>
-                    <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
-                      {cue.id.slice(0, 4)}
-                    </Text>
-                  </Tooltip>
-                )}
-                {isCueSelected ? (
-                  <Button size="xs" variant="light" onClick={() => setSelectedCueId(undefined)}>
-                    Reset view
-                  </Button>
-                ) : (
-                  <Button
-                    variant="transparent"
-                    size="xs"
+                  Scroll to cue
+                </Button>
+              )}
 
-                    onClick={() => onJumpToCue()}
-                  >
-                    Scroll to cue
-                  </Button>
-                )}
-
-                {/* <Button
+              {/* <Button
                 variant="transparent"
                 size="xs"
                 // style={{
@@ -568,195 +564,185 @@ const CueCardInternal = ({
                 Copy another cue
               </Button> */}
 
-                <Menu shadow="md">
-                  <Menu.Target>
-                    <Button
-                      variant="transparent"
-                      size="xs"
-                      // style={{
-                      //   textDecoration: "underline dotted",
-                      // }}
-                      // onClick={open}
-                    >
-                      Copy another cue
-                    </Button>
-                  </Menu.Target>
-                  <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
-                    <Menu.Search
-                      value={query}
-                      onChange={(event) => setQuery(event.currentTarget.value)}
-                      placeholder="Search cues"
-                    />
-                    <Menu.Label>Copy settings for:</Menu.Label>
-                    <Menu.CheckboxGroup value={copyFixtureGroupIds} onChange={setCopyFixtureGroupIds}>
-                      {fixtureGroups.map((group) => (
-                        <Menu.CheckboxItem key={group.id} value={group.id}>
-                          {group.name}
-                        </Menu.CheckboxItem>
-                      ))}
-                    </Menu.CheckboxGroup>
-                    <Menu.Divider />
-                    {cuesIdsOtherThanThisList.length > 0 ? (
-                      cuesIdsOtherThanThisList.map((cue) => (
-                        <Menu.Item
-                          key={cue.value}
-                          onClick={() => onCopyCue(cue.value, copyFixtureGroupIds, Number(cue.label.split(" ")[1]))}
-                        >
-                          <Group>
-                            {cue.label}
-                            <Text c="dimmed" fz="sm">
-                              {" "}
-                              {cue.value.slice(0, 4)}{" "}
-                            </Text>
-                          </Group>
-                        </Menu.Item>
-                      ))
-                    ) : (
-                      <Menu.Item>
-                        <Text c="dimmed" size="sm" ta="center" py="xs">
-                          No cues found
-                        </Text>
+              <Menu shadow="md">
+                <Menu.Target>
+                  <Button
+                    variant="transparent"
+                    size="xs"
+                    // style={{
+                    //   textDecoration: "underline dotted",
+                    // }}
+                    // onClick={open}
+                  >
+                    Copy another cue
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
+                  <Menu.Search
+                    value={query}
+                    onChange={(event) => setQuery(event.currentTarget.value)}
+                    placeholder="Search cues"
+                  />
+                  <Menu.Label>Copy settings for:</Menu.Label>
+                  <Menu.CheckboxGroup value={copyFixtureGroupIds} onChange={setCopyFixtureGroupIds}>
+                    {fixtureGroups.map((group) => (
+                      <Menu.CheckboxItem key={group.id} value={group.id}>
+                        {group.name}
+                      </Menu.CheckboxItem>
+                    ))}
+                  </Menu.CheckboxGroup>
+                  <Menu.Divider />
+                  {cuesIdsOtherThanThisList.length > 0 ? (
+                    cuesIdsOtherThanThisList.map((cue) => (
+                      <Menu.Item
+                        key={cue.value}
+                        onClick={() => onCopyCue(cue.value, copyFixtureGroupIds, Number(cue.label.split(" ")[1]))}
+                      >
+                        <Group>
+                          {cue.label}
+                          <Text c="dimmed" fz="sm">
+                            {" "}
+                            {cue.value.slice(0, 4)}{" "}
+                          </Text>
+                        </Group>
                       </Menu.Item>
-                    )}
-                  </Menu.Dropdown>
-                </Menu>
+                    ))
+                  ) : (
+                    <Menu.Item>
+                      <Text c="dimmed" size="sm" ta="center" py="xs">
+                        No cues found
+                      </Text>
+                    </Menu.Item>
+                  )}
+                </Menu.Dropdown>
+              </Menu>
 
-                <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
+              <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
 
-                {isDirty && <Loader size="1.25rem" type="bars" />}
+              {isDirty && <Loader size="1.25rem" type="bars" />}
 
-                <ViewModeSelect
-                  props={{
-                    size: "xs",
-                  }}
-                  viewMode={viewMode || "Table"}
-                  setViewMode={setViewMode}
-                />
-                <Popover
-                  shadow="sm"
-                  withArrow
-                  position="top"
-                  withOverlay
-                  opened={isDeletePopoverOpen}
-                  trapFocus
-                  onDismiss={() => setDeletePopoverOpen(false)}
-                >
-                  <Popover.Target>
-                    <Button color="red" size="xs" variant="transparent" onClick={() => setDeletePopoverOpen(true)}>
-                      Delete{" "}
-                    </Button>
-                  </Popover.Target>
-                  <Popover.Dropdown>
-                    <Stack>
-                      <Text> Are you sure you want to delete this cue?</Text>
-                      <Flex justify={"end"} gap="sm">
-                        <Button
-                          data-autofocus
-                          variant="transparent"
-                          // color="black"
-                          onClick={() => setDeletePopoverOpen(false)}
-                          size="xs"
-                        >
-                          Cancel
-                        </Button>
-                        <Button color="red" size="xs" variant="light" onClick={handleDelete}>
-                          Delete
-                        </Button>
-                      </Flex>
-                    </Stack>
-                  </Popover.Dropdown>
-                </Popover>
+              <ViewModeSelect
+                props={{
+                  size: "xs",
+                }}
+                viewMode={viewMode || "Table"}
+                setViewMode={setViewMode}
+              />
+              <Popover
+                shadow="sm"
+                withArrow
+                position="top"
+                withOverlay
+                opened={isDeletePopoverOpen}
+                trapFocus
+                onDismiss={() => setDeletePopoverOpen(false)}
+              >
+                <Popover.Target>
+                  <Button color="red" size="xs" variant="transparent" onClick={() => setDeletePopoverOpen(true)}>
+                    Delete{" "}
+                  </Button>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <Stack>
+                    <Text> Are you sure you want to delete this cue?</Text>
+                    <Flex justify={"end"} gap="sm">
+                      <Button
+                        data-autofocus
+                        variant="transparent"
+                        // color="black"
+                        onClick={() => setDeletePopoverOpen(false)}
+                        size="xs"
+                      >
+                        Cancel
+                      </Button>
+                      <Button color="red" size="xs" variant="light" onClick={handleDelete}>
+                        Delete
+                      </Button>
+                    </Flex>
+                  </Stack>
+                </Popover.Dropdown>
+              </Popover>
 
-                {/* <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
+              {/* <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
                 <Button variant="light" size="xs" disabled={!isDirty} type="submit">
                   {" "}
                   Save changes{" "}
                 </Button>
               </Tooltip> */}
-                <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
-                  <IconChevronUp
-                    style={{
-                      transition: "transform 0.2s",
-                      transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)",
-                    }}
-                    width={"1rem"}
-                  />
-                </ActionIcon>
-              </Group>
-
-              {/* Cue Contents */}
-              <Collapse expanded={!isCollapsed}>
-                <CueContents
-                  onDeleteCue={handleDelete}
-                  onCopyCue={onCopyCue}
-                  cue={cue}
-                  cueOrder={cueOrder}
-                  cueNumber={cueNumber}
-                  fixtureGroups={fixtureGroups}
-                  viewMode={viewMode}
-                  form={form}
-                  setIsAtLeastOneComboboxOpened={setAtLeastOneComboboxOpened}
-                  eventId={eventId}
-                  visualiser={visualiser}
-                  fixtures={fixtures}
-                  activeFixtureGroupId={activeFixtureGroupId}
-                  onFixtureSelect={onFixtureSelect}
-                  isDirty={isDirty}
-                  setActiveFixtureGroupId={setActiveFixtureGroupId}
-                  onSaveCueConfig={onSaveCueConfig}
+              <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
+                <IconChevronUp
+                  style={{
+                    transition: "transform 0.2s",
+                    transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                  width={"1rem"}
                 />
-              </Collapse>
-              <Stack>
-                {/* <Collapse expanded={isCollapsed}>
+              </ActionIcon>
+            </Group>
+
+            {/* Cue Contents */}
+            <Collapse expanded={!isCollapsed}>
+              <CueContents
+                onDeleteCue={handleDelete}
+                onCopyCue={onCopyCue}
+                cue={cue}
+                cueOrder={cueOrder}
+                cueNumber={cueNumber}
+                fixtureGroups={fixtureGroups}
+                viewMode={viewMode}
+                form={form}
+                setIsAtLeastOneComboboxOpened={setAtLeastOneComboboxOpened}
+                eventId={eventId}
+                visualiser={visualiser}
+                fixtures={fixtures}
+                activeFixtureGroupId={activeFixtureGroupId}
+                onFixtureSelect={onFixtureSelect}
+                isDirty={isDirty}
+                setActiveFixtureGroupId={setActiveFixtureGroupId}
+                onSaveCueConfig={onSaveCueConfig}
+              />
+            </Collapse>
+            <Stack>
+              {/* <Collapse expanded={isCollapsed}>
                 <Text>{generateOneLineCue(cue)}</Text>
               </Collapse> */}
-                <Textarea
-                  label="Comments"
-                  minRows={1}
-                  variant="unstyled"
-                  autosize
-                  maxRows={4}
-                  name="comments"
-                  key={form.key("comments")}
-                  {...form.getInputProps("comments")}
-                  placeholder="Write any comments regarding this cue here..."
-                  styles={{
-                    input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
-                  }}
-                />
-              </Stack>
-
-              {cueValidationResult.issues.length ? (
-                <CueNotices
-                  notices={notices}
-                  warnings={warnings}
-                  errors={errors}
-                  showNotices={showNotices}
-                  showWarnings={showWarnings}
-                  showErrors={showErrors}
-                  setShowNotices={setShowNotices}
-                  setShowWarnings={setShowWarnings}
-                  setShowErrors={setShowErrors}
-
-                  customResults={customResults}
-                  onCustomResultsClick={[() => onSaveCueConfig({ ...cue.cueConfig, mode: "blackout" })]}
-                />
-              ) : (
-                <></>
-              )}
+              <Textarea
+                label="Comments"
+                minRows={1}
+                variant="unstyled"
+                autosize
+                maxRows={4}
+                name="comments"
+                key={form.key("comments")}
+                {...form.getInputProps("comments")}
+                placeholder="Write any comments regarding this cue here..."
+                styles={{
+                  input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+                }}
+              />
             </Stack>
-          ) : (
-            <BeforeCueEdit
-              cue={cue}
-              cueOrder={cueOrder}
-              cueConfig={cue.cueConfig}
-              cueNumber={cueNumber}
-              fixtureGroups={fixtureGroups}
-              onSaveCueConfig={onSaveCueConfig}
-              onCopyCue={onCopyCue}
-              onDeleteCue={handleDelete}
-            />
-          )}
+
+            {/* Only show issues when there are actually issues AND we're not in `unknown` mode, which means  */}
+            {/* the user is still trying to configure the cue, do NOT spam them with warnings. */}
+            {cueValidationResult.issues.length && cue.cueConfig.mode !== "unknown" ? (
+              <CueNotices
+                notices={notices}
+                warnings={warnings}
+                errors={errors}
+                showNotices={showNotices}
+                showWarnings={showWarnings}
+                showErrors={showErrors}
+                setShowNotices={setShowNotices}
+                setShowWarnings={setShowWarnings}
+                setShowErrors={setShowErrors}
+
+                customResults={customResults}
+                onCustomResultsClick={[() => onSaveCueConfig({ ...cue.cueConfig, mode: "blackout" })]}
+              />
+            ) : (
+              <></>
+            )}
+          </Stack>
         </CardBase>
       </div>
     </form>
