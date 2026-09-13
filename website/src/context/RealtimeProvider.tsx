@@ -1,3 +1,5 @@
+// feature[class=Realtime] Connection lifecycle and incoming message handling
+
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAppStore } from "../store/appStore";
 import { connectRealtime } from "../realtime/connectRealtime";
@@ -19,6 +21,8 @@ type RealtimeConnectionState = Pick<RealtimeContextValue, "eventId" | "status" |
   connection: RealtimeConnection | null;
 };
 
+type StoredListener = (data: unknown) => void;
+
 /** Owns one realtime connection for the mounted event page.
  *  Do NOT store any business data in this Provider.
  *  as it causes all components who called `useRealtime()` to re-render on every change.
@@ -27,9 +31,7 @@ type RealtimeConnectionState = Pick<RealtimeContextValue, "eventId" | "status" |
 export function RealtimeProvider({ eventId, children }: { eventId: string; children: ReactNode }) {
   const itemId = useAppStore((state) => state.activeItemId);
 
-  const listenersRef = useRef(
-    new Map<ServerMessageType, Set<(data: ServerMessageDataMap[ServerMessageType]) => void>>(),
-  );
+  const listenersRef = useRef(new Map<ServerMessageType, Set<StoredListener>>());
   const [connectionState, setConnectionState] = useState<RealtimeConnectionState>({
     eventId,
     status: "connecting",
@@ -39,13 +41,15 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
   });
 
   const registerListener = useCallback(
-    (type: ServerMessageType, listener: (data: ServerMessageDataMap[ServerMessageType]) => void) => {
+    <Type extends ServerMessageType>(type: Type, listener: (data: ServerMessageDataMap[Type]) => void) => {
       const listeners = listenersRef.current.get(type) ?? new Set();
-      listeners.add(listener);
+      // The message type selects its payload type at the public API boundary.
+      const storedListener: StoredListener = (data) => listener(data as ServerMessageDataMap[Type]);
+      listeners.add(storedListener);
       listenersRef.current.set(type, listeners);
 
       return () => {
-        listeners.delete(listener);
+        listeners.delete(storedListener);
         if (listeners.size === 0) listenersRef.current.delete(type);
       };
     },
@@ -98,7 +102,7 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
   const sendMessage = useCallback(
     (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => {
       if (connectionState.status !== "connected" || !connectionState.connection) return;
-      console.log(`Sending message of type ${type} at timestamp ${Date.now()}`, data);
+      console.log(`[Message] {${type}} @ ${Date.now()}`, data);
       void connectionState.connection.send({ type, data, timestamp: Date.now() }).catch((error) => {
         console.error("Failed to send realtime message:", error);
       });

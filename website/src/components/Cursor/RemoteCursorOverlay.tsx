@@ -1,3 +1,5 @@
+// feature[class=Realtime] Remote cursor rendering and local tracking
+
 import { createPortal } from "react-dom";
 import { useCursorTracking } from "../../hooks/realtime/useCursorTracking";
 import { usePresenceStore } from "../../store/presenceStore";
@@ -20,6 +22,7 @@ export function RemoteCursorOverlay({ itemId }: { itemId: string | undefined }) 
           anchor={presence.cursor?.itemId === itemId ? presence.cursor : null}
           color={getColorFromId(presence.userId)}
           label={presence.name}
+          userId={presence.userId}
         />
       ))}
     </div>,

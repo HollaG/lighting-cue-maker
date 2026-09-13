@@ -1,3 +1,5 @@
+// feature[class=Realtime] Chat message composer
+
 import { ActionIcon, Textarea } from "@mantine/core";
 import { IconArrowRight } from "@tabler/icons-react";
 import type { Ref } from "react";

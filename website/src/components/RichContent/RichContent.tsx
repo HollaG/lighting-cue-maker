@@ -1,3 +1,5 @@
+// feature[class=Realtime] Lyrics with word-level cursor anchors
+
 import React, { useMemo } from "react";
 import { Group, Flex, Stack } from "@mantine/core";
 import { convertUuidForDatabase } from "../../utils/convertUuid";

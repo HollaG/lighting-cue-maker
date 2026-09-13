@@ -1,3 +1,5 @@
+// feature[class=Realtime] Query cache invalidation from remote updates
+
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ServerMessageType, type ServerMessageInvalidateQueryData } from "../../types/realtime/realtime";

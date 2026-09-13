@@ -1,3 +1,5 @@
+// feature[class=Realtime] Transport-neutral connection types
+
 import type { ClientMessage, ServerMessage } from "../types/realtime/realtime";
 
 export type RealtimeTransportKind = "webtransport" | "websocket";

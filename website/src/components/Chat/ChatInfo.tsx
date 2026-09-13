@@ -1,3 +1,5 @@
+// feature[class=Realtime] Participant summary and display name editing
+
 import { ActionIcon, Avatar, Box, Button, Group, HoverCard, Stack, Text } from "@mantine/core";
 import { IconChevronDown, IconMessages } from "@tabler/icons-react";
 import classes from "./Chat.module.css";
@@ -7,6 +9,7 @@ import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { useDebouncedState } from "@mantine/hooks";
 import { useRealtime } from "../../context/realtime";
 import { getColorFromId } from "../../utils/presence/cursorColors";
+import { useRealtimeStore } from "../../store/realtimeStore";
 
 type ChatInfoProps = {
   titleId: string;
@@ -21,6 +24,12 @@ export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatIn
   const peers = participants.filter((participant) => participant.userId !== currentUser.userId);
   const { sendMessage } = useRealtime();
 
+  // Following information
+  // Can follow: user must not be following someone
+  const setFollowingUserId = useRealtimeStore((state) => state.setFollowingUserId);
+  const followingUserId = useRealtimeStore((state) => state.followingUserId);
+  const followingMap = useRealtimeStore((state) => state.followingMap);
+
   const [internalUserName, setInternalUserName] = useDebouncedState(currentUser.name, 200);
   useEffect(() => {
     sendMessage(ClientMessageType.ClientMessageSetName, { name: internalUserName });
@@ -28,6 +37,37 @@ export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatIn
 
   const displayedPeers = peers.slice(0, SHOW_MAX_PEERS);
   const hiddenPeers = peers.slice(SHOW_MAX_PEERS);
+
+  const onFollow = (userId: string | null) => {
+    setFollowingUserId(userId);
+  };
+
+  const FollowButton = ({ userId }: { userId: string }) => {
+    if (userId === followingUserId) {
+      // change to unfollow
+      return (
+        <Button variant="light" size="xs" onClick={() => onFollow(null)}>
+          Unfollow
+        </Button>
+      );
+    }
+
+    if (followingMap[userId]) {
+      // this user is already following someone else
+      // will follow the "Master" instead?
+      return (
+        <Button variant="subtle" size="xs" onClick={() => onFollow(followingMap[userId])} disabled>
+          Follow view
+        </Button>
+      );
+    } else {
+      return (
+        <Button variant="subtle" size="xs" onClick={() => onFollow(userId)}>
+          Follow view
+        </Button>
+      );
+    }
+  };
 
   return (
     <header className={classes.info}>
@@ -75,9 +115,7 @@ export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatIn
                       <Text size="sm" fw={600}>
                         {participant.name}
                       </Text>
-                      <Button variant="light" size="xs">
-                        Follow view
-                      </Button>
+                      <FollowButton userId={participant.userId} />
                     </Group>
                   </Stack>
                 </HoverCard.Dropdown>
@@ -106,10 +144,7 @@ export function ChatInfo({ titleId, currentUser, participants, onClose }: ChatIn
                         <Text size="sm" fw={600} flex={1} truncate>
                           {peer.name}
                         </Text>
-
-                        <Button variant="light" size="xs">
-                          Follow view
-                        </Button>
+                        <FollowButton userId={peer.userId} />
                       </Group>
                     ))}
                   </Stack>

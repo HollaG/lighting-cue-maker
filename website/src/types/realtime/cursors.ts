@@ -1,3 +1,5 @@
+// feature[class=Realtime] Cursor anchor types and tracking settings
+
 export type CursorPoint = [x: number, y: number];
 
 export const CURSOR_SURFACES = ["lyrics", "cueCard"] as const;

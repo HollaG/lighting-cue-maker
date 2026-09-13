@@ -1,0 +1,59 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="0.95"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <!-- Browser -->
+  <path
+    d="
+      M4.5 4.75
+      H19.5
+      A1.6 1.6 0 0 1 21.1 6.35
+      V17.65
+      A1.6 1.6 0 0 1 19.5 19.25
+      H4.5
+      A1.6 1.6 0 0 1 2.9 17.65
+      V6.35
+      A1.6 1.6 0 0 1 4.5 4.75
+      Z
+    "
+  />
+
+  <path d="M2.9 8.55H21.1" />
+
+  <!-- Browser dots -->
+  <circle cx="4.78" cy="6.68" r="0.52" fill="currentColor" stroke="none" />
+  <circle cx="6.73" cy="6.68" r="0.52" fill="currentColor" stroke="none" />
+  <circle cx="8.77" cy="6.68" r="0.52" fill="currentColor" stroke="none" />
+
+  <!-- Page content -->
+  <path d="M4.73 11.04H10.39" />
+  <path d="M4.73 13.11H8.15" />
+  <path d="M4.73 15.11H7.18" />
+
+  <!-- Follow arrow -->
+  <path d="M8.15 16.55C8.7 14.82 10.03 13.83 11.97 13.83H12.75" />
+  <path d="M12.15 13.15L13.1 13.87L12.15 14.69" />
+
+  <!-- Focus corners -->
+  <path d="M14.15 10.68H13.33A.38.38 0 0 0 12.95 11.06V11.88" />
+  <path d="M18.12 10.68H18.94A.38.38 0 0 1 19.32 11.06V11.88" />
+  <path d="M14.15 17.4H13.33A.38.38 0 0 1 12.95 17.02V16.24" />
+  <path d="M18.12 17.4H18.94A.38.38 0 0 0 19.32 17.02V16.24" />
+
+  <!-- User -->
+  <circle cx="16.13" cy="13.08" r="1.42" />
+  <path
+    d="
+      M14.18 15.95
+      C14.52 14.82 15.23 14.28 16.13 14.28
+      C17.03 14.28 17.74 14.82 18.08 15.95
+    "
+  />
+</svg>

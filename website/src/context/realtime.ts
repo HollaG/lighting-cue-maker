@@ -1,3 +1,5 @@
+// feature[class=Realtime] Shared connection status, message sending and subscriptions
+
 import { createContext, useContext } from "react";
 import type { RealtimeTransportKind } from "../realtime/connection";
 import type {
@@ -13,9 +15,9 @@ export interface RealtimeContextValue {
   transport: RealtimeTransportKind | null;
   error: Error | null;
   sendMessage: (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => void;
-  registerListener: (
-    type: ServerMessageType,
-    listener: (data: ServerMessageDataMap[ServerMessageType]) => void,
+  registerListener: <Type extends ServerMessageType>(
+    type: Type,
+    listener: (data: ServerMessageDataMap[Type]) => void,
   ) => () => void;
 }
 

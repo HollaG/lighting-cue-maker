@@ -1,3 +1,5 @@
+// feature[class=Realtime] Consistent cursor colours from user IDs
+
 export const CURSOR_COLORS = [
   "red",
   "pink",

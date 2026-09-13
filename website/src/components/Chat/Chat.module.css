@@ -1,3 +1,5 @@
+/* feature[class=Realtime] Chat panel and message styles */
+
 .launcher,
 .screenShareLauncher {
   position: fixed;
@@ -93,6 +95,8 @@
 }
 
 .bubble {
+  width: fit-content;
+  max-width: 100%;
   padding: 12px 14px;
   border-radius: 4px 16px 16px 16px;
   background: var(--mantine-primary-color-light);
@@ -105,6 +109,12 @@
 
 .message[data-own] {
   justify-content: flex-end;
+}
+
+.message[data-own] .messageBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .message[data-own] .messageMeta {

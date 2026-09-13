@@ -1,3 +1,5 @@
+// feature[class=Realtime] Event route connection provider
+
 import { createFileRoute } from "@tanstack/react-router";
 import { useAppStore } from "../../../store/appStore";
 import { EventPage } from "../../../pages/Event/EventPage";

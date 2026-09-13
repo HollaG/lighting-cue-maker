@@ -1,3 +1,5 @@
+// feature[class=Realtime] WebTransport connection and message streaming
+
 import type { ClientMessage, ServerMessage } from "../types/realtime/realtime";
 import type { RealtimeConnection, RealtimeConnectionOptions } from "./connection";
 

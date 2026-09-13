@@ -1,0 +1,58 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="0.95"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <!-- Browser: deliberately interrupted by the X badge -->
+  <path
+    d="
+      M4.6 3.95
+      H19.4
+      A1.75 1.75 0 0 1 21.15 5.7
+      V13.05
+    "
+  />
+
+  <path
+    d="
+      M13.8 19.55
+      H4.6
+      A1.75 1.75 0 0 1 2.85 17.8
+      V5.7
+      A1.75 1.75 0 0 1 4.6 3.95
+    "
+  />
+
+  <path d="M2.85 7.7H21.15" />
+
+  <!-- Browser dots -->
+  <circle cx="5.15" cy="5.92" r="0.55" fill="currentColor" stroke="none" />
+  <circle cx="7.18" cy="5.92" r="0.55" fill="currentColor" stroke="none" />
+  <circle cx="9.2" cy="5.92" r="0.55" fill="currentColor" stroke="none" />
+
+  <!-- User -->
+  <circle cx="11.02" cy="12.02" r="2.06" />
+  <path
+    d="
+      M6.95 17.6
+      C7.27 16
+       8.23 15.15
+       9.85 15.15
+      H11.93
+      C12.58 15.15
+       13.11 15.23
+       13.55 15.42
+    "
+  />
+
+  <!-- Stop-following badge -->
+  <circle cx="17.52" cy="16.72" r="3.25" />
+  <path d="M16.18 15.38L18.86 18.06" />
+  <path d="M18.86 15.38L16.18 18.06" />
+</svg>

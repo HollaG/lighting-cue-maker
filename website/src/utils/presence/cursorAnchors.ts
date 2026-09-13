@@ -1,3 +1,5 @@
+// feature[class=Realtime] Capture and resolve cursor anchors against local elements
+
 import { CURSOR_SURFACES, type CursorAnchor, type CursorPoint } from "../../types/realtime/cursors";
 
 const SURFACE_SELECTOR = "[data-cursor-surface][data-cursor-item-id]";
@@ -40,11 +42,27 @@ export function captureCursorAnchor(target: Element | null, point: CursorPoint, 
   return isCursorAnchor(anchor) ? anchor : null;
 }
 
+export type ResolvedCursorAnchor = {
+  point: CursorPoint | null;
+  visible: boolean;
+  element: HTMLElement;
+};
+
 /**
- * Resolve against this client's layout. Hit-testing also hides anchors clipped by
- * nested scroll areas or covered by a dialog, without maintaining a list of scrollers.
+ * Find an anchor in this client's layout
+ * The element and point remain available when clipped or covered; `visible`
+ * controls whether the cursor itself is shown. Smooth scrolling is asynchronous,
+ * so resolve again on scroll events.
+ * Request scrolling only when the followed anchor changes, not on every sample.
  */
-export function resolveCursorAnchor(anchor: CursorAnchor, root: Document = document): CursorPoint | null {
+export function resolveCursorAnchor(
+  anchor: CursorAnchor,
+  {
+    root = document,
+  }: {
+    root?: Document;
+  } = {},
+): ResolvedCursorAnchor | null {
   if (!isCursorAnchor(anchor)) return null;
   const surface = root.querySelector<HTMLElement>(
     `[data-cursor-surface="${CSS.escape(anchor.surface)}"]` + `[data-cursor-item-id="${CSS.escape(anchor.itemId)}"]`,
@@ -53,8 +71,8 @@ export function resolveCursorAnchor(anchor: CursorAnchor, root: Document = docum
   if (!element) return null;
 
   const rect = element.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return null;
+  if (rect.width <= 0 || rect.height <= 0) return { point: null, visible: false, element };
   const point: CursorPoint = [rect.left + rect.width * anchor.xRatio, rect.top + rect.height * anchor.yRatio];
   const hit = root.elementFromPoint(point[0], point[1]);
-  return hit && element.contains(hit) ? point : null;
+  return { point, visible: Boolean(hit && element.contains(hit)), element };
 }

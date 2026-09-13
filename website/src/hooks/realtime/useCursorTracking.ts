@@ -1,10 +1,12 @@
+// feature[class=Realtime] Cursor event publisher
+
 import { useEffect } from "react";
 import { useRealtime } from "../../context/realtime";
 import { ClientMessageType } from "../../types/realtime/realtime";
 import { CURSOR_UPDATE_INTERVAL_MS, type CursorPoint } from "../../types/realtime/cursors";
 import { captureCursorAnchor } from "../../utils/presence/cursorAnchors";
 
-/** One event-driven publisher for all marked cursor surfaces. */
+/** One event-driven publisher for all marked cursor surfaces. Called once only. */
 export function useCursorTracking(itemId: string | undefined) {
   const { sendMessage, status } = useRealtime();
 

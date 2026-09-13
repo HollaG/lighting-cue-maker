@@ -75,8 +75,9 @@ type ClientMessageInvalidateQueryData struct {
 
 type ClientMessagePresenceUpdateData struct {
 	// Keep frontend anchors opaque, including explicit null when a cursor is hidden.
-	Cursor json.RawMessage `json:"cursor,omitempty"`
-	Scroll json.RawMessage `json:"scroll,omitempty"`
+	Cursor                 json.RawMessage `json:"cursor,omitempty"`
+	Scroll                 json.RawMessage `json:"scroll,omitempty"`
+	CurrentlySelectedCueId string          `json:"currentlySelectedCueId,omitempty"`
 }
 
 type ClientMessagePresenceFollowData struct {

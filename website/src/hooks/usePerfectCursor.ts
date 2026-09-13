@@ -1,3 +1,5 @@
+// feature[class=Realtime] Smooth cursor animation with perfect-cursors
+
 // import { PerfectCursor } from "perfect-cursors";
 // import { useCallback, useLayoutEffect, useRef } from "react";
 // import type { CursorPoint } from "../types/cursors";

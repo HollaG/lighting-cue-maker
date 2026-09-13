@@ -18,3 +18,9 @@
     }
   } */
 }
+
+/* For making sure the scroll doesn't end up right at the corner */
+[data-cursor-anchor] {
+  scroll-margin-block: 10rem;
+  scroll-margin-inline: 10rem;
+}

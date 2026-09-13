@@ -1,3 +1,5 @@
+// feature[class=Realtime] Chat message and content types
+
 export type ContentBlock =
   | { type: "text"; text: string }
   | { type: "lyric-reference"; lineIndex: number; wordIndex: number }

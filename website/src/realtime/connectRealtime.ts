@@ -1,3 +1,5 @@
+// feature[class=Realtime] Realtime transport selection
+
 import type { RealtimeConnection, RealtimeConnectionOptions } from "./connection";
 import { connectWebTransport } from "./connectWebTransport";
 

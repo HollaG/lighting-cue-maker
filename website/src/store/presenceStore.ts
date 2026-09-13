@@ -1,3 +1,5 @@
+// feature[class=Realtime] Live presence state keyed by connection
+
 import { create } from "zustand";
 import type { PresenceInformation, PresenceInformationMap } from "../types/realtime/presence";
 

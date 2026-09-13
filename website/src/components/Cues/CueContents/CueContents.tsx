@@ -1,3 +1,5 @@
+// feature[class=Realtime] Cue contents with fixture-group cursor anchors
+
 // This controls the items displayed inside a cuecard.
 // It may vary, for example, we currently support two types: Blackout and Normal.
 // We also support different display modes, currently "Table" and "2D View"

@@ -1,3 +1,5 @@
+// feature[class=Realtime] Server presence conversion
+
 import type { PresenceInformation } from "../../types/realtime/presence";
 import type { ServerMessagePresenceUpdateData } from "../../types/realtime/realtime";
 

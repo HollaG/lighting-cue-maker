@@ -1,3 +1,5 @@
+// feature[class=Realtime] User profiles, room participants and chat history
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ChatMessageData } from "../types/realtime/chat";
@@ -11,11 +13,17 @@ type RealtimeStore = {
 
   messageHistory: ChatMessageData[];
 
+  followingUserId: string | null; // who we're following
+  followingMap: Record<string, string | null>; // who each user is following, sent by the server whenever someone follows or unfollows
+
   setCurrentUser: (user: LiveUser | null) => void;
   setConnectedUsers: (users: LiveUser[]) => void;
 
   setMessageHistory: (messages: ChatMessageData[]) => void;
   onMessageReceived: (message: ChatMessageData) => void;
+
+  setFollowingUserId: (userId: string | null) => void;
+  setUnfollow: () => void;
 };
 
 /** Persists the user profile and chat history; connected users are session-only. */
@@ -55,12 +63,25 @@ export const useRealtimeStore = create<RealtimeStore>()(
         set((state) => ({
           messageHistory: [...state.messageHistory, message],
         })),
+
+      setFollowingUserId: (userId) => {
+        console.log("now following ", userId);
+        set({ followingUserId: userId });
+      },
+      setUnfollow: () => set({ followingUserId: null }),
+
+      followingMap: {},
+      followingUserId: null,
     }),
+
+    // These are the saved options in the local storage.
+    // Note that all other options will need to be sent from the server in `joinRoom` event.
+
     {
       name: "lighting-realtime",
       partialize: (state) => ({
         user: state.user,
-        roomId: state.roomId,
+        // roomId: state.roomId,
         // messageHistory: state.messageHistory,
         seenUserMap: state.seenUserMap,
       }),

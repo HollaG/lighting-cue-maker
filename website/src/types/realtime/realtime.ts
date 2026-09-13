@@ -1,3 +1,6 @@
+// feature[class=Realtime] Client and server message types
+
+import type { ViewMode } from "../../components/Cues/CueCard/ViewModeSelect";
 import type { ChatMessageData } from "./chat";
 import type { CursorAnchor, CursorSurface } from "./cursors";
 
@@ -32,12 +35,14 @@ export type ClientMessageInvalidateQueryData = {
   queryKey: string[];
 };
 
-// Cursor & scroll data
+// Cursor & scroll data. Fields will only be sent when changed
 export type ClientMessagePresenceUpdateData = {
   // Omitted means unchanged; null hides the cursor. Scroll fields can be added here later.
-  cursor: CursorAnchor | null;
+  cursor?: CursorAnchor | null;
 
-  scroll?: Record<CursorSurface, { x: number; y: number }> | null; // each client can choose to follow, or not
+  scroll?: Record<CursorSurface, { x: number; y: number }> | null;
+  currentlySelectedCueId?: string | null; // null if unselected
+  viewMode?: { [cueId: string]: ViewMode }; // force a change in view mode for a specific cue
 };
 
 // "Live View" data

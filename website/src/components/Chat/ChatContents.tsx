@@ -1,3 +1,5 @@
+// feature[class=Realtime] Chat history and message rendering
+
 import { Avatar, Box, Divider, Group, Text } from "@mantine/core";
 import { Fragment, useEffect, useRef } from "react";
 import classes from "./Chat.module.css";

@@ -106,7 +106,7 @@ export const ContentControl = ({
         />
       </Box>
 
-      <Transition
+      {/* <Transition
         mounted={(!inViewport || alwaysShow) && showCues}
         transition="fade-up"
         duration={250}
@@ -200,7 +200,7 @@ export const ContentControl = ({
             </Group>
           </Box>
         )}
-      </Transition>
+      </Transition> */}
     </Box>
   );
 };
