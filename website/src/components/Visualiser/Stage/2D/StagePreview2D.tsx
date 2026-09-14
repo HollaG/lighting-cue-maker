@@ -1,4 +1,17 @@
-import { Flex, Group, Button, AspectRatio, Box, MantineProvider } from "@mantine/core";
+import {
+  Flex,
+  Group,
+  Button,
+  AspectRatio,
+  Box,
+  MantineProvider,
+  HoverCard,
+  Stack,
+  Text,
+  Divider,
+  Code,
+  SimpleGrid,
+} from "@mantine/core";
 import { useDebouncedCallback, useElementSize } from "@mantine/hooks";
 import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
@@ -30,6 +43,10 @@ import { VisualiserBarLightObject } from "../../Elements/VisualiserBarLight";
 import { VisualiserMovingLightObject } from "../../Elements/VisualiserMovingLight";
 import type { AttributeAssignment, FixtureGroupsAssignment } from "../../../../types/cues";
 import { CustomCoverLoader } from "../../../Loader/CustomCoverLoader";
+import { IconHelp, IconHelpCircle } from "@tabler/icons-react";
+import { ParLightRepresentation } from "../../../representations/ParLightRepresentation";
+import { BarLightRepresentation } from "../../../representations/BarLightRepresentation";
+import { MovingLightRepresentation } from "../../../representations/MovingLightRepresentation";
 
 // Pre-generate grid dots
 const gridDots: { x: number; y: number }[] = [];
@@ -868,6 +885,92 @@ export const StaticStagePreview2D = ({
                     ) : (
                       <div style={{ width: "100%", height: "100%" }}></div>
                     )}
+
+                    {/* Help button */}
+                    <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
+                      <HoverCard
+                        position="left"
+                        shadow="md"
+                        styles={{
+                          dropdown: {
+                            backgroundColor: "var(--mantine-color-dark-6)",
+                            borderColor: "var(--mantine-color-dark-4)",
+                          },
+                        }}
+                      >
+                        <HoverCard.Target>
+                          <Button
+                            variant="transparent"
+                            color="white"
+                            size="sm"
+                            leftSection={<IconHelpCircle size={16} />}
+                          >
+                            Help
+                          </Button>
+                        </HoverCard.Target>
+                        <HoverCard.Dropdown
+                          style={{
+                            color: "white",
+                          }}
+                        >
+                          <Stack gap="xs">
+                            <Text fw="bold" fz="lg">
+                              2D Visualiser{" "}
+                            </Text>
+                            <Divider color="var(--mantine-color-dark-4)" />
+                            <Text>A top-down represntation of the stage.</Text>
+                            <Text>Each element represents a lighting device:</Text>
+                            <SimpleGrid cols={3} mt="md">
+                              <Stack align="center" gap={0} justify="space-between">
+                                <ParLightRepresentation color="white" />
+                                <Text size="sm">
+                                  <Code styles={{ root: { backgroundColor: "var(--mantine-color-dark-7)" } }}>
+                                    Static Light
+                                  </Code>
+                                </Text>
+                              </Stack>
+                              <Stack align="center" gap={0} justify="space-between">
+                                <MovingLightRepresentation color="white" />
+                                <Text size="sm">
+                                  <Code styles={{ root: { backgroundColor: "var(--mantine-color-dark-7)" } }}>
+                                    Moving Light
+                                  </Code>
+                                </Text>
+                              </Stack>
+                              <Stack align="center" justify="space-between" gap={0}>
+                                <BarLightRepresentation color="white" />
+                                <Text size="sm">
+                                  <Code styles={{ root: { backgroundColor: "var(--mantine-color-dark-7)" } }}>
+                                    Bar Light
+                                  </Code>
+                                </Text>
+                              </Stack>
+                            </SimpleGrid>
+                            <Text mt="md"> The arc represents the light's beam angle.</Text>
+
+                            <Divider />
+                            <Text>
+                              {" "}
+                              Click on a light to change its settings. A green circle{" "}
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  color: "lime",
+                                  width: "24px",
+                                  height: "24px",
+                                  backgroundColor: "var(--mantine-color-lime-4)",
+                                  borderRadius: "50%",
+                                  verticalAlign: "middle",
+                                  border: "1px solid black",
+                                }}
+                              />{" "}
+                              indicates that light is selected.
+                            </Text>
+                            <Text>Lights in a group cannot be individually controlled.</Text>
+                          </Stack>
+                        </HoverCard.Dropdown>
+                      </HoverCard>
+                    </Box>
                   </Box>
                 </MantineProvider>
               </CustomCoverLoader>
