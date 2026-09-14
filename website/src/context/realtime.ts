@@ -25,6 +25,14 @@ export const RealtimeContext = createContext<RealtimeContextValue | undefined>(u
 
 export function useRealtime() {
   const context = useContext(RealtimeContext);
-  if (!context) throw new Error("useRealtime must be used within RealtimeProvider");
+  if (!context)
+    throw new Error(
+      "useRealtime must be used within RealtimeProvider. If you need to call useRealtime but aren't actually using the values, please call `useOptionalRealtime`.",
+    );
   return context;
+}
+
+/** Returns no connection outside realtime-enabled routes. */
+export function useOptionalRealtime() {
+  return useContext(RealtimeContext);
 }

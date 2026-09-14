@@ -4,7 +4,7 @@ import type { UpdateItemReq, UpdateItemRes } from "../types/http";
 import { sanitize } from "../utils/sanitize";
 import { makeGetItemQueryKey } from "./useGetItem";
 import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime/realtime";
-import { useRealtime } from "../context/realtime";
+import { useOptionalRealtime } from "../context/realtime";
 
 export type UpdateItemParams = {
   itemId: string;
@@ -13,7 +13,7 @@ export type UpdateItemParams = {
 
 export const useUpdateItem = () => {
   const queryClient = useQueryClient();
-  const { sendMessage } = useRealtime();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     mutationFn: ({ itemId, requestBody }: UpdateItemParams) => {
@@ -27,7 +27,7 @@ export const useUpdateItem = () => {
     onSuccess: (res, variables) => {
       const queryKey = makeGetItemQueryKey(variables.itemId);
       queryClient.setQueryData(queryKey, res.item);
-      void sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
         queryKey,
       } as ClientMessageInvalidateQueryData);
       // queryClient.invalidateQueries({ queryKey: ["items"] });

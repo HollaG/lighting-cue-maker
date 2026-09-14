@@ -8,6 +8,7 @@ export async function connectWebTransport(
   url: string,
   { signal, onMessage, onClose, onError }: RealtimeConnectionOptions,
 ): Promise<RealtimeConnection> {
+  signal.throwIfAborted();
   const transport = new WebTransport(url, { protocols: ["lighting-realtime-v1"] });
   let connected = false;
   let closed = false;
@@ -18,10 +19,10 @@ export async function connectWebTransport(
     if (closed) return;
     closed = true;
     signal.removeEventListener("abort", close);
-    void reader?.cancel().catch(() => {});
-    void writer?.abort().catch(() => {});
 
     try {
+      // Closing the session also terminates its streams and settles pending I/O.
+      // Do not start separate stream resets alongside session shutdown.
       transport.close();
     } catch {
       // Some browsers cannot close a WebTransport connection during its handshake.
@@ -51,7 +52,9 @@ export async function connectWebTransport(
     writer = controlStream.writable.getWriter();
     connected = true;
 
-    void readMessages(reader, onMessage).catch((error) => {
+    void readMessages(reader, (message) => {
+      if (!closed) onMessage(message);
+    }).catch((error) => {
       if (!closed) onError(error);
     });
     void writer.closed.catch((error) => {
@@ -63,6 +66,8 @@ export async function connectWebTransport(
     return {
       kind: "webtransport",
       send: async (message: ClientMessage) => {
+        // Child unmount callbacks can still hold this connection after it closes.
+        if (closed) return;
         if (!writer) throw new Error("WebTransport writer is not available");
         const json = JSON.stringify(message);
         // console.log("Sending message:", json);
