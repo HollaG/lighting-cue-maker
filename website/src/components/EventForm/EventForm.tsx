@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Button, Center, Container, Group, Pill, SimpleGrid, Stack, TagsInput, Textarea } from "@mantine/core";
+import { Box, Button, Center, Container, Group, SimpleGrid, Stack, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { AddFixtureGroupButton } from "../FixtureGroup/AddFixtureGroupButton/AddFixtureGroupButton";
@@ -24,24 +24,24 @@ export const EventForm = ({
   // event, remount EventForm with `key={event.id}`.
   const [mountedInitialValues] = useState<EventFormValues>(() => initialValues ?? createEmptyEventFormValues());
   const [fixtureGroupOrder, setFixtureGroupOrder] = useState<EventFormKey[]>(mountedInitialValues.fixtureGroupOrder);
-  const existingBumpConfigurations = mode === "edit" ? mountedInitialValues.bumpConfigurations : [];
-  const [bumpConfigurations, setBumpConfigurations] = useState(mountedInitialValues.bumpConfigurations);
+  // const existingBumpConfigurations = mode === "edit" ? mountedInitialValues.bumpConfigurations : [];
+  // const [bumpConfigurations, setBumpConfigurations] = useState(mountedInitialValues.bumpConfigurations);
 
   const form = useForm<EventFormValues>({
     mode: "uncontrolled",
     initialValues: mountedInitialValues,
   });
 
-  const updateBumpConfigurations = (nextBumpConfigurations: string[]) => {
-    const existingNames = new Set(existingBumpConfigurations);
-    const preservedBumpConfigurations = [
-      ...existingBumpConfigurations,
-      ...nextBumpConfigurations.filter((name) => !existingNames.has(name)),
-    ];
+  // const updateBumpConfigurations = (nextBumpConfigurations: string[]) => {
+  //   const existingNames = new Set(existingBumpConfigurations);
+  //   const preservedBumpConfigurations = [
+  //     ...existingBumpConfigurations,
+  //     ...nextBumpConfigurations.filter((name) => !existingNames.has(name)),
+  //   ];
 
-    setBumpConfigurations(preservedBumpConfigurations);
-    form.setFieldValue("bumpConfigurations", preservedBumpConfigurations, { forceUpdate: false });
-  };
+  //   setBumpConfigurations(preservedBumpConfigurations);
+  //   form.setFieldValue("bumpConfigurations", preservedBumpConfigurations, { forceUpdate: false });
+  // };
 
   const setFixtureGroupOrderInStateAndForm = (nextOrder: EventFormKey[]) => {
     setFixtureGroupOrder(nextOrder);

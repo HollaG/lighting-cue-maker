@@ -1,8 +1,8 @@
 // feature[class=Realtime] Scrollable cue list with cursor tracking surface
 
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ActionIcon, Alert, Box, Center, Flex, Group, Loader, Stack, Text, Title } from "@mantine/core";
-import { IconChevronLeft, IconChevronRight, IconInfoCircle } from "@tabler/icons-react";
+import { ActionIcon, Alert, Box, Center, Flex, Group, Loader, Stack, Text, Title, Tooltip } from "@mantine/core";
+import { IconChevronLeft, IconChevronRight, IconInfoCircle, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
 import { CueCard } from "../../../components/Cues/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
 import { useAppStore } from "../../../store/appStore";
@@ -86,13 +86,19 @@ export const CueList = memo(
           <Flex flex={1} />
           <ViewModeSelect viewMode={globalViewMode} setViewMode={setGlobalViewMode} />
 
-          <ActionIcon size="lg" color="gray" variant="light" onClick={onIncreaseWidth} disabled={!canIncreaseWidth}>
-            <IconChevronLeft style={{ width: "1rem" }} />
-          </ActionIcon>
-          <Text>Adjust width</Text>
-          <ActionIcon size="lg" color="gray" variant="light" onClick={onDecreaseWidth} disabled={!canDecreaseWidth}>
-            <IconChevronRight style={{ width: "1rem" }} />
-          </ActionIcon>
+          {/* <Text>Adjust width</Text> */}
+          <Tooltip label={canDecreaseWidth ? "Decrease width of the Cue List" : "Minimum width reached"}>
+            <ActionIcon size="lg" color="gray" variant="light" onClick={onDecreaseWidth} disabled={!canDecreaseWidth}>
+              {/* <IconChevronRight style={{ width: "1rem" }} /> */}
+              <IconZoomOut size="1rem" />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label={canIncreaseWidth ? "Increase width of the Cue List" : "Maximum width reached"}>
+            <ActionIcon size="lg" color="gray" variant="light" onClick={onIncreaseWidth} disabled={!canIncreaseWidth}>
+              {/* <IconChevronLeft style={{ width: "1rem" }} /> */}
+              <IconZoomIn size="1rem" />
+            </ActionIcon>
+          </Tooltip>
         </Group>
         {isCuesLoading && (
           <Stack className={classes.cards}>

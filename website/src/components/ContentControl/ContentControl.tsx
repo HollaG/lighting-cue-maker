@@ -110,26 +110,29 @@ export const ContentControl = ({
 
       <Transition
         mounted={(!inViewport || alwaysShow) && showCues}
-        transition="fade-up"
+        transition="fade-down"
         duration={250}
         timingFunction="ease-in-out"
       >
         {(styles) => (
           <Box
             pos="fixed"
-            top={"32px"}
-            right={showCues ? `${floatingControlRightPercent}%` : "32px"}
+            top={"0"}
+            left="50%"
+            // right={showCues ? `${floatingControlRightPercent}%` : "32px"}
             style={{
               ...styles,
+              translate: "-50% 0",
               width: showCues ? `${floatingControlWidthPercent}%` : "calc(100% - 64px)",
-              marginLeft: "auto",
-              marginRight: "auto",
+              minWidth: "40rem",
               backgroundColor: "light-dark(var(--mantine-color-white), var(--mantine-color-dark-6))",
               boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
               borderRadius: "1rem",
               border: "1px solid light-dark(var(--mantine-color-lime-3), var(--mantine-color-dark-4))",
               padding: "1rem",
               zIndex: 99,
+              borderTopLeftRadius: "0",
+              borderTopRightRadius: "0",
             }}
           >
             <Group gap="xs">

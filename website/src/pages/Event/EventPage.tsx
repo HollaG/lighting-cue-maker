@@ -220,8 +220,8 @@ export const EventPage = () => {
   const [cueFraction, setCueFraction] = useLocalStorage({ key: "cueFraction", defaultValue: "6" }); // range: 1 - 11
   const decreaseFraction = () => setCueFraction((prev) => Math.max(1, Number(prev) - 1).toString());
   const increaseFraction = () => setCueFraction((prev) => Math.min(11, Number(prev) + 1).toString());
-  const canDecreaseFraction = Number(cueFraction) > 1;
-  const canIncreaseFraction = Number(cueFraction) < 11;
+  const canDecreaseFraction = Number(cueFraction) > 3;
+  const canIncreaseFraction = Number(cueFraction) < 9;
 
   // RUN mode
   const onGoRunMode = () => {
