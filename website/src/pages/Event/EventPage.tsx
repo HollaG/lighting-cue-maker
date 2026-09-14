@@ -60,13 +60,11 @@ import { useLiveQueryUpdates } from "../../hooks/realtime/useLiveQueryUpdates";
 import { RemoteCursorOverlay } from "../../components/Cursor/RemoteCursorOverlay";
 import { ChatContainer } from "../../components/Chat/ChatContainer";
 import { useActiveCueTracking } from "../../hooks/realtime/useActiveCueTracking";
-import { useRealtimeStore } from "../../store/realtimeStore";
 
 export const EventPage = () => {
   // Realtime tracking stuff on the Event Page includes Live Queries, activeCue
-  const followingUserId = useRealtimeStore((state) => state.followingUserId);
   useLiveQueryUpdates();
-  useActiveCueTracking({ isFollowing: followingUserId !== null });
+  useActiveCueTracking();
   // NOTE: evt is nullable!! remember to check
 
   const { eventId } = useParams({

@@ -7,18 +7,19 @@ import { useRealtimeStore } from "../../store/realtimeStore";
 // feature[class=Realtime] Track the active cue changing and update
 //                         Also handle setting the active cue.
 // do not send updates if we're currently following someone
-export function useActiveCueTracking({ isFollowing }: { isFollowing: boolean }) {
+export function useActiveCueTracking() {
   const { sendMessage, status, registerListener } = useRealtime();
   const currentlySelectedCueId = useAppStore((state) => state.currentlySelectedCueId);
   const setCurrentlySelectedCueId = useAppStore((state) => state.setCurrentlySelectedCueId);
   const followingUserId = useRealtimeStore((state) => state.followingUserId);
+  const isFollowing = !!followingUserId;
 
   // Whenever the active cue changes, send a message to the server
   // Note that in some cases, such as when a new cue is added,
   // the cueId will actually be transmitted BEFORE the instruction to add a new cue.
   // However, this is fine because it will reconcile itself once the new cue is added.
   useEffect(() => {
-    if (status !== "connected" || isFollowing) return;
+    if (status !== "connected" || isFollowing) return; // do NOT update others when we're following someone
 
     sendMessage(ClientMessageType.ClientMessagePresenceUpdate, {
       currentlySelectedCueId: currentlySelectedCueId ?? null,

@@ -41,8 +41,9 @@ export type ClientMessagePresenceUpdateData = {
   cursor?: CursorAnchor | null;
 
   scroll?: Record<CursorSurface, { x: number; y: number }> | null;
-  currentlySelectedCueId?: string | null; // null if unselected
-  viewMode?: { [cueId: string]: ViewMode }; // force a change in view mode for a specific cue
+  currentlySelectedCueId?: string | null; // null if user unselected
+
+  viewConfig?: { [cueId: string]: { viewMode: ViewMode; activeFixtureGroupIds: string[] } }; // force a change in view mode for a specific cue
 };
 
 // "Live View" data

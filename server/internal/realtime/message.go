@@ -78,6 +78,7 @@ type ClientMessagePresenceUpdateData struct {
 	Cursor                 json.RawMessage `json:"cursor,omitempty"`
 	Scroll                 json.RawMessage `json:"scroll,omitempty"`
 	CurrentlySelectedCueId string          `json:"currentlySelectedCueId,omitempty"`
+	ViewConfig             json.RawMessage `json:"viewConfig,omitempty"` // opaque string, frontend can parse it as needed
 }
 
 type ClientMessagePresenceFollowData struct {

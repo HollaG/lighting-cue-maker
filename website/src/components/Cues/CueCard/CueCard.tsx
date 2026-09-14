@@ -41,6 +41,7 @@ import { checkCueCorrectness } from "../../../utils/cue/cueValidator";
 import { ViewModeSelect, type ViewMode } from "./ViewModeSelect";
 import { CueContents } from "../CueContents/CueContents";
 import { CueNotices } from "../CueNotices/CueNotices";
+import { useCueViewModeTracking } from "../../../hooks/realtime/useCueViewModeTracking";
 
 type FormData = Cue;
 
@@ -108,17 +109,6 @@ const CueCardInternal = ({
                       name: attribute.name,
                       type: attribute.type,
                       value: createDefaultValueAssignment(attribute),
-                      // value: {
-                      //   // TODO: check `metadata` instead for default values
-                      //   // [AttributeTypes.TEXT]: "",
-                      //   // [AttributeTypes.SELECT]: "",
-                      //   // [AttributeTypes.MULTISELECT]: [],
-                      //   // [AttributeTypes.COLOUR]: { hex: "", name: "" },
-                      //   // [AttributeTypes.SLIDER]: 0,
-                      //   [AttributeTypes.BOOLEAN]:
-                      //     attribute.optionPossibleValues[AttributeTypes.BOOLEAN] === "checkedDefault",
-                      //   // [AttributeTypes.NONE]: null,
-                      // },
                     },
                   ]),
                 ),
@@ -456,14 +446,20 @@ const CueCardInternal = ({
     defaultValue: "Table",
   });
 
+  const onViewModeChange = (newViewMode: ViewMode) => {
+    setViewMode(newViewMode);
+
+    // Realtime sync
+  };
+
   // Capture the mount value so the card starts from its own persisted mode.
   const previousGlobalViewMode = useRef(globalViewMode);
   useEffect(() => {
     if (globalViewMode === previousGlobalViewMode.current) return;
 
     previousGlobalViewMode.current = globalViewMode;
-    setViewMode(globalViewMode);
-  }, [globalViewMode, setViewMode]);
+    onViewModeChange(globalViewMode);
+  }, [globalViewMode, onViewModeChange]);
 
   // control accordion panel state
   const [activeFixtureGroupId, setActiveFixtureGroupId] = useState<string | null>(null);
@@ -502,6 +498,14 @@ const CueCardInternal = ({
       }
     }
   }, [cue.updatedAt, form, initialValues, isDirty]);
+
+  useCueViewModeTracking({
+    activeFixtureGroupId,
+    cueId: cue.id,
+    viewMode,
+    setActiveFixtureGroupId,
+    setViewMode,
+  });
 
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
