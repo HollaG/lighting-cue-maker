@@ -43,7 +43,7 @@ import { VisualiserBarLightObject } from "../../Elements/VisualiserBarLight";
 import { VisualiserMovingLightObject } from "../../Elements/VisualiserMovingLight";
 import type { AttributeAssignment, FixtureGroupsAssignment } from "../../../../types/cues";
 import { CustomCoverLoader } from "../../../Loader/CustomCoverLoader";
-import { IconHelp, IconHelpCircle } from "@tabler/icons-react";
+import { IconHelpCircle } from "@tabler/icons-react";
 import { ParLightRepresentation } from "../../../representations/ParLightRepresentation";
 import { BarLightRepresentation } from "../../../representations/BarLightRepresentation";
 import { MovingLightRepresentation } from "../../../representations/MovingLightRepresentation";
