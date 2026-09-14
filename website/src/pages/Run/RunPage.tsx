@@ -2,25 +2,12 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { useGetEvent } from "../../query/useGetEvent";
 import { useGetItems } from "../../query/useGetItems";
 import { useGetItem } from "../../query/useGetItem";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetCues } from "../../query/useGetCues";
 import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
 import { useGetFixturesByEventId } from "../../query/useGetFixtures";
-import {
-  Accordion,
-  Alert,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  Group,
-  Loader,
-  SimpleGrid,
-  Stack,
-  Text,
-  Title,
-} from "@mantine/core";
-import { useFullscreenDocument } from "@mantine/hooks";
+import { Accordion, Alert, Box, Button, Flex, Group, Loader, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import { useFullscreenDocument, useMergedRef, useResizeObserver } from "@mantine/hooks";
 
 import classes from "./RunPage.module.css";
 import { CueControls } from "../../components/RunPageComponents/CueControls";
@@ -84,6 +71,9 @@ export const RunPage = () => {
 
   // TODO: decide if want to sync to the existing store
   const [currentCueIndex, setCurrentCueIndex] = useState<number>(0);
+  const lyricsScrollRef = useRef<HTMLDivElement>(null);
+  const [lyricsSizeRef, rect] = useResizeObserver<HTMLDivElement>();
+  const lyricsRef = useMergedRef(lyricsScrollRef, lyricsSizeRef);
 
   const cueOrder = useMemo(() => (item?.rawLyrics ? getCueOrder(item?.rawLyrics) : []), [item?.rawLyrics]);
   const currentCue = useMemo(
@@ -108,8 +98,21 @@ export const RunPage = () => {
     if (newCurrentCue) {
       const cueId = newCurrentCue.id;
       const element = document.getElementById(`ref-${cueId}`);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      const lyrics = lyricsScrollRef.current;
+      if (element && lyrics && lyrics.contains(element)) {
+        const elementRect = element.getBoundingClientRect();
+        const lyricsRect = lyrics.getBoundingClientRect();
+
+        // Scroll vertically within the lyrics, leaving the page and other panels in place.
+        lyrics.scrollTo({
+          top:
+            lyrics.scrollTop +
+            elementRect.top -
+            lyricsRect.top -
+            lyrics.clientTop +
+            (elementRect.height - lyrics.clientHeight) / 2,
+          behavior: "smooth",
+        });
       }
     }
   };
@@ -220,9 +223,38 @@ export const RunPage = () => {
     >
       {!isPageLoading ? (
         <div className={clsx(classes["grid"], classes[`priority-${displayMode}`])}>
-          <div className={classes.lyrics}>
+          <div className={classes.lyrics} ref={lyricsRef}>
+            <Box
+              style={{
+                width: rect.width,
+                position: "fixed",
+                bottom: "0",
+                left: "0",
+                backgroundColor: "light-dark(var(--mantine-color-white), var(--mantine-color-dark-8))",
+                padding: "1rem",
+
+                border: "1px solid light-dark(var(--mantine-color-lime-3), var(--mantine-color-dark-4))",
+                borderTopRightRadius: "1rem",
+                borderLeftWidth: "0",
+                borderBottomWidth: "0",
+              }}
+            >
+              <CueControls
+                mode={"horizontal"}
+                cues={cues || []}
+                currentCueIndex={currentCueIndex}
+                cueOrder={cueOrder}
+                onSelectCue={onSelectCue}
+              />
+            </Box>
             {unconfiguredCues.length > 0 && (
-              <Alert my="lg" color="red" title="Missing cue assignments" icon={<IconAlertCircle width="1rem" />}>
+              <Alert
+                styles={{ root: { flexShrink: 0 } }}
+                my="lg"
+                color="red"
+                title="Missing cue assignments"
+                icon={<IconAlertCircle width="1rem" />}
+              >
                 <Stack>
                   <Text>There are some unconfigured cues!</Text>
                 </Stack>
@@ -281,8 +313,9 @@ export const RunPage = () => {
                     />
                   )}
 
-                  <Stack>
+                  <Stack style={{ width: "100%" }}>
                     <Title order={3}>Lyrics</Title>
+                    {items && <ItemControls items={items} currentItem={item} onSelectItem={onSelectItem} />}
 
                     <RichContent
                       eventId={eventId}
@@ -455,19 +488,19 @@ export const RunPage = () => {
                 </SimpleGrid>
               }
 
-              <CueControls
+              {/* <CueControls
                 mode={displayMode === "visualiser" ? "horizontal" : "vertical"}
                 cues={cues || []}
                 currentCueIndex={currentCueIndex}
                 cueOrder={cueOrder}
                 onSelectCue={onSelectCue}
-              />
+              /> */}
 
-              <Box style={{ width: "stretch" }}>
+              {/* <Box style={{ width: "stretch" }}>
                 <Divider />
-              </Box>
+              </Box> */}
 
-              {items && <ItemControls items={items} currentItem={item} onSelectItem={onSelectItem} />}
+              {/* {items && <ItemControls items={items} currentItem={item} onSelectItem={onSelectItem} />} */}
             </div>
           )}
 

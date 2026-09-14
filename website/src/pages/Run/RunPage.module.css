@@ -7,15 +7,19 @@
   height: 100%;
 
   &.priority-visualiser {
-    grid-template-columns: minmax(0, 7.33fr) minmax(0, 6fr) minmax(0, 2.67fr);
-    grid-template-rows: 2.0025fr 3.495fr 3.5025fr;
-    /* grid-template-columns: minmax(0, 6fr) minmax(0, 7.33fr) minmax(0, 2.67fr);
-    grid-template-rows: 2.0025fr 6.9975fr; */
+    /* grid-template-columns: minmax(0, 7.33fr) minmax(0, 6fr) minmax(0, 2.67fr); */
+    /* grid-template-rows: 2.0025fr 3.495fr 3.5025fr; */
+    grid-template-columns: minmax(0, 6fr) minmax(0, 7.33fr) minmax(0, 2.67fr);
+    grid-template-rows: 2.0025fr 6.9975fr;
 
-    grid-template-areas:
+    /* grid-template-areas:
       "visualiser lyrics preview"
       "visualiser lyrics settings"
-      "controls  lyrics settings";
+      "controls  lyrics settings"; */
+
+    grid-template-areas:
+      "lyrics visualiser settings"
+      "lyrics controls preview"
 
   }
 

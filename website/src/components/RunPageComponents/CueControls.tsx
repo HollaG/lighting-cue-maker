@@ -24,10 +24,22 @@ export const CueControls = ({
   useEffect(() => {
     if (mode !== "horizontal" || !currentCueId) return;
 
-    cueButtonRefs.current[currentCueId]?.scrollIntoView({
+    const button = cueButtonRefs.current[currentCueId];
+    const viewport = button?.closest<HTMLElement>("[data-cue-scroll-viewport]");
+    if (!button || !viewport) return;
+
+    const buttonRect = button.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
+
+    // Center inside this cue strip only; scrollIntoView can also move hidden-overflow ancestors.
+    viewport.scrollTo({
+      left:
+        viewport.scrollLeft +
+        buttonRect.left -
+        viewportRect.left -
+        viewport.clientLeft +
+        (buttonRect.width - viewport.clientWidth) / 2,
       behavior: "smooth",
-      block: "nearest",
-      inline: "center",
     });
   }, [currentCueId, mode]);
 
@@ -105,7 +117,10 @@ export const CueControls = ({
         </Tooltip>
       </Center>
       <Flex style={{ flex: "1 1 0", minWidth: 0, width: 0 }}>
-        <Scroller style={{ width: "100%" }}>
+        <Scroller
+          style={{ width: "100%" }}
+          attributes={{ container: { "data-cue-scroll-viewport": true } }}
+        >
           <Flex
             style={{
               flexWrap: "nowrap",

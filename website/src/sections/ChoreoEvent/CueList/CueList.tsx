@@ -1,8 +1,8 @@
 // feature[class=Realtime] Scrollable cue list with cursor tracking surface
 
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ActionIcon, Alert, Box, Center, Flex, Group, Loader, Stack, Text, Title, Tooltip } from "@mantine/core";
-import { IconChevronLeft, IconChevronRight, IconInfoCircle, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
+import { ActionIcon, Alert, Box, Center, Flex, Group, Loader, Stack, Title, Tooltip } from "@mantine/core";
+import { IconInfoCircle, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
 import { CueCard } from "../../../components/Cues/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
 import { useAppStore } from "../../../store/appStore";
