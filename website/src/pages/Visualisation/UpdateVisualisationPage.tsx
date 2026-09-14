@@ -20,9 +20,9 @@ export const UpdateVisualisationPage = () => {
   const { from } = useSearch({ from: "/events/$eventId/visuals/update/" });
 
   return (
-    <Box>
+    <Box py="4rem">
       {/* <Box style={{ width: "100%" }}> */}
-      <Container size="xl" mt="4rem">
+      <Container size="xl">
         <Group mb="2rem" style={{ width: "stretch" }}>
           <Box>
             {from === "create" ? (

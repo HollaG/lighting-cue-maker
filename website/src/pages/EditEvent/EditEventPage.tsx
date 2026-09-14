@@ -87,7 +87,7 @@ export const EditEventPage = () => {
   }
 
   return (
-    <Container size="fluid" mt="4rem">
+    <Container size="fluid" py="4rem">
       <Container size="xl">
         <Group mb="2rem">
           <Button
