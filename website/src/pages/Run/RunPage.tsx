@@ -66,8 +66,6 @@ export const RunPage = () => {
 
   const navigate = useNavigate();
 
-  console.log(items, isItemsLoading);
-
   // head into fullscreen on page load
   const { toggle, fullscreen } = useFullscreenDocument();
   useEffect(() => {
@@ -129,6 +127,9 @@ export const RunPage = () => {
   };
 
   const returnToEvent = () => {
+    if (fullscreen) {
+      toggle();
+    }
     navigate({ to: `/events/${eventId}` });
   };
 
