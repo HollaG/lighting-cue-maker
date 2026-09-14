@@ -94,7 +94,7 @@ export const EventForm = ({
               {...form.getInputProps("externalLink")}
             />
 
-            <CustomTextInput
+            {/* <CustomTextInput
               label="How many cues per band? (optional)"
               placeholder="Enter a number..."
               name="cuesPerBand"
@@ -110,9 +110,9 @@ export const EventForm = ({
               type="number"
               key={form.key("uniqueCuesPerBand")}
               {...form.getInputProps("uniqueCuesPerBand")}
-            />
+            /> */}
 
-            <TagsInput
+            {/* <TagsInput
               name="bumpConfigurations"
               key={form.key("bumpConfigurations")}
               value={bumpConfigurations}
@@ -140,7 +140,7 @@ export const EventForm = ({
                   </Pill>
                 );
               }}
-            />
+            /> */}
           </Stack>
         </Container>
 
@@ -167,13 +167,7 @@ export const EventForm = ({
                     Cancel
                   </Button>
                 )}
-                <Button
-                  type="submit"
-                  color="lime.9"
-                  size="md"
-                  loading={isSubmitting}
-                  loaderProps={{ type: "bars" }}
-                >
+                <Button type="submit" color="lime.9" size="md" loading={isSubmitting} loaderProps={{ type: "bars" }}>
                   {submitLabel}
                 </Button>
               </Group>

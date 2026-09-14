@@ -201,13 +201,13 @@ export const eventFormValuesToCreateRequest = (values: EventFormValues): CreateE
       ? undefined
       : Number(values.uniqueCuesPerBand),
   bumpConfigurations: values.bumpConfigurations.map((name) => ({ name })),
-  fixtureGroups: values.fixtureGroupOrder.map((fixtureGroupClientId) => {
+  fixtureGroups: values.fixtureGroupOrder.map((fixtureGroupClientId, fixtureGroupIndex) => {
     const fixtureGroup = values.fixtureGroups[fixtureGroupClientId];
 
     return {
       description: fixtureGroup.description,
       name: fixtureGroup.name,
-      attributes: fixtureGroup.attributeOrder.map((attributeClientId) => {
+      attributes: fixtureGroup.attributeOrder.map((attributeClientId, attributeIndex) => {
         const {
           clientId: _clientId,
           id: _id,
@@ -217,12 +217,13 @@ export const eventFormValuesToCreateRequest = (values: EventFormValues): CreateE
         } = fixtureGroup.attributes[attributeClientId];
         return {
           ...attribute,
+          order: attributeIndex,
           metadata: formAttributeMetadataToAttributeMetadata(metadata),
           optionPossibleValues: formAttributeOptionsToAttributeOptions(attribute.type, optionPossibleValues),
         };
       }),
 
-      order: fixtureGroup.order,
+      order: fixtureGroupIndex,
     };
   }),
 });

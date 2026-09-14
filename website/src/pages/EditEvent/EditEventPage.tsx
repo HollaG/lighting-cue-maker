@@ -87,23 +87,24 @@ export const EditEventPage = () => {
   }
 
   return (
-    <Container size="xl" mt="4rem">
-      <Group mb="2rem">
-        <Button
-          type="button"
-          leftSection={<IconArrowLeft width="1rem" />}
-          variant="transparent"
-          onClick={returnToEvent}
-        >
-          Back to event
-        </Button>
+    <Container size="fluid" mt="4rem">
+      <Container size="xl">
+        <Group mb="2rem">
+          <Button
+            type="button"
+            leftSection={<IconArrowLeft width="1rem" />}
+            variant="transparent"
+            onClick={returnToEvent}
+          >
+            Back to event
+          </Button>
 
-        <Box flex={1} />
-        <Button type="button" variant="light" onClick={editVisualiser}>
-          Edit visualisers
-        </Button>
-      </Group>
-
+          <Box flex={1} />
+          <Button type="button" variant="light" onClick={editVisualiser}>
+            Edit visualisers
+          </Button>
+        </Group>
+      </Container>
       <EventForm
         key={event.id}
         mode="edit"

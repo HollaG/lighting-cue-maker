@@ -1,6 +1,9 @@
 import { Box, Button, Card, Center, Divider, Flex, Group, Stack, Tooltip } from "@mantine/core";
 import type { UseFormReturnType } from "@mantine/form";
 import { useState } from "react";
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableAttribute } from "./SortableAttribute";
 import { createEmptyEventFormAttribute, type EventFormKey, type EventFormValues } from "../EventForm/eventFormModel";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { AddAttributeCard } from "./Attribute/AddAttributeCard/AddAttributeCard";
@@ -30,6 +33,10 @@ export const FixtureGroupCard = ({
   const fixtureGroup = form.getValues().fixtureGroups[formKey];
   const fixtureGroupDeleteDisabled = Boolean(fixtureGroup.id);
   const [attributeOrder, setAttributeOrder] = useState<EventFormKey[]>(fixtureGroup.attributeOrder);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const setAttributeOrderInStateAndForm = (nextOrder: EventFormKey[]) => {
     setAttributeOrder(nextOrder);
@@ -40,6 +47,15 @@ export const FixtureGroupCard = ({
     const attribute = createEmptyEventFormAttribute(attributeOrder.length);
     form.setFieldValue(`${attributesPath}.${attribute.clientId}`, attribute);
     setAttributeOrderInStateAndForm([...attributeOrder, attribute.clientId]);
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const oldIndex = attributeOrder.indexOf(String(active.id));
+    const newIndex = attributeOrder.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    // Move only the stable IDs so uncontrolled inputs keep their values and identity.
+    setAttributeOrderInStateAndForm(arrayMove(attributeOrder, oldIndex, newIndex));
   };
 
   const removeAttribute = (attributeClientId: EventFormKey) => {
@@ -95,20 +111,23 @@ export const FixtureGroupCard = ({
           </Flex>
         </Group>
 
-        {attributeOrder.map((attributeClientId, attributeIndex) => (
-          <div key={attributeClientId}>
-            <AddAttributeCard
-              key={attributeClientId}
-              attributeClientId={attributeClientId}
-              fixtureGroupClientId={formKey}
-              form={form}
-              index={attributeIndex}
-              deleteDisabled={Boolean(fixtureGroup.attributes[attributeClientId].id)}
-              onDeleteAttribute={() => removeAttribute(attributeClientId)}
-            />
-            <Divider my="sm" />
-          </div>
-        ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={attributeOrder} strategy={verticalListSortingStrategy}>
+            {attributeOrder.map((attributeClientId, attributeIndex) => (
+              <SortableAttribute key={attributeClientId} id={attributeClientId} label={`attribute ${attributeIndex + 1}`}>
+                <AddAttributeCard
+                  attributeClientId={attributeClientId}
+                  fixtureGroupClientId={formKey}
+                  form={form}
+                  index={attributeIndex}
+                  deleteDisabled={Boolean(fixtureGroup.attributes[attributeClientId].id)}
+                  onDeleteAttribute={() => removeAttribute(attributeClientId)}
+                />
+                <Divider my="sm" />
+              </SortableAttribute>
+            ))}
+          </SortableContext>
+        </DndContext>
 
         <Center>
           <Tooltip
