@@ -16,7 +16,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useAppStore } from "../../store/appStore";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { AttributeTypes, type AttributeConfiguration, type LightEventConfiguration } from "../../types/types";
 import { IconArrowRightBar, IconDownload } from "@tabler/icons-react";
 import type { QLCEventJson, QLCFunction } from "../../types/qlc";
@@ -56,7 +56,8 @@ export type GroupedFnList = {
 }[];
 export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
   const activeItemId = useAppStore((s) => s.activeItemId);
-  const [file, setFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileLoadIdRef = useRef(0);
   const [fileXml, setFileXml] = useState<string | null>(null);
 
   const [functionList, setFunctionList] = useState<{ [fnId: string]: QLCFunction }>({});
@@ -81,7 +82,7 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
   // const {} = useFetch(`/api/v1/qlc/generate?lightEventId=${event?.id}`, false)
   const { executeRequest } = useRequest<unknown, { items: any[] }>(`/api/v1/qlc/${event?.id}/generate`, "POST");
 
-  const loadFromLocalstorage = useCallback(() => {
+  const loadFromLocalstorage = () => {
     const storedValue = window.localStorage.getItem("qlc-mapping");
     if (storedValue) {
       try {
@@ -90,16 +91,28 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
         console.error("Failed to parse stored value", e);
       }
     }
-  }, [form]);
+  };
 
-  useEffect(() => {
-    if (!file) return;
-    file.text().then((xml) => {
-      setFileXml(xml);
+  /** Parse a selected workspace once; a newer selection supersedes an unfinished file read. */
+  const onFileSet = async (file: File | null) => {
+    const fileLoadId = ++fileLoadIdRef.current;
+    if (!file) {
+      setFileName(null);
+      setFileXml(null);
+      setFunctionList({});
+      setGroupedFnList([]);
+      return;
+    }
+
+    try {
+      const xml = await file.text();
+      if (fileLoadId !== fileLoadIdRef.current) return;
+
       const fnList = extractQLCFunctionsToJSON(xml);
-      setFunctionList(
-        fnList.reduce((acc, fn) => (fn.ID ? { ...acc, [fn.ID]: fn } : acc), {} as { [fnId: string]: QLCFunction }),
-      );
+      const functionsById: Record<string, QLCFunction> = {};
+      for (const fn of fnList) {
+        if (fn.ID) functionsById[fn.ID] = fn;
+      }
 
       // set up the groupedFnList, group by Type
       const grouped = fnList.reduce(
@@ -118,18 +131,30 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
         },
         {} as Record<string, { value: string; label: string }[]>,
       );
+      setFileName(file.name);
+      setFileXml(xml);
+      setFunctionList(functionsById);
       setGroupedFnList(
         Object.entries(grouped)
           .map(([group, items]) => ({ group, items }))
           .reverse(),
       );
 
-      // if the values is an empty object, reload from localstorage if any
-      if (Object.keys(form.getValues()).length === 0) {
+      // Restore saved mappings only when there are no current mapping edits.
+      const values = form.getValues();
+      if (Object.keys(values.mappings).length === 0 && Object.keys(values.advancedOptions).length === 0) {
         loadFromLocalstorage();
       }
-    });
-  }, [file, form, loadFromLocalstorage]);
+    } catch (error) {
+      if (fileLoadId !== fileLoadIdRef.current) return;
+      console.error("Failed to load QLC+ file", error);
+      notifications.show({
+        title: "Could not load QLC+ file",
+        message: "Please try selecting the file again.",
+        color: "red",
+      });
+    }
+  };
 
   async function exportPreviewToQlc() {
     if (!fileXml) {
@@ -158,7 +183,7 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${file?.name.replace(".qxw", "") ?? "workspace"}-preview-${Date.now()}.qxw`;
+    a.download = `${fileName?.replace(".qxw", "") ?? "workspace"}-preview-${Date.now()}.qxw`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -245,15 +270,15 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
         </Stack>
         <Stack my="lg">
           <Group>
-            <FileButton onChange={setFile} accept=".qxw">
+            <FileButton onChange={onFileSet} accept=".qxw">
               {(props) => (
                 <Button size="sm" {...props} color="green">
                   Upload .qxw file
                 </Button>
               )}
             </FileButton>
-            {file && <Text>Selected: {file.name}</Text>}
-            {!file && <Text> Please select a QLC+ file!</Text>}
+            {fileName && <Text>Selected: {fileName}</Text>}
+            {!fileName && <Text> Please select a QLC+ file!</Text>}
           </Group>
         </Stack>
       </Container>
@@ -268,7 +293,7 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
                     Mappings
                   </Title>
                   <Button
-                    disabled={!file}
+                    disabled={!fileName}
                     ml={"auto"}
                     size="xs"
                     color="gray"
