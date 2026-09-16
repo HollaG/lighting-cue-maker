@@ -10,10 +10,12 @@ import {
   type TextOption,
 } from "./types";
 
-export type CueConfig =
-  | { mode: "unknown" }
-  | { mode: "normal"; enabledGroups: string[] }
-  | { mode: "blackout" };
+export type CueConfig = { mode: "unknown" } | { mode: "normal"; enabledGroups: string[] } | { mode: "blackout" };
+
+export type CueTransition = {
+  holdTimeMs: number; // in milliseconds
+  transitionTimeMs: number; // in milliseconds
+};
 
 export type CueMode = CueConfig["mode"];
 
@@ -27,6 +29,7 @@ export interface Cue {
   assignments: FixtureGroupsAssignment;
 
   cueConfig: CueConfig;
+  transition: CueTransition;
 
   createdAt: Date;
   updatedAt: Date;

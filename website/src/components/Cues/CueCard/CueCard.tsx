@@ -1,6 +1,7 @@
 // feature[class=Realtime] Cue card with remote form updates and cursor tracking surface
 
 import {
+  Accordion,
   ActionIcon,
   Box,
   Button,
@@ -9,8 +10,11 @@ import {
   Group,
   Loader,
   Menu,
+  NumberInput,
   Popover,
   px,
+  Radio,
+  SimpleGrid,
   Stack,
   Text,
   Textarea,
@@ -58,6 +62,49 @@ interface CueCardProps {
   globalViewMode: ViewMode;
 }
 
+// 100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000
+let MARKS = [
+  {
+    value: -1,
+    label: "Manually",
+    hidden: false,
+  },
+  {
+    value: 250,
+    label: "0.25s",
+    hidden: true,
+  },
+  {
+    value: 500,
+    label: "0.5s",
+    hidden: true,
+  },
+  {
+    value: 750,
+    label: "0.75s",
+    hidden: true,
+  },
+];
+
+for (let i = 1000; i <= 10000; i += 500) {
+  let hidden = false;
+  if (i <= 1000) {
+    hidden = true;
+  } else if (i <= 1000) {
+    hidden = i % 250 !== 0; // show 100, 250, 500, 750, 1000
+  } else {
+    hidden = i % 1000 !== 0; // show 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000
+  }
+
+  if (i === 0) continue; // skip 0, as we have "Manually" for -1
+
+  MARKS.push({
+    value: i,
+    label: `${i / 1000}s`,
+    hidden: hidden,
+  });
+}
+
 const CueCardInternal = ({
   cue,
   cueNumber,
@@ -81,6 +128,7 @@ const CueCardInternal = ({
   const [isCollapsed, setIsCollapsed] = useLocalStorage({ key: `cue-${cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
   const isApplyingRemoteValuesRef = useRef(false);
+  const isEditingTransitionTimeRef = useRef(false);
   // --- Form ---------
   const initialValues: FormData = useMemo(
     () => ({
@@ -90,6 +138,9 @@ const CueCardInternal = ({
       updatedAt: cue.updatedAt,
       deletedAt: cue.deletedAt,
       cueConfig: cue.cueConfig ?? { mode: "unknown" },
+
+      // default transition is Hold & Instant
+      transition: cue.transition ?? { holdTimeMs: -1, transitionTimeMs: 0 },
 
       assignments: (cue && cue.assignments && Object.keys(cue.assignments).length != 0
         ? // TODO(editing): we need to figure out a way to reconcile the values:
@@ -200,11 +251,31 @@ const CueCardInternal = ({
       if (isApplyingRemoteValuesRef.current) return;
 
       setIsDirty(true);
+
+      // Timing inputs save on blur so a query refresh cannot interrupt typing.
+      if (isEditingTransitionTimeRef.current) return;
+
       debouncedSave();
     },
 
     validate: validateCue,
   });
+
+  const [holdTimeMs, setHoldTimeMs] = useState(initialValues.transition.holdTimeMs);
+  form.watch("transition.holdTimeMs", ({ value }) => setHoldTimeMs(value));
+  const [transitionTimeMs, setTransitionTimeMs] = useState(initialValues.transition.transitionTimeMs);
+  form.watch("transition.transitionTimeMs", ({ value }) => setTransitionTimeMs(value));
+
+  const onTransitionTimeFocus = () => {
+    isEditingTransitionTimeRef.current = true;
+    debouncedSave.cancel();
+  };
+
+  const onTransitionTimeBlur = () => {
+    isEditingTransitionTimeRef.current = false;
+    debouncedSave.cancel();
+    void handleSave();
+  };
 
   /**
    * Update the cue config
@@ -706,6 +777,235 @@ const CueCardInternal = ({
                 onSaveCueConfig={onSaveCueConfig}
               />
             </Collapse>
+            <SimpleGrid cols={2} spacing={0}>
+              <Accordion>
+                <Accordion.Item value="holdTime">
+                  <Accordion.Control>
+                    Change to next cue (currently {holdTimeMs === -1 ? "manually" : `after ${holdTimeMs / 1000}s`})
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Radio.Group
+                      value={holdTimeMs === -1 ? "manual" : "auto"}
+                      onChange={(value) => {
+                        if (value === "manual") {
+                          form.setFieldValue("transition.holdTimeMs", -1);
+                        } else if (holdTimeMs === -1) {
+                          form.setFieldValue("transition.holdTimeMs", 100);
+                        }
+                      }}
+                    >
+                      <Group wrap="nowrap" gap="xs">
+                        <Radio label="Only when manually changed" value={"manual"} style={{ flex: 1 }} />
+                        <Radio.Card
+                          style={{ flex: 1 }}
+                          styles={{
+                            card: {
+                              border: 0,
+                            },
+                          }}
+                          value="auto"
+                        >
+                          <Group wrap="nowrap" gap="xs">
+                            <Radio.Indicator />
+                            <NumberInput
+                              min={1}
+                              label="Change after"
+                              suffix="ms"
+                              defaultValue={100}
+                              name="transition.holdTimeMs"
+                              key={form.key("transition.holdTimeMs")}
+                              {...form.getInputProps("transition.holdTimeMs")}
+                              disabled={holdTimeMs === -1}
+                              onFocus={onTransitionTimeFocus}
+                              onBlur={onTransitionTimeBlur}
+                              onKeyDown={(event) => {
+                                // Keep arrow keys in the input instead of navigating the parent radio card.
+                                if (event.key.startsWith("Arrow")) event.stopPropagation();
+                              }}
+                            />
+                          </Group>
+                        </Radio.Card>
+                      </Group>
+                    </Radio.Group>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              </Accordion>
+              <Accordion>
+                <Accordion.Item value="holdTime">
+                  <Accordion.Control>
+                    Cue transition time (currently {transitionTimeMs === 0 ? "Instant" : `${transitionTimeMs / 1000}s`})
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Radio.Group
+                      value={transitionTimeMs === 0 ? "instant" : "timed"}
+                      onChange={(value) => {
+                        if (value === "instant") {
+                          form.setFieldValue("transition.transitionTimeMs", 0);
+                        } else if (transitionTimeMs === 0) {
+                          form.setFieldValue("transition.transitionTimeMs", 100);
+                        }
+                      }}
+                    >
+                      <Group wrap="nowrap" gap="xs">
+                        <Radio label="Instant transition" value="instant" flex={1} />
+                        <Radio.Card
+                          flex={1}
+                          styles={{
+                            card: {
+                              border: 0,
+                            },
+                          }}
+                          value="timed"
+                        >
+                          <Group wrap="nowrap">
+                            <Radio.Indicator />
+                            <Box style={{ maxWidth: "200px" }}>
+                              <NumberInput
+                                min={1}
+                                label="Transition over"
+                                suffix="ms"
+                                defaultValue={100}
+                                name="transition.transitionTimeMs"
+                                key={form.key("transition.transitionTimeMs")}
+                                {...form.getInputProps("transition.transitionTimeMs")}
+                                disabled={transitionTimeMs === 0}
+                                onFocus={onTransitionTimeFocus}
+                                onBlur={onTransitionTimeBlur}
+                                onKeyDown={(event) => {
+                                  // Keep arrow keys in the input instead of navigating the parent radio card.
+                                  if (event.key.startsWith("Arrow")) event.stopPropagation();
+                                }}
+                              />
+                            </Box>
+                          </Group>
+                        </Radio.Card>
+                      </Group>
+                    </Radio.Group>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              </Accordion>
+            </SimpleGrid>
+            {/* <Group align="center" justify="center">
+              <Title
+                order={4}
+                style={{
+                  backgroundColor: isCueSelected ? "light-dark(yellow, var(--mantine-color-yellow-9))" : "transparent",
+                }}
+              >
+                {" "}
+                Cue {cueNumber}
+              </Title>
+              <Stack gap="xs" px="2rem">
+                <Stack gap={"xs"} px="xl" justify="space-between">
+                  <Slider
+                    restrictToMarks
+                    min={-1}
+                    max={10000}
+                    defaultValue={-1}
+                    marks={MARKS}
+                    label={(value) => {
+                      if (value === -1) return "Manually";
+                      else return `${value / 1000}s`;
+                    }}
+                  />
+                  <Text fw="bold" fz="sm">
+                    Cue changes after:
+                  </Text>
+                  <Radio.Group
+                    value={holdTimeMs === -1 ? "manual" : "auto"}
+                    onChange={(value) => {
+                      if (value === "manual") {
+                        form.setFieldValue("transition.holdTimeMs", -1);
+                      } else if (holdTimeMs === -1) {
+                        form.setFieldValue("transition.holdTimeMs", 100);
+                      }
+                    }}
+                  >
+                    <Group wrap="nowrap" gap="xs">
+                      <Radio label="Only when manually changed" value={"manual"} style={{ flex: 1 }} />
+                      <Radio.Card
+                        style={{ flex: 1 }}
+                        styles={{
+                          card: {
+                            border: 0,
+                          },
+                        }}
+                        value="auto"
+                      >
+                        <Group wrap="nowrap" gap="xs">
+                          <Radio.Indicator />
+                          <NumberInput
+                            min={1}
+                            label="Change after"
+                            suffix="ms"
+                            defaultValue={100}
+                            name="transition.holdTimeMs"
+                            key={form.key("transition.holdTimeMs")}
+                            {...form.getInputProps("transition.holdTimeMs")}
+                            disabled={holdTimeMs === -1}
+                            onFocus={onTransitionTimeFocus}
+                            onBlur={onTransitionTimeBlur}
+                          />
+                        </Group>
+                      </Radio.Card>
+                    </Group>
+                  </Radio.Group>
+                </Stack>
+                <Group gap={"xs"} c="dimmed">
+                  <Divider style={{ flex: 1 }} />
+                  <IconArrowRight size={18} stroke={1.5} />
+                  <Divider style={{ flex: 1 }} />
+                </Group>
+                <Stack gap={"xs"} px="xl" justify="space-between">
+                  <Text fw="bold" fz="sm">
+                    Transition duration:
+                  </Text>
+                  <Radio.Group
+                    value={transitionTimeMs === 0 ? "instant" : "timed"}
+                    onChange={(value) => {
+                      if (value === "instant") {
+                        form.setFieldValue("transition.transitionTimeMs", 0);
+                      } else if (transitionTimeMs === 0) {
+                        form.setFieldValue("transition.transitionTimeMs", 100);
+                      }
+                    }}
+                  >
+                    <Group wrap="nowrap" gap="xs">
+                      <Radio label="Instant transition" value="instant" flex={1} />
+                      <Radio.Card
+                        flex={1}
+                        styles={{
+                          card: {
+                            border: 0,
+                          },
+                        }}
+                        value="timed"
+                      >
+                        <Group>
+                          <Radio.Indicator />
+                          <Box style={{ maxWidth: "200px" }}>
+                            <NumberInput
+                              min={1}
+                              label="Transition over"
+                              suffix="ms"
+                              defaultValue={100}
+                              name="transition.transitionTimeMs"
+                              key={form.key("transition.transitionTimeMs")}
+                              {...form.getInputProps("transition.transitionTimeMs")}
+                              disabled={transitionTimeMs === 0}
+                              onFocus={onTransitionTimeFocus}
+                              onBlur={onTransitionTimeBlur}
+                            />
+                          </Box>
+                        </Group>
+                      </Radio.Card>
+                    </Group>
+                  </Radio.Group>
+                </Stack>
+              </Stack>
+              <Title order={4}>Cue {cueNumber + 1}</Title>
+            </Group> */}
+
             <Stack>
               {/* <Collapse expanded={isCollapsed}>
                 <Text>{generateOneLineCue(cue)}</Text>

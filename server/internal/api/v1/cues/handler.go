@@ -55,11 +55,16 @@ func createCue(c *gin.Context) {
 	if len(cueConfig) == 0 || string(cueConfig) == "null" {
 		cueConfig = datatypes.JSON([]byte(`{"mode":"unknown"}`))
 	}
+	transition := createReq.Transition
+	if len(transition) == 0 || string(transition) == "null" {
+		transition = datatypes.JSON([]byte(`{"holdTimeMs":"infinite","transitionTimeMs":0}`))
+	}
 
 	cue := models.Cue{
 		ItemUuid:    itemId,
 		Assignments: datatypes.JSON(assignmentsBytes),
 		CueConfig:   cueConfig,
+		Transition:  transition,
 		Comments:    "",
 	}
 
@@ -106,6 +111,9 @@ func updateCue(c *gin.Context) {
 	}
 	if len(req.CueConfig) > 0 && string(req.CueConfig) != "null" {
 		updates["cue_config"] = req.CueConfig
+	}
+	if len(req.Transition) > 0 && string(req.Transition) != "null" {
+		updates["transition"] = req.Transition
 	}
 
 	if len(updates) > 0 {

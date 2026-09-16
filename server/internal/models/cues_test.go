@@ -26,6 +26,23 @@ func TestCueConfigDatabaseDefault(t *testing.T) {
 	}
 }
 
+func TestCueTransitionDatabaseDefault(t *testing.T) {
+	parsed, err := schema.Parse(&Cue{}, &sync.Map{}, schema.NamingStrategy{})
+	if err != nil {
+		t.Fatalf("parse cue schema: %v", err)
+	}
+
+	field := parsed.LookUpField("Transition")
+	if field == nil {
+		t.Fatal("Transition field was not found")
+	}
+
+	const want = `'{"holdTimeMs":"infinite","transitionTimeMs":0}'`
+	if field.DefaultValue != want {
+		t.Fatalf("unexpected Transition default: got %q, want %q", field.DefaultValue, want)
+	}
+}
+
 func TestCueConfigPreservesOpaqueJSON(t *testing.T) {
 	const payload = `{"cueConfig":{"mode":"normal","enabledGroups":["front"],"future":{"value":1}}}`
 
@@ -57,6 +74,42 @@ func TestCueConfigPreservesOpaqueJSON(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got["cueConfig"], want["cueConfig"]) {
 				t.Fatalf("cue config changed: got %#v, want %#v", got["cueConfig"], want["cueConfig"])
+			}
+		})
+	}
+}
+
+func TestCueTransitionPreservesOpaqueJSON(t *testing.T) {
+	const payload = `{"transition":{"holdTimeMs":2500,"transitionTimeMs":750,"future":{"value":1}}}`
+
+	tests := []struct {
+		name   string
+		target any
+	}{
+		{name: "create request", target: &CreateCueReq{}},
+		{name: "update request", target: &UpdateCueReq{}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := json.Unmarshal([]byte(payload), test.target); err != nil {
+				t.Fatalf("unmarshal cue transition: %v", err)
+			}
+
+			encoded, err := json.Marshal(test.target)
+			if err != nil {
+				t.Fatalf("marshal cue transition: %v", err)
+			}
+
+			var got, want map[string]any
+			if err := json.Unmarshal(encoded, &got); err != nil {
+				t.Fatalf("unmarshal encoded request: %v", err)
+			}
+			if err := json.Unmarshal([]byte(payload), &want); err != nil {
+				t.Fatalf("unmarshal expected request: %v", err)
+			}
+			if !reflect.DeepEqual(got["transition"], want["transition"]) {
+				t.Fatalf("cue transition changed: got %#v, want %#v", got["transition"], want["transition"])
 			}
 		})
 	}

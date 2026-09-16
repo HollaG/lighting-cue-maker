@@ -9,13 +9,15 @@ import (
 
 // Request DTOs
 type CreateCueReq struct {
-	ItemId    string         `json:"itemId"`
-	CueConfig datatypes.JSON `json:"cueConfig,omitempty"`
+	ItemId     string         `json:"itemId"`
+	CueConfig  datatypes.JSON `json:"cueConfig,omitempty"`
+	Transition datatypes.JSON `json:"transition,omitempty"`
 }
 
 type UpdateCueReq struct {
 	Assignments *map[string]any `json:"assignments,omitempty"`
 	Comments    *string         `json:"comments,omitempty"`
+	Transition  datatypes.JSON  `json:"transition,omitempty"`
 	CueConfig   datatypes.JSON  `json:"cueConfig,omitempty"`
 }
 
@@ -27,6 +29,7 @@ type Cue struct {
 
 	Assignments datatypes.JSON `json:"assignments" gorm:"serializer:json"`
 	CueConfig   datatypes.JSON `json:"cueConfig" gorm:"type:jsonb;not null;default:'{\"mode\":\"unknown\"}'"`
+	Transition  datatypes.JSON `json:"transition" gorm:"type:jsonb;not null;default:'{\"holdTimeMs\":-1,\"transitionTimeMs\":0}'"`
 
 	Comments string `json:"comments"`
 
