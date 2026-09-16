@@ -1,7 +1,7 @@
 import { AttributeTypes, type Item } from "../types/types";
 import type { QLCCollection, QLCEventJson, QLCFunction } from "../types/qlc";
 import { getCueOrder, getValueFromValueAssignment, hasAValue } from "./cue/cueForm";
-import type { ValueAssignment } from "../types/cues";
+import type { CueTransition, ValueAssignment } from "../types/cues";
 import type { QlcFormType } from "../sections/QLCConverter/QLCConverter";
 
 export const ADV_MAP_KEY = `mapping-type`;
@@ -11,6 +11,13 @@ export const ADV_ORDER_KEY = `function-priority`;
 export const ADV_ORDER_FIRST_VALUE = `order-first`;
 export const ADV_ORDER_LAST_VALUE = `order-last`;
 export const ADV_ORDER_ANY_VALUE = `order-any`;
+
+const QLC_INFINITE_HOLD = "4294967294";
+
+type GeneratedChaserStep = {
+  collectionId: string;
+  transition?: CueTransition;
+};
 
 /**
  * Converts a QLC+ Workspace XML string into a JSON array of QLCFunction objects.
@@ -199,12 +206,15 @@ export function generateAndInsertPreviewCollections(
   // ── Generate and insert one Collection per cue preview ────────────────────
 
   let fnIdCounter = startingFnId;
+  const chaserStepsByItem = new Map<string, GeneratedChaserStep[]>();
 
   for (const [itemId, cuePreviews] of Object.entries(preview)) {
     if (!cuePreviews || cuePreviews.length === 0) continue;
 
     const item = items.find((i) => i.id === itemId);
     const itemName = item?.name ?? "Item";
+    const chaserSteps: GeneratedChaserStep[] = [];
+    chaserStepsByItem.set(itemId, chaserSteps);
 
     for (const [cueIndex, cuePreview] of cuePreviews.entries()) {
       const { qlcFunctions } = cuePreview;
@@ -218,6 +228,10 @@ export function generateAndInsertPreviewCollections(
         "Name",
         `${itemName} ${convertNumberToMinimally2Digits(cueIndex + 1)} ${cuePreview.cue.id.slice(0, 4)}`,
       );
+      // Pair timings with the exact generated collection, independent of database cue order.
+      // Export fetches fresh items, so prefer current timings over the saved preview snapshot.
+      const cue = item?.cues.find((cue) => cue.id === cuePreview.cue.id) ?? cuePreview.cue;
+      chaserSteps.push({ collectionId: String(fnIdCounter), transition: cue.transition });
       fnIdCounter++;
 
       let stepNumber = 0;
@@ -237,7 +251,7 @@ export function generateAndInsertPreviewCollections(
 
   // ── Insert Chasers & Serialize ──────────────────────────────────────────────
 
-  return generateAndInsertChasers(workspaceDoc, items, fnIdCounter);
+  return generateAndInsertChasers(workspaceDoc, items, fnIdCounter, chaserStepsByItem);
 }
 
 /**
@@ -247,12 +261,14 @@ export function generateAndInsertPreviewCollections(
  * @param workspaceXmlOrDoc The XML string or parsed Document containing workspace data and generated collections
  * @param items List of items
  * @param startingFnId The initial starting function ID for new chaser functions
+ * @param chaserStepsByItem Generated collection IDs and cue timings in preview order, keyed by item ID
  * @returns Serialized XML string with inserted Chasers
  */
 export function generateAndInsertChasers(
   workspaceXmlOrDoc: string | Document,
   items: Item[],
   startingFnId: number,
+  chaserStepsByItem: Map<string, GeneratedChaserStep[]>,
 ): string | undefined {
   let workspaceDoc: Document;
   if (typeof workspaceXmlOrDoc === "string") {
@@ -288,12 +304,8 @@ export function generateAndInsertChasers(
   for (const item of items) {
     const itemName = item.name ?? "Item";
 
-    // Find all collections generated for this item (Path="Generated/${itemName}")
-    const collectionNodes = Array.from(engineNode.querySelectorAll("Function")).filter(
-      (el) => el.getAttribute("Type") === "Collection" && el.getAttribute("Path") === `Generated/${itemName}`,
-    );
-
-    if (collectionNodes.length === 0) continue;
+    const chaserSteps = chaserStepsByItem.get(item.id);
+    if (!chaserSteps?.length) continue;
 
     const fnEl = workspaceDoc.createElement("Function");
     fnEl.setAttribute("ID", String(fnIdCounter));
@@ -305,7 +317,7 @@ export function generateAndInsertChasers(
     const speedEl = workspaceDoc.createElement("Speed");
     speedEl.setAttribute("FadeIn", "0");
     speedEl.setAttribute("FadeOut", "0");
-    speedEl.setAttribute("Duration", "4294967294");
+    speedEl.setAttribute("Duration", QLC_INFINITE_HOLD);
     fnEl.appendChild(speedEl);
 
     const directionEl = workspaceDoc.createElement("Direction");
@@ -317,21 +329,21 @@ export function generateAndInsertChasers(
     fnEl.appendChild(runOrderEl);
 
     const speedModesEl = workspaceDoc.createElement("SpeedModes");
-    speedModesEl.setAttribute("FadeIn", "Default");
-    speedModesEl.setAttribute("FadeOut", "Default");
-    speedModesEl.setAttribute("Duration", "Common");
+    speedModesEl.setAttribute("FadeIn", "PerStep");
+    speedModesEl.setAttribute("FadeOut", "PerStep");
+    speedModesEl.setAttribute("Duration", "PerStep");
     fnEl.appendChild(speedModesEl);
 
-    collectionNodes.forEach((colNode, i) => {
-      const colId = colNode.getAttribute("ID");
-      if (!colId) return;
+    chaserSteps.forEach(({ collectionId, transition }, i) => {
+      const holdTimeMs = transition?.holdTimeMs ?? -1;
+      const fadeInMs = i === 0 ? 0 : (chaserSteps[i - 1].transition?.transitionTimeMs ?? 0);
 
       const stepEl = workspaceDoc.createElement("Step");
       stepEl.setAttribute("Number", String(i));
-      stepEl.setAttribute("FadeIn", "0");
-      stepEl.setAttribute("Hold", "4294967294");
-      stepEl.setAttribute("FadeOut", "0");
-      stepEl.textContent = colId;
+      stepEl.setAttribute("FadeIn", String(fadeInMs));
+      stepEl.setAttribute("Hold", holdTimeMs === -1 ? QLC_INFINITE_HOLD : String(holdTimeMs));
+      stepEl.setAttribute("FadeOut", String(transition?.transitionTimeMs ?? 0));
+      stepEl.textContent = collectionId;
       fnEl.appendChild(stepEl);
     });
 

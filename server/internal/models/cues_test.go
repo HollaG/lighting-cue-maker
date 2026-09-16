@@ -37,7 +37,7 @@ func TestCueTransitionDatabaseDefault(t *testing.T) {
 		t.Fatal("Transition field was not found")
 	}
 
-	const want = `'{"holdTimeMs":"infinite","transitionTimeMs":0}'`
+	const want = `'{"holdTimeMs":-1,"transitionTimeMs":0}'`
 	if field.DefaultValue != want {
 		t.Fatalf("unexpected Transition default: got %q, want %q", field.DefaultValue, want)
 	}

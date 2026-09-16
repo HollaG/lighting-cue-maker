@@ -57,7 +57,7 @@ func createCue(c *gin.Context) {
 	}
 	transition := createReq.Transition
 	if len(transition) == 0 || string(transition) == "null" {
-		transition = datatypes.JSON([]byte(`{"holdTimeMs":"infinite","transitionTimeMs":0}`))
+		transition = datatypes.JSON([]byte(`{"holdTimeMs":-1,"transitionTimeMs":0}`))
 	}
 
 	cue := models.Cue{
