@@ -7,7 +7,7 @@ import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { Visualiser3DControls } from "./Visualiser3DControls";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Visualiser3DEnvironment } from "../../types/visualiser3d";
+import type { Visualiser3DCameraView, Visualiser3DEnvironment } from "../../types/visualiser3d";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
@@ -58,13 +58,7 @@ export const Visualiser3D = ({
       console.log("camera control ref set to", node);
       if (visualiser.defaultCameraView) {
         const camera = node;
-        const [x, y, z] = visualiser.defaultCameraView.position;
-        const [tx, ty, tz] = visualiser.defaultCameraView.target;
-        console.log("setting camera to", x, y, z, "target", tx, ty, tz);
-        camera.setLookAt(x, y, z, tx, ty, tz, true);
-
-        console.log("camera position after setLookAt", camera.getPosition(new Vector3()));
-        setSetDefaultCameraViewAfterLoaded(true);
+        _setCameraPosition(camera, visualiser.defaultCameraView);
       }
     }
   }, []);
@@ -88,6 +82,21 @@ export const Visualiser3D = ({
         },
       });
     }
+  };
+
+  const onResetViewport = () => {
+    if (_cameraControlRef.current) {
+      if (visualiser.defaultCameraView) {
+        const camera = _cameraControlRef.current;
+        _setCameraPosition(camera, visualiser.defaultCameraView, true);
+      }
+    }
+  };
+
+  const _setCameraPosition = (camera: CameraControls, view: Visualiser3DCameraView, animate?: boolean) => {
+    const [x, y, z] = view.position;
+    const [tx, ty, tz] = view.target;
+    camera.setLookAt(x, y, z, tx, ty, tz, animate);
   };
 
   return (
@@ -131,6 +140,10 @@ export const Visualiser3D = ({
 
               <Box></Box>
               <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
+                <Button size="sm" onClick={onResetViewport} variant="outline" color="gray">
+                  {" "}
+                  Reset to saved view
+                </Button>
                 <Button size="sm" onClick={onSaveViewport} variant="light">
                   {" "}
                   Save view{" "}

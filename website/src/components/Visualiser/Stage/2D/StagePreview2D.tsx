@@ -318,11 +318,25 @@ export const StagePreview2D = ({
   const texts = stageElements.filter((el) => el.type === "text");
 
   const onResetViewport = () => {
-    if (!stageRef.current) return;
+    if (!stageRef.current || !visualiser.defaultViewport || containerWidth === 0) return;
+
+    const screenScaleFactor = containerWidth / visualiser.defaultViewport.width;
+
+    stageRef.current.position({
+      x: visualiser.defaultViewport.x * screenScaleFactor,
+      y: visualiser.defaultViewport.y * screenScaleFactor,
+    });
+    stageRef.current.scale({
+      x: visualiser.defaultViewport.scale * screenScaleFactor,
+      y: visualiser.defaultViewport.scale * screenScaleFactor,
+    });
+
+    // Previous reset behaviour:
+    // if (!stageRef.current) return;
 
     // set x = 0, y = 0, scale = 1
-    stageRef.current.position({ x: 0, y: 0 });
-    stageRef.current.scale({ x: 1, y: 1 });
+    // stageRef.current.position({ x: 0, y: 0 });
+    // stageRef.current.scale({ x: 1, y: 1 });
 
     // onSaveViewport();
   };
@@ -550,7 +564,7 @@ export const StagePreview2D = ({
 
               <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
                 <Button size="sm" onClick={onResetViewport} variant="outline" color="gray">
-                  Reset view
+                  Reset to saved view
                 </Button>
                 <Button size="sm" onClick={onSaveViewport} variant="light">
                   {" "}
