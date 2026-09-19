@@ -30,8 +30,8 @@ export type UpsertFixtureReq = Partial<Omit<Fixture, "createdAt" | "updatedAt" |
 // More specific types
 export type UpdateFixtureReq = UpsertFixtureReq & { id: string };
 
-// Helper type for 2D update
-export type UpdateFixtureIn2DReq = Pick<Fixture, "id" | "posX" | "posY" | "rotZ">;
+// A top-down 2D view edits the X-Z floor plane and stores its configured rotation in rotZ.
+export type UpdateFixtureIn2DReq = Pick<Fixture, "id" | "posX" | "posZ" | "rotZ">;
 
 export type UpdateFixtureIn3DReq = Pick<Fixture, "id" | "posX" | "posY" | "posZ" | "rotX" | "rotY" | "rotZ">;
 

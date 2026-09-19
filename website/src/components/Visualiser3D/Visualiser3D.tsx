@@ -8,6 +8,7 @@ import { Visualiser3DControls } from "./Visualiser3DControls";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
 import { useState } from "react";
 import type { Visualiser3DEnvironment } from "../../types/visualiser3d";
+import { useHotkey } from "@tanstack/react-hotkeys";
 
 export const Visualiser3D = ({
   eventId,
@@ -32,6 +33,8 @@ export const Visualiser3D = ({
     setSelectedElementId(id);
     console.log("set selected element ID to", id);
   };
+
+  useHotkey("Escape", () => setSelectedElementId(null));
 
   return (
     <Flex className={classes["preview-container"]}>

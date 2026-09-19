@@ -94,7 +94,7 @@ export const VisualiserParLightObject = React.memo(
           {...shapeProps}
           x={(shapeProps.x ?? 0) + LAMP_CENTER}
           y={(shapeProps.y ?? 0) + LAMP_CENTER}
-          // Keep posX/posY as the fixture's top-left position, like the other stage elements.
+          // Keep posX/posZ as the fixture's top-left position, like the other stage elements.
           // Moving the offset to the lamp centre only changes its rotation pivot.
           offsetX={LAMP_CENTER}
           offsetY={LAMP_CENTER}
@@ -114,7 +114,7 @@ export const VisualiserParLightObject = React.memo(
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
               posX: e.target.x() - LAMP_CENTER,
-              posY: e.target.y() - LAMP_CENTER,
+              posZ: e.target.y() - LAMP_CENTER,
               rotZ: e.target.rotation(),
             });
           }}
@@ -127,7 +127,7 @@ export const VisualiserParLightObject = React.memo(
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
               posX: node.x() - LAMP_CENTER,
-              posY: node.y() - LAMP_CENTER,
+              posZ: node.y() - LAMP_CENTER,
               rotZ: node.rotation(),
             });
           }}

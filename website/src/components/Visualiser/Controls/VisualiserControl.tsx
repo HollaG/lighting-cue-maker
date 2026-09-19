@@ -229,7 +229,7 @@ const VisualiserFixtureSection = ({
       ...DEFAULT_FIXTURE,
       fixtureGroupId: fixtureGroup.id,
       posX: x,
-      posY: y,
+      posZ: y,
     };
 
     // Get the stage ref

@@ -138,7 +138,7 @@ export const VisualiserMovingLightObject = React.memo(
         <Group
           key="group2"
           {...fixtureTransformProps}
-          // Keep posX/posY as the fixture's top-left position, like the other stage elements.
+          // Keep posX/posZ as the fixture's top-left position, like the other stage elements.
           // Moving the offset to the lamp centre only changes its rotation pivot.
           onClick={() => onSelect(fixture.id)}
           onTap={() => onSelect(fixture.id)}
@@ -153,7 +153,7 @@ export const VisualiserMovingLightObject = React.memo(
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
               posX: e.target.x() - LAMP_CENTER,
-              posY: e.target.y() - LAMP_CENTER,
+              posZ: e.target.y() - LAMP_CENTER,
               rotZ: e.target.rotation(),
             });
           }}
@@ -166,7 +166,7 @@ export const VisualiserMovingLightObject = React.memo(
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
               posX: node.x() - LAMP_CENTER,
-              posY: node.y() - LAMP_CENTER,
+              posZ: node.y() - LAMP_CENTER,
               rotZ: node.rotation(),
             });
           }}

@@ -4,9 +4,10 @@ import * as THREE from "three";
 import { Helper, OrbitControls, useTexture } from "@react-three/drei";
 import type { Visualiser3DEnvironment } from "../../../types/visualiser3d";
 import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
-import type { Fixture } from "../../../types/fixtures";
+import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
+import { useDebouncedCallback } from "@mantine/hooks";
 
 const PLANE_SIZE = 20; // in meters
 const squareSizeMetres = 0.6;

@@ -102,8 +102,8 @@ export const VisualiserBarLightObject = React.memo(
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
               posX: e.target.x(),
-              posY: e.target.y(),
-              rotZ: e.target.rotation(),
+              posZ: e.target.y(),
+              rotY: e.target.rotation(),
             });
           }}
           onTransformEnd={() => {
@@ -115,8 +115,8 @@ export const VisualiserBarLightObject = React.memo(
               ...shapePropsToFixtureRepresentation(shapeProps, fixture),
               id: fixture.id,
               posX: node.x(),
-              posY: node.y(),
-              rotZ: node.rotation(),
+              posZ: node.y(),
+              rotY: node.rotation(),
             });
           }}
           onMouseOver={handleMouseOver}

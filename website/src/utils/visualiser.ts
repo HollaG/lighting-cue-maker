@@ -2,11 +2,11 @@ import type { GroupConfig } from "konva/lib/Group";
 import type { Fixture } from "../types/fixtures";
 
 export const fixtureRepresentationTo2DShapeProps = (fixture: Fixture): GroupConfig => {
-  const { posX, posY, rotZ } = fixture;
+  const { posX, posZ, rotZ } = fixture;
 
   return {
     x: posX,
-    y: posY,
+    y: posZ,
     rotation: rotZ,
   };
 };
@@ -17,7 +17,7 @@ export const shapePropsToFixtureRepresentation = (shapeProps: GroupConfig, fixtu
   return {
     ...fixture,
     posX: x ?? 0,
-    posY: y ?? 0,
+    posZ: y ?? 0,
     rotZ: rotation ?? 0,
   };
 };
@@ -31,13 +31,13 @@ export const hexToRgba = (hex: string, alpha: number): string => {
 };
 
 /**
- * Converts a fixture's 2D position to a 3D position.
- * Note that the stored y is z, and the stored z is y.
+ * Converts a fixture's stored centimetres to Three.js metres.
+ * X-Z is the floor plane and Y is vertical in both representations.
  * @param fixture The fixture to convert.
  * @returns The 3D position as a tuple of [x, y, z].
  */
 export const getFixture3DPosition = (fixture: Fixture): [number, number, number] => {
-  return [fixture.posX, fixture.posZ, fixture.posY].map(convertStoredPositionTo3DView) as [number, number, number];
+  return [fixture.posX, fixture.posY, fixture.posZ].map(convertStoredPositionTo3DView) as [number, number, number];
 };
 
 export const getFixture3DRotation = (fixture: Fixture): [number, number, number] => {
@@ -53,7 +53,7 @@ export const convertStoredRotationTo3DView = (rot: number) => {
 };
 
 export const convert3DPositionToStored = ([x, y, z]: [number, number, number]) => {
-  return [x, z, y].map((p) => p * 100); // Convert from m to cm
+  return [x, y, z].map((p) => p * 100); // Convert from m to cm
 };
 
 export const convert3DRotationToStored = ([rotX, rotY, rotZ]: [number, number, number]) => {
