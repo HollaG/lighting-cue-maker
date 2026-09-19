@@ -7,10 +7,12 @@ import {
   Button,
   Center,
   Collapse,
+  Divider,
   Flex,
   Group,
   Menu,
   Popover,
+  Slider,
   Stack,
   Text,
 } from "@mantine/core";
@@ -24,19 +26,56 @@ import { useAppStore } from "../../store/appStore";
 import type { UpsertFixtureReq, UpdateFixtureReq, Fixture, FixtureType } from "../../types/fixtures";
 import type { Visualiser, FixtureAttributeMapping } from "../../types/visualiser";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
+import type { Visualiser3DEnvironment } from "../../types/visualiser3d";
 
 export const Visualiser3DControls = ({
   fixtureGroups,
   eventId,
+  environment,
+  onEnvironmentChange,
 }: {
   fixtureGroups: FixtureGroupConfiguration[];
   eventId: string;
+  environment: Visualiser3DEnvironment;
+  onEnvironmentChange: (environment: Visualiser3DEnvironment) => void;
 }) => {
   const [fixtureAccordionValue, setFixtureAccordionValue] = useState<string | null>(null);
   const [stageElementAccordionValue, setStageElementAccordionValue] = useState<string | null>(null);
 
   return (
     <Stack>
+      <Text fw="bold">Environment controls</Text>
+      <Stack>
+        <Group w="100%">
+          <Text style={{ width: "120px" }} fw="semibold">
+            Haze
+          </Text>
+          <Slider
+            flex={1}
+
+            min={0}
+            max={1}
+            step={0.05}
+            value={environment.haze}
+            onChange={(value) => onEnvironmentChange({ ...environment, haze: value })}
+          />
+        </Group>
+        <Group w="100%">
+          <Text style={{ width: "120px" }} fw="semibold">
+            Ambient light
+          </Text>
+          <Slider
+            flex={1}
+            label={(value) => `${value * 100} %`}
+            min={0}
+            max={1}
+            step={0.05}
+            value={environment.ambientLight}
+            onChange={(value) => onEnvironmentChange({ ...environment, ambientLight: value })}
+          />
+        </Group>
+      </Stack>
+      <Divider />
       <Text fw="bold"> Fixtures </Text>
       <Accordion value={fixtureAccordionValue} onChange={setFixtureAccordionValue}>
         {fixtureGroups.map((fixtureGroup, index) => (

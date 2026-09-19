@@ -20,7 +20,7 @@ import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
 import { StagePreview2D } from "../../components/Visualiser/Stage/2D/StagePreview2D";
 import { useGetFixturesByEventId } from "../../query/useGetFixtures";
 import { useState } from "react";
-import { TestVisualiser } from "../../components/Visualiser3D/Test";
+import { Visualiser3D } from "../../components/Visualiser3D/Visualiser3D";
 
 export const UpdateVisualisationPage = () => {
   const { eventId } = useParams({ from: "/events/$eventId/visuals/update/" });
@@ -135,7 +135,7 @@ export const UpdateVisualisationPage = () => {
         <Container fluid style={{ width: "100%" }}>
           <Box>
             {event && visualiser && fixtures ? (
-              <TestVisualiser eventId={eventId} fixtures={fixtures} fixtureGroups={event.fixtureGroups} />
+              <Visualiser3D eventId={eventId} fixtures={fixtures} fixtureGroups={event.fixtureGroups} />
             ) : null}
           </Box>
         </Container>

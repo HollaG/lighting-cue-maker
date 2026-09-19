@@ -33,6 +33,8 @@ export type UpdateFixtureReq = UpsertFixtureReq & { id: string };
 // Helper type for 2D update
 export type UpdateFixtureIn2DReq = Pick<Fixture, "id" | "posX" | "posY" | "rotZ">;
 
+export type UpdateFixtureIn3DReq = Pick<Fixture, "id" | "posX" | "posY" | "posZ" | "rotX" | "rotY" | "rotZ">;
+
 export type GetFixturesRes = {
   fixtures: Fixture[];
 };

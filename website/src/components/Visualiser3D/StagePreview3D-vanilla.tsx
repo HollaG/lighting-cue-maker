@@ -13,7 +13,7 @@ import { Visualiser3DControls } from "./Visualiser3DControls";
 import type { FixtureGroupConfiguration } from "../../types/types";
 import type { Fixture } from "../../types/fixtures";
 
-export const TestVisualiser = ({
+export const StagePreview3D = ({
   eventId,
   fixtures,
   fixtureGroups,

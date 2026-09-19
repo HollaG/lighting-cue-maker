@@ -29,3 +29,33 @@ export const hexToRgba = (hex: string, alpha: number): string => {
 
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+/**
+ * Converts a fixture's 2D position to a 3D position.
+ * Note that the stored y is z, and the stored z is y.
+ * @param fixture The fixture to convert.
+ * @returns The 3D position as a tuple of [x, y, z].
+ */
+export const getFixture3DPosition = (fixture: Fixture): [number, number, number] => {
+  return [fixture.posX, fixture.posZ, fixture.posY].map(convertStoredPositionTo3DView) as [number, number, number];
+};
+
+export const getFixture3DRotation = (fixture: Fixture): [number, number, number] => {
+  return [fixture.rotX, fixture.rotY, fixture.rotZ].map(convertStoredRotationTo3DView) as [number, number, number];
+};
+
+export const convertStoredPositionTo3DView = (pos: number) => {
+  return pos / 100; // Convert from cm to m
+};
+
+export const convertStoredRotationTo3DView = (rot: number) => {
+  return (rot * Math.PI) / 180; // Convert from degrees to radians
+};
+
+export const convert3DPositionToStored = ([x, y, z]: [number, number, number]) => {
+  return [x, z, y].map((p) => p * 100); // Convert from m to cm
+};
+
+export const convert3DRotationToStored = ([rotX, rotY, rotZ]: [number, number, number]) => {
+  return [rotX, rotY, rotZ].map((r) => (r * 180) / Math.PI); // Convert from radians to degrees
+};
