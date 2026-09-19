@@ -6,10 +6,11 @@ import type { FixtureGroupConfiguration } from "../../types/types";
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { Visualiser3DControls } from "./Visualiser3DControls";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Visualiser3DEnvironment } from "../../types/visualiser3d";
 import { useHotkey } from "@tanstack/react-hotkeys";
-
+import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 export const Visualiser3D = ({
   eventId,
   fixtureGroups,
@@ -22,10 +23,10 @@ export const Visualiser3D = ({
   // Controls (todo: save in state)
   const [environment, setEnvironment] = useState<Visualiser3DEnvironment>({
     haze: 0.5,
-    ambientLight: 0.1,
+    ambientLight: 0.5,
   });
 
-  console.log({ fixtures });
+  const { mutate: upsertVisualiser } = useUpsertVisualiser();
 
   // can be either fixture ID or elemnt ID
   const [selectedId, setSelectedElementId] = useState<string | null>(null);
@@ -35,6 +36,10 @@ export const Visualiser3D = ({
   };
 
   useHotkey("Escape", () => setSelectedElementId(null));
+
+  useEffect(() => {
+    RectAreaLightUniformsLib.init();
+  });
 
   return (
     <Flex className={classes["preview-container"]}>

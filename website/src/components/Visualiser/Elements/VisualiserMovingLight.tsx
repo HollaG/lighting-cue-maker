@@ -154,7 +154,7 @@ export const VisualiserMovingLightObject = React.memo(
               id: fixture.id,
               posX: e.target.x() - LAMP_CENTER,
               posZ: e.target.y() - LAMP_CENTER,
-              rotZ: e.target.rotation(),
+              rotY: e.target.rotation(),
             });
           }}
           onTransformEnd={() => {
@@ -167,7 +167,7 @@ export const VisualiserMovingLightObject = React.memo(
               id: fixture.id,
               posX: node.x() - LAMP_CENTER,
               posZ: node.y() - LAMP_CENTER,
-              rotZ: node.rotation(),
+              rotY: node.rotation(),
             });
           }}
           onMouseOver={handleMouseOver}

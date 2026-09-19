@@ -1,13 +1,14 @@
 import CheckerTexture from "../../../assets/checker.png";
 import { useEffect } from "react";
 import * as THREE from "three";
-import { Helper, OrbitControls, useTexture } from "@react-three/drei";
+import { CameraControls, Helper, useTexture } from "@react-three/drei";
 import type { Visualiser3DEnvironment } from "../../../types/visualiser3d";
 import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
 import { useDebouncedCallback } from "@mantine/hooks";
+import { useUpsertFixture } from "../../../query/useUpsertFixtures";
 
 const PLANE_SIZE = 20; // in meters
 const squareSizeMetres = 0.6;
@@ -18,16 +19,19 @@ export const StagePreview3D = ({
 
   selectedElementId,
   onFixtureSelect,
-  onFixtureChange,
+  // onFixtureChange,
 }: {
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
   selectedElementId?: string | null;
 
   onFixtureSelect?: (fixtureId: string) => void;
-  onFixtureChange?: (fixtureId: string, newProps: unknown) => void;
+  // onFixtureChange?: (fixtureId: string, newProps: unknown) => void;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
+
+  // const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
+  const { mutateAsync: upsertFixtureIn3D } = useUpsertFixture();
 
   useEffect(() => {
     checkerTexture.wrapS = THREE.RepeatWrapping;
@@ -42,12 +46,17 @@ export const StagePreview3D = ({
   const bars = fixtures.filter((fixture) => fixture.type === "bar");
   const movingHeads = fixtures.filter((fixture) => fixture.type === "moving_head");
 
+  const onChange = useDebouncedCallback((newFixtureProps: UpdateFixtureIn3DReq) => {
+    console.log("upserting fixture in 3D", newFixtureProps);
+    upsertFixtureIn3D(newFixtureProps);
+  }, 500);
+
   return (
     <>
       {/* The floor */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
-        <meshPhongMaterial map={checkerTexture} side={THREE.DoubleSide} />
+        <meshStandardMaterial map={checkerTexture} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Ambient light */}
@@ -56,7 +65,7 @@ export const StagePreview3D = ({
       {/*  */}
       <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
         <boxGeometry args={[1.2, 1.2, 1.2]} />
-        <meshPhongMaterial color="#8AC" />
+        <meshStandardMaterial color="#8AC" />
       </mesh>
 
       {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
@@ -74,7 +83,7 @@ export const StagePreview3D = ({
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
-          onChange={() => {}}
+          onChange={upsertFixtureIn3D}
         />
       ))}
       {bars.map((fixture) => (
@@ -83,7 +92,7 @@ export const StagePreview3D = ({
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
-          onChange={() => {}}
+          onChange={upsertFixtureIn3D}
         />
       ))}
       {movingHeads.map((fixture) => (
@@ -93,11 +102,13 @@ export const StagePreview3D = ({
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
 
-          onChange={() => {}}
+          onChange={upsertFixtureIn3D}
         />
       ))}
 
-      <OrbitControls makeDefault target={[0, 1, 0]} minDistance={0.01} />
+      <CameraControls makeDefault dollyToCursor infinityDolly minDistance={0.01} maxDistance={Infinity} />
+
+      {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
     </>
   );
 };

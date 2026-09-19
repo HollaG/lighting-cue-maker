@@ -1,13 +1,14 @@
 import type { GroupConfig } from "konva/lib/Group";
 import type { Fixture } from "../types/fixtures";
+import type { Euler, Vector3 } from "three";
 
 export const fixtureRepresentationTo2DShapeProps = (fixture: Fixture): GroupConfig => {
-  const { posX, posZ, rotZ } = fixture;
+  const { posX, posZ, rotY } = fixture;
 
   return {
     x: posX,
     y: posZ,
-    rotation: rotZ,
+    rotation: rotY,
   };
 };
 
@@ -18,7 +19,7 @@ export const shapePropsToFixtureRepresentation = (shapeProps: GroupConfig, fixtu
     ...fixture,
     posX: x ?? 0,
     posZ: y ?? 0,
-    rotZ: rotation ?? 0,
+    rotY: rotation ?? 0,
   };
 };
 
@@ -58,4 +59,33 @@ export const convert3DPositionToStored = ([x, y, z]: [number, number, number]) =
 
 export const convert3DRotationToStored = ([rotX, rotY, rotZ]: [number, number, number]) => {
   return [rotX, rotY, rotZ].map((r) => (r * 180) / Math.PI); // Convert from radians to degrees
+};
+
+/**
+ * Convert from a ThreeJS reoresentation into a Database representation.
+ *
+ * @param position
+ * @param rotation
+ * @param fixture
+ * @returns
+ */
+export const convert3DPropsToFixtureRepresentation = (
+  position: Vector3,
+  rotation: Euler,
+  fixture: Fixture,
+): Fixture => {
+  const positionArray: [number, number, number] = [position.x, position.y, position.z];
+  const rotationArray: [number, number, number] = [rotation.x, rotation.y, rotation.z];
+  const [posX, posY, posZ] = convert3DPositionToStored(positionArray);
+  const [rotX, rotY, rotZ] = convert3DRotationToStored(rotationArray);
+
+  return {
+    ...fixture,
+    posX,
+    posY,
+    posZ,
+    rotX,
+    rotY,
+    rotZ,
+  };
 };

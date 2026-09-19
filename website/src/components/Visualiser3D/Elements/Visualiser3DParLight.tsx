@@ -1,11 +1,12 @@
-import { TransformControls } from "@react-three/drei";
+import { Helper, SpotLight, TransformControls } from "@react-three/drei";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import * as THREE from "three";
 import {
   convert3DPositionToStored,
+  convert3DPropsToFixtureRepresentation,
   convert3DRotationToStored,
   getFixture3DPosition,
   getFixture3DRotation,
@@ -38,6 +39,11 @@ export const Visualiser3DParLight = ({
   useHotkey("T", () => setMode("translate"));
   useHotkey("R", () => setMode("rotate"));
 
+  useHotkey("W", () => setMode("translate"));
+  useHotkey("E", () => setMode("rotate"));
+
+  const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
+
   return (
     <>
       <mesh
@@ -52,7 +58,38 @@ export const Visualiser3DParLight = ({
         }}
       >
         <cylinderGeometry args={[0.105, 0.105, 0.104, 32]} />
-        <meshPhongMaterial color="#eeeeee" />
+        <meshStandardMaterial color="#eeeeee" />
+
+        {/* <spotLight
+          position={[0, -0.052, 0]}
+          target={spotlightTarget}
+          intensity={150}
+          angle={THREE.MathUtils.degToRad(fixture.beamAngle ? fixture.beamAngle : 15)}
+          penumbra={0.5}
+          distance={10}
+          castShadow
+        >
+          {isSelected && <Helper type={THREE.SpotLightHelper} />}
+        </spotLight> */}
+
+        <SpotLight
+          distance={20}
+          position={[0, 0.052, 0]}
+          target={spotlightTarget}
+          intensity={isSelected ? 200 : 0}
+          angle={THREE.MathUtils.degToRad(fixture.beamAngle ? fixture.beamAngle : 15)}
+          penumbra={0.5}
+          castShadow
+          volumetric
+          opacity={isSelected ? 4 : 0}
+          // debug={isSelected}
+        ></SpotLight>
+
+        <primitive object={spotlightTarget} position={[0, 1, 0]} />
+
+        {/* <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
+          <Helper type={THREE.SpotLightHelper} />
+        </spotLight> */}
       </mesh>
 
       {!viewOnly && isSelected && meshRef.current && (
@@ -64,11 +101,7 @@ export const Visualiser3DParLight = ({
             const mesh = meshRef.current;
             if (!mesh) return;
 
-            const [x, y, z] = convert3DPositionToStored([mesh.position.x, mesh.position.y, mesh.position.z]);
-            const [rotX, rotY, rotZ] = convert3DRotationToStored([mesh.rotation.x, mesh.rotation.y, mesh.rotation.z]);
-            onChange({
-              ...fixture,
-            });
+            onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
           }}
         />
       )}
