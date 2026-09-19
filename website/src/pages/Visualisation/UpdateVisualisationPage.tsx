@@ -1,4 +1,16 @@
-import { Alert, Box, Button, Center, Container, Group, Loader, Stack, Text, Title } from "@mantine/core";
+import {
+  Alert,
+  Box,
+  Button,
+  Center,
+  Container,
+  Group,
+  Loader,
+  SegmentedControl,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 import { IconArrowLeft, IconInfoCircle } from "@tabler/icons-react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useGetEvent } from "../../query/useGetEvent";
@@ -7,6 +19,8 @@ import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
 
 import { StagePreview2D } from "../../components/Visualiser/Stage/2D/StagePreview2D";
 import { useGetFixturesByEventId } from "../../query/useGetFixtures";
+import { useState } from "react";
+import { TestVisualiser } from "../../components/Visualiser3D/Test";
 
 export const UpdateVisualisationPage = () => {
   const { eventId } = useParams({ from: "/events/$eventId/visuals/update/" });
@@ -18,6 +32,8 @@ export const UpdateVisualisationPage = () => {
   const navigate = useNavigate();
 
   const { from } = useSearch({ from: "/events/$eventId/visuals/update/" });
+
+  const [viewMode, setViewMode] = useState<"2D" | "3D">("3D");
 
   return (
     <Box py="4rem">
@@ -49,6 +65,7 @@ export const UpdateVisualisationPage = () => {
           </Box>
         </Group>
       </Container>
+
       {/* </Box> */}
       {event && visualiser ? (
         // <Box style={{ width: "100%" }}>
@@ -90,18 +107,39 @@ export const UpdateVisualisationPage = () => {
           <Loader />{" "}
         </Center>
       )}
-      <Container mt="2rem" fluid style={{ width: "100%" }}>
-        <Box>
-          {event && visualiser && fixtures ? (
-            <StagePreview2D
-              eventId={eventId}
-              visualiser={visualiser}
-              fixtures={fixtures}
-              fixtureGroups={event.fixtureGroups}
-            />
-          ) : null}
-        </Box>
-      </Container>
+      <Center my="2rem">
+        <SegmentedControl
+          value={viewMode}
+          onChange={(value) => setViewMode(value as "2D" | "3D")}
+          data={[
+            { value: "2D", label: "2D View" },
+            { value: "3D", label: "3D View" },
+          ]}
+        />
+      </Center>
+      {viewMode === "2D" && (
+        <Container fluid style={{ width: "100%" }}>
+          <Box>
+            {event && visualiser && fixtures ? (
+              <StagePreview2D
+                eventId={eventId}
+                visualiser={visualiser}
+                fixtures={fixtures}
+                fixtureGroups={event.fixtureGroups}
+              />
+            ) : null}
+          </Box>
+        </Container>
+      )}
+      {viewMode === "3D" && (
+        <Container fluid style={{ width: "100%" }}>
+          <Box>
+            {event && visualiser && fixtures ? (
+              <TestVisualiser eventId={eventId} fixtures={fixtures} fixtureGroups={event.fixtureGroups} />
+            ) : null}
+          </Box>
+        </Container>
+      )}
 
       {/* If event has fixture groups that has position */}
       <Container mt="2rem" size="xl"></Container>
