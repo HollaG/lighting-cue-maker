@@ -4,13 +4,21 @@ import type { RectConfig } from "konva/lib/shapes/Rect";
 import type { TextConfig } from "konva/lib/shapes/Text";
 import type { AttributeTypes } from "./types";
 import type { PositionOption } from "./fixtures";
+import type { Visualiser3DCameraView, Visualiser3DEnvironment } from "./visualiser3d";
 
 export type Visualiser = {
   id: string;
 
-  /** The view area that will be shown to users. Null when first created, but should be immediately configured (through a useEffect). */
+  /** [2D] The view area that will be shown to users. Null when first created, but should be immediately configured (through a useEffect). */
   defaultViewport?: VisualiserViewport;
+  /** [2D] The list of helper (non fixture) objects */
   objects2D: VisualiserObject[];
+
+  /** [3D] The configuration for the 3D view */
+  config3D?: Visualiser3DEnvironment;
+
+  /** [3D] The default camera view */
+  defaultCameraView?: Visualiser3DCameraView;
 
   /** Map certain editable attributes e.g. pan and tilt from a key decided by event creation
    * to hard values that the VisualiserObjects can decode

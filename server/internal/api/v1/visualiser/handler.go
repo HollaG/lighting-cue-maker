@@ -74,6 +74,14 @@ func upsertVisualiser(c *gin.Context) {
 		response.BadRequest(c, "Fixture attribute mapping must be a JSON object", nil)
 		return
 	}
+	if len(req.Config3D) > 0 && !isJSONObject(req.Config3D) {
+		response.BadRequest(c, "Config3D must be a JSON object", nil)
+		return
+	}
+	if len(req.DefaultCameraView) > 0 && !isJSONObject(req.DefaultCameraView) {
+		response.BadRequest(c, "Default camera view must be a JSON object", nil)
+		return
+	}
 
 	if err := ensureEventExists(req.EventID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -129,6 +137,14 @@ func upsertVisualiser(c *gin.Context) {
 		savedVisualiser.FixtureAttributeMapping = req.FixtureAttributeMapping
 		updateFields = append(updateFields, "FixtureAttributeMapping")
 	}
+	if len(req.Config3D) > 0 {
+		savedVisualiser.Config3D = req.Config3D
+		updateFields = append(updateFields, "Config3D")
+	}
+	if len(req.DefaultCameraView) > 0 {
+		savedVisualiser.DefaultCameraView = req.DefaultCameraView
+		updateFields = append(updateFields, "DefaultCameraView")
+	}
 	if result := database.DB().Select(updateFields).Updates(&savedVisualiser); result.Error != nil {
 		response.InternalError(c, "Failed to update visualiser")
 		return
@@ -163,6 +179,8 @@ func visualiserFromRequest(req models.UpsertVisualiserReq) models.Visualiser {
 		LightEventUuid:          req.EventID,
 		DefaultViewport:         req.DefaultViewport,
 		Objects2D:               req.Objects2D,
+		Config3D:                req.Config3D,
+		DefaultCameraView:       req.DefaultCameraView,
 		FixtureAttributeMapping: req.FixtureAttributeMapping,
 	}
 }
@@ -174,6 +192,8 @@ func defaultVisualiser(eventID string) models.Visualiser {
 		// Users MUST create a default viewport.
 		DefaultViewport:         nil,
 		Objects2D:               datatypes.JSON(`[]`),
+		Config3D:                nil,
+		DefaultCameraView:       nil,
 		FixtureAttributeMapping: datatypes.JSON(`{}`),
 	}
 }

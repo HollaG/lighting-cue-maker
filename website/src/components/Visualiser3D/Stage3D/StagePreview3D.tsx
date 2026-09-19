@@ -16,7 +16,7 @@ const squareSizeMetres = 0.6;
 export const StagePreview3D = ({
   environment,
   fixtures,
-
+  cameraRef,
   selectedElementId,
   onFixtureSelect,
   // onFixtureChange,
@@ -25,6 +25,7 @@ export const StagePreview3D = ({
   fixtures: Fixture[];
   selectedElementId?: string | null;
 
+  cameraRef?: React.RefCallback<CameraControls | null>;
   onFixtureSelect?: (fixtureId: string) => void;
   // onFixtureChange?: (fixtureId: string, newProps: unknown) => void;
 }) => {
@@ -83,7 +84,7 @@ export const StagePreview3D = ({
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
-          onChange={upsertFixtureIn3D}
+          onChange={onChange}
         />
       ))}
       {bars.map((fixture) => (
@@ -92,7 +93,7 @@ export const StagePreview3D = ({
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
-          onChange={upsertFixtureIn3D}
+          onChange={onChange}
         />
       ))}
       {movingHeads.map((fixture) => (
@@ -102,11 +103,18 @@ export const StagePreview3D = ({
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
 
-          onChange={upsertFixtureIn3D}
+          onChange={onChange}
         />
       ))}
 
-      <CameraControls makeDefault dollyToCursor infinityDolly minDistance={0.01} maxDistance={Infinity} />
+      <CameraControls
+        ref={cameraRef}
+        makeDefault
+        dollyToCursor
+        infinityDolly
+        minDistance={0.01}
+        maxDistance={Infinity}
+      />
 
       {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
     </>

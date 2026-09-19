@@ -12,3 +12,9 @@ export type Visualiser3DEnvironment = {
   haze: number; // 0-1
   ambientLight: number; // 0-1
 };
+
+export type Visualiser3DCameraView = {
+  position: [number, number, number];
+  target: [number, number, number];
+  fov: number;
+};

@@ -135,7 +135,12 @@ export const UpdateVisualisationPage = () => {
         <Container fluid style={{ width: "100%" }}>
           <Box>
             {event && visualiser && fixtures ? (
-              <Visualiser3D eventId={eventId} fixtures={fixtures} fixtureGroups={event.fixtureGroups} />
+              <Visualiser3D
+                eventId={eventId}
+                fixtures={fixtures}
+                fixtureGroups={event.fixtureGroups}
+                visualiser={visualiser}
+              />
             ) : null}
           </Box>
         </Container>

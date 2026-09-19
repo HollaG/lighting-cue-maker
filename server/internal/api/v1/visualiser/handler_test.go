@@ -30,6 +30,8 @@ func TestDefaultVisualiser(t *testing.T) {
 	if visualiser.LightEventUuid != "event-id" ||
 		visualiser.DefaultViewport != nil ||
 		string(visualiser.Objects2D) != "[]" ||
+		visualiser.Config3D != nil ||
+		visualiser.DefaultCameraView != nil ||
 		string(visualiser.FixtureAttributeMapping) != "{}" {
 		t.Fatalf("unexpected default visualiser: %#v", visualiser)
 	}
@@ -85,6 +87,8 @@ func TestVisualiserFromRequest(t *testing.T) {
 		EventID:                 "event-id",
 		DefaultViewport:         datatypes.JSON(`{"x":10,"y":20,"width":600,"height":400}`),
 		Objects2D:               datatypes.JSON(`[{"type":"fixture"}]`),
+		Config3D:                datatypes.JSON(`{"haze":0.5,"ambientLight":0.1}`),
+		DefaultCameraView:       datatypes.JSON(`{"position":[0,2,5],"target":[0,1,0],"fov":70}`),
 		FixtureAttributeMapping: datatypes.JSON(`{"group-id":{"PRESET_POSITION":{}}}`),
 	}
 
@@ -96,6 +100,8 @@ func TestVisualiserFromRequest(t *testing.T) {
 	if savedVisualiser.LightEventUuid != req.EventID ||
 		string(savedVisualiser.DefaultViewport) != string(req.DefaultViewport) ||
 		string(savedVisualiser.Objects2D) != string(req.Objects2D) ||
+		string(savedVisualiser.Config3D) != string(req.Config3D) ||
+		string(savedVisualiser.DefaultCameraView) != string(req.DefaultCameraView) ||
 		string(savedVisualiser.FixtureAttributeMapping) != string(req.FixtureAttributeMapping) {
 		t.Fatalf("visualiser fields were not mapped correctly: %#v", savedVisualiser)
 	}
