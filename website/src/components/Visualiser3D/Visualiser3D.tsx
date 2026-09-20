@@ -135,9 +135,11 @@ export const Visualiser3D = ({
     const id = crypto.randomUUID();
 
     // TODO: figure out where to place the new element. For now, place at origin, and we migrate the camera view over.
+    let position: [number, number, number] = [0, 0, 0];
     switch (elementType) {
       case "cuboid":
         // 1 by 1 by 1 cube
+        position = [0, 0.5, 0]; // place on the floor
         setStageElements((prev) => [
           ...prev,
           {
@@ -145,7 +147,7 @@ export const Visualiser3D = ({
             name: "New Cuboid",
             type: "cuboid",
             props: {
-              position: [0, 0.5, 0],
+              position,
               rotation: [0, 0, 0],
               size: [1, 1, 1],
               color: "#ffffff",
@@ -154,6 +156,7 @@ export const Visualiser3D = ({
         ]);
         break;
       case "default_human":
+        position = [0, 1.75 / 2, 0]; // place on the floor
         setStageElements((prev) => [
           ...prev,
           {
@@ -161,7 +164,7 @@ export const Visualiser3D = ({
             name: "New Human",
             type: "default_human",
             props: {
-              position: [0, 1.75 / 2, 0],
+              position,
               rotation: [0, 0, 0],
               size: [1, 1, 1],
             },
@@ -171,12 +174,28 @@ export const Visualiser3D = ({
       default:
         console.warn("Unknown element type", elementType);
     }
+
+    // bring camera over
+    if (_cameraControlRef.current) {
+      const camera = _cameraControlRef.current;
+      _setCameraPosition(
+        camera,
+        {
+          position: [position[0], position[1] + 2, position[2] + 5],
+          target: position,
+          fov: 70,
+        },
+        true,
+      );
+    }
+
+    setSelectedObjectId(id);
   };
 
   /**
    * Replaces the entire object with the new one.
    */
-  const updateStageElement = useCallback((newElement: Visualiser3DObject) => {
+  const onUpdateElement = useCallback((newElement: Visualiser3DObject) => {
     setStageElements((prev) => {
       const index = prev.findIndex((el) => el.id === newElement.id);
       if (index === -1) {
@@ -189,7 +208,7 @@ export const Visualiser3D = ({
     });
   }, []);
 
-  const removeStageElement = useCallback((elementId: string) => {
+  const onDeleteElement = useCallback((elementId: string) => {
     setStageElements((prev) => prev.filter((el) => el.id !== elementId));
   }, []);
 
@@ -244,7 +263,7 @@ export const Visualiser3D = ({
                   onObjectSelect={onObjectSelect}
                   cameraRef={cameraControlRef}
 
-                  updateStageElement={updateStageElement}
+                  updateStageElement={onUpdateElement}
                 />
               </Canvas>
 
@@ -300,15 +319,20 @@ export const Visualiser3D = ({
       </Box>
 
       <Box className={classes["preview-controls"]}>
-        <Visualiser3DControls
-          fixtureGroups={fixtureGroups}
-          eventId={eventId}
-          environment={environment}
-          onEnvironmentChange={setEnvironment}
+        {
+          <Visualiser3DControls
+            fixtureGroups={fixtureGroups}
+            eventId={eventId}
+            environment={environment}
+            onEnvironmentChange={setEnvironment}
 
-          stageElements={stageElements}
-          onAddElement={onAddElement}
-        />
+            stageElements={stageElements}
+            onAddElement={onAddElement}
+            onDeleteElement={onDeleteElement}
+
+            cameraRef={_cameraControlRef}
+          />
+        }
       </Box>
     </Flex>
   );

@@ -1,7 +1,7 @@
 import { Helper, SpotLight, TransformControls } from "@react-three/drei";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import * as THREE from "three";
 import {
@@ -33,7 +33,7 @@ export const Visualiser3DParLight = ({
 
   viewOnly?: boolean;
 }) => {
-  const meshRef = useRef<THREE.Mesh | null>(null);
+  const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
   const mode = useAppStore((state) => state.transformMode);
 
   const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
@@ -41,7 +41,7 @@ export const Visualiser3DParLight = ({
   return (
     <>
       <mesh
-        ref={meshRef}
+        ref={setMesh}
         castShadow
         receiveShadow
         position={getFixture3DPosition(fixture)}
@@ -87,16 +87,16 @@ export const Visualiser3DParLight = ({
         </spotLight> */}
       </mesh>
 
-      {!viewOnly && isSelected && meshRef.current && (
+      {!viewOnly && isSelected && mesh && (
         <TransformControls
-          object={meshRef.current}
+          object={mesh}
           mode={mode}
           space={mode === "translate" ? "world" : "local"}
           onMouseUp={() => {
-            const mesh = meshRef.current;
-            if (!mesh) return;
+            const _mesh = mesh;
+            if (!_mesh) return;
 
-            onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+            onChange(convert3DPropsToFixtureRepresentation(_mesh.position, _mesh.rotation, fixture));
           }}
         />
       )}

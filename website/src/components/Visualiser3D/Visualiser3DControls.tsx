@@ -1,28 +1,15 @@
 import { useEffect, useState } from "react";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
-import {
-  Accordion,
-  AngleSlider,
-  Box,
-  Button,
-  Center,
-  Collapse,
-  Divider,
-  Flex,
-  Group,
-  Menu,
-  Popover,
-  Slider,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { Accordion, Button, Center, Collapse, Divider, Flex, Group, Menu, Slider, Stack, Text } from "@mantine/core";
 import { useDeleteFixture } from "../../query/useDeleteFixture";
 import { useGetFixtures } from "../../query/useGetFixtures";
 import { useUpsertFixture } from "../../query/useUpsertFixtures";
 import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import { useAppStore } from "../../store/appStore";
-import type { UpdateFixtureReq, Fixture, FixtureType } from "../../types/fixtures";
+import type { UpdateFixtureReq, Fixture, FixtureType, UpsertFixtureReq } from "../../types/fixtures";
 import type { Visualiser3DEnvironment, Visualiser3DObject, Visualiser3DObjectTypes } from "../../types/visualiser3d";
+import type { PerspectiveCamera } from "three";
+import type { CameraControls } from "@react-three/drei";
 
 interface ObjectMenuProps {
   obj: Visualiser3DObject;
@@ -121,8 +108,10 @@ const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
   );
 };
 export const Visualiser3DControls = ({
+  cameraRef,
+
   fixtureGroups,
-  eventId,
+  // eventId,
   environment,
   onEnvironmentChange,
 
@@ -131,6 +120,9 @@ export const Visualiser3DControls = ({
   onUpdateElement,
   onDeleteElement,
 }: {
+  // meta
+  cameraRef: React.RefObject<CameraControls | null>;
+
   // directly related to fixtures
   fixtureGroups: FixtureGroupConfiguration[];
   eventId: string;
@@ -191,6 +183,7 @@ export const Visualiser3DControls = ({
             fixtureGroup={fixtureGroup}
             index={index}
             setFixtureAccordionValue={setFixtureAccordionValue}
+            cameraRef={cameraRef}
             // stageRef={stageRef}
             // visualiser={visualiser}
             // eventId={eventId}
@@ -235,10 +228,25 @@ export const Visualiser3DControls = ({
   );
 };
 
+const DEFAULT_FIXTURE: UpsertFixtureReq = {
+  beamAngle: 0,
+
+  name: " ",
+  fixtureGroupId: "",
+  posX: 0,
+  posY: 0,
+  posZ: 0,
+  rotX: 0,
+  rotY: 0,
+  rotZ: 0,
+  type: "par",
+};
+
 const VisualiserFixtureSection = ({
   fixtureGroup,
   index,
-  setFixtureAccordionValue,
+  cameraRef,
+  // setFixtureAccordionValue,
   // stageRef,
   // visualiser,
   // eventId,
@@ -247,10 +255,11 @@ const VisualiserFixtureSection = ({
   fixtureGroup: FixtureGroupConfiguration;
   index: number;
   setFixtureAccordionValue: (value: string | null) => void;
-  // stageRef: React.RefObject<Stage | null>;
+  cameraRef: React.RefObject<CameraControls | null>;
   // eventId: string;
 }) => {
   const selectedElementId = useAppStore((state) => state.activeObjectId);
+  const setSelectedElementId = useAppStore((state) => state.setActiveObjectId);
 
   const { fixtures } = useGetFixtures({ fixtureGroupId: fixtureGroup.id });
   const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
@@ -260,35 +269,34 @@ const VisualiserFixtureSection = ({
   // TODO: unused var
   const { isPending: _isDeletePending, mutateAsync: deleteFixture } = useDeleteFixture();
 
-  const onAddFixture = () => {};
-  const onUpdateFixture = (fixture: UpdateFixtureReq) => {};
-  const onDeleteFixture = (fixture: Fixture) => {};
+  const onAddFixture = async () => {
+    // upsert a new fixture with default values into the fixtures array for this fixture group
+    const fixture: UpsertFixtureReq = {
+      ...DEFAULT_FIXTURE,
+      fixtureGroupId: fixtureGroup.id,
+    };
 
-  // const onAddFixture = async () => {
-  //   // upsert a new fixture with default values into the fixtures array for this fixture group
-  //   const stage = stageRef.current;
-  //   // Convert the desired screen position to world coordinates, like the other stage elements.
-  //   const x = stage ? (32 - stage.x()) / stage.scaleX() : 32;
-  //   const y = stage ? (60 - stage.y()) / stage.scaleY() : 60;
+    const result = await upsertFixture(fixture);
 
-  //   const fixture: UpsertFixtureReq = {
-  //     ...DEFAULT_FIXTURE,
-  //     fixtureGroupId: fixtureGroup.id,
-  //     posX: x,
-  //     posY: y,
-  //   };
+    // set the camera to focus on this fixture
+    if (cameraRef.current) {
+      cameraRef.current.setLookAt(0, 2, 5, 0, 0, 0, true);
+    }
 
-  //   // Get the stage ref
-  //   await upsertFixture(fixture);
-  // };
+    // "Select" the new fixture
+    setSelectedElementId(result.fixture.id);
+  };
 
-  // const onUpdateFixture = async (fixture: UpdateFixtureReq) => {
-  //   await upsertFixture(fixture);
-  // };
+  const onUpdateFixture = async (fixture: UpdateFixtureReq) => {
+    await upsertFixture(fixture);
+  };
 
-  // const onDeleteFixture = async (fixture: Fixture) => {
-  //   await deleteFixture({ fixtureId: fixture.id, fixtureGroupId: fixture.fixtureGroupId });
-  // };
+  const onDeleteFixture = async (fixture: Fixture) => {
+    await deleteFixture({ fixtureId: fixture.id, fixtureGroupId: fixture.fixtureGroupId });
+    if (selectedElementId === fixture.id) {
+      setSelectedElementId(null);
+    }
+  };
 
   // If the selectedElementId is IN this fixture group, expand it:
 

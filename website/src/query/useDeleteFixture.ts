@@ -14,7 +14,9 @@ export const useDeleteFixture = () => {
     mutationFn: ({ fixtureId }: DeleteFixtureParams) =>
       api.delete<void, DeleteFixtureRes>(`/api/v1/fixtures/${fixtureId}`),
     onSuccess: (_response, { fixtureGroupId }) => {
-      queryClient.invalidateQueries({ queryKey: ["fixtures", fixtureGroupId] });
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey.includes("fixtures") && query.queryKey.includes(fixtureGroupId),
+      });
     },
   });
 };
