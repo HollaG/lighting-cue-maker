@@ -82,6 +82,7 @@ export const Visualiser3DParLight = ({
           castShadow
           volumetric
           opacity={isSelected ? 4 : 0}
+
           // debug={isSelected}
         ></SpotLight>
 

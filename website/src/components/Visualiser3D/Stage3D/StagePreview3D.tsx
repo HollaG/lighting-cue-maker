@@ -1,14 +1,19 @@
 import CheckerTexture from "../../../assets/checker.png";
 import { useEffect } from "react";
 import * as THREE from "three";
-import { CameraControls, Helper, useTexture } from "@react-three/drei";
-import type { Visualiser3DEnvironment } from "../../../types/visualiser3d";
+import { CameraControls, Helper, TransformControls, useTexture } from "@react-three/drei";
+import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
 import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
 import { useDebouncedCallback } from "@mantine/hooks";
 import { useUpsertFixture } from "../../../query/useUpsertFixtures";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { useLoader } from "@react-three/fiber";
+
+import HumanModelUrl from "../../../assets/models/human.gltf?url";
+import { Visualiser3DCuboid } from "../Elements/Visualiser3DCuboid";
 
 const PLANE_SIZE = 20; // in meters
 const squareSizeMetres = 0.6;
@@ -16,6 +21,7 @@ const squareSizeMetres = 0.6;
 export const StagePreview3D = ({
   environment,
   fixtures,
+  stageElements,
   cameraRef,
   selectedElementId,
   onFixtureSelect,
@@ -23,6 +29,7 @@ export const StagePreview3D = ({
 }: {
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
+  stageElements: Visualiser3DObject[];
   selectedElementId?: string | null;
 
   cameraRef?: React.RefCallback<CameraControls | null>;
@@ -46,11 +53,16 @@ export const StagePreview3D = ({
   const pars = fixtures.filter((fixture) => fixture.type === "par");
   const bars = fixtures.filter((fixture) => fixture.type === "bar");
   const movingHeads = fixtures.filter((fixture) => fixture.type === "moving_head");
+  const cuboids = stageElements.filter((element) => element.type === "cuboid");
+  const humans = stageElements.filter((element) => element.type === "default_human");
 
   const onChange = useDebouncedCallback((newFixtureProps: UpdateFixtureIn3DReq) => {
     console.log("upserting fixture in 3D", newFixtureProps);
     upsertFixtureIn3D(newFixtureProps);
   }, 500);
+
+  // Load 3d models
+  const gltfHuman = useLoader(GLTFLoader, HumanModelUrl);
 
   return (
     <>
@@ -65,7 +77,7 @@ export const StagePreview3D = ({
 
       {/*  */}
       <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
-        <boxGeometry args={[1.2, 1.2, 1.2]} />
+        <boxGeometry args={[1.2, 1.75, 1.2]} />
         <meshStandardMaterial color="#8AC" />
       </mesh>
 
@@ -78,6 +90,11 @@ export const StagePreview3D = ({
         <Helper type={THREE.SpotLightHelper} />
       </spotLight>
 
+      {/* Human test model */}
+
+      {/* <TransformControls>
+        <primitive object={gltfHuman.scene} position={[0, 0, 0]} scale={0.00314} castShadow></primitive>
+      </TransformControls> */}
       {pars.map((fixture) => (
         <Visualiser3DParLight
           key={fixture.id}
@@ -104,6 +121,24 @@ export const StagePreview3D = ({
           onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
 
           onChange={onChange}
+        />
+      ))}
+
+      {cuboids.map((cuboid) => (
+        <Visualiser3DCuboid
+          key={cuboid.id}
+          cuboid={cuboid}
+          isSelected={selectedElementId === cuboid.id}
+          onSelect={() => onFixtureSelect && onFixtureSelect(cuboid.id)}
+          // onChange={onChange}
+          onChange={(newProps) => {
+            // console.log("upserting cuboid in 3D", newProps);
+            // upsertFixtureIn3D({
+            //   id: cuboid.id,
+            //   type: "cuboid",
+            //   props: newProps,
+            // });
+          }}
         />
       ))}
 

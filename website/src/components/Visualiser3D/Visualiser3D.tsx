@@ -7,13 +7,19 @@ import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { Visualiser3DControls } from "./Visualiser3DControls";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Visualiser3DCameraView, Visualiser3DEnvironment } from "../../types/visualiser3d";
+import type {
+  Visualiser3DCameraView,
+  Visualiser3DEnvironment,
+  Visualiser3DObject,
+  Visualiser3DObjectTypes,
+} from "../../types/visualiser3d";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import type { CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
+import { useDebouncedCallback } from "@mantine/hooks";
 
 export const Visualiser3D = ({
   eventId,
@@ -32,22 +38,24 @@ export const Visualiser3D = ({
     ambientLight: 0.5,
   });
 
-  const [setDefaultCameraViewAfterLoaded, setSetDefaultCameraViewAfterLoaded] = useState(false);
+  const [stageElements, setStageElements] = useState<Visualiser3DObject[]>(visualiser.objects3D || []);
 
   const { mutate: upsertVisualiser } = useUpsertVisualiser();
 
   // can be either fixture ID or elemnt ID
   const [selectedId, setSelectedElementId] = useState<string | null>(null);
-  const onSelectElement = (id: string) => {
-    setSelectedElementId(id);
-    console.log("set selected element ID to", id);
-  };
 
+  // Register hotkeys for element selected state
   useHotkey("Escape", () => setSelectedElementId(null));
 
+  // Necessary for RectAreaLight to work.
   useEffect(() => {
     RectAreaLightUniformsLib.init();
   });
+
+  const onSelectElement = (id: string) => {
+    setSelectedElementId(id);
+  };
 
   const _cameraControlRef = useRef<CameraControls | null>(null);
 
@@ -62,6 +70,10 @@ export const Visualiser3D = ({
       }
     }
   }, []);
+
+  /**
+   * Save the view of the camera; this will be the default view for viewers
+   */
   const onSaveViewport = () => {
     // somehow fetch the camera's orientation and position, and save it to the visualiser
 
@@ -84,6 +96,9 @@ export const Visualiser3D = ({
     }
   };
 
+  /**
+   * Reset the camera to the last saved position
+   */
   const onResetViewport = () => {
     if (_cameraControlRef.current) {
       if (visualiser.defaultCameraView) {
@@ -93,11 +108,89 @@ export const Visualiser3D = ({
     }
   };
 
+  /**
+   * Helper to set the camera position to a certain view.
+   * @param camera
+   * @param view
+   * @param animate
+   */
   const _setCameraPosition = (camera: CameraControls, view: Visualiser3DCameraView, animate?: boolean) => {
     const [x, y, z] = view.position;
     const [tx, ty, tz] = view.target;
     camera.setLookAt(x, y, z, tx, ty, tz, animate);
   };
+
+  // --- Stage element controls ---------
+  const onAddElement = (elementType: Visualiser3DObjectTypes) => {
+    setSelectedElementId(null); // unselect current
+    const id = crypto.randomUUID();
+
+    // TODO: figure out where to place the new element. For now, place at origin, and we migrate the camera view over.
+    switch (elementType) {
+      case "cuboid":
+        // 1 by 1 by 1 cube
+        setStageElements((prev) => [
+          ...prev,
+          {
+            id,
+            name: "New Cuboid",
+            type: "cuboid",
+            props: {
+              position: [0, 0.5, 0],
+              rotation: [0, 0, 0],
+              size: [1, 1, 1],
+              color: "#ffffff",
+            },
+          },
+        ]);
+        break;
+      case "default_human":
+        setStageElements((prev) => [
+          ...prev,
+          {
+            id,
+            name: "New Human",
+            type: "default_human",
+            props: {
+              position: [0, 0, 0],
+              rotation: [0, 0, 0],
+            },
+          },
+        ]);
+        break;
+      default:
+        console.warn("Unknown element type", elementType);
+    }
+  };
+  const replaceStageElement = useCallback((newElement: Visualiser3DObject) => {
+    setStageElements((prev) => {
+      const index = prev.findIndex((el) => el.id === newElement.id);
+      if (index === -1) {
+        return [...prev, newElement];
+      } else {
+        const newElements = [...prev];
+        newElements[index] = newElement;
+        return newElements;
+      }
+    });
+  }, []);
+
+  const removeStageElement = useCallback((elementId: string) => {
+    setStageElements((prev) => prev.filter((el) => el.id !== elementId));
+  }, []);
+
+  /** Debounce the saving of positions of stage items */
+  const debouncedSave = useDebouncedCallback((objects3D: Visualiser3DObject[]) => {
+    upsertVisualiser({
+      id: visualiser.id,
+      eventId,
+      objects3D,
+    });
+  }, 500);
+
+  useEffect(() => {
+    debouncedSave(stageElements);
+  }, [stageElements, debouncedSave]);
 
   return (
     <Flex className={classes["preview-container"]}>
@@ -132,6 +225,7 @@ export const Visualiser3D = ({
                 <StagePreview3D
                   environment={environment}
                   fixtures={fixtures}
+                  stageElements={stageElements}
                   selectedElementId={selectedId}
                   onFixtureSelect={onSelectElement}
                   cameraRef={cameraControlRef}
@@ -160,6 +254,9 @@ export const Visualiser3D = ({
           eventId={eventId}
           environment={environment}
           onEnvironmentChange={setEnvironment}
+
+          stageElements={stageElements}
+          onAddElement={onAddElement}
         />
       </Box>
     </Flex>

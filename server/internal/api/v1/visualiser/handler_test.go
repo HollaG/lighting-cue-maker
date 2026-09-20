@@ -32,6 +32,7 @@ func TestDefaultVisualiser(t *testing.T) {
 		string(visualiser.Objects2D) != "[]" ||
 		visualiser.Config3D != nil ||
 		visualiser.DefaultCameraView != nil ||
+		string(visualiser.Objects3D) != "[]" ||
 		string(visualiser.FixtureAttributeMapping) != "{}" {
 		t.Fatalf("unexpected default visualiser: %#v", visualiser)
 	}
@@ -89,6 +90,7 @@ func TestVisualiserFromRequest(t *testing.T) {
 		Objects2D:               datatypes.JSON(`[{"type":"fixture"}]`),
 		Config3D:                datatypes.JSON(`{"haze":0.5,"ambientLight":0.1}`),
 		DefaultCameraView:       datatypes.JSON(`{"position":[0,2,5],"target":[0,1,0],"fov":70}`),
+		Objects3D:               datatypes.JSON(`[{"type":"cuboid"}]`),
 		FixtureAttributeMapping: datatypes.JSON(`{"group-id":{"PRESET_POSITION":{}}}`),
 	}
 
@@ -102,7 +104,16 @@ func TestVisualiserFromRequest(t *testing.T) {
 		string(savedVisualiser.Objects2D) != string(req.Objects2D) ||
 		string(savedVisualiser.Config3D) != string(req.Config3D) ||
 		string(savedVisualiser.DefaultCameraView) != string(req.DefaultCameraView) ||
+		string(savedVisualiser.Objects3D) != string(req.Objects3D) ||
 		string(savedVisualiser.FixtureAttributeMapping) != string(req.FixtureAttributeMapping) {
 		t.Fatalf("visualiser fields were not mapped correctly: %#v", savedVisualiser)
+	}
+}
+
+func TestVisualiserFromRequestDefaultsObjects3D(t *testing.T) {
+	visualiser := visualiserFromRequest(models.UpsertVisualiserReq{})
+
+	if string(visualiser.Objects3D) != "[]" {
+		t.Fatalf("expected Objects3D to default to [], got %q", visualiser.Objects3D)
 	}
 }

@@ -129,6 +129,7 @@ const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
 const VisualiserObjectSection = ({
   title,
   itemLabel,
+  itemType,
   objects,
 
   setStageElementAccordionValue,
@@ -138,6 +139,7 @@ const VisualiserObjectSection = ({
 }: {
   title: string;
   itemLabel: string;
+  itemType: VisualiserTypes;
   objects: VisualiserObject[];
 
   setStageElementAccordionValue: (value: string | null) => void;
@@ -182,7 +184,7 @@ const VisualiserObjectSection = ({
           ))}
           {onAddElement && (
             <Center>
-              <Button variant="subtle" size="xs" onClick={() => onAddElement("rectangle")}>
+              <Button variant="subtle" size="xs" onClick={() => onAddElement(itemType)}>
                 Add {itemLabel}
               </Button>
             </Center>
@@ -730,6 +732,7 @@ export const VisualiserControls = ({
               key="rectangles"
               title="Rectangles"
               itemLabel="Rectangle"
+              itemType="rectangle"
               objects={rects}
 
               onAddElement={onAddElement}
@@ -741,6 +744,7 @@ export const VisualiserControls = ({
               key="circles"
               title="Circles"
               itemLabel="Circle"
+              itemType="circle"
               objects={circles}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
@@ -752,6 +756,7 @@ export const VisualiserControls = ({
               key="lines"
               title="Lines"
               itemLabel="Line"
+              itemType="line"
               objects={lines}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
@@ -762,6 +767,7 @@ export const VisualiserControls = ({
               key="texts"
               title="Text"
               itemLabel="Text"
+              itemType="text"
               objects={texts}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}

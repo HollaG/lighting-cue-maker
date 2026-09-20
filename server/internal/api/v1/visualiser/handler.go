@@ -82,6 +82,10 @@ func upsertVisualiser(c *gin.Context) {
 		response.BadRequest(c, "Default camera view must be a JSON object", nil)
 		return
 	}
+	if len(req.Objects3D) > 0 && !isJSONArray(req.Objects3D) {
+		response.BadRequest(c, "Objects3D must be a JSON array", nil)
+		return
+	}
 
 	if err := ensureEventExists(req.EventID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -145,6 +149,10 @@ func upsertVisualiser(c *gin.Context) {
 		savedVisualiser.DefaultCameraView = req.DefaultCameraView
 		updateFields = append(updateFields, "DefaultCameraView")
 	}
+	if len(req.Objects3D) > 0 {
+		savedVisualiser.Objects3D = req.Objects3D
+		updateFields = append(updateFields, "Objects3D")
+	}
 	if result := database.DB().Select(updateFields).Updates(&savedVisualiser); result.Error != nil {
 		response.InternalError(c, "Failed to update visualiser")
 		return
@@ -175,12 +183,18 @@ func isJSONObject(value datatypes.JSON) bool {
 }
 
 func visualiserFromRequest(req models.UpsertVisualiserReq) models.Visualiser {
+	objects3D := req.Objects3D
+	if len(objects3D) == 0 {
+		objects3D = datatypes.JSON(`[]`)
+	}
+
 	return models.Visualiser{
 		LightEventUuid:          req.EventID,
 		DefaultViewport:         req.DefaultViewport,
 		Objects2D:               req.Objects2D,
 		Config3D:                req.Config3D,
 		DefaultCameraView:       req.DefaultCameraView,
+		Objects3D:               objects3D,
 		FixtureAttributeMapping: req.FixtureAttributeMapping,
 	}
 }
@@ -194,6 +208,7 @@ func defaultVisualiser(eventID string) models.Visualiser {
 		Objects2D:               datatypes.JSON(`[]`),
 		Config3D:                nil,
 		DefaultCameraView:       nil,
+		Objects3D:               datatypes.JSON(`[]`),
 		FixtureAttributeMapping: datatypes.JSON(`{}`),
 	}
 }

@@ -18,3 +18,29 @@ export type Visualiser3DCameraView = {
   target: [number, number, number];
   fov: number;
 };
+
+export type ThreeObjectBase = {
+  id: string;
+  name: string;
+};
+
+export interface Visualiser3DCuboidType extends ThreeObjectBase {
+  type: "cuboid";
+  props: {
+    position: [number, number, number];
+    rotation: [number, number, number];
+    size: [number, number, number];
+    color: string;
+  };
+}
+
+export interface Visualiser3DDefaultHumanType extends ThreeObjectBase {
+  type: "default_human";
+  props: {
+    position: [number, number, number];
+    rotation: [number, number, number];
+  };
+}
+
+export type Visualiser3DObject = Visualiser3DCuboidType | Visualiser3DDefaultHumanType;
+export type Visualiser3DObjectTypes = "cuboid" | "default_human";

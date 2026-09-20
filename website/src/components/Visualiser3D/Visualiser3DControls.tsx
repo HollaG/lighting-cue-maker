@@ -16,31 +16,138 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { useDebouncedCallback } from "@mantine/hooks";
-import type { Stage } from "konva/lib/Stage";
 import { useDeleteFixture } from "../../query/useDeleteFixture";
 import { useGetFixtures } from "../../query/useGetFixtures";
 import { useUpsertFixture } from "../../query/useUpsertFixtures";
 import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import { useAppStore } from "../../store/appStore";
-import type { UpsertFixtureReq, UpdateFixtureReq, Fixture, FixtureType } from "../../types/fixtures";
-import type { Visualiser, FixtureAttributeMapping } from "../../types/visualiser";
-import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
-import type { Visualiser3DEnvironment } from "../../types/visualiser3d";
+import type { UpdateFixtureReq, Fixture, FixtureType } from "../../types/fixtures";
+import type { Visualiser3DEnvironment, Visualiser3DObject, Visualiser3DObjectTypes } from "../../types/visualiser3d";
 
+interface ObjectMenuProps {
+  obj: Visualiser3DObject;
+}
+interface StaticObjectMenuProps extends ObjectMenuProps {}
+interface EditableObjectMenuProps extends ObjectMenuProps {
+  onDeleteElement: (elementId: string) => void;
+  onUpdateElement: (updatedElement: Visualiser3DObject) => void;
+}
+
+const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
+  const { obj } = props;
+  const isEditable = "onDeleteElement" in props && "onUpdateElement" in props;
+  // const isText = obj.type === "text";
+  // const [opened, { close, open }] = useDisclosure(false);
+  // const [text, setText] = useState(isText ? (obj.props.text ?? "") : "");
+
+  // const onSubmitTextChange = () => {
+  //   if (obj.type !== "text") return;
+
+  //   if (isEditable) {
+  //     props.onUpdateElement({
+  //       ...obj,
+  //       props: {
+  //         ...obj.props,
+  //         text,
+  //       },
+  //     });
+  //   }
+  // };
+  return (
+    <>
+      {/* <Modal opened={opened} onClose={close} title="Change text content" centered>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!isText) return;
+            onSubmitTextChange();
+            close();
+          }}
+        >
+          <Stack>
+            <CustomTextInput
+              label="New text"
+              placeholder="Enter the new text content..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              required
+            />
+            <Flex justify={"end"}>
+              <Box>
+                <Button variant="light" type="submit">
+                  {" "}
+                  Submit{" "}
+                </Button>
+              </Box>
+            </Flex>
+          </Stack>
+        </form>
+      </Modal> */}
+      {isEditable ? (
+        <Menu shadow="sm" width={250} alignItemsLabels="all">
+          <Menu.Target>
+            <Button size="xs" variant="transparent">
+              Options
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            {/* {isText ? <Menu.Label> Element options </Menu.Label> : null} */}
+            {/* <Popover opened={opened} position="right">
+            <Popover.Target> */}
+            {/* {isText ? <Menu.Item onClick={open}>Change Text</Menu.Item> : null} */}
+            {/* <Button> Change text</Button> */}
+            {/* </Popover.Target>
+            <Popover.Dropdown>
+              <Box onMouseEnter={open} onMouseLeave={close}>
+                <CustomTextInput label="New text" />
+              </Box>
+            </Popover.Dropdown>
+          </Popover> */}
+            {/* <Menu.Label>Display options</Menu.Label>
+            <Menu.CheckboxItem>Stroke</Menu.CheckboxItem>
+            <Menu.CheckboxItem>Fill</Menu.CheckboxItem>
+            <Menu.Item>Change colour</Menu.Item>
+            <Menu.Divider /> */}
+
+            <Menu.Item color="red" onClick={() => props.onDeleteElement(obj.id)}>
+              Delete
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      ) : (
+        <></>
+      )}
+    </>
+  );
+};
 export const Visualiser3DControls = ({
   fixtureGroups,
   eventId,
   environment,
   onEnvironmentChange,
+
+  stageElements,
+  onAddElement,
+  onUpdateElement,
+  onDeleteElement,
 }: {
+  // directly related to fixtures
   fixtureGroups: FixtureGroupConfiguration[];
   eventId: string;
   environment: Visualiser3DEnvironment;
   onEnvironmentChange: (environment: Visualiser3DEnvironment) => void;
+
+  // non-fixtures
+  stageElements: Visualiser3DObject[];
+  onAddElement?: (newElementType: Visualiser3DObjectTypes) => void;
+  onUpdateElement?: (updatedElement: Visualiser3DObject) => void;
+  onDeleteElement?: (elementId: string) => void;
 }) => {
   const [fixtureAccordionValue, setFixtureAccordionValue] = useState<string | null>(null);
   const [stageElementAccordionValue, setStageElementAccordionValue] = useState<string | null>(null);
+
+  const cuboids = stageElements.filter((el) => el.type === "cuboid");
+  const humans = stageElements.filter((el) => el.type === "default_human");
 
   return (
     <Stack>
@@ -90,6 +197,28 @@ export const Visualiser3DControls = ({
           />
         ))}
       </Accordion>
+      {onAddElement ? (
+        <>
+          <Text fw="bold">Stage Elements</Text>
+          <Accordion value={stageElementAccordionValue} onChange={setStageElementAccordionValue}>
+            <VisualiserObjectSection
+              key="cuboids"
+              title="Cuboids"
+              itemLabel="Cuboid"
+              itemType="cuboid"
+              objects={cuboids}
+
+              onAddElement={onAddElement}
+              onDeleteElement={onDeleteElement}
+              onUpdateElement={onUpdateElement}
+              setStageElementAccordionValue={setStageElementAccordionValue}
+            />
+          </Accordion>
+        </>
+      ) : (
+        <></>
+      )}
+      {/* {} */}
     </Stack>
   );
 };
@@ -451,6 +580,76 @@ const VisualiserFixtureSection = ({
               Add a fixture{" "}
             </Button>
           </Center>
+        </Stack>
+      </Accordion.Panel>
+    </Accordion.Item>
+  );
+};
+
+// No side effects!
+const VisualiserObjectSection = ({
+  title,
+  itemLabel,
+  itemType,
+  objects,
+
+  setStageElementAccordionValue,
+  onDeleteElement,
+  onUpdateElement,
+  onAddElement,
+}: {
+  title: string;
+  itemLabel: string;
+  itemType: Visualiser3DObjectTypes;
+  objects: Visualiser3DObject[];
+
+  setStageElementAccordionValue: (value: string | null) => void;
+
+  onAddElement?: (newElementType: Visualiser3DObjectTypes) => void;
+  onDeleteElement?: (elementId: string) => void;
+  onUpdateElement?: (updatedElement: Visualiser3DObject) => void;
+}) => {
+  // if (!objects.length) return null;
+
+  // If the selectedElementId is IN this fixture group, expand it:
+  const selectedElementId = useAppStore((state) => state.activeObjectId);
+
+  useEffect(() => {
+    if (objects.some((obj) => obj.id === selectedElementId)) {
+      setStageElementAccordionValue(title);
+    }
+  }, [objects, selectedElementId, setStageElementAccordionValue, title]);
+
+  return (
+    <Accordion.Item value={title}>
+      <Accordion.Control>
+        {title} ({objects.length})
+      </Accordion.Control>
+      <Accordion.Panel>
+        <Stack gap="xs">
+          {objects.map((obj, index) => (
+            <Flex key={obj.id}>
+              <Text
+                style={{
+                  backgroundColor:
+                    selectedElementId === obj.id ? "light-dark(yellow, var(--dark-yellow))" : "transparent",
+                }}
+              >
+                {itemLabel} {index + 1}
+              </Text>
+
+              <Flex style={{ flex: 1 }} />
+
+              <ObjectMenu obj={obj} onDeleteElement={onDeleteElement} onUpdateElement={onUpdateElement} />
+            </Flex>
+          ))}
+          {onAddElement && (
+            <Center>
+              <Button variant="subtle" size="xs" onClick={() => onAddElement(itemType)}>
+                Add {itemLabel}
+              </Button>
+            </Center>
+          )}
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>

@@ -4,8 +4,12 @@ import type { RectConfig } from "konva/lib/shapes/Rect";
 import type { TextConfig } from "konva/lib/shapes/Text";
 import type { AttributeTypes } from "./types";
 import type { PositionOption } from "./fixtures";
-import type { Visualiser3DCameraView, Visualiser3DEnvironment } from "./visualiser3d";
+import type { Visualiser3DCameraView, Visualiser3DEnvironment, Visualiser3DObject } from "./visualiser3d";
 
+/**
+ * The 2D and 3D overall visualiser type.
+ * This is what is saved in the database.
+ */
 export type Visualiser = {
   id: string;
 
@@ -19,6 +23,9 @@ export type Visualiser = {
 
   /** [3D] The default camera view */
   defaultCameraView?: Visualiser3DCameraView;
+
+  /** [3D] The list of helper (non fixture) objects */
+  objects3D: Visualiser3DObject[];
 
   /** Map certain editable attributes e.g. pan and tilt from a key decided by event creation
    * to hard values that the VisualiserObjects can decode

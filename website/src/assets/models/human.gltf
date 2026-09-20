@@ -1,0 +1,274 @@
+{
+  "accessors": [
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 3144,
+      "max": [
+        5.081460952758789,
+        0.5036529898643494,
+        1.0892863273620605
+      ],
+      "min": [
+        -5.081460952758789,
+        -2.369933605194092,
+        -15.016985893249512
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 37728,
+      "componentType": 5126,
+      "count": 3144,
+      "max": [
+        0.9999313354492188,
+        0.9823497533798218,
+        0.9738730192184448
+      ],
+      "min": [
+        -0.9999313354492188,
+        -0.9988670349121094,
+        -0.9995917081832886
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 3144,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "wh_nerevar (https://sketchfab.com/wh_nerevar)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/low-poly-male-base-fff834aae18d4f5081f9e6980fb40018",
+      "title": "Low Poly Male Base"
+    },
+    "generator": "Sketchfab-12.65.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 12576,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 75456,
+      "byteOffset": 12576,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 88032,
+      "uri": "scene.bin"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "Material",
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.6
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Cube.001_Material_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0
+          },
+          "indices": 2,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.220446049250313e-16,
+        -1.0,
+        0.0,
+        0.0,
+        1.0,
+        2.220446049250313e-16,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "15effdee34d24b048a0cb8ceefe0fced.fbx"
+    },
+    {
+      "children": [
+        3,
+        5,
+        8
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4
+      ],
+      "matrix": [
+        34.60384750366211,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -5.63768234486796e-06,
+        -34.603847503661655,
+        0.0,
+        0.0,
+        34.603847503661655,
+        -5.63768234486796e-06,
+        0.0,
+        0.0,
+        241.24252319335938,
+        -24.381013870239258,
+        1.0
+      ],
+      "name": "Cube.001"
+    },
+    {
+      "mesh": 0,
+      "name": "Cube.001_Material_0"
+    },
+    {
+      "children": [
+        6
+      ],
+      "matrix": [
+        94.9666819164242,
+        -5.518905780345583,
+        -30.83619634086498,
+        0.0,
+        22.875893361339152,
+        79.46723845832118,
+        56.22857850424394,
+        0.0,
+        21.401469775591845,
+        -60.45246607372452,
+        76.72989272147859,
+        0.0,
+        407.6245422363281,
+        590.38623046875,
+        1029.703125,
+        1.0
+      ],
+      "name": "Lamp"
+    },
+    {
+      "children": [
+        7
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.220446049250313e-16,
+        1.0,
+        0.0,
+        0.0,
+        -1.0,
+        2.220446049250313e-16,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Object_6"
+    },
+    {
+      "name": "Object_7"
+    },
+    {
+      "children": [
+        9
+      ],
+      "matrix": [
+        7.549789959870878e-06,
+        -3.944304526105059e-29,
+        -99.99999999999972,
+        0.0,
+        1.8422972955528074e-13,
+        100.0,
+        1.390895759985091e-20,
+        0.0,
+        99.99999999999972,
+        -1.8422972955528124e-13,
+        7.549789959870878e-06,
+        0.0,
+        0.0,
+        0.0,
+        1233.0,
+        1.0
+      ],
+      "name": "Camera"
+    },
+    {
+      "name": "Object_9"
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ]
+}
