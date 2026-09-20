@@ -45,7 +45,8 @@ export const Visualiser3DBarLight = ({
         receiveShadow
         position={getFixture3DPosition(fixture)}
         rotation={getFixture3DRotation(fixture)}
-        onClick={() => {
+        onClick={(event) => {
+          event.stopPropagation();
           onSelect(fixture.id);
         }}
       >

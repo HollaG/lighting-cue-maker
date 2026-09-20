@@ -45,7 +45,10 @@ export const Visualiser3DMovingLight = ({
         receiveShadow
         position={getFixture3DPosition(fixture)}
         rotation={getFixture3DRotation(fixture)}
-        onClick={() => onSelect(fixture.id)}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(fixture.id);
+        }}
       >
         {/* Sample par, todo */}
         {/* Just a cylinder that is 210mm in diameter, 104mm in height. Modelled after Betopper LPC015 */}
