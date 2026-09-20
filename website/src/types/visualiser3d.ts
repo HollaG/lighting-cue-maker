@@ -39,6 +39,7 @@ export interface Visualiser3DDefaultHumanType extends ThreeObjectBase {
   props: {
     position: [number, number, number];
     rotation: [number, number, number];
+    // size: [number, number, number];
   };
 }
 

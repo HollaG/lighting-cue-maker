@@ -213,6 +213,18 @@ export const Visualiser3DControls = ({
               onUpdateElement={onUpdateElement}
               setStageElementAccordionValue={setStageElementAccordionValue}
             />
+            <VisualiserObjectSection
+              key="humans"
+              title="Humans"
+              itemLabel="Human"
+              itemType="default_human"
+              objects={humans}
+
+              onAddElement={onAddElement}
+              onDeleteElement={onDeleteElement}
+              onUpdateElement={onUpdateElement}
+              setStageElementAccordionValue={setStageElementAccordionValue}
+            />
           </Accordion>
         </>
       ) : (

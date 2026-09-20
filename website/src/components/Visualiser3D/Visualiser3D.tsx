@@ -45,11 +45,11 @@ export const Visualiser3D = ({
 
   // can be either fixture ID or elemnt ID
   // const [selectedId, setSelectedElementId] = useState<string | null>(null);
-  const selectedId = useAppStore((state) => state.activeObjectId);
-  const setSelectedElementId = useAppStore((state) => state.setActiveObjectId);
+  const selectedObjectId = useAppStore((state) => state.activeObjectId);
+  const setSelectedObjectId = useAppStore((state) => state.setActiveObjectId);
 
   // Register hotkeys for element selected state
-  useHotkey("Escape", () => setSelectedElementId(null));
+  useHotkey("Escape", () => setSelectedObjectId(null));
 
   const mode = useAppStore((state) => state.transformMode);
   const setMode = useAppStore((state) => state.setTransformMode);
@@ -62,8 +62,8 @@ export const Visualiser3D = ({
     RectAreaLightUniformsLib.init();
   });
 
-  const onSelectElement = (id: string) => {
-    setSelectedElementId(id);
+  const onObjectSelect = (id: string) => {
+    setSelectedObjectId(id);
   };
 
   const _cameraControlRef = useRef<CameraControls | null>(null);
@@ -131,7 +131,7 @@ export const Visualiser3D = ({
 
   // --- Stage element controls ---------
   const onAddElement = (elementType: Visualiser3DObjectTypes) => {
-    setSelectedElementId(null); // unselect current
+    setSelectedObjectId(null); // unselect current
     const id = crypto.randomUUID();
 
     // TODO: figure out where to place the new element. For now, place at origin, and we migrate the camera view over.
@@ -161,8 +161,9 @@ export const Visualiser3D = ({
             name: "New Human",
             type: "default_human",
             props: {
-              position: [0, 0, 0],
+              position: [0, 1.75 / 2, 0],
               rotation: [0, 0, 0],
+              size: [1, 1, 1],
             },
           },
         ]);
@@ -171,7 +172,11 @@ export const Visualiser3D = ({
         console.warn("Unknown element type", elementType);
     }
   };
-  const replaceStageElement = useCallback((newElement: Visualiser3DObject) => {
+
+  /**
+   * Replaces the entire object with the new one.
+   */
+  const updateStageElement = useCallback((newElement: Visualiser3DObject) => {
     setStageElements((prev) => {
       const index = prev.findIndex((el) => el.id === newElement.id);
       if (index === -1) {
@@ -235,9 +240,11 @@ export const Visualiser3D = ({
                   environment={environment}
                   fixtures={fixtures}
                   stageElements={stageElements}
-                  selectedElementId={selectedId}
-                  onElementSelect={onSelectElement}
+                  selectedElementId={selectedObjectId}
+                  onObjectSelect={onObjectSelect}
                   cameraRef={cameraControlRef}
+
+                  updateStageElement={updateStageElement}
                 />
               </Canvas>
 
@@ -256,7 +263,7 @@ export const Visualiser3D = ({
               {/* Selected element controls */}
               <Stack style={{ position: "absolute", top: "1rem", right: "1rem" }}>
                 <SegmentedControl
-                  disabled={!selectedId}
+                  disabled={!selectedObjectId}
                   data={[
                     {
                       value: "translate",

@@ -14,15 +14,40 @@ export const Visualiser3DCuboid = ({
   cuboid: Visualiser3DCuboidType;
   isSelected: boolean;
   onSelect: (cuboidId: string) => void;
-  onChange: (newProps: Visualiser3DCuboidType["props"]) => void;
+  onChange: (newElement: Visualiser3DCuboidType) => void;
 }) => {
   const meshRef = useRef<THREE.Mesh | null>(null);
 
   const mode = useAppStore((state) => state.transformMode);
 
   return (
-    <TransformControls mode={mode}>
+    <>
+      {isSelected && meshRef.current && (
+        <TransformControls
+          object={meshRef.current}
+          mode={mode}
+          space={mode === "translate" ? "world" : "local"}
+          onMouseUp={() => {
+            const mesh = meshRef.current;
+            if (!mesh) return;
+
+            // onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+            const newElement = { ...cuboid };
+            newElement.props.position = [mesh.position.x, mesh.position.y, mesh.position.z];
+            newElement.props.rotation = [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z];
+            newElement.props.size = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
+
+            onChange(newElement);
+          }}
+        />
+      )}
+
       <mesh
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(cuboid.id);
+        }}
+
         ref={meshRef}
         castShadow
         receiveShadow
@@ -33,6 +58,6 @@ export const Visualiser3DCuboid = ({
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#8AC" />
       </mesh>
-    </TransformControls>
+    </>
   );
 };

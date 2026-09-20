@@ -1,7 +1,7 @@
 import CheckerTexture from "../../../assets/checker.png";
 import { useEffect } from "react";
 import * as THREE from "three";
-import { CameraControls, Helper, TransformControls, useTexture } from "@react-three/drei";
+import { CameraControls, Helper, useTexture } from "@react-three/drei";
 import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
 import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
@@ -9,11 +9,8 @@ import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
 import { useDebouncedCallback } from "@mantine/hooks";
 import { useUpsertFixture } from "../../../query/useUpsertFixtures";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { useLoader } from "@react-three/fiber";
-
-import HumanModelUrl from "../../../assets/models/human.gltf?url";
 import { Visualiser3DCuboid } from "../Elements/Visualiser3DCuboid";
+import { Visualiser3DDefaultHuman } from "../Elements/Visualiser3DDefaultHuman";
 
 const PLANE_SIZE = 20; // in meters
 const squareSizeMetres = 0.6;
@@ -24,8 +21,9 @@ export const StagePreview3D = ({
   stageElements,
   cameraRef,
   selectedElementId,
-  onElementSelect: onFixtureSelect,
+  onObjectSelect: onObjectSelect,
   // onFixtureChange,
+  updateStageElement,
 }: {
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
@@ -33,7 +31,9 @@ export const StagePreview3D = ({
   selectedElementId?: string | null;
 
   cameraRef?: React.RefCallback<CameraControls | null>;
-  onElementSelect?: (fixtureId: string) => void;
+
+  onObjectSelect?: (objectId: string) => void;
+  updateStageElement: (newElement: Visualiser3DObject) => void;
   // onFixtureChange?: (fixtureId: string, newProps: unknown) => void;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
@@ -61,9 +61,6 @@ export const StagePreview3D = ({
     upsertFixtureIn3D(newFixtureProps);
   }, 500);
 
-  // Load 3d models
-  const gltfHuman = useLoader(GLTFLoader, HumanModelUrl);
-
   return (
     <>
       {/* The floor */}
@@ -90,17 +87,12 @@ export const StagePreview3D = ({
         <Helper type={THREE.SpotLightHelper} />
       </spotLight>
 
-      {/* Human test model */}
-
-      {/* <TransformControls>
-        <primitive object={gltfHuman.scene} position={[0, 0, 0]} scale={0.00314} castShadow></primitive>
-      </TransformControls> */}
       {pars.map((fixture) => (
         <Visualiser3DParLight
           key={fixture.id}
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
-          onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
+          onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
           onChange={onChange}
         />
       ))}
@@ -109,7 +101,7 @@ export const StagePreview3D = ({
           key={fixture.id}
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
-          onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
+          onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
           onChange={onChange}
         />
       ))}
@@ -118,7 +110,7 @@ export const StagePreview3D = ({
           key={fixture.id}
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
-          onSelect={() => onFixtureSelect && onFixtureSelect(fixture.id)}
+          onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
 
           onChange={onChange}
         />
@@ -129,16 +121,19 @@ export const StagePreview3D = ({
           key={cuboid.id}
           cuboid={cuboid}
           isSelected={selectedElementId === cuboid.id}
-          onSelect={() => onFixtureSelect && onFixtureSelect(cuboid.id)}
+          onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
           // onChange={onChange}
-          onChange={(newProps) => {
-            // console.log("upserting cuboid in 3D", newProps);
-            // upsertFixtureIn3D({
-            //   id: cuboid.id,
-            //   type: "cuboid",
-            //   props: newProps,
-            // });
-          }}
+          onChange={updateStageElement}
+        />
+      ))}
+
+      {humans.map((human) => (
+        <Visualiser3DDefaultHuman
+          key={human.id}
+          human={human}
+          isSelected={selectedElementId === human.id}
+          onSelect={() => onObjectSelect && onObjectSelect(human.id)}
+          onChange={updateStageElement}
         />
       ))}
 
