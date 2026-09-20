@@ -1,7 +1,7 @@
-import { Helper, SpotLight, TransformControls } from "@react-three/drei";
+import { SpotLight, TransformControls } from "@react-three/drei";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import * as THREE from "three";
 import {
@@ -37,17 +37,41 @@ export const Visualiser3DParLight = ({
   viewOnly?: boolean;
 }) => {
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
+
+  // react state for beam angle so we can dynamically update it
+  const [beamAngle, setBeamAngle] = useState(fixture.beamAngle || 15);
+  // ref for lil-gui: we can't directly modify beamAngle (we need another object, then we can call `onChange` and actually update the state)
+  const beamControls = useMemo(() => ({ angle: fixture.beamAngle || 15 }), []);
   const mode = useAppStore((state) => state.transformMode);
 
   const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
+
+  // for future use - synchronise on upstream fixture.angle changes
+  useEffect(() => {
+    const nextBeamAngle = fixture.beamAngle || 15;
+    beamControls.angle = nextBeamAngle;
+    setBeamAngle(nextBeamAngle);
+  }, [beamControls, fixture.beamAngle]);
 
   useVisualiser3DGuiControls({
     gui,
     object: mesh,
     isSelected: isSelected && !viewOnly,
     title: fixture.name.trim() || "Par light",
+    addCustomControls: (folder) => {
+      folder
+        .addFolder("Beam")
+        .add(beamControls, "angle", 1, 180, 1)
+        .name("Full angle")
+        .onChange(setBeamAngle) // update the react state
+        .listen();
+    },
     onFinishChange: () => {
-      if (mesh) onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+      if (!mesh) return;
+      onChange({
+        ...convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture),
+        beamAngle: beamControls.angle,
+      });
     },
   });
 
@@ -71,7 +95,7 @@ export const Visualiser3DParLight = ({
           position={[0, -0.052, 0]}
           target={spotlightTarget}
           intensity={150}
-          angle={THREE.MathUtils.degToRad(fixture.beamAngle ? fixture.beamAngle : 15)}
+          angle={THREE.MathUtils.degToRad(beamAngle / 2)}
           penumbra={0.5}
           distance={10}
           castShadow
@@ -84,7 +108,7 @@ export const Visualiser3DParLight = ({
           position={[0, 0.052, 0]}
           target={spotlightTarget}
           intensity={isSelected ? 200 : 0}
-          angle={THREE.MathUtils.degToRad(fixture.beamAngle ? fixture.beamAngle : 15)}
+          angle={THREE.MathUtils.degToRad(beamAngle ? beamAngle / 2 : 15)}
           penumbra={0.5}
           castShadow
           volumetric

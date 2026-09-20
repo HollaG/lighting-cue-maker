@@ -3,48 +3,57 @@ import type { GUI } from "lil-gui";
 import type * as THREE from "three";
 import { PLANE_SIZE } from "../../../utils/visualiser";
 
+export type Properties = "position" | "rotation" | "scale";
+const DEFAULT_PROPERTIES: Properties[] = ["position", "rotation"];
+
 /** Adds controls for the selected object to the shared visualiser GUI. */
 export const useVisualiser3DGuiControls = ({
   gui,
   object,
   isSelected,
   title,
-  includeScale = false,
+
+  includeProperties = DEFAULT_PROPERTIES,
+  addCustomControls,
   onFinishChange,
 }: {
   gui: GUI | null;
   object: THREE.Object3D | null;
   isSelected: boolean;
   title: string;
-  includeScale?: boolean;
+
+  includeProperties?: Properties[];
+  addCustomControls?: (folder: GUI) => void;
+
   onFinishChange: () => void;
 }) => {
   const onFinishChangeRef = useRef(onFinishChange);
   onFinishChangeRef.current = onFinishChange;
+  const addCustomControlsRef = useRef(addCustomControls);
+  addCustomControlsRef.current = addCustomControls;
 
   useEffect(() => {
     if (!gui || !object || !isSelected) return;
 
     const objectFolder = gui.addFolder(title);
-    const positionFolder = objectFolder.addFolder("Position");
-    positionFolder.add(object.position, "x", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
-    positionFolder.add(object.position, "y", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
-    positionFolder.add(object.position, "z", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
 
-    const rotationFolder = objectFolder.addFolder("Rotation");
-    rotationFolder.add(object.rotation, "x", -Math.PI, Math.PI, 0.01).listen();
-    rotationFolder.add(object.rotation, "y", -Math.PI, Math.PI, 0.01).listen();
-    rotationFolder.add(object.rotation, "z", -Math.PI, Math.PI, 0.01).listen();
+    for (const property of includeProperties) {
+      const positionFolder = objectFolder.addFolder(property.charAt(0).toUpperCase() + property.slice(1));
+      const x = positionFolder.add(object[property], "x", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
+      const y = positionFolder.add(object[property], "y", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
+      const z = positionFolder.add(object[property], "z", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
 
-    if (includeScale) {
-      const scaleFolder = objectFolder.addFolder("Scale");
-      scaleFolder.add(object.scale, "x", 0.01, 10, 0.01).listen();
-      scaleFolder.add(object.scale, "y", 0.01, 10, 0.01).listen();
-      scaleFolder.add(object.scale, "z", 0.01, 10, 0.01).listen();
+      if (property === "position") {
+        x.name("x (Red) m");
+        y.name("y (Green) m");
+        z.name("z (Blue) m");
+      }
     }
+
+    addCustomControlsRef.current?.(objectFolder);
 
     objectFolder.onFinishChange(() => onFinishChangeRef.current());
 
     return () => objectFolder.destroy();
-  }, [gui, object, isSelected, title, includeScale]);
+  }, [gui, object, isSelected, title, includeProperties]);
 };

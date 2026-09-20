@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import * as THREE from "three";
 import { SpotLight, TransformControls } from "@react-three/drei";
 import {
   convert3DPropsToFixtureRepresentation,
-  convertStoredPositionTo3DView,
   getFixture3DPosition,
   getFixture3DRotation,
 } from "../../../utils/visualiser";
@@ -36,18 +35,38 @@ export const Visualiser3DMovingLight = ({
   viewOnly?: boolean;
 }) => {
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
+  const [beamAngle, setBeamAngle] = useState(fixture.beamAngle || 15);
+  const beamControls = useMemo(() => ({ angle: fixture.beamAngle || 15 }), []);
 
   const mode = useAppStore((state) => state.transformMode);
 
   const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
+
+  useEffect(() => {
+    const nextBeamAngle = fixture.beamAngle || 15;
+    beamControls.angle = nextBeamAngle;
+    setBeamAngle(nextBeamAngle);
+  }, [beamControls, fixture.beamAngle]);
 
   useVisualiser3DGuiControls({
     gui,
     object: mesh,
     isSelected: isSelected && !viewOnly,
     title: fixture.name.trim() || "Moving head",
+    addCustomControls: (folder) => {
+      folder
+        .addFolder("Beam")
+        .add(beamControls, "angle", 1, 180, 1)
+        .name("Full angle")
+        .onChange(setBeamAngle)
+        .listen();
+    },
     onFinishChange: () => {
-      if (mesh) onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+      if (!mesh) return;
+      onChange({
+        ...convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture),
+        beamAngle: beamControls.angle,
+      });
     },
   });
 
@@ -73,7 +92,7 @@ export const Visualiser3DMovingLight = ({
           position={[0, 0.052, 0]}
           target={spotlightTarget}
           intensity={isSelected ? 200 : 0}
-          angle={THREE.MathUtils.degToRad(fixture.beamAngle ? fixture.beamAngle : 15)}
+          angle={THREE.MathUtils.degToRad(beamAngle / 2)}
           penumbra={0.5}
           castShadow
           volumetric

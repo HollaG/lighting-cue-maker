@@ -42,7 +42,7 @@ export const Visualiser3DCuboid = ({
     object: mesh,
     isSelected,
     title: cuboid.name || "Cuboid",
-    includeScale: true,
+    includeProperties: ["position", "rotation", "scale"],
     onFinishChange: saveChanges,
   });
 
