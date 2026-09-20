@@ -510,6 +510,8 @@ export const StaticVisualiser3D = ({
                 style={{ position: "relative", width: "100%", height: "100%" }}
               >
                 <Canvas
+                  frameloop="demand"
+
                   shadows
                   camera={{
                     position: visualiser.defaultCameraView?.position || [0, 2, 5],
