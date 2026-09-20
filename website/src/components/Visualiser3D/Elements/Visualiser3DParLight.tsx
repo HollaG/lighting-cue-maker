@@ -1,17 +1,18 @@
 import { Helper, SpotLight, TransformControls } from "@react-three/drei";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import * as THREE from "three";
 import {
-  convert3DPositionToStored,
   convert3DPropsToFixtureRepresentation,
-  convert3DRotationToStored,
   getFixture3DPosition,
   getFixture3DRotation,
 } from "../../../utils/visualiser";
 import { useAppStore } from "../../../store/appStore";
+
+import type { GUI } from "lil-gui";
+import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
 
 export const Visualiser3DParLight = ({
   fixture,
@@ -22,6 +23,7 @@ export const Visualiser3DParLight = ({
 
   intensityAttribute,
   colourAttribute,
+  gui,
 }: {
   fixture: Fixture;
   isSelected: boolean;
@@ -30,6 +32,7 @@ export const Visualiser3DParLight = ({
 
   intensityAttribute?: PresetIntensityOption;
   colourAttribute?: PresetColourOption;
+  gui: GUI | null;
 
   viewOnly?: boolean;
 }) => {
@@ -37,6 +40,16 @@ export const Visualiser3DParLight = ({
   const mode = useAppStore((state) => state.transformMode);
 
   const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
+
+  useVisualiser3DGuiControls({
+    gui,
+    object: mesh,
+    isSelected: isSelected && !viewOnly,
+    title: fixture.name.trim() || "Par light",
+    onFinishChange: () => {
+      if (mesh) onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+    },
+  });
 
   return (
     <>

@@ -11,9 +11,8 @@ import { useDebouncedCallback } from "@mantine/hooks";
 import { useUpsertFixture } from "../../../query/useUpsertFixtures";
 import { Visualiser3DCuboid } from "../Elements/Visualiser3DCuboid";
 import { Visualiser3DDefaultHuman } from "../Elements/Visualiser3DDefaultHuman";
-
-const PLANE_SIZE = 20; // in meters
-const squareSizeMetres = 0.6;
+import { GRID_SIZE, PLANE_SIZE } from "../../../utils/visualiser";
+import type { GUI } from "lil-gui";
 
 export const StagePreview3D = ({
   environment,
@@ -24,6 +23,7 @@ export const StagePreview3D = ({
   onObjectSelect: onObjectSelect,
   // onFixtureChange,
   updateStageElement,
+  gui,
 }: {
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
@@ -34,6 +34,7 @@ export const StagePreview3D = ({
 
   onObjectSelect?: (objectId: string) => void;
   updateStageElement: (newElement: Visualiser3DObject) => void;
+  gui: GUI | null;
   // onFixtureChange?: (fixtureId: string, newProps: unknown) => void;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
@@ -46,7 +47,7 @@ export const StagePreview3D = ({
     checkerTexture.wrapT = THREE.RepeatWrapping;
     checkerTexture.magFilter = THREE.NearestFilter;
     checkerTexture.colorSpace = THREE.SRGBColorSpace;
-    checkerTexture.repeat.set(PLANE_SIZE / squareSizeMetres, PLANE_SIZE / squareSizeMetres);
+    checkerTexture.repeat.set(PLANE_SIZE / GRID_SIZE, PLANE_SIZE / GRID_SIZE);
     checkerTexture.needsUpdate = true;
   }, [checkerTexture]);
 
@@ -94,6 +95,7 @@ export const StagePreview3D = ({
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
           onChange={onChange}
+          gui={gui}
         />
       ))}
       {bars.map((fixture) => (
@@ -103,6 +105,7 @@ export const StagePreview3D = ({
           isSelected={selectedElementId === fixture.id}
           onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
           onChange={onChange}
+          gui={gui}
         />
       ))}
       {movingHeads.map((fixture) => (
@@ -113,6 +116,7 @@ export const StagePreview3D = ({
           onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
 
           onChange={onChange}
+          gui={gui}
         />
       ))}
 
@@ -124,6 +128,7 @@ export const StagePreview3D = ({
           onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
           // onChange={onChange}
           onChange={updateStageElement}
+          gui={gui}
         />
       ))}
 
@@ -134,6 +139,7 @@ export const StagePreview3D = ({
           isSelected={selectedElementId === human.id}
           onSelect={() => onObjectSelect && onObjectSelect(human.id)}
           onChange={updateStageElement}
+          gui={gui}
         />
       ))}
 

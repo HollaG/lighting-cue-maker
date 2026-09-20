@@ -31,6 +31,10 @@ export const hexToRgba = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+/**************** 3D ***************/
+export const PLANE_SIZE = 20;
+export const GRID_SIZE = 0.6; // size of one 'square' in the grid, in metres
+
 /**
  * Converts a fixture's stored centimetres to Three.js metres.
  * X-Z is the floor plane and Y is vertical in both representations.

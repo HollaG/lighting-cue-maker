@@ -12,6 +12,8 @@ import {
   getFixture3DRotation,
 } from "../../../utils/visualiser";
 import { useAppStore } from "../../../store/appStore";
+import type { GUI } from "lil-gui";
+import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
 
 RectAreaLightUniformsLib.init();
 
@@ -24,6 +26,7 @@ export const Visualiser3DBarLight = ({
 
   intensityAttribute,
   colourAttribute,
+  gui,
 }: {
   fixture: Fixture;
   isSelected: boolean;
@@ -32,11 +35,21 @@ export const Visualiser3DBarLight = ({
 
   intensityAttribute?: PresetIntensityOption;
   colourAttribute?: PresetColourOption;
+  gui: GUI | null;
 
   viewOnly?: boolean;
 }) => {
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
   const mode = useAppStore((state) => state.transformMode);
+  useVisualiser3DGuiControls({
+    gui,
+    object: mesh,
+    isSelected: isSelected && !viewOnly,
+    title: fixture.name.trim() || "Bar light",
+    onFinishChange: () => {
+      if (mesh) onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+    },
+  });
   return (
     <>
       <mesh

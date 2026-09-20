@@ -1,4 +1,17 @@
-import { AspectRatio, Box, Button, Flex, Group, Kbd, MantineProvider, SegmentedControl, Stack } from "@mantine/core";
+import {
+  AspectRatio,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Group,
+  Kbd,
+  MantineProvider,
+  SegmentedControl,
+  SimpleGrid,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
 import type { Fixture } from "../../types/fixtures";
@@ -21,6 +34,9 @@ import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
 import { useDebouncedCallback } from "@mantine/hooks";
 import { useAppStore } from "../../store/appStore";
+import { CardBase } from "../Cues/CardBase";
+import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
+import { GUI } from "lil-gui";
 
 export const Visualiser3D = ({
   eventId,
@@ -40,6 +56,21 @@ export const Visualiser3D = ({
   });
 
   const [stageElements, setStageElements] = useState<Visualiser3DObject[]>(visualiser.objects3D || []);
+  const guiContainerRef = useRef<HTMLDivElement>(null);
+  const [gui, setGui] = useState<GUI | null>(null);
+
+  useEffect(() => {
+    if (!guiContainerRef.current) return;
+
+    const instance = new GUI({
+      container: guiContainerRef.current,
+      title: "Selected object",
+      width: 300,
+    });
+    setGui(instance);
+
+    return () => instance.destroy();
+  }, []);
 
   const { mutate: upsertVisualiser } = useUpsertVisualiser();
 
@@ -264,6 +295,7 @@ export const Visualiser3D = ({
                   cameraRef={cameraControlRef}
 
                   updateStageElement={onUpdateElement}
+                  gui={gui}
                 />
               </Canvas>
 
@@ -312,6 +344,47 @@ export const Visualiser3D = ({
                   value={mode}
                   onChange={setMode}
                 ></SegmentedControl>
+                {/* <Card bg={"var(--mantine-color-dark-7)"}>
+                  <Stack>
+                    <Text fw="bold">Position</Text>
+                    <SimpleGrid
+                      cols={3}
+                      style={{
+                        gridTemplateColumns: "repeat(3, minmax(80px, 1fr))",
+                        width: "min-content",
+                      }}
+                    >
+                      <Box>
+                        <CustomTextInput step={10} type="number" label="X" rightSection="mm" />
+                      </Box>
+                      <Box>
+                        <CustomTextInput step={10} type="number" label="Y" rightSection="mm" />
+                      </Box>
+                      <Box>
+                        <CustomTextInput step={10} type="number" label="Z" rightSection="mm" />
+                      </Box>
+                    </SimpleGrid>
+                    <Text fw="bold">Rotation</Text>
+                    <SimpleGrid
+                      cols={3}
+                      style={{
+                        gridTemplateColumns: "repeat(3, minmax(80px, 1fr))",
+                        width: "min-content",
+                      }}
+                    >
+                      <Box>
+                        <CustomTextInput step={10} type="number" label="X" rightSection="deg" />
+                      </Box>
+                      <Box>
+                        <CustomTextInput step={10} type="number" label="Y" rightSection="deg" />
+                      </Box>
+                      <Box>
+                        <CustomTextInput step={10} type="number" label="Z" rightSection="deg" />
+                      </Box>
+                    </SimpleGrid>
+                  </Stack>
+                </Card> */}
+                <Box ref={guiContainerRef} />
               </Stack>
             </Box>
           </MantineProvider>

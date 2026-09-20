@@ -1,43 +1,60 @@
-import { useRef } from "react";
+import { useState } from "react";
 import type { Visualiser3DCuboidType } from "../../../types/visualiser3d";
 
 import * as THREE from "three";
 import { TransformControls } from "@react-three/drei";
 import { useAppStore } from "../../../store/appStore";
+import type { GUI } from "lil-gui";
+import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
 
 export const Visualiser3DCuboid = ({
   cuboid,
   isSelected,
   onSelect,
   onChange,
+  gui,
 }: {
   cuboid: Visualiser3DCuboidType;
   isSelected: boolean;
   onSelect: (cuboidId: string) => void;
   onChange: (newElement: Visualiser3DCuboidType) => void;
+  gui: GUI | null;
 }) => {
-  const meshRef = useRef<THREE.Mesh | null>(null);
+  const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
 
   const mode = useAppStore((state) => state.transformMode);
 
+  const saveChanges = () => {
+    if (!mesh) return;
+    onChange({
+      ...cuboid,
+      props: {
+        ...cuboid.props,
+        position: [mesh.position.x, mesh.position.y, mesh.position.z],
+        rotation: [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z],
+        size: [mesh.scale.x, mesh.scale.y, mesh.scale.z],
+      },
+    });
+  };
+
+  useVisualiser3DGuiControls({
+    gui,
+    object: mesh,
+    isSelected,
+    title: cuboid.name || "Cuboid",
+    includeScale: true,
+    onFinishChange: saveChanges,
+  });
+
   return (
     <>
-      {isSelected && meshRef.current && (
+      {isSelected && mesh && (
         <TransformControls
-          object={meshRef.current}
+          object={mesh}
           mode={mode}
           space={mode === "translate" ? "world" : "local"}
           onMouseUp={() => {
-            const mesh = meshRef.current;
-            if (!mesh) return;
-
-            // onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
-            const newElement = { ...cuboid };
-            newElement.props.position = [mesh.position.x, mesh.position.y, mesh.position.z];
-            newElement.props.rotation = [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z];
-            newElement.props.size = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
-
-            onChange(newElement);
+            saveChanges();
           }}
         />
       )}
@@ -48,7 +65,7 @@ export const Visualiser3DCuboid = ({
           onSelect(cuboid.id);
         }}
 
-        ref={meshRef}
+        ref={setMesh}
         castShadow
         receiveShadow
         position={new THREE.Vector3(...cuboid.props.position)}
