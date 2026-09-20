@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import * as THREE from "three";
@@ -9,7 +9,7 @@ import {
   getFixture3DPosition,
   getFixture3DRotation,
 } from "../../../utils/visualiser";
-import { useHotkey } from "@tanstack/react-hotkeys";
+import { useAppStore } from "../../../store/appStore";
 
 export const Visualiser3DMovingLight = ({
   fixture,
@@ -33,13 +33,7 @@ export const Visualiser3DMovingLight = ({
 }) => {
   const meshRef = useRef<THREE.Mesh | null>(null);
 
-  const [mode, setMode] = useState<"translate" | "rotate">("translate");
-
-  useHotkey("T", () => setMode("translate"));
-  useHotkey("R", () => setMode("rotate"));
-
-  useHotkey("W", () => setMode("translate"));
-  useHotkey("E", () => setMode("rotate"));
+  const mode = useAppStore((state) => state.transformMode);
 
   const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
 

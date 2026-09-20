@@ -1,4 +1,4 @@
-import { AspectRatio, Box, Button, Flex, Group, MantineProvider } from "@mantine/core";
+import { AspectRatio, Box, Button, Flex, Group, Kbd, MantineProvider, SegmentedControl, Stack } from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
 import type { Fixture } from "../../types/fixtures";
@@ -20,6 +20,7 @@ import type { CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
 import { useDebouncedCallback } from "@mantine/hooks";
+import { useAppStore } from "../../store/appStore";
 
 export const Visualiser3D = ({
   eventId,
@@ -43,10 +44,18 @@ export const Visualiser3D = ({
   const { mutate: upsertVisualiser } = useUpsertVisualiser();
 
   // can be either fixture ID or elemnt ID
-  const [selectedId, setSelectedElementId] = useState<string | null>(null);
+  // const [selectedId, setSelectedElementId] = useState<string | null>(null);
+  const selectedId = useAppStore((state) => state.activeObjectId);
+  const setSelectedElementId = useAppStore((state) => state.setActiveObjectId);
 
   // Register hotkeys for element selected state
   useHotkey("Escape", () => setSelectedElementId(null));
+
+  const mode = useAppStore((state) => state.transformMode);
+  const setMode = useAppStore((state) => state.setTransformMode);
+  useHotkey("W", () => setMode("translate"));
+  useHotkey("E", () => setMode("rotate"));
+  useHotkey("R", () => setMode("scale"));
 
   // Necessary for RectAreaLight to work.
   useEffect(() => {
@@ -227,7 +236,7 @@ export const Visualiser3D = ({
                   fixtures={fixtures}
                   stageElements={stageElements}
                   selectedElementId={selectedId}
-                  onFixtureSelect={onSelectElement}
+                  onElementSelect={onSelectElement}
                   cameraRef={cameraControlRef}
                 />
               </Canvas>
@@ -243,6 +252,41 @@ export const Visualiser3D = ({
                   Save view{" "}
                 </Button>
               </Group>
+
+              {/* Selected element controls */}
+              <Stack style={{ position: "absolute", top: "1rem", right: "1rem" }}>
+                <SegmentedControl
+                  disabled={!selectedId}
+                  data={[
+                    {
+                      value: "translate",
+                      label: (
+                        <Group gap="xs" align="center" wrap="nowrap">
+                          <Kbd>W</Kbd> Translate
+                        </Group>
+                      ),
+                    },
+                    {
+                      value: "rotate",
+                      label: (
+                        <Group gap="xs" align="center" wrap="nowrap">
+                          <Kbd>E</Kbd> Rotate
+                        </Group>
+                      ),
+                    },
+                    {
+                      value: "scale",
+                      label: (
+                        <Group gap="xs" align="center" wrap="nowrap">
+                          <Kbd>R</Kbd> Scale
+                        </Group>
+                      ),
+                    },
+                  ]}
+                  value={mode}
+                  onChange={setMode}
+                ></SegmentedControl>
+              </Stack>
             </Box>
           </MantineProvider>
         </AspectRatio>

@@ -24,7 +24,7 @@ export const StagePreview3D = ({
   stageElements,
   cameraRef,
   selectedElementId,
-  onFixtureSelect,
+  onElementSelect: onFixtureSelect,
   // onFixtureChange,
 }: {
   environment: Visualiser3DEnvironment;
@@ -33,7 +33,7 @@ export const StagePreview3D = ({
   selectedElementId?: string | null;
 
   cameraRef?: React.RefCallback<CameraControls | null>;
-  onFixtureSelect?: (fixtureId: string) => void;
+  onElementSelect?: (fixtureId: string) => void;
   // onFixtureChange?: (fixtureId: string, newProps: unknown) => void;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);

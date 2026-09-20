@@ -1,11 +1,16 @@
 import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
 
+export type VisualiserTransformMode = "translate" | "rotate" | "scale";
+
 export interface VisualiserSlice {
   // --- Scope: EditVisualisation ---
   activeObjectId: string | null; // which object is selected in the preview
   isSelected: (id: string) => boolean; // whether the given id is `activeObject`
   setActiveObjectId: (id: string | null) => void; // set the active object id (for selection)
+
+  transformMode: VisualiserTransformMode;
+  setTransformMode: (mode: VisualiserTransformMode) => void;
 
   previewFixtureId: string | null; // which fixture we are currently editing the position mappings of
   setPreviewFixtureId: (id: string | null) => void; // set the fixture we are currently editing the position mappings of
@@ -21,6 +26,9 @@ export interface VisualiserSlice {
 export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = (set, get) => ({
   activeObjectId: null,
   setActiveObjectId: (id: string | null) => set({ activeObjectId: id }),
+
+  transformMode: "translate",
+  setTransformMode: (mode) => set({ transformMode: mode }),
 
   previewFixtureId: null,
   setPreviewFixtureId: (id: string | null) => set({ previewFixtureId: id }),

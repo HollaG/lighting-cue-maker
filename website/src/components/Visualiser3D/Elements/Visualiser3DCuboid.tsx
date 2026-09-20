@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import type { Visualiser3DCuboidType } from "../../../types/visualiser3d";
 
 import * as THREE from "three";
-import { useHotkey } from "@tanstack/react-hotkeys";
 import { TransformControls } from "@react-three/drei";
+import { useAppStore } from "../../../store/appStore";
 
 export const Visualiser3DCuboid = ({
   cuboid,
@@ -18,14 +18,7 @@ export const Visualiser3DCuboid = ({
 }) => {
   const meshRef = useRef<THREE.Mesh | null>(null);
 
-  const [mode, setMode] = useState<"translate" | "rotate" | "scale">("translate");
-
-  // useHotkey("T", () => setMode("translate"));
-  // useHotkey("R", () => setMode("rotate"));
-
-  useHotkey("W", () => setMode("translate"));
-  useHotkey("E", () => setMode("rotate"));
-  useHotkey("R", () => setMode("scale"));
+  const mode = useAppStore((state) => state.transformMode);
 
   return (
     <TransformControls mode={mode}>
