@@ -24,6 +24,9 @@ export const StagePreview3D = ({
   // onFixtureChange,
   updateStageElement,
   gui,
+
+  isStatic = false,
+  onFixtureSelect,
 }: {
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
@@ -32,10 +35,15 @@ export const StagePreview3D = ({
 
   cameraRef?: React.RefCallback<CameraControls | null>;
 
+  /** Only provided when static is false. Both are never provided together. */
   onObjectSelect?: (objectId: string) => void;
   updateStageElement: (newElement: Visualiser3DObject) => void;
   gui: GUI | null;
-  // onFixtureChange?: (fixtureId: string, newProps: unknown) => void;
+
+  // For static only
+  isStatic?: boolean;
+  /** Only provided when static is true. Both are never provided together. */
+  onFixtureSelect?: (_fixtureId: string, fixtureGroupId: string) => void;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
 
@@ -74,27 +82,33 @@ export const StagePreview3D = ({
       <ambientLight intensity={environment.ambientLight} />
 
       {/*  */}
-      <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
+      {/* <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
         <boxGeometry args={[1.2, 1.75, 1.2]} />
         <meshStandardMaterial color="#8AC" />
-      </mesh>
+      </mesh> */}
 
       {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
         <sphereGeometry args={[3, 32, 16]} />
         <meshPhongMaterial color="#CA8" />
       </mesh> */}
-
+      {/* 
       <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
         <Helper type={THREE.SpotLightHelper} />
-      </spotLight>
+      </spotLight> */}
 
       {pars.map((fixture) => (
         <Visualiser3DParLight
           key={fixture.id}
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
-          onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
-          onChange={onChange}
+          onSelect={
+            onFixtureSelect
+              ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
+              : onObjectSelect
+                ? () => onObjectSelect(fixture.id)
+                : () => {}
+          }
+          onChange={isStatic ? () => {} : onChange}
           gui={gui}
         />
       ))}
@@ -103,8 +117,15 @@ export const StagePreview3D = ({
           key={fixture.id}
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
-          onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
-          onChange={onChange}
+          onSelect={
+            onFixtureSelect
+              ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
+              : onObjectSelect
+                ? () => onObjectSelect(fixture.id)
+                : () => {}
+          }
+          onChange={isStatic ? () => {} : onChange}
+
           gui={gui}
         />
       ))}
@@ -113,9 +134,16 @@ export const StagePreview3D = ({
           key={fixture.id}
           fixture={fixture}
           isSelected={selectedElementId === fixture.id}
-          onSelect={() => onObjectSelect && onObjectSelect(fixture.id)}
+          onSelect={
+            onFixtureSelect
+              ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
+              : onObjectSelect
+                ? () => onObjectSelect(fixture.id)
+                : () => {}
+          }
 
-          onChange={onChange}
+          onChange={isStatic ? () => {} : onChange}
+
           gui={gui}
         />
       ))}
@@ -127,7 +155,7 @@ export const StagePreview3D = ({
           isSelected={selectedElementId === cuboid.id}
           onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
           // onChange={onChange}
-          onChange={updateStageElement}
+          onChange={isStatic ? () => {} : updateStageElement}
           gui={gui}
         />
       ))}
@@ -138,7 +166,7 @@ export const StagePreview3D = ({
           human={human}
           isSelected={selectedElementId === human.id}
           onSelect={() => onObjectSelect && onObjectSelect(human.id)}
-          onChange={updateStageElement}
+          onChange={isStatic ? () => {} : updateStageElement}
           gui={gui}
         />
       ))}

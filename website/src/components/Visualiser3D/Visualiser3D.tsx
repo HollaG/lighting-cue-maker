@@ -37,6 +37,7 @@ import { useAppStore } from "../../store/appStore";
 import { CardBase } from "../Cues/CardBase";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { GUI } from "lil-gui";
+import type { FixtureGroupsAssignment } from "../../types/cues";
 
 export const Visualiser3D = ({
   eventId,
@@ -406,6 +407,162 @@ export const Visualiser3D = ({
             cameraRef={_cameraControlRef}
           />
         }
+      </Box>
+    </Flex>
+  );
+};
+
+/**
+ * A version of the Visualiser that does not allow for editing.
+ * However, it does allow for camera movement.
+ *
+ * This is to be used within cues and within the run page.
+ */
+export const StaticVisualiser3D = ({
+  visualiser,
+  fixtures,
+  // fixtureGroups,
+  fixtureGroupsAssignment,
+  // controls,
+
+  // Callback to open the relevant fixture group when something is selected
+  activeFixtureGroupId,
+  onFixtureSelect,
+
+  isLoading,
+  isBlackout = false,
+  controls,
+}: {
+  visualiser: Visualiser;
+  fixtures: Fixture[];
+  // fixtureGroups: FixtureGroup[];
+  fixtureGroupsAssignment: FixtureGroupsAssignment;
+  // controls: Visualiser3DControls;
+
+  // Callback to open the relevant fixture group when something is selected
+  activeFixtureGroupId?: string | null;
+  onFixtureSelect: (fixtureId: string, fixtureGroupId: string) => void;
+
+  isLoading: boolean;
+  isBlackout?: boolean;
+
+  controls?: React.ReactNode;
+}) => {
+  const selectedObjectId = useAppStore((state) => state.activeObjectId);
+
+  // Controls (todo: save in state)
+  const [environment, setEnvironment] = useState<Visualiser3DEnvironment>({
+    haze: 0.5,
+    ambientLight: 0.5,
+  });
+
+  const _cameraControlRef = useRef<CameraControls | null>(null);
+
+  // Use a callback ref here so we can trigger the position setting only after that component has been loaded
+  const cameraControlRef = useCallback((node: CameraControls | null) => {
+    if (node) {
+      _cameraControlRef.current = node;
+      console.log("camera control ref set to", node);
+      if (visualiser.defaultCameraView) {
+        const camera = node;
+        _setCameraPosition(camera, visualiser.defaultCameraView);
+      }
+    }
+  }, []);
+
+  /**
+   * Reset the camera to the last saved position
+   */
+  const onResetViewport = () => {
+    if (_cameraControlRef.current) {
+      if (visualiser.defaultCameraView) {
+        const camera = _cameraControlRef.current;
+        _setCameraPosition(camera, visualiser.defaultCameraView, true);
+      }
+    }
+  };
+
+  /**
+   * Helper to set the camera position to a certain view.
+   * @param camera
+   * @param view
+   * @param animate
+   */
+  const _setCameraPosition = (camera: CameraControls, view: Visualiser3DCameraView, animate?: boolean) => {
+    const [x, y, z] = view.position;
+    const [tx, ty, tz] = view.target;
+    camera.setLookAt(x, y, z, tx, ty, tz, animate);
+  };
+
+  return (
+    <Flex className={classes["preview-container"]}>
+      <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
+        <Group align="start">
+          <AspectRatio flex={1} ratio={4 / 3}>
+            <MantineProvider
+              forceColorScheme="dark"
+              getRootElement={() => document.getElementById("preview-viewer") || document.body}
+            >
+              <Box
+                id="preview-viewer"
+                className={classes["preview-viewer"]}
+                // ref={containerRef}
+                style={{ position: "relative", width: "100%", height: "100%" }}
+              >
+                <Canvas
+                  shadows
+                  camera={{
+                    position: visualiser.defaultCameraView?.position || [0, 2, 5],
+                    fov: 70,
+                    near: 0.1,
+                    far: 100,
+                  }}
+
+                  onMouseDown={(event) => {
+                    // Prevent browser middle-click autoscrolling.
+                    if (event.button === 1) {
+                      event.preventDefault();
+                    }
+                  }}
+                  onAuxClick={(event) => {
+                    if (event.button === 1) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <StagePreview3D
+                    environment={environment}
+                    fixtures={fixtures}
+                    stageElements={visualiser.objects3D || []}
+                    selectedElementId={selectedObjectId}
+                    onObjectSelect={undefined} // noop
+                    cameraRef={cameraControlRef}
+                    onFixtureSelect={onFixtureSelect}
+
+                    updateStageElement={() => {}} // noop
+                    gui={null} // no GUI for static
+
+                    isStatic
+                  />
+                </Canvas>
+
+                <Box></Box>
+                <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
+                  <Button size="xs" onClick={onResetViewport} variant="outline" color="gray">
+                    {" "}
+                    Reset view
+                  </Button>
+                </Group>
+              </Box>
+            </MantineProvider>
+          </AspectRatio>
+          {controls && (
+            <Box className={classes["preview-controls"]}>
+              {/* <VisualiserControls stageElements={stageElements} fixtureGroups={fixtureGroups} stageRef={stageRef} /> */}
+              {controls}
+            </Box>
+          )}
+        </Group>
       </Box>
     </Flex>
   );
