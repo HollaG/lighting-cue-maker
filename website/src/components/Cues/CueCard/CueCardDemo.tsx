@@ -67,6 +67,7 @@ const createCustomCue = (fixtureGroups: FixtureGroupConfiguration[]): Cue => {
     createdAt: now,
     updatedAt: now,
     deletedAt: now,
+    transition: { holdTimeMs: 0, transitionTimeMs: 0 },
   };
 };
 

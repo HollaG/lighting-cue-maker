@@ -50,6 +50,14 @@ export const Visualiser3DBarLight = ({
       if (mesh) onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
     },
   });
+
+  // Custom logic to draw
+  // As the bars are using rectarealight which is quite low-power, we need to multiply the intensity.
+  // Colour represents the colour of the light, in hex format.
+  const intensity = isSelected && !viewOnly ? 100 : intensityAttribute ? intensityAttribute * 1.5 : 0;
+  // opacity is our placeholder for beam visibility
+  const colour = colourAttribute?.hex || "#ffffff";
+
   return (
     <>
       <mesh
@@ -74,8 +82,8 @@ export const Visualiser3DBarLight = ({
             rotation={[Math.PI / 2, 0, Math.PI / 2]}
             width={0.07}
             height={1}
-            intensity={(intensityAttribute ?? 100) * 0.2}
-            color={colourAttribute?.hex ?? "#ffffff"}
+            intensity={intensity}
+            color={colour}
           >
             <Helper type={RectAreaLightHelper} />
           </rectAreaLight>

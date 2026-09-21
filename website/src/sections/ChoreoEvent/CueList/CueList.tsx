@@ -113,6 +113,7 @@ export const CueList = memo(
                   createdAt: new Date(),
                   updatedAt: new Date(),
                   deletedAt: new Date(),
+                  transition: { holdTimeMs: 0, transitionTimeMs: 0 },
                 }}
                 cueNumber={0}
                 isCueSelected={false}
@@ -135,6 +136,7 @@ export const CueList = memo(
                   createdAt: new Date(),
                   updatedAt: new Date(),
                   deletedAt: new Date(),
+                  transition: { holdTimeMs: 0, transitionTimeMs: 0 },
                 }}
                 cueNumber={0}
                 isCueSelected={false}
@@ -157,6 +159,7 @@ export const CueList = memo(
                   createdAt: new Date(),
                   updatedAt: new Date(),
                   deletedAt: new Date(),
+                  transition: { holdTimeMs: 0, transitionTimeMs: 0 },
                 }}
                 cueNumber={0}
                 isCueSelected={false}

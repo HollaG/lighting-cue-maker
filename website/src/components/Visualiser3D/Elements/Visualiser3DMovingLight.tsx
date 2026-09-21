@@ -54,12 +54,7 @@ export const Visualiser3DMovingLight = ({
     isSelected: isSelected && !viewOnly,
     title: fixture.name.trim() || "Moving head",
     addCustomControls: (folder) => {
-      folder
-        .addFolder("Beam")
-        .add(beamControls, "angle", 1, 180, 1)
-        .name("Full angle")
-        .onChange(setBeamAngle)
-        .listen();
+      folder.addFolder("Beam").add(beamControls, "angle", 1, 180, 1).name("Full angle").onChange(setBeamAngle).listen();
     },
     onFinishChange: () => {
       if (!mesh) return;
@@ -69,6 +64,14 @@ export const Visualiser3DMovingLight = ({
       });
     },
   });
+
+  // Custom logic to draw
+  // Intensity represents the literal intensity here. 0-100, don't need to map.
+  // Colour represents the colour of the light, in hex format.
+  const intensity = isSelected && !viewOnly ? 100 : intensityAttribute || 0;
+  // opacity is our placeholder for beam visibility
+  const opacity = isSelected && !viewOnly ? 4 : intensityAttribute ? 4 : 0;
+  const colour = colourAttribute?.hex || "#ffffff";
 
   return (
     <>
@@ -91,12 +94,13 @@ export const Visualiser3DMovingLight = ({
           distance={20}
           position={[0, 0.052, 0]}
           target={spotlightTarget}
-          intensity={isSelected ? 200 : 0}
+          intensity={intensity}
           angle={THREE.MathUtils.degToRad(beamAngle / 2)}
           penumbra={0.5}
           castShadow
           volumetric
-          opacity={isSelected ? 4 : 0}
+          opacity={opacity}
+          color={colour}
           // debug={isSelected}
         ></SpotLight>
         <primitive object={spotlightTarget} position={[0, 1, 0]} />

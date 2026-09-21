@@ -1,21 +1,8 @@
-import {
-  AspectRatio,
-  Box,
-  Button,
-  Card,
-  Flex,
-  Group,
-  Kbd,
-  MantineProvider,
-  SegmentedControl,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { AspectRatio, Box, Button, Flex, Group, Kbd, MantineProvider, SegmentedControl, Stack } from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
 import type { Fixture } from "../../types/fixtures";
-import type { FixtureGroupConfiguration } from "../../types/types";
+import type { AttributeTypes, FixtureGroupConfiguration } from "../../types/types";
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { Visualiser3DControls } from "./Visualiser3DControls";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
@@ -34,10 +21,8 @@ import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
 import { useDebouncedCallback } from "@mantine/hooks";
 import { useAppStore } from "../../store/appStore";
-import { CardBase } from "../Cues/CardBase";
-import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { GUI } from "lil-gui";
-import type { FixtureGroupsAssignment } from "../../types/cues";
+import type { AttributeAssignment, FixtureGroupsAssignment } from "../../types/cues";
 
 export const Visualiser3D = ({
   eventId,
@@ -291,7 +276,7 @@ export const Visualiser3D = ({
                   environment={environment}
                   fixtures={fixtures}
                   stageElements={stageElements}
-                  selectedElementId={selectedObjectId}
+                  selectedElementIds={selectedObjectId ? [selectedObjectId] : undefined}
                   onObjectSelect={onObjectSelect}
                   cameraRef={cameraControlRef}
 
@@ -429,8 +414,8 @@ export const StaticVisualiser3D = ({
   activeFixtureGroupId,
   onFixtureSelect,
 
-  isLoading,
-  isBlackout = false,
+  // isLoading,
+  // isBlackout = false,
   controls,
 }: {
   visualiser: Visualiser;
@@ -448,10 +433,8 @@ export const StaticVisualiser3D = ({
 
   controls?: React.ReactNode;
 }) => {
-  const selectedObjectId = useAppStore((state) => state.activeObjectId);
-
   // Controls (todo: save in state)
-  const [environment, setEnvironment] = useState<Visualiser3DEnvironment>({
+  const [environment, _setEnvironment] = useState<Visualiser3DEnvironment>({
     haze: 0.5,
     ambientLight: 0.5,
   });
@@ -492,6 +475,39 @@ export const StaticVisualiser3D = ({
     const [x, y, z] = view.position;
     const [tx, ty, tz] = view.target;
     camera.setLookAt(x, y, z, tx, ty, tz, animate);
+  };
+
+  // Select all objects of that fixture group
+  const selectedObjectIds = activeFixtureGroupId
+    ? fixtures.filter((f) => f.fixtureGroupId === activeFixtureGroupId).map((f) => f.id)
+    : undefined;
+
+  // For view-only mode
+  const getAttributeAssignmentsOfAFixtureGroup = (fixtureGroupId: string): AttributeAssignment[] => {
+    const fixtureGroupAssignment = fixtureGroupsAssignment[fixtureGroupId];
+    if (!fixtureGroupAssignment) return [];
+
+    return Object.values(fixtureGroupAssignment.assignment);
+  };
+  const getSpecificAttributeGivenTheType = (
+    fixtureGroupId: string,
+    attributeType: string,
+  ): AttributeAssignment | undefined => {
+    console.log({ fixtureGroupId, attributeType, fixtureGroupsAssignment });
+    const assignments = getAttributeAssignmentsOfAFixtureGroup(fixtureGroupId);
+    return assignments.find((assignment) => assignment.type === attributeType);
+  };
+
+  /**
+   * Get the attributes for a given Fixture.
+   *
+   * @param fixture
+   * @param attribute
+   * @returns
+   */
+  const getAttribute = (fixture: Fixture, attribute: AttributeTypes) => {
+    const attributeAssignment = getSpecificAttributeGivenTheType(fixture.fixtureGroupId, attribute);
+    return attributeAssignment ? attributeAssignment.value[attribute] : undefined;
   };
 
   return (
@@ -536,7 +552,7 @@ export const StaticVisualiser3D = ({
                     environment={environment}
                     fixtures={fixtures}
                     stageElements={visualiser.objects3D || []}
-                    selectedElementId={selectedObjectId}
+                    selectedElementIds={selectedObjectIds}
                     onObjectSelect={undefined} // noop
                     cameraRef={cameraControlRef}
                     onFixtureSelect={onFixtureSelect}
@@ -544,7 +560,8 @@ export const StaticVisualiser3D = ({
                     updateStageElement={() => {}} // noop
                     gui={null} // no GUI for static
 
-                    isStatic
+                    isViewOnly
+                    getAttribute={getAttribute}
                   />
                 </Canvas>
 

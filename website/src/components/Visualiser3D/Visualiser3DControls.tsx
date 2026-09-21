@@ -4,11 +4,9 @@ import { Accordion, Button, Center, Collapse, Divider, Flex, Group, Menu, Slider
 import { useDeleteFixture } from "../../query/useDeleteFixture";
 import { useGetFixtures } from "../../query/useGetFixtures";
 import { useUpsertFixture } from "../../query/useUpsertFixtures";
-import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import { useAppStore } from "../../store/appStore";
 import type { UpdateFixtureReq, Fixture, FixtureType, UpsertFixtureReq } from "../../types/fixtures";
 import type { Visualiser3DEnvironment, Visualiser3DObject, Visualiser3DObjectTypes } from "../../types/visualiser3d";
-import type { PerspectiveCamera } from "three";
 import type { CameraControls } from "@react-three/drei";
 
 interface ObjectMenuProps {
@@ -262,7 +260,6 @@ const VisualiserFixtureSection = ({
   const setSelectedElementId = useAppStore((state) => state.setActiveObjectId);
 
   const { fixtures } = useGetFixtures({ fixtureGroupId: fixtureGroup.id });
-  const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
 
   const { isPending: isCreateFixturePending, mutateAsync: upsertFixture } = useUpsertFixture();
 
@@ -346,22 +343,22 @@ const VisualiserFixtureSection = ({
   // shared
   const previewFixtureId = useAppStore((state) => state.previewFixtureId);
   const setPreviewFixtureId = useAppStore((state) => state.setPreviewFixtureId);
-  const previewPositionId = useAppStore((state) => state.previewPositionId);
-  const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
-  const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
+  // const previewPositionId = useAppStore((state) => state.previewPositionId);
+  // const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
+  // const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
 
   const [isEditingSpecialAttributes, setIsEditingSpecialAttributes] = useState(false);
 
-  const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
-    // return (
-    //   fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[positionOptionId]?.[fixtureId] ?? {
-    //     pan: 0,
-    //     tilt: 0,
-    //   }
-    // );
+  // const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
+  //   // return (
+  //   //   fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[positionOptionId]?.[fixtureId] ?? {
+  //   //     pan: 0,
+  //   //     tilt: 0,
+  //   //   }
+  //   // );
 
-    return { pan: 0, tilt: 0 }; // Placeholder
-  };
+  //   return { pan: 0, tilt: 0 }; // Placeholder
+  // };
 
   // const onPositionAttributeInput = (
   //   fixtureId: string,
@@ -479,7 +476,7 @@ const VisualiserFixtureSection = ({
                 <Collapse expanded={isEditingSpecialAttributes && previewFixtureId === fixture.id}>
                   <Stack>
                     <Text fw="bold"> Positions </Text>
-                    {presetPositionOptions.map((option, index) => (
+                    {presetPositionOptions.map((option) => (
                       <Group key={option.id} style={{ flexWrap: "nowrap" }}>
                         {/* <Text style={{ flexShrink: 1 }}>
                           {index + 1}. {option.name}

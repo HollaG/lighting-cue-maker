@@ -118,7 +118,13 @@ export const CueContents = ({
   }
 
   if (cue.cueConfig.mode === "normal") {
-    const enabledGroups = cue.cueConfig.enabledGroups;
+    const enabledGroupIds = cue.cueConfig.enabledGroups;
+    const enabledFixtureGroups = fixtureGroups.filter((group) => enabledGroupIds.includes(group.id));
+    const disabledFixtureGroups = fixtureGroups.filter((group) => !enabledGroupIds.includes(group.id));
+    const enabledFixtureGroupAssignments = { ...cue.assignments };
+    for (const groupId of disabledFixtureGroups.map((group) => group.id)) {
+      delete enabledFixtureGroupAssignments[groupId]; // ignore disabled groups
+    }
 
     if (viewMode === "Table") {
       return (
@@ -145,8 +151,6 @@ export const CueContents = ({
     }
 
     if (viewMode === "2D View") {
-      const enabledFixtureGroups = fixtureGroups.filter((group) => enabledGroups.includes(group.id));
-      const disabledFixtureGroups = fixtureGroups.filter((group) => !enabledGroups.includes(group.id));
       return (
         <Box mb="md" data-cursor-anchor={`fixture-group-${cue.id}`}>
           {visualiser ? (
@@ -157,7 +161,7 @@ export const CueContents = ({
               visualiser={visualiser}
               fixtures={fixtures}
 
-              fixtureGroupsAssignment={cue.assignments}
+              fixtureGroupsAssignment={enabledFixtureGroupAssignments}
 
               activeFixtureGroupId={activeFixtureGroupId}
               onFixtureSelect={onFixtureSelect}
@@ -284,14 +288,14 @@ export const CueContents = ({
     }
 
     if (viewMode === "3D View") {
-      const enabledFixtureGroups = fixtureGroups.filter((group) => enabledGroups.includes(group.id));
-      const disabledFixtureGroups = fixtureGroups.filter((group) => !enabledGroups.includes(group.id));
+      const enabledFixtureGroups = fixtureGroups.filter((group) => enabledGroupIds.includes(group.id));
+      const disabledFixtureGroups = fixtureGroups.filter((group) => !enabledGroupIds.includes(group.id));
 
       return (
         <Box mb="md" data-cursor-anchor={`fixture-group-${cue.id}`}>
           {visualiser ? (
             <StaticVisualiser3D
-              fixtureGroupsAssignment={cue.assignments}
+              fixtureGroupsAssignment={enabledFixtureGroupAssignments}
               fixtures={fixtures}
               visualiser={visualiser}
               activeFixtureGroupId={activeFixtureGroupId}

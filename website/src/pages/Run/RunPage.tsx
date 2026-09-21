@@ -154,6 +154,7 @@ export const RunPage = () => {
       deletedAt: new Date(),
       id: "",
       updatedAt: new Date(),
+      transition: { holdTimeMs: 0, transitionTimeMs: 0 },
     }),
     [],
   );

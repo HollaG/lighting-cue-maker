@@ -1,7 +1,7 @@
 import CheckerTexture from "../../../assets/checker.png";
 import { useEffect } from "react";
 import * as THREE from "three";
-import { CameraControls, Helper, useTexture } from "@react-three/drei";
+import { CameraControls, useTexture } from "@react-three/drei";
 import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
 import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
@@ -13,37 +13,48 @@ import { Visualiser3DCuboid } from "../Elements/Visualiser3DCuboid";
 import { Visualiser3DDefaultHuman } from "../Elements/Visualiser3DDefaultHuman";
 import { GRID_SIZE, PLANE_SIZE } from "../../../utils/visualiser";
 import type { GUI } from "lil-gui";
+import {
+  AttributeTypes,
+  type ColourOption,
+  type PresetIntensityOption,
+  type PresetPositionOption,
+} from "../../../types/types";
 
 export const StagePreview3D = ({
   environment,
   fixtures,
   stageElements,
   cameraRef,
-  selectedElementId,
+  selectedElementIds,
   onObjectSelect: onObjectSelect,
   // onFixtureChange,
   updateStageElement,
   gui,
 
-  isStatic = false,
+  isViewOnly = false,
   onFixtureSelect,
+  getAttribute,
 }: {
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
   stageElements: Visualiser3DObject[];
-  selectedElementId?: string | null;
+  selectedElementIds?: string[];
 
   cameraRef?: React.RefCallback<CameraControls | null>;
 
-  /** Only provided when static is false. Both are never provided together. */
+  /** Only provided when ViewOnly is false. Both are never provided together. */
   onObjectSelect?: (objectId: string) => void;
   updateStageElement: (newElement: Visualiser3DObject) => void;
   gui: GUI | null;
 
-  // For static only
-  isStatic?: boolean;
-  /** Only provided when static is true. Both are never provided together. */
+  // For view-only mode.
+  isViewOnly?: boolean;
+  /** Only provided when ViewOnly is true. Both are never provided together. */
   onFixtureSelect?: (_fixtureId: string, fixtureGroupId: string) => void;
+  getAttribute?: (
+    fixture: Fixture,
+    attribute: AttributeTypes,
+  ) => string | number | boolean | string[] | ColourOption | PresetPositionOption | null | undefined;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
 
@@ -100,7 +111,7 @@ export const StagePreview3D = ({
         <Visualiser3DParLight
           key={fixture.id}
           fixture={fixture}
-          isSelected={selectedElementId === fixture.id}
+          isSelected={!!selectedElementIds?.includes(fixture.id)}
           onSelect={
             onFixtureSelect
               ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
@@ -108,15 +119,22 @@ export const StagePreview3D = ({
                 ? () => onObjectSelect(fixture.id)
                 : () => {}
           }
-          onChange={isStatic ? () => {} : onChange}
+          onChange={isViewOnly ? () => {} : onChange}
           gui={gui}
+
+          viewOnly={isViewOnly}
+
+          colourAttribute={getAttribute?.(fixture, AttributeTypes.PRESET_COLOUR) as ColourOption | undefined}
+          intensityAttribute={
+            getAttribute?.(fixture, AttributeTypes.PRESET_INTENSITY) as PresetIntensityOption | undefined
+          }
         />
       ))}
       {bars.map((fixture) => (
         <Visualiser3DBarLight
           key={fixture.id}
           fixture={fixture}
-          isSelected={selectedElementId === fixture.id}
+          isSelected={!!selectedElementIds?.includes(fixture.id)}
           onSelect={
             onFixtureSelect
               ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
@@ -124,16 +142,22 @@ export const StagePreview3D = ({
                 ? () => onObjectSelect(fixture.id)
                 : () => {}
           }
-          onChange={isStatic ? () => {} : onChange}
+          onChange={isViewOnly ? () => {} : onChange}
 
           gui={gui}
+
+          viewOnly={isViewOnly}
+          colourAttribute={getAttribute?.(fixture, AttributeTypes.PRESET_COLOUR) as ColourOption | undefined}
+          intensityAttribute={
+            getAttribute?.(fixture, AttributeTypes.PRESET_INTENSITY) as PresetIntensityOption | undefined
+          }
         />
       ))}
       {movingHeads.map((fixture) => (
         <Visualiser3DMovingLight
           key={fixture.id}
           fixture={fixture}
-          isSelected={selectedElementId === fixture.id}
+          isSelected={!!selectedElementIds?.includes(fixture.id)}
           onSelect={
             onFixtureSelect
               ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
@@ -142,9 +166,17 @@ export const StagePreview3D = ({
                 : () => {}
           }
 
-          onChange={isStatic ? () => {} : onChange}
+          onChange={isViewOnly ? () => {} : onChange}
 
           gui={gui}
+
+          viewOnly={isViewOnly}
+
+          colourAttribute={getAttribute?.(fixture, AttributeTypes.PRESET_COLOUR) as ColourOption | undefined}
+          intensityAttribute={
+            getAttribute?.(fixture, AttributeTypes.PRESET_INTENSITY) as PresetIntensityOption | undefined
+          }
+          // TODO: position
         />
       ))}
 
@@ -152,11 +184,13 @@ export const StagePreview3D = ({
         <Visualiser3DCuboid
           key={cuboid.id}
           cuboid={cuboid}
-          isSelected={selectedElementId === cuboid.id}
+          isSelected={!!selectedElementIds?.includes(cuboid.id)}
           onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
           // onChange={onChange}
-          onChange={isStatic ? () => {} : updateStageElement}
+          onChange={isViewOnly ? () => {} : updateStageElement}
           gui={gui}
+
+          // viewOnly={isViewOnly}
         />
       ))}
 
@@ -164,10 +198,12 @@ export const StagePreview3D = ({
         <Visualiser3DDefaultHuman
           key={human.id}
           human={human}
-          isSelected={selectedElementId === human.id}
+          isSelected={!!selectedElementIds?.includes(human.id)}
           onSelect={() => onObjectSelect && onObjectSelect(human.id)}
-          onChange={isStatic ? () => {} : updateStageElement}
+          onChange={isViewOnly ? () => {} : updateStageElement}
           gui={gui}
+
+          // viewOnly={isViewOnly}
         />
       ))}
 
