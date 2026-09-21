@@ -170,7 +170,9 @@ const VisualiserObjectSection = ({
                 style={{
                   backgroundColor:
                     selectedElementId === obj.id ? "light-dark(yellow, var(--dark-yellow))" : "transparent",
+                  cursor: "pointer",
                 }}
+                onClick={() => useAppStore.getState().setActiveObjectId(obj.id)}
               >
                 {itemLabel} {index + 1}
               </Text>
@@ -378,7 +380,9 @@ const VisualiserFixtureSection = ({
                   style={{
                     backgroundColor:
                       selectedElementId === fixture.id ? "light-dark(yellow, var(--dark-yellow))" : "transparent",
+                    cursor: "pointer",
                   }}
+                  onClick={() => useAppStore.getState().setActiveObjectId(fixture.id)}
                 >
                   {getFixtureTextLabel(fixture, index)}
                 </Text>

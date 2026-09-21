@@ -16,6 +16,7 @@ interface StaticObjectMenuProps extends ObjectMenuProps {}
 interface EditableObjectMenuProps extends ObjectMenuProps {
   onDeleteElement: (elementId: string) => void;
   onUpdateElement: (updatedElement: Visualiser3DObject) => void;
+  onDuplicateElement: (elementId: string) => void;
 }
 
 const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
@@ -93,7 +94,7 @@ const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
             <Menu.CheckboxItem>Fill</Menu.CheckboxItem>
             <Menu.Item>Change colour</Menu.Item>
             <Menu.Divider /> */}
-
+            <Menu.Item onClick={() => props.onDuplicateElement(obj.id)}>Duplicate</Menu.Item>
             <Menu.Item color="red" onClick={() => props.onDeleteElement(obj.id)}>
               Delete
             </Menu.Item>
@@ -115,6 +116,7 @@ export const Visualiser3DControls = ({
 
   stageElements,
   onAddElement,
+  onDuplicateElement,
   onUpdateElement,
   onDeleteElement,
 }: {
@@ -131,6 +133,7 @@ export const Visualiser3DControls = ({
   stageElements: Visualiser3DObject[];
   onAddElement?: (newElementType: Visualiser3DObjectTypes) => void;
   onUpdateElement?: (updatedElement: Visualiser3DObject) => void;
+  onDuplicateElement?: (elementId: string) => void;
   onDeleteElement?: (elementId: string) => void;
 }) => {
   const [fixtureAccordionValue, setFixtureAccordionValue] = useState<string | null>(null);
@@ -203,6 +206,7 @@ export const Visualiser3DControls = ({
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
               setStageElementAccordionValue={setStageElementAccordionValue}
+              onDuplicateElement={onDuplicateElement}
             />
             <VisualiserObjectSection
               key="humans"
@@ -215,6 +219,7 @@ export const Visualiser3DControls = ({
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
               setStageElementAccordionValue={setStageElementAccordionValue}
+              onDuplicateElement={onDuplicateElement}
             />
           </Accordion>
         </>
@@ -244,7 +249,7 @@ const VisualiserFixtureSection = ({
   fixtureGroup,
   index,
   cameraRef,
-  // setFixtureAccordionValue,
+  setFixtureAccordionValue,
   // stageRef,
   // visualiser,
   // eventId,
@@ -295,13 +300,25 @@ const VisualiserFixtureSection = ({
     }
   };
 
-  // If the selectedElementId is IN this fixture group, expand it:
+  const onDuplicateFixture = async (fixture: Fixture) => {
+    const newFixture: UpsertFixtureReq = {
+      ...fixture,
+      name: `${fixture.name} (copy)`,
+      fixtureGroupId: fixture.fixtureGroupId,
+    };
 
-  // useEffect(() => {
-  //   if (fixtures.some((fixture) => fixture.id === selectedElementId)) {
-  //     setFixtureAccordionValue(fixtureGroup.id);
-  //   }
-  // }, [fixtureGroup.id, fixtures, selectedElementId, setFixtureAccordionValue]);
+    delete newFixture.id; // Remove the id so that a new one is generated
+
+    const result = await upsertFixture(newFixture);
+    setSelectedElementId(result.fixture.id);
+  };
+
+  // If the selectedElementId is IN this fixture group, expand it:
+  useEffect(() => {
+    if (fixtures.some((fixture) => fixture.id === selectedElementId)) {
+      setFixtureAccordionValue(fixtureGroup.id);
+    }
+  }, [fixtureGroup.id, fixtures, selectedElementId, setFixtureAccordionValue]);
 
   const getFixtureTextLabel = (fixture: Fixture, index: number) => {
     switch (fixture.type) {
@@ -432,7 +449,9 @@ const VisualiserFixtureSection = ({
                   style={{
                     backgroundColor:
                       selectedElementId === fixture.id ? "light-dark(yellow, var(--dark-yellow))" : "transparent",
+                    cursor: "pointer",
                   }}
+                  onClick={() => setSelectedElementId(fixture.id)}
                 >
                   {getFixtureTextLabel(fixture, index)}
                 </Text>
@@ -464,6 +483,8 @@ const VisualiserFixtureSection = ({
                       </Menu.Item>
                     )}
                     <Menu.Divider />
+                    <Menu.Item onClick={() => onDuplicateFixture(fixture)}>Duplicate</Menu.Item>
+
                     <Menu.Item color="red" onClick={() => onDeleteFixture(fixture)}>
                       Delete
                     </Menu.Item>
@@ -603,7 +624,6 @@ const VisualiserFixtureSection = ({
   );
 };
 
-// No side effects!
 const VisualiserObjectSection = ({
   title,
   itemLabel,
@@ -614,6 +634,7 @@ const VisualiserObjectSection = ({
   onDeleteElement,
   onUpdateElement,
   onAddElement,
+  onDuplicateElement,
 }: {
   title: string;
   itemLabel: string;
@@ -625,11 +646,13 @@ const VisualiserObjectSection = ({
   onAddElement?: (newElementType: Visualiser3DObjectTypes) => void;
   onDeleteElement?: (elementId: string) => void;
   onUpdateElement?: (updatedElement: Visualiser3DObject) => void;
+  onDuplicateElement?: (elementId: string) => void;
 }) => {
   // if (!objects.length) return null;
 
   // If the selectedElementId is IN this fixture group, expand it:
   const selectedElementId = useAppStore((state) => state.activeObjectId);
+  const setSelectedElementId = useAppStore((state) => state.setActiveObjectId);
 
   useEffect(() => {
     if (objects.some((obj) => obj.id === selectedElementId)) {
@@ -650,14 +673,21 @@ const VisualiserObjectSection = ({
                 style={{
                   backgroundColor:
                     selectedElementId === obj.id ? "light-dark(yellow, var(--dark-yellow))" : "transparent",
+                  cursor: "pointer",
                 }}
+                onClick={() => setSelectedElementId(obj.id)}
               >
                 {itemLabel} {index + 1}
               </Text>
 
               <Flex style={{ flex: 1 }} />
 
-              <ObjectMenu obj={obj} onDeleteElement={onDeleteElement} onUpdateElement={onUpdateElement} />
+              <ObjectMenu
+                obj={obj}
+                onDeleteElement={onDeleteElement}
+                onUpdateElement={onUpdateElement}
+                onDuplicateElement={onDuplicateElement}
+              />
             </Flex>
           ))}
           {onAddElement && (

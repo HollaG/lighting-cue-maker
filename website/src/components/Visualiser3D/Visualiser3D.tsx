@@ -259,6 +259,25 @@ export const Visualiser3D = ({
     setStageElements((prev) => prev.filter((el) => el.id !== elementId));
   }, []);
 
+  const onDuplicateElement = useCallback(
+    (elementId: string) => {
+      // first, find existing element
+      const existingElement = stageElements.find((el) => el.id === elementId);
+      if (!existingElement) {
+        console.warn("Cannot duplicate element, not found", elementId);
+      }
+
+      const newElement: Visualiser3DObject = {
+        ...existingElement!,
+        id: crypto.randomUUID(),
+      };
+
+      setStageElements((prev) => [...prev, newElement]);
+      setSelectedObjectId(newElement.id);
+    },
+    [stageElements],
+  );
+
   /** Debounce the saving of positions of stage items */
   const debouncedSave = useDebouncedCallback((objects3D: Visualiser3DObject[]) => {
     upsertVisualiser({
@@ -452,6 +471,8 @@ export const Visualiser3D = ({
             stageElements={stageElements}
             onAddElement={onAddElement}
             onDeleteElement={onDeleteElement}
+            onUpdateElement={onUpdateElement}
+            onDuplicateElement={onDuplicateElement}
 
             cameraRef={_cameraControlRef}
           />
