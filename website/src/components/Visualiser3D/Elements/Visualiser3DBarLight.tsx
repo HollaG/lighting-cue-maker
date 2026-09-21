@@ -13,6 +13,7 @@ import {
 import { useAppStore } from "../../../store/appStore";
 import type { GUI } from "lil-gui";
 import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
+import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
 
 export const Visualiser3DBarLight = ({
   fixture,
@@ -52,7 +53,6 @@ export const Visualiser3DBarLight = ({
   // As the bars are using rectarealight which is quite low-power, we need to multiply the intensity.
   // Colour represents the colour of the light, in hex format.
   const intensity = isSelected && !viewOnly ? 100 : intensityAttribute ? intensityAttribute * 1.5 : 0;
-  // opacity is our placeholder for beam visibility
   const colour = colourAttribute?.hex || "#ffffff";
 
   return (
@@ -75,6 +75,7 @@ export const Visualiser3DBarLight = ({
         {/* RectAreaLight emits along local -Z, so rotate it to face local +Y. */}
         {(isSelected || viewOnly) && (
           <rectAreaLight
+            layers-mask={VOLUMETRIC_LIGHT_MASK}
             position={[0, 0.07 / 2 + 0.0001, 0]}
             rotation={[Math.PI / 2, 0, Math.PI / 2]}
             width={0.07}
