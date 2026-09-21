@@ -13,6 +13,7 @@ import { Visualiser3DCuboid } from "../Elements/Visualiser3DCuboid";
 import { Visualiser3DDefaultHuman } from "../Elements/Visualiser3DDefaultHuman";
 import { GRID_SIZE, PLANE_SIZE } from "../../../utils/visualiser";
 import type { GUI } from "lil-gui";
+import { Visualiser3DVolumetrics } from "../Visualiser3DVolumetrics";
 import {
   AttributeTypes,
   type ColourOption,
@@ -83,6 +84,7 @@ export const StagePreview3D = ({
 
   return (
     <>
+      <Visualiser3DVolumetrics fixtures={fixtures} />
       {/* The floor */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import * as THREE from "three";
-import { SpotLight, TransformControls } from "@react-three/drei";
+import { TransformControls } from "@react-three/drei";
 import {
   convert3DPropsToFixtureRepresentation,
   getFixture3DPosition,
@@ -11,6 +11,7 @@ import {
 import { useAppStore } from "../../../store/appStore";
 import type { GUI } from "lil-gui";
 import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
+import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
 
 export const Visualiser3DMovingLight = ({
   fixture,
@@ -69,8 +70,6 @@ export const Visualiser3DMovingLight = ({
   // Intensity represents the literal intensity here. 0-100, don't need to map.
   // Colour represents the colour of the light, in hex format.
   const intensity = isSelected && !viewOnly ? 100 : intensityAttribute || 0;
-  // opacity is our placeholder for beam visibility
-  const opacity = isSelected && !viewOnly ? 4 : intensityAttribute ? 4 : 0;
   const colour = colourAttribute?.hex || "#ffffff";
 
   return (
@@ -90,7 +89,10 @@ export const Visualiser3DMovingLight = ({
         {/* Just a cylinder that is 210mm in diameter, 104mm in height. Modelled after Betopper LPC015 */}
         <cylinderGeometry args={[10.5 / 100, 10.5 / 100, 10.4 / 100, 32]} />
         <meshStandardMaterial color="#ff0000" />
-        <SpotLight
+        <spotLight
+          layers-mask={VOLUMETRIC_LIGHT_MASK}
+          // Include solid objects when shadows are rendered from the haze layer.
+          shadow-camera-layers-mask={VOLUMETRIC_LIGHT_MASK}
           distance={20}
           position={[0, 0.052, 0]}
           target={spotlightTarget}
@@ -98,11 +100,8 @@ export const Visualiser3DMovingLight = ({
           angle={THREE.MathUtils.degToRad(beamAngle / 2)}
           penumbra={0.5}
           castShadow
-          volumetric
-          opacity={opacity}
           color={colour}
-          // debug={isSelected}
-        ></SpotLight>
+        />
         <primitive object={spotlightTarget} position={[0, 1, 0]} />
       </mesh>
       {!viewOnly && isSelected && mesh && (

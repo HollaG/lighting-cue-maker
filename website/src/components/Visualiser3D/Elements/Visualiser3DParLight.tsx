@@ -1,4 +1,4 @@
-import { SpotLight, TransformControls } from "@react-three/drei";
+import { TransformControls } from "@react-three/drei";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import { useEffect, useMemo, useState } from "react";
@@ -13,6 +13,7 @@ import { useAppStore } from "../../../store/appStore";
 
 import type { GUI } from "lil-gui";
 import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
+import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
 
 export const Visualiser3DParLight = ({
   fixture,
@@ -79,8 +80,6 @@ export const Visualiser3DParLight = ({
   // Intensity represents the literal intensity here. 0-100, don't need to map.
   // Colour represents the colour of the light, in hex format.
   const intensity = isSelected && !viewOnly ? 100 : intensityAttribute || 0;
-  // opacity is our placeholder for beam visibility
-  const opacity = isSelected && !viewOnly ? 4 : intensityAttribute ? 4 : 0;
   const colour = colourAttribute?.hex || "#ffffff";
 
   return (
@@ -111,7 +110,10 @@ export const Visualiser3DParLight = ({
           {isSelected && <Helper type={THREE.SpotLightHelper} />}
         </spotLight> */}
 
-        <SpotLight
+        <spotLight
+          layers-mask={VOLUMETRIC_LIGHT_MASK}
+          // Include solid objects when shadows are rendered from the haze layer.
+          shadow-camera-layers-mask={VOLUMETRIC_LIGHT_MASK}
           distance={20}
           position={[0, 0.052, 0]}
           target={spotlightTarget}
@@ -119,13 +121,8 @@ export const Visualiser3DParLight = ({
           angle={THREE.MathUtils.degToRad(beamAngle ? beamAngle / 2 : 15)}
           penumbra={0.5}
           castShadow
-          volumetric
-          opacity={opacity}
-
           color={colour}
-
-          // debug={isSelected}
-        ></SpotLight>
+        />
 
         <primitive object={spotlightTarget} position={[0, 1, 0]} />
 

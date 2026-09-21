@@ -15,7 +15,6 @@ import type {
 } from "../../types/visualiser3d";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
-import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import type { CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
@@ -23,6 +22,7 @@ import { useDebouncedCallback } from "@mantine/hooks";
 import { useAppStore } from "../../store/appStore";
 import { GUI } from "lil-gui";
 import type { AttributeAssignment, FixtureGroupsAssignment } from "../../types/cues";
+import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
 
 export const Visualiser3D = ({
   eventId,
@@ -73,11 +73,6 @@ export const Visualiser3D = ({
   useHotkey("W", () => setMode("translate"));
   useHotkey("E", () => setMode("rotate"));
   useHotkey("R", () => setMode("scale"));
-
-  // Necessary for RectAreaLight to work.
-  useEffect(() => {
-    RectAreaLightUniformsLib.init();
-  });
 
   const onObjectSelect = (id: string) => {
     setSelectedObjectId(id);
@@ -257,7 +252,9 @@ export const Visualiser3D = ({
               style={{ position: "relative", width: "100%", height: "100%" }}
             >
               <Canvas
-                shadows
+                gl={createVisualiser3DRenderer}
+                onCreated={configureVisualiser3DRenderer}
+                shadows="percentage"
                 camera={{ position: visualiser.defaultCameraView?.position || [0, 2, 5], fov: 70, near: 0.1, far: 100 }}
 
                 onMouseDown={(event) => {
@@ -527,8 +524,9 @@ export const StaticVisualiser3D = ({
               >
                 <Canvas
                   frameloop="demand"
-
-                  shadows
+                  gl={createVisualiser3DRenderer}
+                  onCreated={configureVisualiser3DRenderer}
+                  shadows="percentage"
                   camera={{
                     position: visualiser.defaultCameraView?.position || [0, 2, 5],
                     fov: 70,

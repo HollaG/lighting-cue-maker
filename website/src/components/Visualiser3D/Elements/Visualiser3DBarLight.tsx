@@ -4,7 +4,6 @@ import type { PresetColourOption, PresetIntensityOption } from "../../../types/t
 
 import * as THREE from "three";
 import { Helper, TransformControls } from "@react-three/drei";
-import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
 import {
   convert3DPropsToFixtureRepresentation,
@@ -14,8 +13,6 @@ import {
 import { useAppStore } from "../../../store/appStore";
 import type { GUI } from "lil-gui";
 import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
-
-RectAreaLightUniformsLib.init();
 
 export const Visualiser3DBarLight = ({
   fixture,
