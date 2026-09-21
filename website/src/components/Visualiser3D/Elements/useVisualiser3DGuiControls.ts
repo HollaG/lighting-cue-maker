@@ -38,10 +38,10 @@ export const useVisualiser3DGuiControls = ({
     const objectFolder = gui.addFolder(title);
 
     for (const property of includeProperties) {
-      const positionFolder = objectFolder.addFolder(property.charAt(0).toUpperCase() + property.slice(1));
-      const x = positionFolder.add(object[property], "x", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
-      const y = positionFolder.add(object[property], "y", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
-      const z = positionFolder.add(object[property], "z", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
+      const folder = objectFolder.addFolder(property.charAt(0).toUpperCase() + property.slice(1));
+      const x = folder.add(object[property], "x", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
+      const y = folder.add(object[property], "y", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
+      const z = folder.add(object[property], "z", -PLANE_SIZE / 2, PLANE_SIZE / 2, 0.01).listen();
 
       if (property === "position") {
         x.name("x (Red) m");

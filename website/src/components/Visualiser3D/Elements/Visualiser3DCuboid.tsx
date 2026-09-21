@@ -20,7 +20,7 @@ export const Visualiser3DCuboid = ({
   onChange: (newElement: Visualiser3DCuboidType) => void;
   gui: GUI | null;
 }) => {
-  const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
+  const [mesh, setMesh] = useState<THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial> | null>(null);
 
   const mode = useAppStore((state) => state.transformMode);
 
@@ -44,6 +44,25 @@ export const Visualiser3DCuboid = ({
     title: cuboid.name || "Cuboid",
     includeProperties: ["position", "rotation", "scale"],
     onFinishChange: saveChanges,
+
+    addCustomControls: (folder) => {
+      // Add a custom control for the color property
+      const colorControl = { color: cuboid.props.color || "#8ac" };
+      folder
+        .addColor(colorControl, "color")
+        .name("Color")
+        .onChange((value: string) => {
+          if (!mesh) return;
+          mesh.material.color.set(value);
+          onChange({
+            ...cuboid,
+            props: {
+              ...cuboid.props,
+              color: value,
+            },
+          });
+        });
+    },
   });
 
   return (
@@ -73,7 +92,7 @@ export const Visualiser3DCuboid = ({
         scale={new THREE.Vector3(...cuboid.props.size)}
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#8AC" />
+        <meshStandardMaterial color={cuboid.props.color || "#8ac"} />
       </mesh>
     </>
   );
