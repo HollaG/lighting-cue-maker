@@ -21,6 +21,8 @@ type UpsertFixtureReq struct {
 	RotY      float64 `json:"rotY"`
 	RotZ      float64 `json:"rotZ"`
 	BeamAngle float64 `json:"beamAngle"`
+
+	MaxBrightness *float64 `json:"maxBrightness"`
 }
 
 // Model
@@ -42,6 +44,8 @@ type Fixture struct {
 	RotY      float64 `json:"rotY"`
 	RotZ      float64 `json:"rotZ"`
 	BeamAngle float64 `json:"beamAngle"`
+
+	MaxBrightness float64 `json:"maxBrightness" gorm:"not null;default:100"`
 
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`

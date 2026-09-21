@@ -37,17 +37,19 @@ func TestDeleteFixtureRequiresFixtureID(t *testing.T) {
 }
 
 func TestFixtureFromRequest(t *testing.T) {
+	maxBrightness := 75.0
 	req := models.UpsertFixtureReq{
-		ID:        "existing-fixture",
-		Name:      "Stage left PAR",
-		Type:      "par",
-		PosX:      1,
-		PosY:      2,
-		PosZ:      3,
-		RotX:      4,
-		RotY:      5,
-		RotZ:      6,
-		BeamAngle: 25,
+		ID:            "existing-fixture",
+		Name:          "Stage left PAR",
+		Type:          "par",
+		PosX:          1,
+		PosY:          2,
+		PosZ:          3,
+		RotX:          4,
+		RotY:          5,
+		RotZ:          6,
+		BeamAngle:     25,
+		MaxBrightness: &maxBrightness,
 	}
 
 	fixture := fixtureFromRequest(req, "fixture-group")
@@ -60,7 +62,15 @@ func TestFixtureFromRequest(t *testing.T) {
 	}
 	if fixture.PosX != req.PosX || fixture.PosY != req.PosY || fixture.PosZ != req.PosZ ||
 		fixture.RotX != req.RotX || fixture.RotY != req.RotY || fixture.RotZ != req.RotZ ||
-		fixture.BeamAngle != req.BeamAngle {
+		fixture.BeamAngle != req.BeamAngle || fixture.MaxBrightness != maxBrightness {
 		t.Fatalf("fixture transform fields were not mapped correctly: %#v", fixture)
+	}
+}
+
+func TestFixtureFromRequestDefaultsMaxBrightness(t *testing.T) {
+	fixture := fixtureFromRequest(models.UpsertFixtureReq{}, "fixture-group")
+
+	if fixture.MaxBrightness != 100 {
+		t.Fatalf("expected default max brightness 100, got %v", fixture.MaxBrightness)
 	}
 }

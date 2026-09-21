@@ -159,6 +159,9 @@ func upsertFixture(c *gin.Context) {
 	if req.BeamAngle != 0 {
 		fixture.BeamAngle = req.BeamAngle
 	}
+	if req.MaxBrightness != nil {
+		fixture.MaxBrightness = *req.MaxBrightness
+	}
 	// fixture.Name = req.Name
 	// fixture.Type = req.Type
 	// fixture.PosX = req.PosX
@@ -210,6 +213,11 @@ func deleteFixture(c *gin.Context) {
 }
 
 func fixtureFromRequest(req models.UpsertFixtureReq, fixtureGroupId string) models.Fixture {
+	maxBrightness := 100.0
+	if req.MaxBrightness != nil {
+		maxBrightness = *req.MaxBrightness
+	}
+
 	return models.Fixture{
 		FixtureGroupConfigurationUuid: fixtureGroupId,
 		Name:                          req.Name,
@@ -221,5 +229,6 @@ func fixtureFromRequest(req models.UpsertFixtureReq, fixtureGroupId string) mode
 		RotY:                          req.RotY,
 		RotZ:                          req.RotZ,
 		BeamAngle:                     req.BeamAngle,
+		MaxBrightness:                 maxBrightness,
 	}
 }

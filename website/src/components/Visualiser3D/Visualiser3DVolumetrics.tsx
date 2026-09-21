@@ -16,8 +16,8 @@ import { gaussianBlur } from "three/addons/tsl/display/GaussianBlurNode.js";
 import type { Fixture } from "../../types/fixtures";
 import { getFixture3DPosition, PLANE_SIZE } from "../../utils/visualiser";
 import { VOLUMETRIC_LIGHTING_LAYER } from "./visualiser3DRenderer";
+import type { Visualiser3DEnvironment } from "../../types/visualiser3d";
 
-const FOG_INTENSITY = 0.45;
 const RESOLUTION_SCALE = 0.25;
 const RAY_MARCHING_STEPS = 12;
 const DENOISE_STRENGTH = 0.6;
@@ -27,7 +27,13 @@ const DENOISE_STRENGTH = 0.6;
  * stops scattering behind visible surfaces; only the haze pass is blurred.
  * Resources live in an effect so Strict Mode remounts also dispose them correctly.
  */
-export const Visualiser3DVolumetrics = ({ fixtures }: { fixtures: Fixture[] }) => {
+export const Visualiser3DVolumetrics = ({
+  fixtures,
+  environment,
+}: {
+  fixtures: Fixture[];
+  environment: Visualiser3DEnvironment;
+}) => {
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   const camera = useThree((state) => state.camera);
@@ -64,7 +70,7 @@ export const Visualiser3DVolumetrics = ({ fixtures }: { fixtures: Fixture[] }) =
 
     const denoisedVolume = gaussianBlur(volumePass, float(DENOISE_STRENGTH));
     const pipeline = new RenderPipeline(renderer);
-    pipeline.outputNode = scenePass.add(denoisedVolume.mul(FOG_INTENSITY));
+    pipeline.outputNode = scenePass.add(denoisedVolume.mul(environment.haze));
     pipelineRef.current = pipeline;
     invalidate();
 
@@ -80,7 +86,7 @@ export const Visualiser3DVolumetrics = ({ fixtures }: { fixtures: Fixture[] }) =
       material.dispose();
       geometry.dispose();
     };
-  }, [gl, scene, camera, invalidate]);
+  }, [gl, scene, camera, invalidate, environment]);
 
   useEffect(() => {
     const volume = volumeRef.current;
@@ -97,7 +103,7 @@ export const Visualiser3DVolumetrics = ({ fixtures }: { fixtures: Fixture[] }) =
     bounds.getCenter(volume.position);
     bounds.getSize(volume.scale);
     invalidate();
-  }, [fixtures, gl, scene, camera, invalidate]);
+  }, [fixtures, gl, scene, camera, invalidate, environment]);
 
   // Positive priority replaces R3F's default draw, including in demand mode.
   useFrame(() => pipelineRef.current?.render(), 1);

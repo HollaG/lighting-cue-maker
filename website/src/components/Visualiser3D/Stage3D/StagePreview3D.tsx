@@ -84,7 +84,7 @@ export const StagePreview3D = ({
 
   return (
     <>
-      <Visualiser3DVolumetrics fixtures={fixtures} />
+      <Visualiser3DVolumetrics fixtures={fixtures} environment={environment} />
       {/* The floor */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />

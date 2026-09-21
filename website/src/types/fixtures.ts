@@ -21,6 +21,9 @@ export type Fixture = {
   rotZ: number;
   beamAngle: number;
 
+  /** The max brightness (%) that this fixture can get up to, benchmarked against the default value of 200 (3D) opacity=1 (2D) */
+  maxBrightness: number;
+
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

@@ -18,11 +18,12 @@ import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import type { CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
-import { useDebouncedCallback } from "@mantine/hooks";
+import { useDebouncedCallback, useDebouncedValue } from "@mantine/hooks";
 import { useAppStore } from "../../store/appStore";
 import { GUI } from "lil-gui";
 import type { AttributeAssignment, FixtureGroupsAssignment } from "../../types/cues";
 import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
+import { useDeleteFixture } from "../../query/useDeleteFixture";
 
 export const Visualiser3D = ({
   eventId,
@@ -36,10 +37,13 @@ export const Visualiser3D = ({
   visualiser: Visualiser;
 }) => {
   // Controls (todo: save in state)
-  const [environment, setEnvironment] = useState<Visualiser3DEnvironment>({
-    haze: 0.5,
-    ambientLight: 0.5,
-  });
+  const [environment, setEnvironment] = useState<Visualiser3DEnvironment>(
+    visualiser.config3D || {
+      haze: 0.5,
+      ambientLight: 0.5,
+    },
+  );
+  const [debouncedEnvironment] = useDebouncedValue(environment, 200);
 
   const [stageElements, setStageElements] = useState<Visualiser3DObject[]>(visualiser.objects3D || []);
   const guiContainerRef = useRef<HTMLDivElement>(null);
@@ -59,6 +63,7 @@ export const Visualiser3D = ({
   }, []);
 
   const { mutate: upsertVisualiser } = useUpsertVisualiser();
+  const { mutate: deleteFixture } = useDeleteFixture();
 
   // can be either fixture ID or elemnt ID
   // const [selectedId, setSelectedElementId] = useState<string | null>(null);
@@ -73,6 +78,27 @@ export const Visualiser3D = ({
   useHotkey("W", () => setMode("translate"));
   useHotkey("E", () => setMode("rotate"));
   useHotkey("R", () => setMode("scale"));
+
+  // we don't have access to the controls for fixutres here, this hotkey will be registered in the StagePreview3D
+  useHotkey("Delete", async () => {
+    console.log("delete pressed, ", selectedObjectId);
+
+    // could be an element OR a fixture
+    if (selectedObjectId) {
+      const isElement = stageElements.some((el) => el.id === selectedObjectId);
+      if (isElement) {
+        setStageElements((prev) => prev.filter((el) => el.id !== selectedObjectId));
+        setSelectedObjectId(null);
+      } else {
+        const fixture = fixtures.find((f) => f.id === selectedObjectId);
+        if (!fixture) {
+          console.warn("Selected object is not an element or a fixture", selectedObjectId);
+          return;
+        }
+        await deleteFixture({ fixtureId: fixture.id, fixtureGroupId: fixture.fixtureGroupId });
+      }
+    }
+  });
 
   const onObjectSelect = (id: string) => {
     setSelectedObjectId(id);
@@ -140,6 +166,15 @@ export const Visualiser3D = ({
     const [tx, ty, tz] = view.target;
     camera.setLookAt(x, y, z, tx, ty, tz, animate);
   };
+
+  // --- Stage environment saving ---------
+  useEffect(() => {
+    upsertVisualiser({
+      id: visualiser.id,
+      eventId,
+      config3D: debouncedEnvironment,
+    });
+  }, [debouncedEnvironment]);
 
   // --- Stage element controls ---------
   const onAddElement = (elementType: Visualiser3DObjectTypes) => {
@@ -237,6 +272,8 @@ export const Visualiser3D = ({
     debouncedSave(stageElements);
   }, [stageElements, debouncedSave]);
 
+  const isFixture = (selectedObjectId && fixtures.some((f) => f.id === selectedObjectId)) || false;
+
   return (
     <Flex className={classes["preview-container"]}>
       <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
@@ -322,6 +359,7 @@ export const Visualiser3D = ({
                           <Kbd>R</Kbd> Scale
                         </Group>
                       ),
+                      disabled: isFixture, // fixtures cannot be scaled, only moved and rotated
                     },
                   ]}
                   value={mode}
@@ -367,6 +405,35 @@ export const Visualiser3D = ({
                     </SimpleGrid>
                   </Stack>
                 </Card> */}
+
+                <Group gap="xs">
+                  <Flex flex={1} />
+                  <Button
+                    color="gray"
+                    size="xs"
+                    bg={"var(--mantine-color-dark-7)"}
+                    disabled={!selectedObjectId}
+                    onClick={() => setSelectedObjectId(null)}
+                  >
+                    <Kbd size="xs" mr="xs">
+                      ESC
+                    </Kbd>{" "}
+                    Deselect
+                  </Button>
+                  <Button
+                    color="red"
+                    size="xs"
+                    variant="light"
+                    disabled={!selectedObjectId}
+                    onClick={() => selectedObjectId && onDeleteElement(selectedObjectId)}
+                  >
+                    <Kbd size="xs" mr="xs">
+                      DEL
+                    </Kbd>{" "}
+                    Delete
+                  </Button>
+                </Group>
+
                 <Box ref={guiContainerRef} />
               </Stack>
             </Box>
@@ -431,10 +498,10 @@ export const StaticVisualiser3D = ({
   controls?: React.ReactNode;
 }) => {
   // Controls (todo: save in state)
-  const [environment, _setEnvironment] = useState<Visualiser3DEnvironment>({
+  const environment = visualiser.config3D || {
     haze: 0.5,
     ambientLight: 0.5,
-  });
+  }; // no need for state, no editing needed
 
   const _cameraControlRef = useRef<CameraControls | null>(null);
 

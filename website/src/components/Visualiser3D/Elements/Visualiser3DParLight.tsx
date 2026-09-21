@@ -1,7 +1,7 @@
 import { TransformControls } from "@react-three/drei";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import * as THREE from "three";
 import {
@@ -44,6 +44,7 @@ export const Visualiser3DParLight = ({
   // ref for lil-gui: we can't directly modify beamAngle (we need another object, then we can call `onChange` and actually update the state)
   const beamControls = useMemo(() => ({ angle: fixture.beamAngle || 15 }), []);
   const mode = useAppStore((state) => state.transformMode);
+  const setMode = useAppStore((state) => state.setTransformMode);
 
   const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
 
@@ -75,6 +76,19 @@ export const Visualiser3DParLight = ({
       });
     },
   });
+
+  // Force the fixture to not change mode
+  const oldMode = useRef(mode);
+  useEffect(() => {
+    if (!isSelected) return;
+    if (isSelected && mode === "scale") setMode(oldMode.current);
+    if (mode === "scale" && mode !== oldMode.current) {
+      // force set it back
+      setMode(oldMode.current);
+    } else {
+      oldMode.current = mode;
+    }
+  }, [mode, isSelected]);
 
   // Custom logic to draw
   // Intensity represents the literal intensity here. 0-100, don't need to map.

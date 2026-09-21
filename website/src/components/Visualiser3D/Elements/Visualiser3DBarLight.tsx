@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 
@@ -39,6 +39,7 @@ export const Visualiser3DBarLight = ({
 }) => {
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
   const mode = useAppStore((state) => state.transformMode);
+  const setMode = useAppStore((state) => state.setTransformMode);
   useVisualiser3DGuiControls({
     gui,
     object: mesh,
@@ -48,6 +49,19 @@ export const Visualiser3DBarLight = ({
       if (mesh) onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
     },
   });
+
+  // Force the fixture to not change mode
+  const oldMode = useRef(mode);
+  useEffect(() => {
+    if (!isSelected) return;
+    if (isSelected && mode === "scale") setMode(oldMode.current);
+    if (mode === "scale" && mode !== oldMode.current) {
+      // force set it back
+      setMode(oldMode.current);
+    } else {
+      oldMode.current = mode;
+    }
+  }, [mode, isSelected]);
 
   // Custom logic to draw
   // As the bars are using rectarealight which is quite low-power, we need to multiply the intensity.
