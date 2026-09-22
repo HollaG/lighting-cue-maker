@@ -5,6 +5,13 @@
 /**
  * When I click on the TransformControls and I let go, with e.g. a Cuboid behind the mouse when I let go, the Cuboid's onClick actually fires. It shouldn't be like this.
  * BTW worth noting that the onClick event for TransformControls nver fires (but the onMouseUp does)
+ *
+ * Two separate event systems were responding to the same mouse gesture:
+ * 1. TransformControls uses its own DOM listeners and raycasting to detect its handles. Releasing a handle fires its custom mouseUp event.
+ * 2. React Three Fiber separately receives the browser’s subsequent click, raycasts the scene, and calls the cuboid’s onClick.
+ * The gizmo handling the drag doesn’t automatically consume that browser click. Visually, it appears above the cuboid, but that doesn’t make it block R3F’s event handling.
+ * Your onClick on <TransformControls> didn’t help because Drei attaches that prop to a separate group—not the gizmo. With object={mesh} and no children, that group has nothing to raycast against.
+ * The fix explicitly connects those two systems: when the gizmo handles a press, we intercept its resulting browser click before R3F processes it.
  */
 
 import { TransformControls, type TransformControlsProps } from "@react-three/drei";
