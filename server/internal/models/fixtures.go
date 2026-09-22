@@ -13,14 +13,14 @@ type UpsertFixtureReq struct {
 	Name           string `json:"name"`
 	Type           string `json:"type"` // 'par' 'bar' 'moving_head'
 
-	PosX float64 `json:"posX"`
-	PosY float64 `json:"posY"`
-	PosZ float64 `json:"posZ"`
+	PosX *float64 `json:"posX"`
+	PosY *float64 `json:"posY"`
+	PosZ *float64 `json:"posZ"`
 
-	RotX      float64 `json:"rotX"`
-	RotY      float64 `json:"rotY"`
-	RotZ      float64 `json:"rotZ"`
-	BeamAngle float64 `json:"beamAngle"`
+	RotX      *float64 `json:"rotX"`
+	RotY      *float64 `json:"rotY"`
+	RotZ      *float64 `json:"rotZ"`
+	BeamAngle float64  `json:"beamAngle"`
 
 	MaxBrightness *float64 `json:"maxBrightness"`
 }

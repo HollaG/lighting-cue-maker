@@ -2,7 +2,7 @@ import type { CircleConfig } from "konva/lib/shapes/Circle";
 import type { LineConfig } from "konva/lib/shapes/Line";
 import type { RectConfig } from "konva/lib/shapes/Rect";
 import type { TextConfig } from "konva/lib/shapes/Text";
-import type { AttributeTypes } from "./types";
+import { AttributeTypes } from "./types";
 import type { PositionOption } from "./fixtures";
 import type { Visualiser3DCameraView, Visualiser3DEnvironment, Visualiser3DObject } from "./visualiser3d";
 

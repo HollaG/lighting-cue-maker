@@ -138,24 +138,7 @@ func upsertFixture(c *gin.Context) {
 	if req.Type != "" {
 		fixture.Type = req.Type
 	}
-	if req.PosX != 0 {
-		fixture.PosX = req.PosX
-	}
-	if req.PosY != 0 {
-		fixture.PosY = req.PosY
-	}
-	if req.PosZ != 0 {
-		fixture.PosZ = req.PosZ
-	}
-	if req.RotX != 0 {
-		fixture.RotX = req.RotX
-	}
-	if req.RotY != 0 {
-		fixture.RotY = req.RotY
-	}
-	if req.RotZ != 0 {
-		fixture.RotZ = req.RotZ
-	}
+	applyFixtureTransform(&fixture, req)
 	if req.BeamAngle != 0 {
 		fixture.BeamAngle = req.BeamAngle
 	}
@@ -164,12 +147,6 @@ func upsertFixture(c *gin.Context) {
 	}
 	// fixture.Name = req.Name
 	// fixture.Type = req.Type
-	// fixture.PosX = req.PosX
-	// fixture.PosY = req.PosY
-	// fixture.PosZ = req.PosZ
-	// fixture.RotX = req.RotX
-	// fixture.RotY = req.RotY
-	// fixture.RotZ = req.RotZ
 	// fixture.BeamAngle = req.BeamAngle
 
 	if result := database.DB().Save(&fixture); result.Error != nil {
@@ -218,17 +195,35 @@ func fixtureFromRequest(req models.UpsertFixtureReq, fixtureGroupId string) mode
 		maxBrightness = *req.MaxBrightness
 	}
 
-	return models.Fixture{
+	fixture := models.Fixture{
 		FixtureGroupConfigurationUuid: fixtureGroupId,
 		Name:                          req.Name,
 		Type:                          req.Type,
-		PosX:                          req.PosX,
-		PosY:                          req.PosY,
-		PosZ:                          req.PosZ,
-		RotX:                          req.RotX,
-		RotY:                          req.RotY,
-		RotZ:                          req.RotZ,
 		BeamAngle:                     req.BeamAngle,
 		MaxBrightness:                 maxBrightness,
+	}
+	applyFixtureTransform(&fixture, req)
+	return fixture
+}
+
+// Pointer fields distinguish an omitted transform from an explicit zero.
+func applyFixtureTransform(fixture *models.Fixture, req models.UpsertFixtureReq) {
+	if req.PosX != nil {
+		fixture.PosX = *req.PosX
+	}
+	if req.PosY != nil {
+		fixture.PosY = *req.PosY
+	}
+	if req.PosZ != nil {
+		fixture.PosZ = *req.PosZ
+	}
+	if req.RotX != nil {
+		fixture.RotX = *req.RotX
+	}
+	if req.RotY != nil {
+		fixture.RotY = *req.RotY
+	}
+	if req.RotZ != nil {
+		fixture.RotZ = *req.RotZ
 	}
 }

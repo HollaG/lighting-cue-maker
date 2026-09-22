@@ -1,6 +1,21 @@
 import { useEffect, useState } from "react";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
-import { Accordion, Button, Center, Collapse, Divider, Flex, Group, Menu, Slider, Stack, Text } from "@mantine/core";
+import {
+  Accordion,
+  AngleSlider,
+  Box,
+  Button,
+  Center,
+  Collapse,
+  Divider,
+  Flex,
+  Group,
+  Menu,
+  Popover,
+  Slider,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useDeleteFixture } from "../../query/useDeleteFixture";
 import { useGetFixtures } from "../../query/useGetFixtures";
 import { useUpsertFixture } from "../../query/useUpsertFixtures";
@@ -8,6 +23,10 @@ import { useAppStore } from "../../store/appStore";
 import type { UpdateFixtureReq, Fixture, FixtureType, UpsertFixtureReq } from "../../types/fixtures";
 import type { Visualiser3DEnvironment, Visualiser3DObject, Visualiser3DObjectTypes } from "../../types/visualiser3d";
 import type { CameraControls } from "@react-three/drei";
+import { useDebouncedCallback } from "@mantine/hooks";
+import type { FixtureAttributeMapping, Visualiser } from "../../types/visualiser";
+import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
+import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 
 interface ObjectMenuProps {
   obj: Visualiser3DObject;
@@ -109,8 +128,9 @@ const ObjectMenu = (props: EditableObjectMenuProps | StaticObjectMenuProps) => {
 export const Visualiser3DControls = ({
   cameraRef,
 
+  visualiser,
   fixtureGroups,
-  // eventId,
+  eventId,
   environment,
   onEnvironmentChange,
 
@@ -122,6 +142,7 @@ export const Visualiser3DControls = ({
 }: {
   // meta
   cameraRef: React.RefObject<CameraControls | null>;
+  visualiser: Visualiser;
 
   // directly related to fixtures
   fixtureGroups: FixtureGroupConfiguration[];
@@ -185,9 +206,8 @@ export const Visualiser3DControls = ({
             index={index}
             setFixtureAccordionValue={setFixtureAccordionValue}
             cameraRef={cameraRef}
-            // stageRef={stageRef}
-            // visualiser={visualiser}
-            // eventId={eventId}
+            visualiser={visualiser}
+            eventId={eventId}
           />
         ))}
       </Accordion>
@@ -251,15 +271,15 @@ const VisualiserFixtureSection = ({
   cameraRef,
   setFixtureAccordionValue,
   // stageRef,
-  // visualiser,
-  // eventId,
+  visualiser,
+  eventId,
 }: {
-  // visualiser: Visualiser;
+  visualiser: Visualiser;
   fixtureGroup: FixtureGroupConfiguration;
   index: number;
   setFixtureAccordionValue: (value: string | null) => void;
   cameraRef: React.RefObject<CameraControls | null>;
-  // eventId: string;
+  eventId: string;
 }) => {
   const selectedElementId = useAppStore((state) => state.activeObjectId);
   const setSelectedElementId = useAppStore((state) => state.setActiveObjectId);
@@ -267,6 +287,7 @@ const VisualiserFixtureSection = ({
   const { fixtures } = useGetFixtures({ fixtureGroupId: fixtureGroup.id });
 
   const { isPending: isCreateFixturePending, mutateAsync: upsertFixture } = useUpsertFixture();
+  const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
 
   // TODO: unused var
   const { isPending: _isDeletePending, mutateAsync: deleteFixture } = useDeleteFixture();
@@ -333,10 +354,7 @@ const VisualiserFixtureSection = ({
     }
   };
 
-  // For handling special attributes like pan/tilt
-  // const hasPresetPositionAttribute = fixtureGroup.attributes.some(
-  //   (attr) => attr.type === AttributeTypes.PRESET_POSITION,
-  // );
+  // --- POSITION SPECIAL ---------
 
   /**
    * Does this fixtureGroup have a PresetPosition configured? If so, does this fixture support it?
@@ -353,87 +371,87 @@ const VisualiserFixtureSection = ({
     : [];
 
   // Debounce and save
-  // const [fixtureAttributeMapping, setFixtureAttributeMapping] = useState<FixtureAttributeMapping>(
-  //   visualiser.fixtureAttributeMapping ?? {},
-  // );
+  const [fixtureAttributeMapping, setFixtureAttributeMapping] = useState<FixtureAttributeMapping>(
+    visualiser.fixtureAttributeMapping ?? {},
+  );
 
   // shared
   const previewFixtureId = useAppStore((state) => state.previewFixtureId);
   const setPreviewFixtureId = useAppStore((state) => state.setPreviewFixtureId);
-  // const previewPositionId = useAppStore((state) => state.previewPositionId);
-  // const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
-  // const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
+  const previewPositionId = useAppStore((state) => state.previewPositionId);
+  const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
+  const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
 
   const [isEditingSpecialAttributes, setIsEditingSpecialAttributes] = useState(false);
 
-  // const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
-  //   // return (
-  //   //   fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[positionOptionId]?.[fixtureId] ?? {
-  //   //     pan: 0,
-  //   //     tilt: 0,
-  //   //   }
-  //   // );
+  const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
+    return (
+      fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[positionOptionId]?.[fixtureId] ?? {
+        pan: 0,
+        tilt: 0,
+      }
+    );
 
-  //   return { pan: 0, tilt: 0 }; // Placeholder
-  // };
+    // return { pan: 0, tilt: 0 }; // Placeholder
+  };
 
-  // const onPositionAttributeInput = (
-  //   fixtureId: string,
-  //   positionOptionId: string,
-  //   fixtureGroupId: string,
-  //   {
-  //     pan,
-  //     tilt,
-  //   }: {
-  //     pan?: number;
-  //     tilt?: number;
-  //   },
-  // ) => {
-  //   // Update the fixtureAttributeMapping state with the new pan/tilt values for the given fixtureId and positionOptionId
-  //   setFixtureAttributeMapping((prev) => {
-  //     const newMapping = { ...prev };
+  const onPositionAttributeInput = (
+    fixtureId: string,
+    positionOptionId: string,
+    fixtureGroupId: string,
+    {
+      pan,
+      tilt,
+    }: {
+      pan?: number;
+      tilt?: number;
+    },
+  ) => {
+    // Update the fixtureAttributeMapping state with the new pan/tilt values for the given fixtureId and positionOptionId
+    setFixtureAttributeMapping((prev) => {
+      const newMapping = { ...prev };
 
-  //     if (!newMapping[fixtureGroupId]) {
-  //       newMapping[fixtureGroupId] = {};
-  //     }
+      if (!newMapping[fixtureGroupId]) {
+        newMapping[fixtureGroupId] = {};
+      }
 
-  //     if (!newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]) {
-  //       newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION] = {};
-  //     }
+      if (!newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]) {
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION] = {};
+      }
 
-  //     if (!newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId]) {
-  //       newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId] = {};
-  //     }
+      if (!newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId]) {
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId] = {};
+      }
 
-  //     const existingPan =
-  //       newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId]?.pan ?? 0;
-  //     const existingTilt =
-  //       newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId]?.tilt ?? 0;
+      const existingPan =
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId]?.pan ?? 0;
+      const existingTilt =
+        newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId]?.tilt ?? 0;
 
-  //     newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId] = {
-  //       pan: pan ?? existingPan,
-  //       tilt: tilt ?? existingTilt,
-  //     };
+      newMapping[fixtureGroupId][AttributeTypes.PRESET_POSITION]![positionOptionId][fixtureId] = {
+        pan: pan ?? existingPan,
+        tilt: tilt ?? existingTilt,
+      };
 
-  //     return newMapping;
-  //   });
+      return newMapping;
+    });
 
-  //   // Update the store
-  //   setPreviewPosition(positionOptionId, { pan, tilt });
-  // };
+    // Update the store
+    setPreviewPosition(positionOptionId, { pan, tilt });
+  };
 
   /** Debounce the saving of position settings */
-  // const debouncedSave = useDebouncedCallback((fixtureAttributeMapping: FixtureAttributeMapping) => {
-  //   upsertVisualiser({
-  //     id: visualiser.id,
-  //     eventId,
-  //     fixtureAttributeMapping,
-  //   });
-  // }, 500);
+  const debouncedSave = useDebouncedCallback((fixtureAttributeMapping: FixtureAttributeMapping) => {
+    upsertVisualiser({
+      id: visualiser.id,
+      eventId,
+      fixtureAttributeMapping,
+    });
+  }, 500);
 
-  // useEffect(() => {
-  //   debouncedSave(fixtureAttributeMapping);
-  // }, [fixtureAttributeMapping, debouncedSave]);
+  useEffect(() => {
+    debouncedSave(fixtureAttributeMapping);
+  }, [fixtureAttributeMapping, debouncedSave]);
 
   return (
     <Accordion.Item value={fixtureGroup.id}>
@@ -499,7 +517,7 @@ const VisualiserFixtureSection = ({
                     <Text fw="bold"> Positions </Text>
                     {presetPositionOptions.map((option) => (
                       <Group key={option.id} style={{ flexWrap: "nowrap" }}>
-                        {/* <Text style={{ flexShrink: 1 }}>
+                        <Text style={{ flexShrink: 1 }}>
                           {index + 1}. {option.name}
                         </Text>
                         <Flex flex={1} />
@@ -593,7 +611,7 @@ const VisualiserFixtureSection = ({
                               />
                             </Popover.Dropdown>
                           </Popover>
-                        </Box> */}
+                        </Box>
                       </Group>
                     ))}
                     {/* <Center>

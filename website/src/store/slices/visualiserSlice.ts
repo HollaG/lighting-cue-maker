@@ -1,5 +1,6 @@
 import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
+import type { PositionOption } from "../../types/fixtures";
 
 export type VisualiserTransformMode = "translate" | "rotate" | "scale";
 
@@ -18,9 +19,9 @@ export interface VisualiserSlice {
 
   // special attribute: Position
   previewPositionId: string | null; // which position we are currently editing the position mappings of
-  previewPosition: { pan: number; tilt: number } | null; // the position we are currently editing the position mappings of
-  togglePreviewPositionId: (id: string | null, position?: { pan: number; tilt: number }) => void; // set the position we are currently editing the position mappings of
-  setPreviewPosition: (id: string | null, position?: { pan?: number; tilt?: number }) => void; // set the position we are currently editing the position mappings of
+  previewPosition: PositionOption | null; // the position we are currently editing the position mappings of
+  togglePreviewPositionId: (id: string | null, position?: PositionOption) => void; // set the position we are currently editing the position mappings of
+  setPreviewPosition: (id: string | null, position?: Partial<PositionOption>) => void; // set the position we are currently editing the position mappings of
 }
 
 export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = (set, get) => ({

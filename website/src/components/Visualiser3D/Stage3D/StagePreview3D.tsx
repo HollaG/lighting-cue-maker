@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { CameraControls, useTexture } from "@react-three/drei";
 import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
 import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
-import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
+import type { Fixture, PositionOption, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
 import { useDebouncedCallback } from "@mantine/hooks";
@@ -14,12 +14,7 @@ import { Visualiser3DDefaultHuman } from "../Elements/Visualiser3DDefaultHuman";
 import { GRID_SIZE, PLANE_SIZE } from "../../../utils/visualiser";
 import type { GUI } from "lil-gui";
 import { Visualiser3DVolumetrics } from "../Visualiser3DVolumetrics";
-import {
-  AttributeTypes,
-  type ColourOption,
-  type PresetIntensityOption,
-  type PresetPositionOption,
-} from "../../../types/types";
+import { AttributeTypes, type ColourOption, type PresetIntensityOption } from "../../../types/types";
 
 export const StagePreview3D = ({
   environment,
@@ -52,10 +47,16 @@ export const StagePreview3D = ({
   isViewOnly?: boolean;
   /** Only provided when ViewOnly is true. Both are never provided together. */
   onFixtureSelect?: (_fixtureId: string, fixtureGroupId: string) => void;
+
+  /** Get the attribute for a given fixture and attribute type. Note
+   * Note that some attributes are `dynamic`, in that they will not be stored in the fixture itself, but rather in the visualiser state.
+   * For example, the `position` attribute:
+   *   in the config,
+   */
   getAttribute?: (
     fixture: Fixture,
     attribute: AttributeTypes,
-  ) => string | number | boolean | string[] | ColourOption | PresetPositionOption | null | undefined;
+  ) => string | number | boolean | string[] | ColourOption | PositionOption | null | undefined;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
 
@@ -80,7 +81,7 @@ export const StagePreview3D = ({
   const onChange = useDebouncedCallback((newFixtureProps: UpdateFixtureIn3DReq) => {
     console.log("upserting fixture in 3D", newFixtureProps);
     upsertFixtureIn3D(newFixtureProps);
-  }, 500);
+  }, 100);
 
   return (
     <>
@@ -178,7 +179,7 @@ export const StagePreview3D = ({
           intensityAttribute={
             getAttribute?.(fixture, AttributeTypes.PRESET_INTENSITY) as PresetIntensityOption | undefined
           }
-          // TODO: position
+          positionAttribute={getAttribute?.(fixture, AttributeTypes.PRESET_POSITION) as PositionOption | undefined}
         />
       ))}
 

@@ -1,8 +1,8 @@
 import { AspectRatio, Box, Button, Flex, Group, Kbd, MantineProvider, SegmentedControl, Stack } from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
-import type { Fixture } from "../../types/fixtures";
-import type { AttributeTypes, FixtureGroupConfiguration } from "../../types/types";
+import type { Fixture, PositionOption } from "../../types/fixtures";
+import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { Visualiser3DControls } from "./Visualiser3DControls";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
@@ -21,7 +21,7 @@ import type { Visualiser } from "../../types/visualiser";
 import { useDebouncedCallback, useDebouncedValue } from "@mantine/hooks";
 import { useAppStore } from "../../store/appStore";
 import { GUI } from "lil-gui";
-import type { AttributeAssignment, FixtureGroupsAssignment } from "../../types/cues";
+import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, ValueAssignment } from "../../types/cues";
 import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
 import { useDeleteFixture } from "../../query/useDeleteFixture";
 
@@ -293,6 +293,29 @@ export const Visualiser3D = ({
 
   const isFixture = (selectedObjectId && fixtures.some((f) => f.id === selectedObjectId)) || false;
 
+  const previewFixtureId = useAppStore((state) => state.previewFixtureId);
+  const previewPositionId = useAppStore((state) => state.previewPositionId);
+  const getIsPreviewingFixture = (fixtureId: string) => {
+    return previewFixtureId === fixtureId && previewFixtureId !== null && previewPositionId !== null;
+  };
+  const position = useAppStore((state) => state.previewPosition) ?? { pan: 0, tilt: 0 };
+
+  /**
+   * During the configuration of the Visualiser (non-static-usecases),
+   * we might want to specially apply attributes for preview purposes.
+   *
+   * Currently, we want to specially apply Position attribute, so that users
+   * can properly configure each position setting.
+   *
+   * @param fixture
+   * @param attribute
+   */
+  const getAttribute = (fixture: Fixture, attribute: AttributeTypes) => {
+    if (attribute === AttributeTypes.PRESET_POSITION && getIsPreviewingFixture(fixture.id)) {
+      return position;
+    }
+  };
+
   return (
     <Flex className={classes["preview-container"]}>
       <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
@@ -335,6 +358,8 @@ export const Visualiser3D = ({
 
                   updateStageElement={onUpdateElement}
                   gui={gui}
+
+                  getAttribute={getAttribute}
                 />
               </Canvas>
 
@@ -475,6 +500,7 @@ export const Visualiser3D = ({
             onDuplicateElement={onDuplicateElement}
 
             cameraRef={_cameraControlRef}
+            visualiser={visualiser}
           />
         }
       </Box>
@@ -586,13 +612,38 @@ export const StaticVisualiser3D = ({
   /**
    * Get the attributes for a given Fixture.
    *
+   * Guaranteed to never return DynamicValueType.
+   *
    * @param fixture
    * @param attribute
    * @returns
    */
-  const getAttribute = (fixture: Fixture, attribute: AttributeTypes) => {
+  const getAttribute = (
+    fixture: Fixture,
+    attribute: AttributeTypes,
+  ): Exclude<ValueAssignment[typeof attribute], DynamicValueType> | PositionOption | undefined => {
     const attributeAssignment = getSpecificAttributeGivenTheType(fixture.fixtureGroupId, attribute);
-    return attributeAssignment ? attributeAssignment.value[attribute] : undefined;
+
+    // DynamicValueType checking
+    if (attribute === AttributeTypes.PRESET_POSITION && attributeAssignment) {
+      // If the attribute is a position, we need to return the position object, not just the ID
+      const positionOptionId = attributeAssignment.value[AttributeTypes.PRESET_POSITION]?.id;
+
+      if (!positionOptionId) {
+        return { pan: 0, tilt: 0 } satisfies PositionOption;
+      }
+
+      return (
+        visualiser.fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
+          positionOptionId
+        ]?.[fixture.id] ?? ({ pan: 0, tilt: 0 } satisfies PositionOption)
+      );
+    }
+
+    // We will never return a DynamicValueType here (checked above)
+    return attributeAssignment
+      ? (attributeAssignment.value[attribute] as Exclude<ValueAssignment[typeof attribute], DynamicValueType>)
+      : undefined;
   };
 
   return (

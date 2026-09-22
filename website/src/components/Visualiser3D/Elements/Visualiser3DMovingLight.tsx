@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
-import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
+import type { Fixture, PositionOption, UpdateFixtureIn3DReq } from "../../../types/fixtures";
+import type { PresetColourOption, PresetIntensityOption, PresetPositionOption } from "../../../types/types";
 import * as THREE from "three";
 import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import {
@@ -22,6 +22,8 @@ export const Visualiser3DMovingLight = ({
 
   intensityAttribute,
   colourAttribute,
+  positionAttribute,
+
   gui,
 }: {
   fixture: Fixture;
@@ -31,6 +33,9 @@ export const Visualiser3DMovingLight = ({
 
   intensityAttribute?: PresetIntensityOption;
   colourAttribute?: PresetColourOption;
+
+  /** For 3D, pan refers to rotation about the Y-axis, and tilt refers to rotation about the X-axis. */
+  positionAttribute?: PositionOption;
   gui: GUI | null;
 
   viewOnly?: boolean;
@@ -67,7 +72,7 @@ export const Visualiser3DMovingLight = ({
     },
   });
 
-  // Force the fixture to not change mode
+  // Force the fixture to not change mode (scale not supported)
   const oldMode = useRef(mode);
   useEffect(() => {
     if (!isSelected) return;
@@ -85,6 +90,12 @@ export const Visualiser3DMovingLight = ({
   // Colour represents the colour of the light, in hex format.
   const intensity = isSelected && !viewOnly ? 100 : intensityAttribute || 0;
   const colour = colourAttribute?.hex || "#ffffff";
+  let rotationVector = getFixture3DRotation(fixture);
+  if (positionAttribute) {
+    const panRads = THREE.MathUtils.degToRad(positionAttribute.pan);
+    const tiltRads = THREE.MathUtils.degToRad(positionAttribute.tilt);
+    rotationVector = [rotationVector[0] + tiltRads, rotationVector[1], panRads + rotationVector[2]];
+  }
 
   return (
     <>
@@ -93,7 +104,7 @@ export const Visualiser3DMovingLight = ({
         castShadow
         receiveShadow
         position={getFixture3DPosition(fixture)}
-        rotation={getFixture3DRotation(fixture)}
+        rotation={rotationVector}
         onClick={(event) => {
           event.stopPropagation();
           onSelect(fixture.id);
