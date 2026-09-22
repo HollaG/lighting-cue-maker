@@ -382,8 +382,6 @@ const VisualiserFixtureSection = ({
   const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
   const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
 
-  const [isEditingSpecialAttributes, setIsEditingSpecialAttributes] = useState(false);
-
   const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
     return (
       fixtureAttributeMapping[fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[positionOptionId]?.[fixtureId] ?? {
@@ -489,15 +487,17 @@ const VisualiserFixtureSection = ({
                     <Menu.Item onClick={() => onUpdateFixture({ ...fixture, type: "bar" })}>Bar light</Menu.Item>
 
                     <Menu.Divider />
-                    <Menu.Label>Configure attributes</Menu.Label>
+                    <Menu.Label>Configure dynamic attributes</Menu.Label>
                     {hasPresetPositionAttribute && fixtureTypeSupportsPosition(fixture.type) && (
                       <Menu.Item
                         onClick={() => {
-                          setIsEditingSpecialAttributes(true);
-                          setPreviewFixtureId(fixture.id);
+                          setPreviewFixtureId(previewFixtureId === fixture.id ? null : fixture.id);
+                          if (previewFixtureId !== fixture.id) {
+                            setSelectedElementId(fixture.id);
+                          }
                         }}
                       >
-                        Set pan & tilt corresponding to cue selection
+                        Set pan & tilt for each position
                       </Menu.Item>
                     )}
                     <Menu.Divider />
@@ -512,13 +512,13 @@ const VisualiserFixtureSection = ({
 
               {/* Special Attribute: Position */}
               {hasPresetPositionAttribute && fixtureTypeSupportsPosition(fixture.type) && (
-                <Collapse expanded={isEditingSpecialAttributes && previewFixtureId === fixture.id}>
+                <Collapse expanded={previewFixtureId === fixture.id}>
                   <Stack>
                     <Text fw="bold"> Positions </Text>
-                    {presetPositionOptions.map((option) => (
+                    {presetPositionOptions.map((option, index2) => (
                       <Group key={option.id} style={{ flexWrap: "nowrap" }}>
                         <Text style={{ flexShrink: 1 }}>
-                          {index + 1}. {option.name}
+                          {index2 + 1}. {option.name}
                         </Text>
                         <Flex flex={1} />
                         <Button

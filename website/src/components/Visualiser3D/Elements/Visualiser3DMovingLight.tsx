@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Fixture, PositionOption, UpdateFixtureIn3DReq } from "../../../types/fixtures";
-import type { PresetColourOption, PresetIntensityOption, PresetPositionOption } from "../../../types/types";
+import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import * as THREE from "three";
 import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import {
