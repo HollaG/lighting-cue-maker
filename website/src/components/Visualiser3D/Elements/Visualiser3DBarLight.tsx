@@ -3,7 +3,8 @@ import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 
 import * as THREE from "three";
-import { Helper, TransformControls } from "@react-three/drei";
+import { Helper } from "@react-three/drei";
+import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
 import {
   convert3DPropsToFixtureRepresentation,
@@ -102,7 +103,7 @@ export const Visualiser3DBarLight = ({
         )}
       </mesh>
       {!viewOnly && isSelected && mesh && (
-        <TransformControls
+        <Visualiser3DTransformControls
           object={mesh}
           mode={mode}
           space={mode === "translate" ? "world" : "local"}

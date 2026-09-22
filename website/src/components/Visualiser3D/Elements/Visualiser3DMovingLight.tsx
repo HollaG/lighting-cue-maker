@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import * as THREE from "three";
-import { TransformControls } from "@react-three/drei";
+import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import {
   convert3DPropsToFixtureRepresentation,
   getFixture3DPosition,
@@ -119,7 +119,7 @@ export const Visualiser3DMovingLight = ({
         <primitive object={spotlightTarget} position={[0, 1, 0]} />
       </mesh>
       {!viewOnly && isSelected && mesh && (
-        <TransformControls
+        <Visualiser3DTransformControls
           object={mesh}
           mode={mode}
           space={mode === "translate" ? "world" : "local"}

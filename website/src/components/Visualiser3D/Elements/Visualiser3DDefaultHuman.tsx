@@ -1,9 +1,10 @@
-import { TransformControls } from "@react-three/drei";
+import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import { useLoader } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import HumanModelUrl from "../../../assets/models/human.gltf?url";
+import HumanBufferUrl from "../../../assets/models/scene.bin?url";
 import { useAppStore } from "../../../store/appStore";
 import type { Visualiser3DDefaultHumanType } from "../../../types/visualiser3d";
 import type { GUI } from "lil-gui";
@@ -26,7 +27,12 @@ export const Visualiser3DDefaultHuman = ({
 }) => {
   const [group, setGroup] = useState<THREE.Group | null>(null);
   const _mode = useAppStore((state) => state.transformMode);
-  const gltf = useLoader(GLTFLoader, HumanModelUrl);
+  const gltf = useLoader(GLTFLoader, HumanModelUrl, (loader) => {
+    // Vite does not bundle files referenced inside GLTF; map the buffer to its imported URL.
+    loader.manager = new THREE.LoadingManager().setURLModifier((url) =>
+      url.endsWith("/scene.bin") || url === "scene.bin" ? HumanBufferUrl : url,
+    );
+  });
 
   // useLoader caches the GLTF, so each stage element needs its own scene instance.
   const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
@@ -65,7 +71,7 @@ export const Visualiser3DDefaultHuman = ({
   return (
     <>
       {isSelected && group && (
-        <TransformControls
+        <Visualiser3DTransformControls
           object={group}
           mode={mode}
           space={mode === "translate" ? "world" : "local"}

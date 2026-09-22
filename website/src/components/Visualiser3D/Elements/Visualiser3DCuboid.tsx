@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Visualiser3DCuboidType } from "../../../types/visualiser3d";
 
 import * as THREE from "three";
-import { TransformControls } from "@react-three/drei";
+import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import { useAppStore } from "../../../store/appStore";
 import type { GUI } from "lil-gui";
 import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
@@ -47,7 +47,7 @@ export const Visualiser3DCuboid = ({
 
     addCustomControls: (folder) => {
       // Add a custom control for the color property
-      const colorControl = { color: cuboid.props.color || "#8ac" };
+      const colorControl = { color: cuboid.props.color || "#8AC" };
       folder
         .addColor(colorControl, "color")
         .name("Color")
@@ -68,7 +68,7 @@ export const Visualiser3DCuboid = ({
   return (
     <>
       {isSelected && mesh && (
-        <TransformControls
+        <Visualiser3DTransformControls
           object={mesh}
           mode={mode}
           space={mode === "translate" ? "world" : "local"}
@@ -79,10 +79,18 @@ export const Visualiser3DCuboid = ({
       )}
 
       <mesh
+        // onClick={(event) => {
+        //   console.log("onclick fired for Cuboid", cuboid.id);
+        //   event.stopPropagation();
+        //   onSelect(cuboid.id);
+        // }}
+
         onClick={(event) => {
+          console.log("onClick fired for Cuboid");
           event.stopPropagation();
           onSelect(cuboid.id);
         }}
+        onPointerUp={(event) => console.log("onPointerUp fired for Cuboid")}
 
         ref={setMesh}
         castShadow
@@ -92,7 +100,7 @@ export const Visualiser3DCuboid = ({
         scale={new THREE.Vector3(...cuboid.props.size)}
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={cuboid.props.color || "#8ac"} />
+        <meshStandardMaterial color={cuboid.props.color || "#8AC"} />
       </mesh>
     </>
   );

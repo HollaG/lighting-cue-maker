@@ -1,4 +1,4 @@
-import { TransformControls } from "@react-three/drei";
+import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -108,6 +108,11 @@ export const Visualiser3DParLight = ({
           event.stopPropagation();
           onSelect(fixture.id);
         }}
+        // onPointerDown={(event) => {
+        //   console.log("onPointerDown fired for Par light");
+        //   event.stopPropagation();
+        //   onSelect(fixture.id);
+        // }}
       >
         <cylinderGeometry args={[0.105, 0.105, 0.104, 32]} />
         <meshStandardMaterial color="#eeeeee" />
@@ -146,7 +151,7 @@ export const Visualiser3DParLight = ({
       </mesh>
 
       {!viewOnly && isSelected && mesh && (
-        <TransformControls
+        <Visualiser3DTransformControls
           object={mesh}
           mode={mode}
           space={mode === "translate" ? "world" : "local"}
