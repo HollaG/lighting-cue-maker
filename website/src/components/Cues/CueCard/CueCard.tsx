@@ -475,12 +475,20 @@ const CueCardInternal = ({
             ...currentAssigments,
             ...cueWithoutId.assignments,
           },
+          transition: cueWithoutId.transition,
         } as Partial<FormData>);
 
         notifications.show({
           title: `Copied cue ${cueNumberCopied}!`,
           message: ``,
         });
+
+        // show the transition, if the copied cue has a cueConfig
+        if (cueWithoutId.cueConfig.mode !== "unknown") {
+          setShowTransition(true);
+        } else {
+          setShowTransition(false);
+        }
       } else {
         notifications.show({
           title: "No fixture groups selected",
