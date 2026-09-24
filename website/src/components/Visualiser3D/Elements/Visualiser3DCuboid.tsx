@@ -86,11 +86,9 @@ export const Visualiser3DCuboid = ({
         // }}
 
         onClick={(event) => {
-          console.log("onClick fired for Cuboid");
           event.stopPropagation();
           onSelect(cuboid.id);
         }}
-        onPointerUp={(event) => console.log("onPointerUp fired for Cuboid")}
 
         ref={setMesh}
         castShadow
