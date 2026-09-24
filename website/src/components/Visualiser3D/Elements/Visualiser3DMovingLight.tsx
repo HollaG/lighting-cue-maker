@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useMantineTheme } from "@mantine/core";
 import type { Fixture, PositionOption, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import * as THREE from "three";
@@ -40,6 +41,7 @@ export const Visualiser3DMovingLight = ({
 
   viewOnly?: boolean;
 }) => {
+  const theme = useMantineTheme();
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
   const [beamAngle, setBeamAngle] = useState(fixture.beamAngle || 15);
   const beamControls = useMemo(() => ({ angle: fixture.beamAngle || 15 }), []);
@@ -114,6 +116,15 @@ export const Visualiser3DMovingLight = ({
         {/* Just a cylinder that is 210mm in diameter, 104mm in height. Modelled after Betopper LPC015 */}
         <cylinderGeometry args={[10.5 / 100, 10.5 / 100, 10.4 / 100, 32]} />
         <meshStandardMaterial color="#ff0000" />
+
+        {isSelected && (
+          // Only the enlarged shell's back faces show around the solid fixture.
+          <mesh raycast={() => {}}>
+            <cylinderGeometry args={[0.109, 0.109, 0.112, 32]} />
+            <meshBasicMaterial color={theme.colors.lime[4]} side={THREE.BackSide} toneMapped={false} fog={false} />
+          </mesh>
+        )}
+
         <spotLight
           layers-mask={VOLUMETRIC_LIGHT_MASK}
           // Include solid objects when shadows are rendered from the haze layer.

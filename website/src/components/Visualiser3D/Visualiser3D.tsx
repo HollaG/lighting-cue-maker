@@ -1,4 +1,18 @@
-import { AspectRatio, Box, Button, Flex, Group, Kbd, MantineProvider, SegmentedControl, Stack } from "@mantine/core";
+import {
+  AspectRatio,
+  Box,
+  Button,
+  Code,
+  Divider,
+  Flex,
+  Group,
+  HoverCard,
+  Kbd,
+  MantineProvider,
+  SegmentedControl,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
 import type { Fixture, PositionOption } from "../../types/fixtures";
@@ -24,6 +38,7 @@ import { GUI } from "lil-gui";
 import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, ValueAssignment } from "../../types/cues";
 import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
 import { useDeleteFixture } from "../../query/useDeleteFixture";
+import { IconHelpCircle, IconRotate360, IconTransfer, IconZoomPan } from "@tabler/icons-react";
 
 export const Visualiser3D = ({
   eventId,
@@ -352,7 +367,7 @@ export const Visualiser3D = ({
                   environment={environment}
                   fixtures={fixtures}
                   stageElements={stageElements}
-                  selectedElementIds={selectedObjectId ? [selectedObjectId] : undefined}
+                  selectedObjectIds={selectedObjectId ? [selectedObjectId] : undefined}
                   onObjectSelect={onObjectSelect}
                   cameraRef={cameraControlRef}
 
@@ -363,7 +378,6 @@ export const Visualiser3D = ({
                 />
               </Canvas>
 
-              <Box></Box>
               <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
                 <Button size="sm" onClick={onResetViewport} variant="outline" color="gray">
                   {" "}
@@ -604,7 +618,6 @@ export const StaticVisualiser3D = ({
     fixtureGroupId: string,
     attributeType: string,
   ): AttributeAssignment | undefined => {
-    console.log({ fixtureGroupId, attributeType, fixtureGroupsAssignment });
     const assignments = getAttributeAssignmentsOfAFixtureGroup(fixtureGroupId);
     return assignments.find((assignment) => assignment.type === attributeType);
   };
@@ -689,8 +702,8 @@ export const StaticVisualiser3D = ({
                     environment={environment}
                     fixtures={fixtures}
                     stageElements={visualiser.objects3D || []}
-                    selectedElementIds={selectedObjectIds}
-                    onObjectSelect={undefined} // noop
+                    selectedObjectIds={selectedObjectIds}
+                    onObjectSelect={undefined} // noop, selecting of cubiods not allowed
                     cameraRef={cameraControlRef}
                     onFixtureSelect={onFixtureSelect}
 
@@ -701,7 +714,69 @@ export const StaticVisualiser3D = ({
                     getAttribute={getAttribute}
                   />
                 </Canvas>
-
+                {/* Help button */}
+                <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
+                  <HoverCard
+                    position="left"
+                    shadow="md"
+                    styles={{
+                      dropdown: {
+                        backgroundColor: "var(--mantine-color-dark-6)",
+                        borderColor: "var(--mantine-color-dark-4)",
+                      },
+                    }}
+                  >
+                    <HoverCard.Target>
+                      <Button variant="transparent" color="white" size="sm" leftSection={<IconHelpCircle size={16} />}>
+                        Help
+                      </Button>
+                    </HoverCard.Target>
+                    <HoverCard.Dropdown
+                      style={{
+                        color: "white",
+                      }}
+                    >
+                      <Stack>
+                        <Group gap="xs">
+                          <IconTransfer width="1rem" />
+                          <Text>
+                            <Code fz="md" bg="var(--mantine-color-dark-8)">
+                              Right Click and Drag
+                            </Code>{" "}
+                            to move the view around
+                          </Text>
+                        </Group>
+                        <Group gap="xs">
+                          <IconRotate360 width="1rem" />
+                          <Text>
+                            <Code fz="md" bg="var(--mantine-color-dark-8)">
+                              Left Click and Drag
+                            </Code>{" "}
+                            to rotate the view
+                          </Text>
+                        </Group>
+                        <Group gap="xs">
+                          <IconZoomPan width="1rem" />
+                          <Text>
+                            <Code fz="md" bg="var(--mantine-color-dark-8)">
+                              Scroll
+                            </Code>{" "}
+                            to zoom in and out
+                          </Text>
+                        </Group>
+                        <Divider />
+                        <Text>
+                          You can{" "}
+                          <Code fz="md" bg="var(--mantine-color-dark-8)">
+                            Left Click
+                          </Code>{" "}
+                          on a light to change its settings.
+                        </Text>
+                      </Stack>
+                    </HoverCard.Dropdown>
+                  </HoverCard>
+                </Box>
+                <Box></Box>
                 <Box></Box>
                 <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
                   <Button size="xs" onClick={onResetViewport} variant="outline" color="gray">

@@ -102,7 +102,7 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
   const sendMessage = useCallback(
     (type: ClientMessageType, data: ClientMessageDataMap[ClientMessageType]) => {
       if (connectionState.status !== "connected" || !connectionState.connection) return;
-      console.log(`[Message] {${type}} @ ${Date.now()}`, data);
+      // console.log(`[Message] {${type}} @ ${Date.now()}`, data);
       void connectionState.connection.send({ type, data, timestamp: Date.now() }).catch((error) => {
         console.error("Failed to send realtime message:", error);
       });
@@ -152,7 +152,7 @@ export function RealtimeProvider({ eventId, children }: { eventId: string; child
         connection = await connectRealtime({
           signal: abortController.signal,
           onMessage: (message) => {
-            console.log(`Received message at timestamp ${message.timestamp}`, message);
+            // console.log(`Received message at timestamp ${message.timestamp}`, message);
             dispatchMessage(message);
           },
           onClose: () => {

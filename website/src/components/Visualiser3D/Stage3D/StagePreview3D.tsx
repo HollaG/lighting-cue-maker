@@ -21,8 +21,8 @@ export const StagePreview3D = ({
   fixtures,
   stageElements,
   cameraRef,
-  selectedElementIds,
-  onObjectSelect: onObjectSelect,
+  selectedObjectIds,
+  onObjectSelect,
   // onFixtureChange,
   updateStageElement,
   gui,
@@ -34,7 +34,7 @@ export const StagePreview3D = ({
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
   stageElements: Visualiser3DObject[];
-  selectedElementIds?: string[];
+  selectedObjectIds?: string[];
 
   cameraRef?: React.RefCallback<CameraControls | null>;
 
@@ -114,7 +114,7 @@ export const StagePreview3D = ({
         <Visualiser3DParLight
           key={fixture.id}
           fixture={fixture}
-          isSelected={!!selectedElementIds?.includes(fixture.id)}
+          isSelected={!!selectedObjectIds?.includes(fixture.id)}
           onSelect={
             onFixtureSelect
               ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
@@ -137,7 +137,7 @@ export const StagePreview3D = ({
         <Visualiser3DBarLight
           key={fixture.id}
           fixture={fixture}
-          isSelected={!!selectedElementIds?.includes(fixture.id)}
+          isSelected={!!selectedObjectIds?.includes(fixture.id)}
           onSelect={
             onFixtureSelect
               ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
@@ -160,7 +160,7 @@ export const StagePreview3D = ({
         <Visualiser3DMovingLight
           key={fixture.id}
           fixture={fixture}
-          isSelected={!!selectedElementIds?.includes(fixture.id)}
+          isSelected={!!selectedObjectIds?.includes(fixture.id)}
           onSelect={
             onFixtureSelect
               ? () => onFixtureSelect(fixture.id, fixture.fixtureGroupId)
@@ -187,7 +187,7 @@ export const StagePreview3D = ({
         <Visualiser3DCuboid
           key={cuboid.id}
           cuboid={cuboid}
-          isSelected={!!selectedElementIds?.includes(cuboid.id)}
+          isSelected={!!selectedObjectIds?.includes(cuboid.id)}
           onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
           // onChange={onChange}
           onChange={isViewOnly ? () => {} : updateStageElement}
@@ -201,7 +201,7 @@ export const StagePreview3D = ({
         <Visualiser3DDefaultHuman
           key={human.id}
           human={human}
-          isSelected={!!selectedElementIds?.includes(human.id)}
+          isSelected={!!selectedObjectIds?.includes(human.id)}
           onSelect={() => onObjectSelect && onObjectSelect(human.id)}
           onChange={isViewOnly ? () => {} : updateStageElement}
           gui={gui}

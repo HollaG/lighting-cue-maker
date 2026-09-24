@@ -2,6 +2,7 @@ import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useMantineTheme } from "@mantine/core";
 
 import * as THREE from "three";
 import {
@@ -37,6 +38,7 @@ export const Visualiser3DParLight = ({
 
   viewOnly?: boolean;
 }) => {
+  const theme = useMantineTheme();
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
 
   // react state for beam angle so we can dynamically update it
@@ -116,6 +118,14 @@ export const Visualiser3DParLight = ({
       >
         <cylinderGeometry args={[0.105, 0.105, 0.104, 32]} />
         <meshStandardMaterial color="#eeeeee" />
+
+        {isSelected && (
+          // Only the enlarged shell's back faces show around the solid fixture.
+          <mesh raycast={() => {}}>
+            <cylinderGeometry args={[0.109, 0.109, 0.112, 32]} />
+            <meshBasicMaterial color={theme.colors.lime[4]} side={THREE.BackSide} toneMapped={false} fog={false} />
+          </mesh>
+        )}
 
         {/* <spotLight
           position={[0, -0.052, 0]}

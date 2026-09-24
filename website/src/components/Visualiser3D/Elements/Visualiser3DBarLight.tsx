@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useMantineTheme } from "@mantine/core";
 import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
 
@@ -38,6 +39,7 @@ export const Visualiser3DBarLight = ({
 
   viewOnly?: boolean;
 }) => {
+  const theme = useMantineTheme();
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
   const mode = useAppStore((state) => state.transformMode);
   const setMode = useAppStore((state) => state.setTransformMode);
@@ -86,6 +88,14 @@ export const Visualiser3DBarLight = ({
         {/* Bar light, 1m x 0.07 x 0.07 */}
         <boxGeometry args={[1, 0.07, 0.07]} />
         <meshStandardMaterial color="#eeeeee" />
+
+        {isSelected && (
+          // Only the enlarged shell's back faces show around the solid fixture.
+          <mesh raycast={() => {}}>
+            <boxGeometry args={[1.008, 0.078, 0.078]} />
+            <meshBasicMaterial color={theme.colors.lime[4]} side={THREE.BackSide} toneMapped={false} fog={false} />
+          </mesh>
+        )}
 
         {/* RectAreaLight emits along local -Z, so rotate it to face local +Y. */}
         {(isSelected || viewOnly) && (
