@@ -354,6 +354,35 @@ export function generateAndInsertChasers(
 }
 
 /**
+ * A getter to get the correct value of "not-selected" for a given key.
+ * This is because some attributes do not have a 'not-selected' option.
+ * In those cases, use this function to override and specify which attribute value
+ * should be treated as 'not-selected'.
+ *
+ * @param type
+ * @param attrId
+ * @returns
+ */
+function getKeyStringForDisabled(type: AttributeTypes, attrId: string): string {
+  switch (type) {
+    case AttributeTypes.PRESET_INTENSITY: {
+      const keyString = `${attrId}|0`;
+      return keyString;
+    }
+
+    case AttributeTypes.BOOLEAN: {
+      const keyString = `${attrId}|false`;
+      return keyString;
+    }
+
+    default: {
+      const keyString = `${attrId}|not-selected`;
+      return keyString;
+    }
+  }
+}
+
+/**
  * Generate a QLC+ Json Preview for previewing before uploading to QLC+.
  *
  * @param items Items with cues
@@ -402,8 +431,31 @@ export function generatePreview(
         continue;
       }
 
-      // Generate a list of attributes & their assignments
-      const completeAttributeMap = Object.values(cue.assignments ?? {}).reduce(
+      const enabledGroupIds = cue.cueConfig.enabledGroups;
+      // const disabledGroupIds = Object.keys(cue.assignments ?? {}).filter(
+      //   // eh, we should just pass in the fixture group ID list instead
+      //   (groupId) => !enabledGroupIds.includes(groupId),
+      // );
+
+      // a map of attributeId to what fixtureGroup it belongs to
+      const attributeIdToGroupIdMap: Record<string, string> = {};
+      for (const groupId of enabledGroupIds) {
+        const groupAssignment = cue.assignments?.[groupId];
+        if (!groupAssignment) continue;
+
+        for (const attributeId of Object.keys(groupAssignment.assignment)) {
+          attributeIdToGroupIdMap[attributeId] = groupId;
+        }
+      }
+
+      console.log({ attributeIdToGroupIdMap });
+      // Generate a list of attributes & their assignments for the enabledGroupIds
+      // const attributeList = Object.keys(cue.assignments ?? {})
+      //   .filter((groupId) => enabledGroupIds.includes(groupId))
+      //   .map((groupId) => cue.assignments?.[groupId]);
+
+      const attributeList = Object.values(cue.assignments);
+      const completeAttributeMap = attributeList.reduce(
         (acc, group) => ({ ...acc, ...group.assignment }),
         {} as Record<string, { type: AttributeTypes; value: ValueAssignment; name: string }>,
       );
@@ -440,10 +492,12 @@ export function generatePreview(
         if (!QLC_MAPPABLE_TYPES.has(attr.type)) continue;
 
         const isSelected = hasAValue(attr.type, attr.value);
+        const fixtureGroupId = attributeIdToGroupIdMap[attrId];
 
         // special case when the user didn't select anything in dropdown
-        if (!isSelected) {
-          const keyString = `${attrId}|not-selected`;
+        // OR this fixture group is not enabled!
+        if (!isSelected || !enabledGroupIds.includes(fixtureGroupId)) {
+          const keyString = getKeyStringForDisabled(attr.type, attrId);
           const fnIds = mapping[keyString];
           if (fnIds) {
             // if mapping exists
@@ -474,9 +528,10 @@ export function generatePreview(
             } else {
               addAnyFnIds.push(...fns);
             }
-
-            continue;
           }
+
+          // Disabled or unselected attributes must never fall back to their saved value.
+          continue;
         }
 
         const selectedValue = getValueFromValueAssignment(attr.type, attr.value);

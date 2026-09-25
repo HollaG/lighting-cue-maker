@@ -219,7 +219,7 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
 
       newItems[cueIndex] = {
         ...cue,
-        qlcFunctions: [...cue.qlcFunctions, ...functionIds.map((fnId) => functionList[fnId])],
+        qlcFunctions: [...cue.qlcFunctions, ...functionIds.map((fnId) => functionList[fnId])].filter(Boolean), // remove undefined functionList[fnId]
       };
 
       return {

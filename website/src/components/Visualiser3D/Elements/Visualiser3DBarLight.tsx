@@ -69,7 +69,7 @@ export const Visualiser3DBarLight = ({
   // Custom logic to draw
   // As the bars are using rectarealight which is quite low-power, we need to multiply the intensity.
   // Colour represents the colour of the light, in hex format.
-  const intensity = isSelected && !viewOnly ? 100 : intensityAttribute ? intensityAttribute * 1.5 : 0;
+  const intensity = isSelected && !viewOnly ? 100 : intensityAttribute ? intensityAttribute * 1 : 0;
   const colour = colourAttribute?.hex || "#ffffff";
 
   return (
