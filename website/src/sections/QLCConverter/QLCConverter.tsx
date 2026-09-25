@@ -303,8 +303,21 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
                     Reload saved data
                   </Button>
                 </Flex>
-                <Stack>
+                <Stack mt="lg">
                   <Grid columns={12}>
+                    <Grid.Col span={COLUMN_SPANS[0] + COLUMN_SPANS[1]}>
+                      <Text fw="bold">Blackout</Text>
+                    </Grid.Col>
+
+                    <Grid.Col span={COLUMN_SPANS[2]}>
+                      <IconArrowRightBar width={"1rem"} />
+                    </Grid.Col>
+                    <Grid.Col span={COLUMN_SPANS[3]}>
+                      <FunctionSelect groupedFnList={groupedFnList ?? []} form={form} inputId={`mappings.blackout`} />
+                    </Grid.Col>
+                    <Grid.Col span={COLUMN_SPANS[4]}>
+                      {/* <AdvancedMappingMenu attributeId={attribute.id} value="true" form={form} /> */}
+                    </Grid.Col>
                     {event?.fixtureGroups.map((fixtureGroup, index) => (
                       <Fragment key={fixtureGroup.id}>
                         <Grid.Col span={12} mt={"lg"}>

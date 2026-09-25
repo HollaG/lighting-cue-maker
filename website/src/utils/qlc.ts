@@ -367,6 +367,8 @@ export function generatePreview(
   qlcFunctionMap: { [fnId: string]: QLCFunction },
 ): QLCEventJson {
   console.log({ mapping });
+
+  const blackoutMapping = mapping["blackout"] ?? [];
   const result: QLCEventJson = {};
   // for each item
   for (const item of items) {
@@ -381,6 +383,24 @@ export function generatePreview(
     for (const cueId of cueOrder) {
       const cue = cues.find((c) => c.id === cueId);
       if (!cue) continue;
+
+      // If this is a blackout cue OR it's a unknown config
+      // TODO: we probably should throw an error instead? for unknown and you try to map
+      if (cue.cueConfig.mode === "blackout" || cue.cueConfig.mode === "unknown") {
+        const mappedFunctions: QLCFunction[] = [];
+        for (const fnId of blackoutMapping) {
+          const existingFn = qlcFunctionMap[fnId];
+          if (existingFn) {
+            mappedFunctions.push(existingFn);
+          }
+        }
+
+        result[item.id].push({
+          cue,
+          qlcFunctions: mappedFunctions,
+        });
+        continue;
+      }
 
       // Generate a list of attributes & their assignments
       const completeAttributeMap = Object.values(cue.assignments ?? {}).reduce(
