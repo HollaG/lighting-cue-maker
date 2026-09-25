@@ -68,9 +68,13 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver}>
+      <MantineProvider
+        theme={theme}
+        cssVariablesResolver={cssVariablesResolver}
+        defaultColorScheme="dark"
+      >
         <RouterProvider router={router} />
-        <ColorSchemeScript />
+        <ColorSchemeScript defaultColorScheme="dark" />
       </MantineProvider>
     </StrictMode>,
   );
