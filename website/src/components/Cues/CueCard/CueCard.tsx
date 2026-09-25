@@ -46,6 +46,7 @@ import { ViewModeSelect, type ViewMode } from "./ViewModeSelect";
 import { CueContents } from "../CueContents/CueContents";
 import { CueNotices } from "../CueNotices/CueNotices";
 import { useCueViewModeTracking } from "../../../hooks/realtime/useCueViewModeTracking";
+import { useRealtimeStore } from "../../../store/realtimeStore";
 
 type FormData = Cue;
 
@@ -120,6 +121,7 @@ const CueCardInternal = ({
   const cueOrder = useAppStore((s) => s.cueOrder);
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
+  const userId = useRealtimeStore((s) => s.user?.userId || null);
 
   const { mutateAsync: updateCue } = useUpdateCue();
   const { mutateAsync: deleteCue } = useDeleteCue();
@@ -199,7 +201,7 @@ const CueCardInternal = ({
       await updateCue({
         cueId: cue.id,
         itemId: activeItemId,
-        requestBody: form.getValues(),
+        requestBody: { ...form.getValues(), updatedBy: userId || undefined },
       });
 
       // re-validate the cue after saving
@@ -551,18 +553,14 @@ const CueCardInternal = ({
   };
 
   // --- Realtime sync ---------
-  // Update the form values if `updatedAt` of cue is later than the form's cue's updatedAt AND form isDirty is false
+  // Update the form values if `updatedAt` of cue is later than the form's cue's updatedAt AND form isDirty is false AND updatedBy is not the current user.
   useEffect(() => {
     const formValues = form.getValues();
 
-    // TODO: do we want to OVERRIDE user unsaved form values?
-    // pros
-    // - can show the warnings per cue (since they depend on isDirty)
-    // cons
-    // - user may be mid-editing and lose their unsaved changes. However, as our debounce is 200ms, this MAY not happen?
-    //   we can decrease the debounce time in future if this feature is stable.
-    // Conclusion: no need to check for dirty state.
-    if (cue.updatedAt > formValues.updatedAt) {
+    // There is a risk here: Users losing their input data.
+    // This risk is higher for text inputs: users may lose their text input data if a update comes in from another user while they're typing.
+    // For other inputs, it's not likely; the debounce timing is quite short so overlaps are uncommon.
+    if (cue.updatedAt > formValues.updatedAt && cue.updatedBy !== userId) {
       // guard against the form's onValuesChange triggering a save, which then triggers another WebTransport message
       isApplyingRemoteValuesRef.current = true;
       try {

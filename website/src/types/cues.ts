@@ -34,6 +34,9 @@ export interface Cue {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date;
+
+  /** Only used to track the source of the Live Update (in the case of collaboration).  */
+  updatedBy?: string; // user id of the person who last updated this cue
 }
 
 export type FixtureGroupsAssignment = {

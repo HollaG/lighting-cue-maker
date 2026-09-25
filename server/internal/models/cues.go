@@ -12,6 +12,7 @@ type CreateCueReq struct {
 	ItemId     string         `json:"itemId"`
 	CueConfig  datatypes.JSON `json:"cueConfig,omitempty"`
 	Transition datatypes.JSON `json:"transition,omitempty"`
+	UpdatedBy  *string        `json:"updatedBy,omitempty" binding:"omitempty,uuid"`
 }
 
 type UpdateCueReq struct {
@@ -19,6 +20,7 @@ type UpdateCueReq struct {
 	Comments    *string         `json:"comments,omitempty"`
 	Transition  datatypes.JSON  `json:"transition,omitempty"`
 	CueConfig   datatypes.JSON  `json:"cueConfig,omitempty"`
+	UpdatedBy   *string         `json:"updatedBy,omitempty" binding:"omitempty,uuid"`
 }
 
 // DB Model
@@ -36,4 +38,6 @@ type Cue struct {
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+
+	UpdatedBy *string `json:"updatedBy,omitempty" gorm:"type:uuid"`
 }

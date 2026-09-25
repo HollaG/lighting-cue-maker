@@ -3,6 +3,7 @@ package cues
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"lighting-cue-maker/server/internal/models"
 	"lighting-cue-maker/server/pkg/database"
 	"lighting-cue-maker/server/pkg/response"
@@ -34,7 +35,11 @@ func getCues(c *gin.Context) {
 
 func createCue(c *gin.Context) {
 	var createReq models.CreateCueReq
-	_ = c.ShouldBindJSON(&createReq)
+	// An empty body is supported when itemId is supplied through the query string.
+	if err := c.ShouldBindJSON(&createReq); err != nil && err != io.EOF {
+		response.BadRequest(c, "Invalid request body", nil)
+		return
+	}
 
 	itemId := createReq.ItemId
 	if itemId == "" {
@@ -66,6 +71,7 @@ func createCue(c *gin.Context) {
 		CueConfig:   cueConfig,
 		Transition:  transition,
 		Comments:    "",
+		UpdatedBy:   createReq.UpdatedBy,
 	}
 
 	if result := database.DB().Create(&cue); result.Error != nil {
@@ -75,7 +81,7 @@ func createCue(c *gin.Context) {
 
 	fmt.Println("API POST /v1/cues")
 
-	response.OK(c, map[string]any{
+	response.Created(c, map[string]any{
 		"cue": cue,
 	})
 }
@@ -114,6 +120,9 @@ func updateCue(c *gin.Context) {
 	}
 	if len(req.Transition) > 0 && string(req.Transition) != "null" {
 		updates["transition"] = req.Transition
+	}
+	if req.UpdatedBy != nil {
+		updates["updated_by"] = *req.UpdatedBy
 	}
 
 	if len(updates) > 0 {
