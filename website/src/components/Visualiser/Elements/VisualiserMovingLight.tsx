@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Arc, Circle, Group, Line, Rect, Transformer } from "react-konva";
+import { Circle, Group, Line, Rect, Transformer } from "react-konva";
 import type { Group as GroupType } from "konva/lib/Group";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import type { Fixture, PositionOption, UpdateFixtureIn2DReq } from "../../../types/fixtures";
@@ -184,7 +184,7 @@ export const VisualiserMovingLightObject = React.memo(
           </Group>
 
           {/* The beam indicator.*/}
-          <Arc
+          {/* <Arc
             innerRadius={35}
             outerRadius={BEAM_OUTER_RADIUS}
 
@@ -197,7 +197,7 @@ export const VisualiserMovingLightObject = React.memo(
 
             x={35}
             y={35}
-          />
+          /> */}
 
           {/* The Selected indicator */}
           {isSelected && <VisualiserSelectedIndicator x={25 + 10} y={25 + 10} />}

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Arc, Circle, Group, Rect, Transformer } from "react-konva";
+import { Circle, Group, Rect, Transformer } from "react-konva";
 import type { Group as GroupType } from "konva/lib/Group";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import type { Fixture, UpdateFixtureIn2DReq } from "../../../types/fixtures";
@@ -55,7 +55,7 @@ export const VisualiserParLightObject = React.memo(
       trRef.current.nodes([shapeRef.current]);
     }, [isSelected, viewOnly]);
 
-    const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
+    // const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
 
     // Turn cursor into?
     const handleMouseOver = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
@@ -145,7 +145,7 @@ export const VisualiserParLightObject = React.memo(
           </Group>
 
           {/* The beam indicator.*/}
-          <Arc
+          {/* <Arc
             innerRadius={35}
             outerRadius={45}
 
@@ -158,7 +158,7 @@ export const VisualiserParLightObject = React.memo(
             fill={fillColour}
             x={35}
             y={35}
-          />
+          /> */}
 
           {/* The Selected indicator */}
           {isSelected && <VisualiserSelectedIndicator x={25 + 10} y={25 + 10} />}

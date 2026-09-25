@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Arc, Group, Rect, Transformer } from "react-konva";
+import { Group, Rect, Transformer } from "react-konva";
 import type { Group as GroupType } from "konva/lib/Group";
 import type { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import type { Fixture, UpdateFixtureIn2DReq } from "../../../types/fixtures";
@@ -48,7 +48,7 @@ export const VisualiserBarLightObject = React.memo(
       trRef.current.nodes([shapeRef.current]);
     }, [isSelected, viewOnly]);
 
-    const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
+    // const beamAngle = fixture.beamAngle === 0 ? 45 : fixture.beamAngle;
 
     const handleMouseOver = (e: KonvaEventObject<MouseEvent, Node<NodeConfig>>) => {
       const stage = e.target.getStage();
@@ -123,7 +123,7 @@ export const VisualiserBarLightObject = React.memo(
           onMouseOut={handleMouseOut}
         >
           <Rect x={0} y={0} width={135} height={15} stroke={"#ffffff"} strokeWidth={2} fill={fillColour} />
-          <Arc
+          {/* <Arc
             innerRadius={25}
             outerRadius={35}
 
@@ -138,7 +138,7 @@ export const VisualiserBarLightObject = React.memo(
 
             x={135 / 2}
             y={0}
-          />
+          /> */}
 
           {/* The Selected indicator */}
           {isSelected && <VisualiserSelectedIndicator x={135 / 2} y={15 / 2} />}
