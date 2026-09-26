@@ -2,7 +2,7 @@ import { Anchor, Divider, Group, Stack, Text } from "@mantine/core";
 
 export const Acknowledgement = () => {
   return (
-    <Stack pb="4rem" gap="xl">
+    <Stack pb="2rem" gap="lg">
       <Divider label="Acknowledgements" />
       <Text color="var(--mantine-color-gray-6)" style={{ textAlign: "center" }}>
         This website was made by{" "}

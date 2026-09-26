@@ -31,6 +31,9 @@ const theme = createTheme({
 
   fontFamily: "Inter, sans-serif",
   fontFamilyMonospace: "JetBrains Mono, monospace",
+  other: {
+    fontFamilySketch: '"Permanent Marker", cursive',
+  },
   headings: {
     fontFamily: "Space Grotesk, sans-serif",
   },
@@ -54,8 +57,10 @@ const theme = createTheme({
   },
 });
 
-const cssVariablesResolver: CSSVariablesResolver = () => ({
-  variables: {},
+const cssVariablesResolver: CSSVariablesResolver = (theme) => ({
+  variables: {
+    "--font-family-sketch": theme.other.fontFamilySketch,
+  },
   light: {},
   dark: {
     "--mantine-color-text": "#f8f9fa",

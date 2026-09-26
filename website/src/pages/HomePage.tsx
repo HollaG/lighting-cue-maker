@@ -49,9 +49,21 @@ export const HomePage = () => {
       <Container size="lg" mb="3rem">
         <Stack gap="3rem" align="center" style={{ minHeight: "70vh", justifyContent: "center" }}>
           <Center>
-            <Title fz="4rem" className={classes.header} order={1} fw="900">
-              Lighting Cue Maker
-            </Title>
+            <Group>
+              <Title fz="4rem" className={classes.header} order={1} fw="900">
+                Cue
+              </Title>
+              <Title
+                fz="3.85rem"
+                className={classes.header}
+                order={1}
+                fw={400}
+                ff="var(--font-family-sketch)"
+                mb="0.3rem"
+              >
+                Sketch
+              </Title>
+            </Group>
           </Center>
           <Center>
             <Text fz="2rem" style={{ textAlign: "center" }}>

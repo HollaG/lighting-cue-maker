@@ -1,7 +1,7 @@
 // feature[class=Realtime] Scrollable cue list with cursor tracking surface
 
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ActionIcon, Alert, Box, Center, Flex, Group, Loader, Stack, Title, Tooltip } from "@mantine/core";
+import { ActionIcon, Alert, Box, Button, Center, Flex, Group, Loader, Stack, Title, Tooltip } from "@mantine/core";
 import { IconInfoCircle, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
 import { CueCard } from "../../../components/Cues/CueCard/CueCard";
 import { useGetCues } from "../../../query/useGetCues";
@@ -56,7 +56,7 @@ export const CueList = memo(
     // handle swap between table and 2D view
     const [globalViewMode, setGlobalViewMode] = useState<ViewMode>("Table");
 
-    // Skip the 5000px spacer once the selected band's cues are ready.
+    // Skip the leading viewport-height spacer once the selected band's cues are ready.
     const cueListScrollRef = useRef<HTMLDivElement>(null);
     const didInitialScroll = useRef(false);
     const scrollItemId = useRef(itemId);
@@ -77,6 +77,55 @@ export const CueList = memo(
       cueListScrollRef.current.scrollTo({ top: container.clientHeight, behavior: "instant" });
       didInitialScroll.current = true;
     }, [isCueListReady, itemId]);
+
+    // AI impl: not working, todo: https://github.com/HollaG/lighting-cue-maker/issues/11
+    // useEffect(() => {
+    //   const container = cueListScrollRef.current;
+    //   if (!container) return;
+
+    //   /** Limit wheel movement into the spacers without restricting cue-triggered scrollTo calls. */
+    //   const handleWheel = (event: WheelEvent) => {
+    //     if (event.defaultPrevented || event.ctrlKey || event.deltaY === 0) return;
+
+    //     // Let nested controls, such as textareas, consume their own scrolling first.
+    //     let target = event.target instanceof HTMLElement ? event.target : null;
+    //     while (target && target !== container) {
+    //       const overflowY = getComputedStyle(target).overflowY;
+    //       const canScroll = event.deltaY < 0
+    //         ? target.scrollTop > 0
+    //         : target.scrollTop + target.clientHeight < target.scrollHeight;
+    //       if (/(auto|scroll)/.test(overflowY) && canScroll) return;
+    //       target = target.parentElement;
+    //     }
+
+    //     const height = container.clientHeight;
+    //     const contentEndScroll = container.scrollHeight - height * 2;
+    //     // For a short list, allow movement between bottom and top alignment.
+    //     const minScroll = Math.min(height, contentEndScroll);
+    //     const maxScroll = Math.max(height, contentEndScroll);
+    //     const current = container.scrollTop;
+    //     const unit = event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+    //       ? height
+    //       : event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
+    //     const delta = event.deltaY * unit;
+    //     const next = current + delta;
+
+    //     // When cue alignment puts us outside the bounds, permit movement back
+    //     // toward the cards without snapping immediately to the nearest boundary.
+    //     const limited = delta < 0
+    //       ? Math.max(next, Math.min(current, minScroll))
+    //       : Math.min(next, Math.max(current, maxScroll));
+
+    //     if (limited !== next && event.cancelable) {
+    //       event.preventDefault();
+    //       container.scrollTo({ top: limited, behavior: "instant" });
+    //     }
+    //   };
+
+    //   // React's wheel listener is passive; a native listener allows preventDefault.
+    //   container.addEventListener("wheel", handleWheel, { passive: false });
+    //   return () => container.removeEventListener("wheel", handleWheel);
+    // }, [cues?.length]);
 
     return (
       <Stack h="100%" style={{ minHeight: 0 }}>
@@ -191,7 +240,24 @@ export const CueList = memo(
             {/* Hack to allow for scrolling "up" or "down" ""past"" the normal limits */}
             {/* Not sure what this does? Try removing it, add some lyrics and set ONE cue where the marker is far down the page. */}
             {/* You'll notice that the one cue doesn't move, cos it can't scroll anywhere. */}
-            <Box style={{ height: "100%" }}> </Box>
+            <Box style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/* <Card mb="md" style={{ height: "stretch", backgroundColor: "transparent" }}></Card> */}
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  // set scroll position to the height of this box (100% height)
+                  if (cueListScrollRef.current) {
+                    cueListScrollRef.current.scrollTo({
+                      top: cueListScrollRef.current.clientHeight,
+                      behavior: "smooth",
+                    });
+                  }
+                }}
+              >
+                {" "}
+                Reset view
+              </Button>
+            </Box>
 
             {cueOrder.map((cueId, index) => {
               const cue = cues.find((c) => c.id === cueId);
@@ -214,7 +280,24 @@ export const CueList = memo(
             })}
 
             {/* Hack to allow for scrolling "up" or "down" ""past"" the normal limits */}
-            <Box style={{ height: "100%" }}> </Box>
+            <Box style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  // set scroll position to the bottom of this box (100% height)
+                  if (cueListScrollRef.current) {
+                    cueListScrollRef.current.scrollTo({
+                      top: cueListScrollRef.current.scrollHeight - cueListScrollRef.current.clientHeight * 2,
+
+                      behavior: "smooth",
+                    });
+                  }
+                }}
+              >
+                {" "}
+                Reset view
+              </Button>
+            </Box>
           </Stack>
         ) : (
           <Center>

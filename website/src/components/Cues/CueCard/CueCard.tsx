@@ -368,15 +368,15 @@ const CueCardInternal = ({
   // this is a hack, see https://share.gemini.google/Od39OwKe7Hnw
   const [isAtLeastOneComboboxOpened, setAtLeastOneComboboxOpened] = useState<boolean>(false);
 
-  const onJumpToCue = () => {
-    setSelectedCueId(cue.id);
+  // const onJumpToCue = () => {
+  //   setSelectedCueId(cue.id);
 
-    const element = document.getElementById(`ref-${cue.id}`);
-    if (!element) return;
+  //   const element = document.getElementById(`ref-${cue.id}`);
+  //   if (!element) return;
 
-    const y = element.getBoundingClientRect().top + window.scrollY - 128;
-    window.scrollTo({ top: y, behavior: "smooth" });
-  };
+  //   const y = element.getBoundingClientRect().top + window.scrollY - 128;
+  //   window.scrollTo({ top: y, behavior: "smooth" });
+  // };
 
   // --- Handle initial save of cue if it has no assignments (a new cue) ---------
 
@@ -609,7 +609,9 @@ const CueCardInternal = ({
               <Title
                 order={4}
                 style={{
-                  backgroundColor: isCueSelected ? "light-dark(yellow, var(--mantine-color-yellow-9))" : "transparent",
+                  backgroundColor: isCueSelected
+                    ? "light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected))"
+                    : "transparent",
                 }}
               >
                 {" "}
@@ -622,7 +624,7 @@ const CueCardInternal = ({
                   </Text>
                 </Tooltip>
               )}
-              {isCueSelected ? (
+              {/* {isCueSelected ? (
                 <Button size="xs" variant="light" onClick={() => setSelectedCueId(undefined)}>
                   Reset view
                 </Button>
@@ -635,7 +637,7 @@ const CueCardInternal = ({
                 >
                   Scroll to cue
                 </Button>
-              )}
+              )} */}
 
               {/* <Button
                 variant="transparent"
