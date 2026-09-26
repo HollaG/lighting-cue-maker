@@ -654,7 +654,7 @@ const CueCardInternal = ({
     const replacementCue = newVersionCue ?? cueVersions[newVersionIndex];
     if (!replacementCue) return;
 
-    // Form hydration is not an edit to the version we are leaving.
+    // Purposely disable `onValuesChange` when changing the version.
     isChangingVersionRef.current = true;
     try {
       form.setInitialValues(replacementCue);
@@ -674,6 +674,12 @@ const CueCardInternal = ({
     });
   };
 
+  /**
+   * Swap the current viewing version with the main verison,
+   * and save the alternate in the database.
+   *
+   * @returns
+   */
   const onSwapVersion = async () => {
     const versionIndex = currentViewingVersionIndex;
     const activeItemId = useAppStore.getState().activeItemId;
