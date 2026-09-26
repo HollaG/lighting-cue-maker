@@ -2,7 +2,6 @@
 
 import {
   Accordion,
-  ActionIcon,
   Box,
   Button,
   Collapse,
@@ -14,6 +13,7 @@ import {
   Popover,
   px,
   Radio,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -27,7 +27,7 @@ import { useAppStore } from "../../../store/appStore";
 import { type FixtureGroupConfiguration, type Item } from "../../../types/types";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { IconChevronUp } from "@tabler/icons-react";
+import { IconVersions } from "@tabler/icons-react";
 import { useForm, type FormErrors } from "@mantine/form";
 import { useDebouncedCallback, useLocalStorage } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/useUpdateCue";
@@ -107,7 +107,7 @@ for (let i = 1000; i <= 10000; i += 500) {
 }
 
 const CueCardInternal = ({
-  cue,
+  cue: _cue,
   cueNumber,
   isCueSelected,
   fixtureGroups = [],
@@ -117,6 +117,15 @@ const CueCardInternal = ({
   fixtures,
   globalViewMode,
 }: CueCardProps) => {
+  // TODO: Version Control! :)
+  const [cueVersions, setCueVersions] = useState<Cue[]>([_cue]);
+  const [currentViewingVersionIndex, setCurrentViewingVersionIndex] = useState<number>(0); // 0 is MAIN
+
+  const cue = cueVersions[currentViewingVersionIndex];
+
+  /** Whether we should persist this cue in the database. */
+  const shouldPersist = currentViewingVersionIndex === 0; // only persist the MAIN version to the DB
+
   const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
@@ -127,10 +136,23 @@ const CueCardInternal = ({
   const { mutateAsync: deleteCue } = useDeleteCue();
   const { mutate: updateItem } = useUpdateItem();
 
-  const [isCollapsed, setIsCollapsed] = useLocalStorage({ key: `cue-${cue.id}-collapsed`, defaultValue: false });
+  const [isCollapsed] = useLocalStorage({ key: `cue-${cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
   const isApplyingRemoteValuesRef = useRef(false);
+  const isChangingVersionRef = useRef(false);
   const isEditingTransitionTimeRef = useRef(false);
+
+  // every time the cue updates from upstream, update the "main" version (index 0)
+  useEffect(() => {
+    // setCueVersions((prevVersions) => {
+    //   [...prevVersions] = prevVersions.filter((v) => v.id !== _cue.id);
+    //   prevVersions[0] = _cue;
+    //   return prevVersions;
+    // });
+
+    setCueVersions((prevVersions) => [_cue, ...prevVersions.slice(1)]); // replace the main version with the new cue, but keep the other versions
+  }, [_cue]);
+
   // --- Form ---------
   const initialValues: FormData = useMemo(
     () => ({
@@ -144,30 +166,31 @@ const CueCardInternal = ({
       // default transition is Hold & Instant
       transition: cue.transition ?? { holdTimeMs: -1, transitionTimeMs: 0 },
 
-      assignments: (cue && cue.assignments && Object.keys(cue.assignments).length != 0
-        ? // TODO(editing): we need to figure out a way to reconcile the values:
-          //                example: we add a new attribute when editing. However,
-          //                because cue.assignments (which contains the old set of possible attribute & their assignments)
-          //                doesn't have the new attributeId, we need to somehow add it in.
-          reconcileCueAssignments(cue, fixtureGroups).assignments
-        : Object.fromEntries(
-            fixtureGroups.map((group) => [
-              group.id,
-              {
-                name: group.name,
-                assignment: Object.fromEntries(
-                  group.attributes.map((attribute) => [
-                    attribute.id,
-                    {
-                      name: attribute.name,
-                      type: attribute.type,
-                      value: createDefaultValueAssignment(attribute),
-                    },
-                  ]),
-                ),
-              },
-            ]),
-          )) as any,
+      assignments:
+        cue && cue.assignments && Object.keys(cue.assignments).length != 0
+          ? // TODO(editing): we need to figure out a way to reconcile the values:
+            //                example: we add a new attribute when editing. However,
+            //                because cue.assignments (which contains the old set of possible attribute & their assignments)
+            //                doesn't have the new attributeId, we need to somehow add it in.
+            reconcileCueAssignments(cue, fixtureGroups).assignments
+          : Object.fromEntries(
+              fixtureGroups.map((group) => [
+                group.id,
+                {
+                  name: group.name,
+                  assignment: Object.fromEntries(
+                    group.attributes.map((attribute) => [
+                      attribute.id,
+                      {
+                        name: attribute.name,
+                        type: attribute.type,
+                        value: createDefaultValueAssignment(attribute),
+                      },
+                    ]),
+                  ),
+                },
+              ]),
+            ),
     }),
     [cue, fixtureGroups],
   );
@@ -198,11 +221,12 @@ const CueCardInternal = ({
         });
       });
 
-      await updateCue({
-        cueId: cue.id,
-        itemId: activeItemId,
-        requestBody: { ...form.getValues(), updatedBy: userId || undefined },
-      });
+      if (shouldPersist)
+        await updateCue({
+          cueId: cue.id,
+          itemId: activeItemId,
+          requestBody: { ...form.getValues(), updatedBy: userId || undefined },
+        });
 
       // re-validate the cue after saving
       // set all the alerts to be visible again
@@ -250,14 +274,31 @@ const CueCardInternal = ({
 
     onValuesChange: () => {
       // Remote query updates must not be treated as local edits and saved back to the server.
-      if (isApplyingRemoteValuesRef.current) return;
+      if (isApplyingRemoteValuesRef.current || isChangingVersionRef.current) return;
 
       setIsDirty(true);
 
       // Timing inputs save on blur so a query refresh cannot interrupt typing.
       if (isEditingTransitionTimeRef.current) return;
 
-      debouncedSave();
+      if (shouldPersist) {
+        debouncedSave();
+      } else {
+        // Normally, if we are on the main cue, here is the sequence:
+        // 1. user edits form
+        // 2. onValuesChange fires
+        // 3. save fires, database is changed
+        // 4. tanstack query for cue invalidates, upstream re-fetches cue
+        // 5. the "Main" (index 0) cue is updated (note: does not update the form values.)
+
+        // However, if we are on alternates, here is the sequence:
+        // 1. user eidts form
+        // 2. onValuesChange fires
+        // 3. update the versions state array
+        //   --> note: this isn't directly for updating the form, it's to allow us to update the form when we change version
+        const values = form.getValues();
+        onUpdateVersion(values, currentViewingVersionIndex);
+      }
     },
 
     validate: validateCue,
@@ -555,12 +596,16 @@ const CueCardInternal = ({
   // --- Realtime sync ---------
   // Update the form values if `updatedAt` of cue is later than the form's cue's updatedAt AND form isDirty is false AND updatedBy is not the current user.
   useEffect(() => {
+    if (!shouldPersist) return; // do not care about non-main versions
     const formValues = form.getValues();
 
     // There is a risk here: Users losing their input data.
     // This risk is higher for text inputs: users may lose their text input data if a update comes in from another user while they're typing.
     // For other inputs, it's not likely; the debounce timing is quite short so overlaps are uncommon.
     if (cue.updatedAt > formValues.updatedAt && cue.updatedBy !== userId) {
+      // There is someone else changing the inputs
+      // TODO (alts) don't set the form values if the user is currently editing a different version of the cue (not the main version)
+
       // guard against the form's onValuesChange triggering a save, which then triggers another WebTransport message
       isApplyingRemoteValuesRef.current = true;
       try {
@@ -578,7 +623,7 @@ const CueCardInternal = ({
         isApplyingRemoteValuesRef.current = false;
       }
     }
-  }, [cue.updatedAt, form, initialValues, isDirty]);
+  }, [cue.updatedAt, form, initialValues, isDirty, shouldPersist]);
 
   useCueViewModeTracking({
     activeFixtureGroupId,
@@ -587,6 +632,76 @@ const CueCardInternal = ({
     setActiveFixtureGroupId,
     setViewMode,
   });
+
+  // --- Version Control ---------
+  // A user has one `Main` version, and they can swap between versions.
+  // However, only the Main version will get saved.
+  const onAddVersion = () => {
+    // copy the current cue settings
+    const currentSettings = structuredClone(form.getValues());
+    setCueVersions((prevVersions) => [...prevVersions, currentSettings]);
+    onChangeVersion(cueVersions.length, currentSettings); // the new version is not in state yet
+  };
+
+  /**
+   * Orchestrates the change of the current viewing version of the cue.
+   *
+   *
+   * @param newVersionIndex
+   * @param newVersionCue if onAddVersion is called, the cue at newVersionIndex may not be populated yet. pass in this value, it will take priority.
+   */
+  const onChangeVersion = (newVersionIndex: number, newVersionCue?: Cue) => {
+    const replacementCue = newVersionCue ?? cueVersions[newVersionIndex];
+    if (!replacementCue) return;
+
+    // Form hydration is not an edit to the version we are leaving.
+    isChangingVersionRef.current = true;
+    try {
+      form.setInitialValues(replacementCue);
+      form.setValues(replacementCue);
+      setCurrentViewingVersionIndex(newVersionIndex);
+      setIsDirty(false);
+    } finally {
+      isChangingVersionRef.current = false;
+    }
+  };
+
+  const onUpdateVersion = (updatedCue: Cue, versionIndex: number) => {
+    setCueVersions((prevVersions) => {
+      const newVersions = [...prevVersions];
+      newVersions[versionIndex] = updatedCue;
+      return newVersions;
+    });
+  };
+
+  const onSwapVersion = async () => {
+    const versionIndex = currentViewingVersionIndex;
+    const activeItemId = useAppStore.getState().activeItemId;
+    if (versionIndex === 0 || !activeItemId || form.validate().hasErrors) return;
+
+    const alternateVersion = structuredClone(form.getValues());
+    const previousMain = structuredClone(cueVersions[0]);
+    debouncedSave.cancel();
+
+    try {
+      // Persist the promoted version directly: this render still views an alternate.
+      const { cue: savedMain } = await updateCue({
+        cueId: _cue.id,
+        itemId: activeItemId,
+        requestBody: { ...alternateVersion, updatedBy: userId || undefined },
+      });
+
+      setCueVersions((prevVersions) => {
+        const newVersions = [...prevVersions];
+        newVersions[0] = savedMain;
+        newVersions[versionIndex] = previousMain;
+        return newVersions;
+      });
+      onChangeVersion(0, savedMain);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
@@ -605,26 +720,28 @@ const CueCardInternal = ({
       >
         <CardBase isActive={isCueSelected} shadow={isCueSelected ? "lg" : "none"}>
           <Stack gap={"md"}>
-            <Group>
-              <Title
-                order={4}
-                style={{
-                  backgroundColor: isCueSelected
-                    ? "light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected))"
-                    : "transparent",
-                }}
-              >
-                {" "}
-                Cue {cueNumber}
-              </Title>
-              {showCueIdentifiers && (
-                <Tooltip label={`Cue ID: ${cue.id}`}>
-                  <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
-                    {cue.id.slice(0, 4)}
-                  </Text>
-                </Tooltip>
-              )}
-              {/* {isCueSelected ? (
+            <Group align="center" justify="space-between">
+              <Group flex={1}>
+                <Title
+                  order={4}
+                  style={{
+                    backgroundColor: isCueSelected
+                      ? "light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected))"
+                      : "transparent",
+                  }}
+                >
+                  {" "}
+                  Cue {cueNumber}
+                </Title>
+                {showCueIdentifiers && (
+                  <Tooltip label={`Cue ID: ${cue.id}`}>
+                    <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
+                      {cue.id.slice(0, 4)}
+                    </Text>
+                  </Tooltip>
+                )}
+
+                {/* {isCueSelected ? (
                 <Button size="xs" variant="light" onClick={() => setSelectedCueId(undefined)}>
                   Reset view
                 </Button>
@@ -639,7 +756,7 @@ const CueCardInternal = ({
                 </Button>
               )} */}
 
-              {/* <Button
+                {/* <Button
                 variant="transparent"
                 size="xs"
                 // style={{
@@ -651,8 +768,107 @@ const CueCardInternal = ({
                 Copy another cue
               </Button> */}
 
-              <Menu shadow="md">
-                <Menu.Target>
+                <Menu shadow="md">
+                  <Menu.Target>
+                    <Button
+                      variant="transparent"
+                      size="xs"
+                      // style={{
+                      //   textDecoration: "underline dotted",
+                      // }}
+                      // onClick={open}
+                    >
+                      Copy another cue
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
+                    <Menu.Search
+                      value={query}
+                      onChange={(event) => setQuery(event.currentTarget.value)}
+                      placeholder="Search cues"
+                    />
+                    <Menu.Label>Copy settings for:</Menu.Label>
+                    <Menu.CheckboxGroup value={copyFixtureGroupIds} onChange={setCopyFixtureGroupIds}>
+                      {fixtureGroups.map((group) => (
+                        <Menu.CheckboxItem key={group.id} value={group.id}>
+                          {group.name}
+                        </Menu.CheckboxItem>
+                      ))}
+                    </Menu.CheckboxGroup>
+                    <Menu.Divider />
+                    {cuesIdsOtherThanThisList.length > 0 ? (
+                      cuesIdsOtherThanThisList.map((cue) => (
+                        <Menu.Item
+                          key={cue.value}
+                          onClick={() => onCopyCue(cue.value, copyFixtureGroupIds, Number(cue.label.split(" ")[1]))}
+                        >
+                          <Group>
+                            {cue.label}
+                            <Text c="dimmed" fz="sm">
+                              {" "}
+                              {cue.value.slice(0, 4)}{" "}
+                            </Text>
+                          </Group>
+                        </Menu.Item>
+                      ))
+                    ) : (
+                      <Menu.Item>
+                        <Text c="dimmed" size="sm" ta="center" py="xs">
+                          No cues found
+                        </Text>
+                      </Menu.Item>
+                    )}
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+
+              {/* Version control */}
+              {/* If no versions exist, show text "Create alt. version" */}
+              {cueVersions.length > 1 ? (
+                <Group gap="xs">
+                  {/* <Button variant="transparent" size="xs">
+                    <Code fz="sm">
+                      {currentViewingVersionIndex === 0 ? "Main" : `Version ${currentViewingVersionIndex}`}
+                    </Code>
+                  </Button> */}
+                  <Select
+                    allowDeselect={false}
+                    style={{ width: "200px" }}
+                    value={currentViewingVersionIndex}
+                    comboboxProps={{
+                      onOptionSubmit: (optionValue) => {
+                        const value = Number(optionValue);
+                        if (value === -1) {
+                          onAddVersion();
+                        } else {
+                          onChangeVersion(value);
+                        }
+                      },
+                    }}
+                    data={[
+                      { value: 0, label: "Main" },
+                      {
+                        group: "Alternatives",
+                        items: cueVersions
+                          .slice(1)
+                          .map((_, index) => ({ value: index + 1, label: `Version ${index + 1}` })),
+                      },
+                      { group: "Actions", items: [{ value: -1, label: "Create new version" }] },
+                    ]}
+                  />
+                  <Tooltip label="Swap the main version with this version. ">
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={() => void onSwapVersion()}
+                      disabled={currentViewingVersionIndex === 0}
+                    >
+                      <IconVersions width="1rem" />
+                    </Button>
+                  </Tooltip>
+                </Group>
+              ) : (
+                <Tooltip label="Experiment with different settings by creating alternative versions, without losing your original cue.">
                   <Button
                     variant="transparent"
                     size="xs"
@@ -660,103 +876,64 @@ const CueCardInternal = ({
                     //   textDecoration: "underline dotted",
                     // }}
                     // onClick={open}
+                    onClick={onAddVersion}
                   >
-                    Copy another cue
+                    Create alt. version
                   </Button>
-                </Menu.Target>
-                <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
-                  <Menu.Search
-                    value={query}
-                    onChange={(event) => setQuery(event.currentTarget.value)}
-                    placeholder="Search cues"
-                  />
-                  <Menu.Label>Copy settings for:</Menu.Label>
-                  <Menu.CheckboxGroup value={copyFixtureGroupIds} onChange={setCopyFixtureGroupIds}>
-                    {fixtureGroups.map((group) => (
-                      <Menu.CheckboxItem key={group.id} value={group.id}>
-                        {group.name}
-                      </Menu.CheckboxItem>
-                    ))}
-                  </Menu.CheckboxGroup>
-                  <Menu.Divider />
-                  {cuesIdsOtherThanThisList.length > 0 ? (
-                    cuesIdsOtherThanThisList.map((cue) => (
-                      <Menu.Item
-                        key={cue.value}
-                        onClick={() => onCopyCue(cue.value, copyFixtureGroupIds, Number(cue.label.split(" ")[1]))}
-                      >
-                        <Group>
-                          {cue.label}
-                          <Text c="dimmed" fz="sm">
-                            {" "}
-                            {cue.value.slice(0, 4)}{" "}
-                          </Text>
-                        </Group>
-                      </Menu.Item>
-                    ))
-                  ) : (
-                    <Menu.Item>
-                      <Text c="dimmed" size="sm" ta="center" py="xs">
-                        No cues found
-                      </Text>
-                    </Menu.Item>
-                  )}
-                </Menu.Dropdown>
-              </Menu>
+                </Tooltip>
+              )}
+              <Group flex={1} justify="end">
+                {isDirty && <Loader size="1.25rem" type="bars" />}
 
-              <Box flex={1}>{/* <Text>{simplifyCues(cue)}</Text> */}</Box>
+                <ViewModeSelect
+                  props={{
+                    size: "xs",
+                  }}
+                  viewMode={viewMode || "Table"}
+                  setViewMode={setViewMode}
+                />
+                <Popover
+                  shadow="sm"
+                  withArrow
+                  position="top"
+                  withOverlay
+                  opened={isDeletePopoverOpen}
+                  trapFocus
+                  onDismiss={() => setDeletePopoverOpen(false)}
+                >
+                  <Popover.Target>
+                    <Button color="red" size="xs" variant="transparent" onClick={() => setDeletePopoverOpen(true)}>
+                      Delete{" "}
+                    </Button>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <Stack>
+                      <Text> Are you sure you want to delete this cue?</Text>
+                      <Flex justify={"end"} gap="sm">
+                        <Button
+                          data-autofocus
+                          variant="transparent"
+                          // color="black"
+                          onClick={() => setDeletePopoverOpen(false)}
+                          size="xs"
+                        >
+                          Cancel
+                        </Button>
+                        <Button color="red" size="xs" variant="light" onClick={handleDelete}>
+                          Delete
+                        </Button>
+                      </Flex>
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
 
-              {isDirty && <Loader size="1.25rem" type="bars" />}
-
-              <ViewModeSelect
-                props={{
-                  size: "xs",
-                }}
-                viewMode={viewMode || "Table"}
-                setViewMode={setViewMode}
-              />
-              <Popover
-                shadow="sm"
-                withArrow
-                position="top"
-                withOverlay
-                opened={isDeletePopoverOpen}
-                trapFocus
-                onDismiss={() => setDeletePopoverOpen(false)}
-              >
-                <Popover.Target>
-                  <Button color="red" size="xs" variant="transparent" onClick={() => setDeletePopoverOpen(true)}>
-                    Delete{" "}
-                  </Button>
-                </Popover.Target>
-                <Popover.Dropdown>
-                  <Stack>
-                    <Text> Are you sure you want to delete this cue?</Text>
-                    <Flex justify={"end"} gap="sm">
-                      <Button
-                        data-autofocus
-                        variant="transparent"
-                        // color="black"
-                        onClick={() => setDeletePopoverOpen(false)}
-                        size="xs"
-                      >
-                        Cancel
-                      </Button>
-                      <Button color="red" size="xs" variant="light" onClick={handleDelete}>
-                        Delete
-                      </Button>
-                    </Flex>
-                  </Stack>
-                </Popover.Dropdown>
-              </Popover>
-
-              {/* <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
+                {/* <Tooltip label={isDirty ? "Save changes" : "Changes autosaved!"}>
                 <Button variant="light" size="xs" disabled={!isDirty} type="submit">
                   {" "}
                   Save changes{" "}
                 </Button>
               </Tooltip> */}
-              <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
+                {/* <ActionIcon variant="light" color="gray" onClick={() => setIsCollapsed((s) => !s)}>
                 <IconChevronUp
                   style={{
                     transition: "transform 0.2s",
@@ -764,7 +941,8 @@ const CueCardInternal = ({
                   }}
                   width={"1rem"}
                 />
-              </ActionIcon>
+              </ActionIcon> */}
+              </Group>
             </Group>
 
             {/* Cue Contents */}

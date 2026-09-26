@@ -414,8 +414,8 @@ export const EventPage = () => {
                   {inputMode === "raw" ? (
                     <Stack gap={"xs"}>
                       <span>
-                        You can add any lyrics / spoken word during your set here. Once done, switch the editor mode to
-                        configure cues/bumps.{" "}
+                        You can add any lyrics / spoken word during your set here. Once done, change to{" "}
+                        <Code>Cue mode</Code> to start adding cues.
                       </span>
                       <span>
                         Do not modify or delete the embedded cue data! (<Code>{`{cueId=...=cueId}`}</Code>)

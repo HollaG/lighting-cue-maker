@@ -130,7 +130,7 @@ export const CueList = memo(
     return (
       <Stack h="100%" style={{ minHeight: 0 }}>
         <Group style={{ flexShrink: 0 }}>
-          <Title order={3}>Cues</Title>
+          <Title order={3}>Cues ({cues?.length || 0})</Title>
           {isCuesLoading && <Loader type="bars" size="xs" />}
           <Flex flex={1} />
           <ViewModeSelect viewMode={globalViewMode} setViewMode={setGlobalViewMode} />
