@@ -24,6 +24,11 @@ export type HistoryEntry =
       fixtureEntry: FixtureHistoryEntry;
     };
 
+type HistoryChange = {
+  before: HistoryEntry;
+  after: HistoryEntry;
+};
+
 export interface VisualiserSlice {
   // --- Scope: EditVisualisation ---
   activeObjectId: string | null; // which object is selected in the preview
@@ -45,16 +50,16 @@ export interface VisualiserSlice {
 
   // for Undo visualiser movements
   // save the history
-  history: HistoryEntry[];
+  history: HistoryChange[];
+  // Index of the last applied change; -1 means every change has been undone.
   historyPointer: number;
-  // addHistory: (history: HistoryEntry) => void;
-  addFixtureUpdateHistory: (fixture: UpsertFixtureReq) => void;
-  add3DObjectHistory: (objects3D: Visualiser3DObject[]) => void;
+  addFixtureUpdateHistory: (before: UpsertFixtureReq, after: UpsertFixtureReq) => void;
+  add3DObjectHistory: (before: Visualiser3DObject[], after: Visualiser3DObject[]) => void;
 
   // internal
-  addHistory: (history: HistoryEntry) => void;
-  undoHistory: () => HistoryEntry;
-  redoHistory: () => HistoryEntry;
+  addHistory: (change: HistoryChange) => void;
+  getUndo: () => HistoryEntry | null;
+  getRedo: () => HistoryEntry | null;
 }
 
 export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = (set, get) => ({
@@ -100,36 +105,37 @@ export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = 
 
   history: [],
   historyPointer: -1,
-  addFixtureUpdateHistory: (fixture: UpsertFixtureReq) => {
-    get().addHistory({ fixtureEntry: { type: "update", fixture } });
+  addFixtureUpdateHistory: (before, after) => {
+    get().addHistory({
+      before: { fixtureEntry: { type: "update", fixture: before } },
+      after: { fixtureEntry: { type: "update", fixture: after } },
+    });
   },
-  add3DObjectHistory: (objects3D: Visualiser3DObject[]) => {
-    get().addHistory({ objects3D });
+  add3DObjectHistory: (before, after) => {
+    get().addHistory({ before: { objects3D: before }, after: { objects3D: after } });
   },
-  addHistory: (entry: HistoryEntry) => {
+  addHistory: (change) => {
     // A new edit after undo replaces the remaining redo history.
     set((state) => ({
-      history: [...state.history.slice(0, state.historyPointer + 1), entry],
+      history: [...state.history.slice(0, state.historyPointer + 1), structuredClone(change)],
       historyPointer: state.historyPointer + 1,
     }));
+  },
+  getUndo: () => {
+    const { history, historyPointer } = get();
+    const change = history[historyPointer];
+    if (!change) return null;
 
-    console.log(
-      `[history] Added history entry ${JSON.stringify(entry)}. New pointer: ${get().historyPointer}. History length: ${get().history.length}`,
-    );
+    set({ historyPointer: historyPointer - 1 });
+    return structuredClone(change.before);
   },
-  undoHistory: () => {
-    const history = get().history[get().historyPointer] ?? { objects3D: [], fixture: [] };
-    set((state) => ({
-      historyPointer: Math.max(0, state.historyPointer - 1),
-    }));
-    return history;
-  },
-  redoHistory: () => {
-    const history = get().history[get().historyPointer + 1] ?? { objects3D: [], fixture: [] };
-    set((state) => ({
-      historyPointer: Math.min(state.history.length - 1, state.historyPointer + 1),
-    }));
-    return history;
+  getRedo: () => {
+    const { history, historyPointer } = get();
+    const change = history[historyPointer + 1];
+    if (!change) return null;
+
+    set({ historyPointer: historyPointer + 1 });
+    return structuredClone(change.after);
   },
 });
 

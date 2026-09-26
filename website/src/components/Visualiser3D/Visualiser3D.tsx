@@ -39,6 +39,8 @@ import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, Va
 import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
 import { useDeleteFixture } from "../../query/useDeleteFixture";
 import { IconHelpCircle, IconRotate360, IconTransfer, IconZoomPan } from "@tabler/icons-react";
+import { useUpsertFixture } from "../../query/useUpsertFixtures";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Visualiser3D = ({
   eventId,
@@ -61,6 +63,8 @@ export const Visualiser3D = ({
   const [debouncedEnvironment] = useDebouncedValue(environment, 200);
 
   const [stageElements, setStageElements] = useState<Visualiser3DObject[]>(visualiser.objects3D || []);
+  const restoredStageElements = useRef<Visualiser3DObject[] | null>(null);
+  const isApplyingHistory = useRef(false);
   const guiContainerRef = useRef<HTMLDivElement>(null);
   const [gui, setGui] = useState<GUI | null>(null);
 
@@ -77,8 +81,11 @@ export const Visualiser3D = ({
     return () => instance.destroy();
   }, []);
 
-  const { mutate: upsertVisualiser } = useUpsertVisualiser();
+  const queryClient = useQueryClient();
+  const { mutate: upsertVisualiser, mutateAsync: saveVisualiser } = useUpsertVisualiser();
   const { mutate: deleteFixture } = useDeleteFixture();
+  const { mutateAsync: restoreFixture } = useUpsertFixture({ recordHistory: false });
+  const { mutateAsync: restoreVisualiser } = useUpsertVisualiser({ recordHistory: false });
 
   // can be either fixture ID or elemnt ID
   // const [selectedId, setSelectedElementId] = useState<string | null>(null);
@@ -303,8 +310,58 @@ export const Visualiser3D = ({
   }, 500);
 
   useDidUpdate(() => {
+    // Restoring history already persisted these objects; do not autosave them again.
+    const wasRestored = stageElements === restoredStageElements.current;
+    restoredStageElements.current = null;
+    if (wasRestored) return;
     debouncedSave(stageElements);
   }, [stageElements, debouncedSave]);
+
+  /** Apply one saved change without recording it again, and keep local objects in sync. */
+  const applyHistory = async (direction: "undo" | "redo") => {
+    if (isApplyingHistory.current || queryClient.isMutating() > 0) return;
+    isApplyingHistory.current = true;
+
+    let movedHistory: ReturnType<typeof useAppStore.getState>["history"] | null = null;
+    let previousPointer = -1;
+    try {
+      // Commit a pending object edit first so undo targets the edit visible on screen.
+      if (debouncedSave.isPending()) {
+        debouncedSave.cancel();
+        await saveVisualiser({ id: visualiser.id, eventId, objects3D: stageElements });
+      }
+
+      const store = useAppStore.getState();
+      previousPointer = store.historyPointer;
+      const entry = direction === "undo" ? store.getUndo() : store.getRedo();
+      if (!entry) return;
+      movedHistory = store.history;
+
+      if (entry.fixtureEntry) {
+        await restoreFixture(entry.fixtureEntry.fixture);
+      }
+      if (entry.objects3D) {
+        const response = await restoreVisualiser({
+          id: visualiser.id,
+          eventId,
+          objects3D: entry.objects3D,
+        });
+        const objects = response.visualiser.objects3D ?? [];
+        restoredStageElements.current = objects;
+        setStageElements(objects);
+      }
+    } catch {
+      // The API displays the error. Keep this step available to retry unless a new edit arrived.
+      if (movedHistory && useAppStore.getState().history === movedHistory) {
+        useAppStore.setState({ historyPointer: previousPointer });
+      }
+    } finally {
+      isApplyingHistory.current = false;
+    }
+  };
+
+  useHotkey("Control+Z", () => void applyHistory("undo"));
+  useHotkey("Control+Shift+Z", () => void applyHistory("redo"));
 
   const isFixture = (selectedObjectId && fixtures.some((f) => f.id === selectedObjectId)) || false;
 
