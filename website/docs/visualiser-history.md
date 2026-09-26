@@ -6,7 +6,7 @@ The 3D visualiser keeps an undo/redo history for fixture updates and changes to 
 
 Each change has a `before` value and an `after` value. A value contains either a fixture update or an `objects3D` array. Fixture entries identify the fixture and store its editable fields; object entries store the complete 3D object array. The slice copies entries when adding or returning them so later edits cannot alter a saved value.
 
-`historyPointer` is the index of the last applied change. It starts at `-1`. Undo returns the current change's `before` value and decrements the pointer; redo returns the next change's `after` value and increments it. Both return `null` when there is nothing to apply. Adding an edit after undo discards the remaining redo entries.
+`historyPointer` is the index of the last applied change. It starts at `-1`. Undo returns the current change's `before` value and decrements the pointer; redo returns the next change's `after` value and increments it. Both return `null` when there is nothing to apply. Adding an edit after undo discards the remaining redo entries. History holds at most 250 changes; when the oldest change is dropped, the pointer is set to the last index of the retained array.
 
 For example, if a fixture moves from X=10 to X=20, then to X=30, two changes are stored. Two undos restore X=20 and X=10. A redo restores X=20. If the fixture is then moved to X=15, the old X=30 redo is discarded.
 
@@ -25,6 +25,6 @@ It then moves the history pointer and sends the selected `before` or `after` val
 ## Current limits
 
 - Fixture creation and deletion have no undo/redo handling. Fixture history currently covers updates only.
-- History is global to the app store, with no per-event separation or size limit. Switching events does not clear it.
+- History is global to the app store, with no per-event separation. Switching events does not clear it.
 - Fixture transform saves in [`StagePreview3D`](../src/components/Visualiser3D/Stage3D/StagePreview3D.tsx) have their own debounce timer. An undo made before that timer fires may target the preceding saved edit.
 - Only the 3D visualiser has keyboard handlers for applying this history. Other screens may record fixture or 3D object changes through the same mutation hooks, but cannot apply them locally.

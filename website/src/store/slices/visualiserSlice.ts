@@ -29,6 +29,8 @@ type HistoryChange = {
   after: HistoryEntry;
 };
 
+const MAX_HISTORY_ENTRIES = 250;
+
 export interface VisualiserSlice {
   // --- Scope: EditVisualisation ---
   activeObjectId: string | null; // which object is selected in the preview
@@ -115,11 +117,13 @@ export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = 
     get().addHistory({ before: { objects3D: before }, after: { objects3D: after } });
   },
   addHistory: (change) => {
-    // A new edit after undo replaces the remaining redo history.
-    set((state) => ({
-      history: [...state.history.slice(0, state.historyPointer + 1), structuredClone(change)],
-      historyPointer: state.historyPointer + 1,
-    }));
+    set((state) => {
+      // A new edit replaces redo entries. Drop the oldest entry once the cap is reached.
+      const history = [...state.history.slice(0, state.historyPointer + 1), structuredClone(change)].slice(
+        -MAX_HISTORY_ENTRIES,
+      );
+      return { history, historyPointer: history.length - 1 };
+    });
   },
   getUndo: () => {
     const { history, historyPointer } = get();
