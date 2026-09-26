@@ -12,6 +12,7 @@ import {
   SegmentedControl,
   Stack,
   Text,
+  Tooltip,
 } from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
@@ -38,7 +39,14 @@ import { GUI } from "lil-gui";
 import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, ValueAssignment } from "../../types/cues";
 import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
 import { useDeleteFixture } from "../../query/useDeleteFixture";
-import { IconHelpCircle, IconRotate360, IconTransfer, IconZoomPan } from "@tabler/icons-react";
+import {
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconHelpCircle,
+  IconRotate360,
+  IconTransfer,
+  IconZoomPan,
+} from "@tabler/icons-react";
 import { useUpsertFixture } from "../../query/useUpsertFixtures";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -100,6 +108,9 @@ export const Visualiser3D = ({
   useHotkey("W", () => setMode("translate"));
   useHotkey("E", () => setMode("rotate"));
   useHotkey("R", () => setMode("scale"));
+
+  useHotkey("Mod+Z", () => void applyHistory("undo"));
+  useHotkey("Mod+Shift+Z", () => void applyHistory("redo"));
 
   // we don't have access to the controls for fixutres here, this hotkey will be registered in the StagePreview3D
   useHotkey("Delete", async () => {
@@ -360,9 +371,6 @@ export const Visualiser3D = ({
     }
   };
 
-  useHotkey("Control+Z", () => void applyHistory("undo"));
-  useHotkey("Control+Shift+Z", () => void applyHistory("redo"));
-
   const isFixture = (selectedObjectId && fixtures.some((f) => f.id === selectedObjectId)) || false;
 
   const previewFixtureId = useAppStore((state) => state.previewFixtureId);
@@ -551,6 +559,35 @@ export const Visualiser3D = ({
 
                 <Box ref={guiContainerRef} />
               </Stack>
+
+              {/* Undo/Redo */}
+              <Group style={{ position: "absolute", top: "1rem", left: "1rem" }}>
+                <Tooltip label="CTRL+Z or CMD+Z" withArrow position="top">
+                  <Button
+                    bg={"var(--mantine-color-dark-7)"}
+                    size="sm"
+                    color="gray"
+                    disabled={!useAppStore.getState().canUndo()}
+                    onClick={() => void applyHistory("undo")}
+                    leftSection={<IconArrowBackUp size={"1rem"} />}
+                  >
+                    Undo
+                  </Button>
+                </Tooltip>
+
+                <Tooltip label="CTRL+SHIFT+Z or CMD+SHIFT+Y" withArrow position="top">
+                  <Button
+                    bg={"var(--mantine-color-dark-7)"}
+                    size="sm"
+                    color="gray"
+                    disabled={!useAppStore.getState().canRedo()}
+                    onClick={() => void applyHistory("redo")}
+                    leftSection={<IconArrowForwardUp size="1rem" />}
+                  >
+                    Redo
+                  </Button>
+                </Tooltip>
+              </Group>
             </Box>
           </MantineProvider>
         </AspectRatio>

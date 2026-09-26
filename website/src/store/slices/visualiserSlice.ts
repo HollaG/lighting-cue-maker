@@ -62,6 +62,9 @@ export interface VisualiserSlice {
   addHistory: (change: HistoryChange) => void;
   getUndo: () => HistoryEntry | null;
   getRedo: () => HistoryEntry | null;
+
+  canUndo: () => boolean;
+  canRedo: () => boolean;
 }
 
 export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = (set, get) => ({
@@ -140,6 +143,14 @@ export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = 
 
     set({ historyPointer: historyPointer + 1 });
     return structuredClone(change.after);
+  },
+  canUndo: () => {
+    const { history, historyPointer } = get();
+    return historyPointer >= 0 && historyPointer < history.length;
+  },
+  canRedo: () => {
+    const { history, historyPointer } = get();
+    return historyPointer >= -1 && historyPointer < history.length - 1;
   },
 });
 
