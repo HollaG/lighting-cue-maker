@@ -129,6 +129,9 @@ func upsertVisualiser(c *gin.Context) {
 		return
 	}
 
+	// JSON fields below are replaced, so a struct copy preserves their previous values.
+	previousVisualiser := savedVisualiser
+
 	if req.DefaultViewport != nil {
 		savedVisualiser.DefaultViewport = req.DefaultViewport
 	}
@@ -161,6 +164,7 @@ func upsertVisualiser(c *gin.Context) {
 	fmt.Println("API PUT /v1/visualiser")
 	response.OK(c, map[string]any{
 		"visualiser": savedVisualiser,
+		"previous":   previousVisualiser,
 	})
 }
 

@@ -45,6 +45,7 @@ export type GetFixturesRes = {
 
 export type UpsertFixtureRes = {
   fixture: Fixture;
+  previous: Fixture;
 };
 
 export type DeleteFixtureRes = {

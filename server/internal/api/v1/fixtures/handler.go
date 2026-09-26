@@ -123,6 +123,7 @@ func upsertFixture(c *gin.Context) {
 		req.ID,
 		fixtureGroup.Uuid,
 	).First(&fixture)
+
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		response.NotFound(c, "Fixture not found in fixture group")
 		return
@@ -131,6 +132,8 @@ func upsertFixture(c *gin.Context) {
 		response.InternalError(c, "Failed to get fixture")
 		return
 	}
+
+	previousFixture := fixture
 
 	if req.Name != "" {
 		fixture.Name = req.Name
@@ -156,7 +159,8 @@ func upsertFixture(c *gin.Context) {
 
 	fmt.Println("API PUT /v1/fixtures")
 	response.OK(c, map[string]any{
-		"fixture": fixture,
+		"fixture":  fixture,
+		"previous": previousFixture,
 	})
 }
 

@@ -32,7 +32,7 @@ import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import type { CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
-import { useDebouncedCallback, useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedCallback, useDebouncedValue, useDidUpdate } from "@mantine/hooks";
 import { useAppStore } from "../../store/appStore";
 import { GUI } from "lil-gui";
 import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, ValueAssignment } from "../../types/cues";
@@ -183,7 +183,7 @@ export const Visualiser3D = ({
   };
 
   // --- Stage environment saving ---------
-  useEffect(() => {
+  useDidUpdate(() => {
     upsertVisualiser({
       id: visualiser.id,
       eventId,
@@ -302,7 +302,7 @@ export const Visualiser3D = ({
     });
   }, 500);
 
-  useEffect(() => {
+  useDidUpdate(() => {
     debouncedSave(stageElements);
   }, [stageElements, debouncedSave]);
 

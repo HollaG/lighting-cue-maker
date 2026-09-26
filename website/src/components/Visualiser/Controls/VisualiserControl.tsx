@@ -22,7 +22,7 @@ import React, { useEffect, useState } from "react";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../../types/types";
 import { useAppStore } from "../../../store/appStore";
 import type { Stage } from "konva/lib/Stage";
-import { useDebouncedCallback, useDisclosure } from "@mantine/hooks";
+import { useDebouncedCallback, useDidUpdate, useDisclosure } from "@mantine/hooks";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
 import { useUpsertVisualiser } from "../../../query/useUpsertVisualiser";
 
@@ -362,7 +362,7 @@ const VisualiserFixtureSection = ({
     });
   }, 500);
 
-  useEffect(() => {
+  useDidUpdate(() => {
     debouncedSave(fixtureAttributeMapping);
   }, [fixtureAttributeMapping, debouncedSave]);
 
@@ -564,6 +564,7 @@ const DEFAULT_FIXTURE: UpsertFixtureReq = {
   rotY: 0,
   rotZ: 0,
   type: "par",
+  maxBrightness: 200,
 };
 
 export const VisualiserControls = ({

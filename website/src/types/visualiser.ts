@@ -71,7 +71,7 @@ export type GetOrCreateVisualiserRes = {
   visualiser: Visualiser;
 };
 
-export type UpsertVisualiserRes = GetOrCreateVisualiserRes;
+export type UpsertVisualiserRes = GetOrCreateVisualiserRes & { previous: Visualiser };
 
 export type KonvaObject = {
   // base properties

@@ -23,7 +23,7 @@ import { useAppStore } from "../../store/appStore";
 import type { UpdateFixtureReq, Fixture, FixtureType, UpsertFixtureReq } from "../../types/fixtures";
 import type { Visualiser3DEnvironment, Visualiser3DObject, Visualiser3DObjectTypes } from "../../types/visualiser3d";
 import type { CameraControls } from "@react-three/drei";
-import { useDebouncedCallback } from "@mantine/hooks";
+import { useDebouncedCallback, useDidUpdate } from "@mantine/hooks";
 import type { FixtureAttributeMapping, Visualiser } from "../../types/visualiser";
 import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
@@ -263,6 +263,7 @@ const DEFAULT_FIXTURE: UpsertFixtureReq = {
   rotY: 0,
   rotZ: 0,
   type: "par",
+  maxBrightness: 200,
 };
 
 const VisualiserFixtureSection = ({
@@ -447,7 +448,7 @@ const VisualiserFixtureSection = ({
     });
   }, 500);
 
-  useEffect(() => {
+  useDidUpdate(() => {
     debouncedSave(fixtureAttributeMapping);
   }, [fixtureAttributeMapping, debouncedSave]);
 

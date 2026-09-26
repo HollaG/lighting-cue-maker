@@ -12,7 +12,7 @@ import {
   Code,
   SimpleGrid,
 } from "@mantine/core";
-import { useDebouncedCallback, useElementSize } from "@mantine/hooks";
+import { useDebouncedCallback, useDidUpdate, useElementSize } from "@mantine/hooks";
 import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -129,7 +129,7 @@ export const StagePreview2D = ({
     });
   }, 500);
 
-  useEffect(() => {
+  useDidUpdate(() => {
     debouncedSave(stageElements);
   }, [stageElements, debouncedSave]);
 

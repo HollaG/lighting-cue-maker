@@ -1,8 +1,28 @@
 import type { StateCreator } from "zustand";
 import type { AppStore } from "../appStore";
-import type { PositionOption } from "../../types/fixtures";
+import type { PositionOption, UpsertFixtureReq } from "../../types/fixtures";
+import type { Visualiser3DObject } from "../../types/visualiser3d";
 
 export type VisualiserTransformMode = "translate" | "rotate" | "scale";
+
+type FixtureHistoryEntry = {
+  type: "update" | "delete" | "create"; // TODO: only undoing updates supported for now
+  fixture: UpsertFixtureReq;
+};
+
+/**
+ * Records a change to 3D objects, a fixture, or both.
+ * At least one must be present; fixture updates contain only the changed fields.
+ */
+export type HistoryEntry =
+  | {
+      objects3D: Visualiser3DObject[];
+      fixtureEntry?: FixtureHistoryEntry;
+    }
+  | {
+      objects3D?: Visualiser3DObject[];
+      fixtureEntry: FixtureHistoryEntry;
+    };
 
 export interface VisualiserSlice {
   // --- Scope: EditVisualisation ---
@@ -22,6 +42,19 @@ export interface VisualiserSlice {
   previewPosition: PositionOption | null; // the position we are currently editing the position mappings of
   togglePreviewPositionId: (id: string | null, position?: PositionOption) => void; // set the position we are currently editing the position mappings of
   setPreviewPosition: (id: string | null, position?: Partial<PositionOption>) => void; // set the position we are currently editing the position mappings of
+
+  // for Undo visualiser movements
+  // save the history
+  history: HistoryEntry[];
+  historyPointer: number;
+  // addHistory: (history: HistoryEntry) => void;
+  addFixtureUpdateHistory: (fixture: UpsertFixtureReq) => void;
+  add3DObjectHistory: (objects3D: Visualiser3DObject[]) => void;
+
+  // internal
+  addHistory: (history: HistoryEntry) => void;
+  undoHistory: () => HistoryEntry;
+  redoHistory: () => HistoryEntry;
 }
 
 export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = (set, get) => ({
@@ -64,4 +97,40 @@ export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = 
       },
     }));
   },
+
+  history: [],
+  historyPointer: -1,
+  addFixtureUpdateHistory: (fixture: UpsertFixtureReq) => {
+    get().addHistory({ fixtureEntry: { type: "update", fixture } });
+  },
+  add3DObjectHistory: (objects3D: Visualiser3DObject[]) => {
+    get().addHistory({ objects3D });
+  },
+  addHistory: (entry: HistoryEntry) => {
+    // A new edit after undo replaces the remaining redo history.
+    set((state) => ({
+      history: [...state.history.slice(0, state.historyPointer + 1), entry],
+      historyPointer: state.historyPointer + 1,
+    }));
+
+    console.log(
+      `[history] Added history entry ${JSON.stringify(entry)}. New pointer: ${get().historyPointer}. History length: ${get().history.length}`,
+    );
+  },
+  undoHistory: () => {
+    const history = get().history[get().historyPointer] ?? { objects3D: [], fixture: [] };
+    set((state) => ({
+      historyPointer: Math.max(0, state.historyPointer - 1),
+    }));
+    return history;
+  },
+  redoHistory: () => {
+    const history = get().history[get().historyPointer + 1] ?? { objects3D: [], fixture: [] };
+    set((state) => ({
+      historyPointer: Math.min(state.history.length - 1, state.historyPointer + 1),
+    }));
+    return history;
+  },
 });
+
+// const diffStates = (prev: Visualiser3D)
