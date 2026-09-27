@@ -1,6 +1,6 @@
 import { Accordion, Stack } from "@mantine/core";
 import type { QLCEventJson } from "../../types/qlc";
-import { useGetItems } from "../../query/useGetItems";
+import { useGetItems } from "../../query/item/useGetItems";
 import type { GroupedFnList } from "./QLCConverter";
 import { QLCFunctionListPreview } from "./QLCFunctionListPreview";
 

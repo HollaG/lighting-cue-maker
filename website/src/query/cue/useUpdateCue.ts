@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { UpdateCueReq, UpdateCueRes } from "../types/http";
-import type { Cue } from "../types/cues";
+import { api } from "../../lib/api";
+import type { UpdateCueReq, UpdateCueRes } from "../../types/http";
+import type { Cue } from "../../types/cues";
 import { makeGetCuesQueryKey } from "./useGetCues";
-import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime/realtime";
-import { useRealtime } from "../context/realtime";
+import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../../types/realtime/realtime";
+import { useRealtime } from "../../context/realtime";
 
 export type UpdateCueParams = {
   cueId: string;

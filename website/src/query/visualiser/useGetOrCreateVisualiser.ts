@@ -1,14 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { GetOrCreateVisualiserRes } from "../types/visualiser";
+import { api } from "../../lib/api";
+import type { GetOrCreateVisualiserRes } from "../../types/visualiser";
 
 export const useGetOrCreateVisualiser = ({ eventId }: { eventId?: string | null }) => {
   const query = useQuery({
     queryKey: ["visualiser", eventId],
     queryFn: async () => {
-      const res = await api.put<void, GetOrCreateVisualiserRes>(
-        `/api/v1/visualiser/${encodeURIComponent(eventId!)}`,
-      );
+      const res = await api.put<void, GetOrCreateVisualiserRes>(`/api/v1/visualiser/${encodeURIComponent(eventId!)}`);
       return res.visualiser;
     },
     enabled: !!eventId,
@@ -23,6 +21,4 @@ export const useGetOrCreateVisualiser = ({ eventId }: { eventId?: string | null 
   };
 };
 
-export type GetOrCreateVisualiserRefetchFn = ReturnType<
-  typeof useGetOrCreateVisualiser
->["refetchVisualiser"];
+export type GetOrCreateVisualiserRefetchFn = ReturnType<typeof useGetOrCreateVisualiser>["refetchVisualiser"];

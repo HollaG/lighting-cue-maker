@@ -3,7 +3,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
 import { EventForm } from "../../components/EventForm/EventForm";
 import { eventFormValuesToCreateRequest } from "../../components/EventForm/eventFormModel";
-import { useCreateEvent } from "../../query/useCreateEvent";
+import { useCreateEvent } from "../../query/event/useCreateEvent";
 import { notifications } from "../../utils/notifications";
 
 export const CreateEventPage = () => {

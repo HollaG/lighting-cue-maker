@@ -5,7 +5,7 @@ import type { GroupedFnList } from "./QLCConverter";
 import { notifications } from "../../utils/notifications";
 import { useState } from "react";
 import { generateOneLineCue } from "../../utils/cue/cueForm";
-import { useGetEvent } from "../../query/useGetEvent";
+import { useGetEvent } from "../../query/event/useGetEvent";
 import { useAppStore } from "../../store/appStore";
 
 export const QLCFunctionListPreview = ({

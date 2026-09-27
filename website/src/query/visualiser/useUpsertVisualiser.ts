@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { UpsertVisualiserReq, UpsertVisualiserRes } from "../types/visualiser";
-import { useAppStore } from "../store/appStore";
+import { api } from "../../lib/api";
+import type { UpsertVisualiserReq, UpsertVisualiserRes } from "../../types/visualiser";
+import { useAppStore } from "../../store/appStore";
 
 export const useUpsertVisualiser = ({ recordHistory = true }: { recordHistory?: boolean } = {}) => {
   const queryClient = useQueryClient();

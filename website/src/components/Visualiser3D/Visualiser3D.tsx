@@ -29,7 +29,7 @@ import type {
   Visualiser3DObjectTypes,
 } from "../../types/visualiser3d";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
+import { useUpsertVisualiser } from "../../query/visualiser/useUpsertVisualiser";
 import type { CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
@@ -38,7 +38,7 @@ import { useAppStore } from "../../store/appStore";
 import { GUI } from "lil-gui";
 import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, ValueAssignment } from "../../types/cues";
 import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
-import { useDeleteFixture } from "../../query/useDeleteFixture";
+import { useDeleteFixture } from "../../query/fixtures/useDeleteFixture";
 import {
   IconArrowBackUp,
   IconArrowForwardUp,
@@ -47,7 +47,7 @@ import {
   IconTransfer,
   IconZoomPan,
 } from "@tabler/icons-react";
-import { useUpsertFixture } from "../../query/useUpsertFixtures";
+import { useUpsertFixture } from "../../query/fixtures/useUpsertFixtures";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Visualiser3D = ({

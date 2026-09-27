@@ -17,8 +17,8 @@ import type Konva from "konva";
 import type { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Layer, Stage, Rect } from "react-konva";
-import { useUpsertFixture } from "../../../../query/useUpsertFixtures";
-import { useUpsertVisualiser } from "../../../../query/useUpsertVisualiser";
+import { useUpsertFixture } from "../../../../query/fixtures/useUpsertFixtures";
+import { useUpsertVisualiser } from "../../../../query/visualiser/useUpsertVisualiser";
 import type { Fixture, PositionOption, UpdateFixtureIn2DReq } from "../../../../types/fixtures";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../../../types/types";
 import type {

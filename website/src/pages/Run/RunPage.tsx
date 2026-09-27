@@ -1,11 +1,11 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useGetEvent } from "../../query/useGetEvent";
-import { useGetItems } from "../../query/useGetItems";
-import { useGetItem } from "../../query/useGetItem";
+import { useGetEvent } from "../../query/event/useGetEvent";
+import { useGetItems } from "../../query/item/useGetItems";
+import { useGetItem } from "../../query/item/useGetItem";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useGetCues } from "../../query/useGetCues";
-import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
-import { useGetFixturesByEventId } from "../../query/useGetFixtures";
+import { useGetCues } from "../../query/cue/useGetCues";
+import { useGetOrCreateVisualiser } from "../../query/visualiser/useGetOrCreateVisualiser";
+import { useGetFixturesByEventId } from "../../query/fixtures/useGetFixtures";
 import { Accordion, Alert, Box, Button, Flex, Group, Loader, SimpleGrid, Stack, Text, Title } from "@mantine/core";
 import { useFullscreenDocument, useMergedRef, useResizeObserver } from "@mantine/hooks";
 

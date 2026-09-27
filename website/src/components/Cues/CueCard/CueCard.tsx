@@ -30,14 +30,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { IconVersions } from "@tabler/icons-react";
 import { useForm, type FormErrors } from "@mantine/form";
 import { useDebouncedCallback, useLocalStorage } from "@mantine/hooks";
-import { useUpdateCue } from "../../../query/useUpdateCue";
-import { useDeleteCue } from "../../../query/useDeleteCue";
+import { useUpdateCue } from "../../../query/cue/useUpdateCue";
+import { useDeleteCue } from "../../../query/cue/useDeleteCue";
 import {
   createDefaultValueAssignment,
   reconcileCueAssignments,
   removeCueFromRawLyrics,
 } from "../../../utils/cue/cueForm";
-import { useUpdateItem } from "../../../query/useUpdateItem";
+import { useUpdateItem } from "../../../query/item/useUpdateItem";
 import { notifications } from "../../../utils/notifications";
 import type { Visualiser } from "../../../types/visualiser";
 import type { Fixture } from "../../../types/fixtures";

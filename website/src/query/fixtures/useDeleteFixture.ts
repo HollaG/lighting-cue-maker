@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { DeleteFixtureRes } from "../types/fixtures";
+import { api } from "../../lib/api";
+import type { DeleteFixtureRes } from "../../types/fixtures";
 
 export type DeleteFixtureParams = {
   fixtureId: string;

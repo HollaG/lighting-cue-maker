@@ -8,7 +8,7 @@ import type { Fixture, PositionOption, UpdateFixtureIn3DReq } from "../../../typ
 import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
 import { useDebouncedCallback } from "@mantine/hooks";
-import { useUpsertFixture } from "../../../query/useUpsertFixtures";
+import { useUpsertFixture } from "../../../query/fixtures/useUpsertFixtures";
 import { Visualiser3DCuboid } from "../Elements/Visualiser3DCuboid";
 import { Visualiser3DDefaultHuman } from "../Elements/Visualiser3DDefaultHuman";
 import { GRID_SIZE, PLANE_SIZE } from "../../../utils/visualiser";

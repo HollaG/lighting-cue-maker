@@ -29,12 +29,12 @@ import classes from "./EventPage.module.css";
 import { RichContentWrapper } from "../../components/RichContent/RichContentWrapper";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // import { CueList } from "./CueList/CueList";
-import { useGetEvent } from "../../query/useGetEvent";
-import { useGetItems } from "../../query/useGetItems";
-import { useGetItem } from "../../query/useGetItem";
+import { useGetEvent } from "../../query/event/useGetEvent";
+import { useGetItems } from "../../query/item/useGetItems";
+import { useGetItem } from "../../query/item/useGetItem";
 import { type InputMode } from "../../store/slices/lyricsSlice";
-import { useCreateItem } from "../../query/useCreateItem";
-import { useUpdateItem } from "../../query/useUpdateItem";
+import { useCreateItem } from "../../query/item/useCreateItem";
+import { useUpdateItem } from "../../query/item/useUpdateItem";
 import {
   IconArrowLeft,
   IconEdit,

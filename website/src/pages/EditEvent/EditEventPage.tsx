@@ -9,9 +9,9 @@ import {
   getAddedBumpConfigurationNames,
   type EventFormValues,
 } from "../../components/EventForm/eventFormModel";
-import { useCreateBumpConfiguration } from "../../query/useCreateBumpConfiguration";
-import { useGetEvent } from "../../query/useGetEvent";
-import { useUpdateEvent } from "../../query/useUpdateEvent";
+import { useCreateBumpConfiguration } from "../../query/bump/useCreateBumpConfiguration";
+import { useGetEvent } from "../../query/event/useGetEvent";
+import { useUpdateEvent } from "../../query/event/useUpdateEvent";
 import { notifications } from "../../utils/notifications";
 
 export const EditEventPage = () => {

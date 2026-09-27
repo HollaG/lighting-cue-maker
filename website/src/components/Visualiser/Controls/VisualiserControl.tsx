@@ -15,16 +15,16 @@ import {
 } from "@mantine/core";
 import type { FixtureAttributeMapping, Visualiser, VisualiserObject, VisualiserTypes } from "../../../types/visualiser";
 import type { Fixture, FixtureType, UpdateFixtureReq, UpsertFixtureReq } from "../../../types/fixtures";
-import { useGetFixtures } from "../../../query/useGetFixtures";
-import { useUpsertFixture } from "../../../query/useUpsertFixtures";
-import { useDeleteFixture } from "../../../query/useDeleteFixture";
+import { useGetFixtures } from "../../../query/fixtures/useGetFixtures";
+import { useUpsertFixture } from "../../../query/fixtures/useUpsertFixtures";
+import { useDeleteFixture } from "../../../query/fixtures/useDeleteFixture";
 import React, { useEffect, useState } from "react";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../../types/types";
 import { useAppStore } from "../../../store/appStore";
 import type { Stage } from "konva/lib/Stage";
 import { useDebouncedCallback, useDidUpdate, useDisclosure } from "@mantine/hooks";
 import { CustomTextInput } from "../../CustomTextInput/CustomTextInput";
-import { useUpsertVisualiser } from "../../../query/useUpsertVisualiser";
+import { useUpsertVisualiser } from "../../../query/visualiser/useUpsertVisualiser";
 
 interface ObjectMenuProps {
   obj: VisualiserObject;

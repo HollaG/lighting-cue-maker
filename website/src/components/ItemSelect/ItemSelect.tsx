@@ -5,7 +5,7 @@ import type { Item } from "../../types/types";
 import classes from "./ItemSelect.module.css";
 import type { QueryObserverResult, RefetchOptions } from "@tanstack/react-query";
 
-import { useCreateItem } from "../../query/useCreateItem";
+import { useCreateItem } from "../../query/item/useCreateItem";
 
 interface ItemSelectProps {
   items: Item[];

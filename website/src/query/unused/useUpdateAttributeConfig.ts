@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import { useAppStore } from "../store/appStore";
-import type { UpdateAttributeConfigReq } from "../types/http";
+import { api } from "../../lib/api";
+import { useAppStore } from "../../store/appStore";
+import type { UpdateAttributeConfigReq } from "../../types/http";
 
 type UpdateAttributeConfigRes = {
-  attribute: import("../types/types").AttributeConfiguration;
+  attribute: import("../../types/types").AttributeConfiguration;
 };
 
 export const useUpdateAttributeConfig = () => {
@@ -12,13 +12,7 @@ export const useUpdateAttributeConfig = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      attributeId,
-      requestBody,
-    }: {
-      attributeId: string;
-      requestBody: UpdateAttributeConfigReq;
-    }) =>
+    mutationFn: ({ attributeId, requestBody }: { attributeId: string; requestBody: UpdateAttributeConfigReq }) =>
       api.patch<UpdateAttributeConfigReq, UpdateAttributeConfigRes>(
         `/api/v1/attribute-config/${attributeId}`,
         requestBody,

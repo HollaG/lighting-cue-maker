@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { GetItemsRes } from "../types/http";
+import { api } from "../../lib/api";
+import type { GetItemsRes } from "../../types/http";
 
 export const useGetItems = ({ eventId }: { eventId: string }) => {
   const query = useQuery({

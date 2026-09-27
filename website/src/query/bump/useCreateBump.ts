@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { CreateBumpReq, CreateBumpRes } from "../types/http";
+import { api } from "../../lib/api";
+import type { CreateBumpReq, CreateBumpRes } from "../../types/http";
 
 export const useCreateBump = () => {
   const queryClient = useQueryClient();

@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { CreateEventReq, CreateEventRes } from "../types/http";
+import { api } from "../../lib/api";
+import type { CreateEventReq, CreateEventRes } from "../../types/http";
 
 export const useCreateEvent = () => {
   // const setCode = useAppStore((s) => s.setCode);

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { GetFixturesRes } from "../types/fixtures";
-import type { LightEventConfiguration } from "../types/types";
+import { api } from "../../lib/api";
+import type { GetFixturesRes } from "../../types/fixtures";
+import type { LightEventConfiguration } from "../../types/types";
 
 export const useGetFixtures = ({ fixtureGroupId }: { fixtureGroupId?: string | null }) => {
   const query = useQuery({

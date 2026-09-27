@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import { useAppStore } from "../store/appStore";
-import type { UpdateFixtureGroupConfigReq } from "../types/http";
+import { api } from "../../lib/api";
+import { useAppStore } from "../../store/appStore";
+import type { UpdateFixtureGroupConfigReq } from "../../types/http";
 
 type UpdateFixtureGroupConfigRes = {
-  fixtureGroup: import("../types/types").FixtureGroupConfiguration;
+  fixtureGroup: import("../../types/types").FixtureGroupConfiguration;
 };
 
 export const useUpdateFixtureGroupConfig = () => {

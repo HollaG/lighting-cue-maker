@@ -13,12 +13,12 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft, IconInfoCircle } from "@tabler/icons-react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { useGetEvent } from "../../query/useGetEvent";
+import { useGetEvent } from "../../query/event/useGetEvent";
 
-import { useGetOrCreateVisualiser } from "../../query/useGetOrCreateVisualiser";
+import { useGetOrCreateVisualiser } from "../../query/visualiser/useGetOrCreateVisualiser";
 
 import { StagePreview2D } from "../../components/Visualiser/Stage/2D/StagePreview2D";
-import { useGetFixturesByEventId } from "../../query/useGetFixtures";
+import { useGetFixturesByEventId } from "../../query/fixtures/useGetFixtures";
 import { useState } from "react";
 import { Visualiser3D } from "../../components/Visualiser3D/Visualiser3D";
 

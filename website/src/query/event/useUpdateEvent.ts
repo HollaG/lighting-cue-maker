@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { UpdateEventReq, UpdateEventRes } from "../types/http";
+import { api } from "../../lib/api";
+import type { UpdateEventReq, UpdateEventRes } from "../../types/http";
 
 export const useUpdateEvent = () => {
   const queryClient = useQueryClient();

@@ -16,16 +16,16 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { useDeleteFixture } from "../../query/useDeleteFixture";
-import { useGetFixtures } from "../../query/useGetFixtures";
-import { useUpsertFixture } from "../../query/useUpsertFixtures";
+import { useDeleteFixture } from "../../query/fixtures/useDeleteFixture";
+import { useGetFixtures } from "../../query/fixtures/useGetFixtures";
+import { useUpsertFixture } from "../../query/fixtures/useUpsertFixtures";
 import { useAppStore } from "../../store/appStore";
 import type { UpdateFixtureReq, Fixture, FixtureType, UpsertFixtureReq } from "../../types/fixtures";
 import type { Visualiser3DEnvironment, Visualiser3DObject, Visualiser3DObjectTypes } from "../../types/visualiser3d";
 import type { CameraControls } from "@react-three/drei";
 import { useDebouncedCallback, useDidUpdate } from "@mantine/hooks";
 import type { FixtureAttributeMapping, Visualiser } from "../../types/visualiser";
-import { useUpsertVisualiser } from "../../query/useUpsertVisualiser";
+import { useUpsertVisualiser } from "../../query/visualiser/useUpsertVisualiser";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 
 interface ObjectMenuProps {

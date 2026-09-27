@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { CreateItemReq, CreateItemRes } from "../types/http";
-import { useAppStore } from "../store/appStore";
+import { api } from "../../lib/api";
+import type { CreateItemReq, CreateItemRes } from "../../types/http";
+import { useAppStore } from "../../store/appStore";
 
 export const useCreateItem = () => {
   const queryClient = useQueryClient();

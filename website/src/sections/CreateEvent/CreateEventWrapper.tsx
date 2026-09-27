@@ -3,8 +3,8 @@
 import { Collapse, Divider } from "@mantine/core";
 import { EventForm } from "../../components/EventForm/EventForm";
 import { eventFormValuesToCreateRequest } from "../../components/EventForm/eventFormModel";
-import { useCreateEvent } from "../../query/useCreateEvent";
-import { useGetEvent } from "../../query/useGetEvent";
+import { useCreateEvent } from "../../query/event/useCreateEvent";
+import { useGetEvent } from "../../query/event/useGetEvent";
 import { useAppStore } from "../../store/appStore";
 
 export const CreateEventWrapper = () => {

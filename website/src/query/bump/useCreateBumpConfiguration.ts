@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { CreateBumpConfigurationReq, CreateBumpConfigurationRes } from "../types/http";
-import type { LightEventConfiguration } from "../types/types";
+import { api } from "../../lib/api";
+import type { CreateBumpConfigurationReq, CreateBumpConfigurationRes } from "../../types/http";
+import type { LightEventConfiguration } from "../../types/types";
 
 export const useCreateBumpConfiguration = () => {
   const queryClient = useQueryClient();

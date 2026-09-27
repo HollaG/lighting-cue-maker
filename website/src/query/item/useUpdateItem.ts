@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { UpdateItemReq, UpdateItemRes } from "../types/http";
-import { sanitize } from "../utils/sanitize";
+import { api } from "../../lib/api";
+import type { UpdateItemReq, UpdateItemRes } from "../../types/http";
+import { sanitize } from "../../utils/sanitize";
 import { makeGetItemQueryKey } from "./useGetItem";
-import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../types/realtime/realtime";
-import { useOptionalRealtime } from "../context/realtime";
+import { ClientMessageType, type ClientMessageInvalidateQueryData } from "../../types/realtime/realtime";
+import { useOptionalRealtime } from "../../context/realtime";
 
 export type UpdateItemParams = {
   itemId: string;

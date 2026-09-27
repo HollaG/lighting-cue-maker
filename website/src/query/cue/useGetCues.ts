@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { GetCuesRes } from "../types/http";
+import { api } from "../../lib/api";
+import type { GetCuesRes } from "../../types/http";
 
 export type UseGetCuesReturnType = ReturnType<typeof useGetCues>;
 
