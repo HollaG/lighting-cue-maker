@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"lighting-cue-maker/server/config"
+	"lighting-cue-maker/server/internal/api/v1/alternatecues"
 	"lighting-cue-maker/server/internal/api/v1/attributeconfigurations"
 	"lighting-cue-maker/server/internal/api/v1/bumpconfigurations"
 	"lighting-cue-maker/server/internal/api/v1/bumps"
@@ -45,6 +46,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		fixtures.Register(v1.Group("/fixtures"))
 		items.Register(v1.Group("/items"))
 		cues.Register(v1.Group("/cues"))
+		alternatecues.Register(v1.Group("/alternate-cues"))
 		bumpconfigurations.Register(v1.Group("/bump-configurations"))
 		bumps.Register(v1.Group("/bumps"))
 		fixturegroupconfigurations.Register(v1.Group("/fixture-group-config"))

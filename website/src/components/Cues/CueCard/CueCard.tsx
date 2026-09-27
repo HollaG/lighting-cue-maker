@@ -47,11 +47,16 @@ import { CueContents } from "../CueContents/CueContents";
 import { CueNotices } from "../CueNotices/CueNotices";
 import { useCueViewModeTracking } from "../../../hooks/realtime/useCueViewModeTracking";
 import { useRealtimeStore } from "../../../store/realtimeStore";
+import { useCreateAlternate } from "../../../query/alternate-cue/useCreateAlternate";
+import { useGetAlternates } from "../../../query/alternate-cue/useGetAlternates";
+import type { AlternateCue } from "../../../types/alternate-cue";
+import { useUpdateAlternate } from "../../../query/alternate-cue/useUpdateAlternate";
 
 type FormData = Cue;
 
 interface CueCardProps {
   cue: Cue;
+  alternates: AlternateCue[];
   cueNumber: number;
   isCueSelected: boolean;
   fixtureGroups?: FixtureGroupConfiguration[];
@@ -107,7 +112,7 @@ for (let i = 1000; i <= 10000; i += 500) {
 }
 
 const CueCardInternal = ({
-  cue: _cue,
+  cue: _cue, // _cue is the ORIGINAL cue
   cueNumber,
   isCueSelected,
   fixtureGroups = [],
@@ -118,13 +123,11 @@ const CueCardInternal = ({
   globalViewMode,
 }: CueCardProps) => {
   // TODO: Version Control! :)
-  const [cueVersions, setCueVersions] = useState<Cue[]>([_cue]);
-  const [currentViewingVersionIndex, setCurrentViewingVersionIndex] = useState<number>(0); // 0 is MAIN
-
-  const cue = cueVersions[currentViewingVersionIndex];
+  // const [currentViewingVersionIndex, setCurrentViewingVersionIndex] = useState<number>(0); // 0 is MAIN
+  const [currentViewingAlternateId, setCurrentViewingAlternateId] = useState<string | "main">("main"); // null is MAIN
 
   /** Whether we should persist this cue in the database. */
-  const shouldPersist = currentViewingVersionIndex === 0; // only persist the MAIN version to the DB
+  const shouldPersist = currentViewingAlternateId === "main"; // only persist the MAIN version to the DB
 
   const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
@@ -136,27 +139,37 @@ const CueCardInternal = ({
   const { mutateAsync: deleteCue } = useDeleteCue();
   const { mutate: updateItem } = useUpdateItem();
 
-  const [isCollapsed] = useLocalStorage({ key: `cue-${cue.id}-collapsed`, defaultValue: false });
+  const { mutateAsync: createAlternate, isPending: isCreatingAlternate } = useCreateAlternate();
+  const { alternates } = useGetAlternates({ cueId: _cue.id });
+  const { mutateAsync: updateAlternate } = useUpdateAlternate();
+
+  const [isCollapsed] = useLocalStorage({ key: `cue-${_cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
   const isApplyingRemoteValuesRef = useRef(false);
   const isChangingVersionRef = useRef(false);
   const isEditingTransitionTimeRef = useRef(false);
 
-  // every time the cue updates from upstream, update the "main" version (index 0)
-  useEffect(() => {
-    // setCueVersions((prevVersions) => {
-    //   [...prevVersions] = prevVersions.filter((v) => v.id !== _cue.id);
-    //   prevVersions[0] = _cue;
-    //   return prevVersions;
-    // });
+  const showLoadingIcon = isDirty || isCreatingAlternate;
 
-    setCueVersions((prevVersions) => [_cue, ...prevVersions.slice(1)]); // replace the main version with the new cue, but keep the other versions
-  }, [_cue]);
+  /** This is the ORIGINAL cue ID. */
+  const cueId = _cue.id;
+
+  /** This is the current cue OR the alternate cue.
+   * Very important note:
+   * cue.id can either refer to the ORIGINAL cue ID, or the Alternate ID.
+   *
+   * To be sure, always use `cueId` above if intending to refer to the original cue ID.
+   *
+   */
+  const cue =
+    currentViewingAlternateId === "main"
+      ? _cue
+      : (alternates || []).find((a) => a.id === currentViewingAlternateId) || _cue; // -1 because alternates is 0-indexed, but MAIN is index 0
 
   // --- Form ---------
   const initialValues: FormData = useMemo(
     () => ({
-      id: cue.id,
+      id: cueId,
       comments: cue.comments,
       createdAt: cue.createdAt,
       updatedAt: cue.updatedAt,
@@ -221,12 +234,18 @@ const CueCardInternal = ({
         });
       });
 
-      if (shouldPersist)
+      if (shouldPersist) {
         await updateCue({
-          cueId: cue.id,
+          cueId: cueId,
           itemId: activeItemId,
           requestBody: { ...form.getValues(), updatedBy: userId || undefined },
         });
+      } else {
+        await updateAlternate({
+          alternateId: currentViewingAlternateId,
+          requestBody: { ...form.getValues(), updatedBy: userId || undefined },
+        });
+      }
 
       // re-validate the cue after saving
       // set all the alerts to be visible again
@@ -281,24 +300,7 @@ const CueCardInternal = ({
       // Timing inputs save on blur so a query refresh cannot interrupt typing.
       if (isEditingTransitionTimeRef.current) return;
 
-      if (shouldPersist) {
-        debouncedSave();
-      } else {
-        // Normally, if we are on the main cue, here is the sequence:
-        // 1. user edits form
-        // 2. onValuesChange fires
-        // 3. save fires, database is changed
-        // 4. tanstack query for cue invalidates, upstream re-fetches cue
-        // 5. the "Main" (index 0) cue is updated (note: does not update the form values.)
-
-        // However, if we are on alternates, here is the sequence:
-        // 1. user eidts form
-        // 2. onValuesChange fires
-        // 3. update the versions state array
-        //   --> note: this isn't directly for updating the form, it's to allow us to update the form when we change version
-        const values = form.getValues();
-        onUpdateVersion(values, currentViewingVersionIndex);
-      }
+      debouncedSave();
     },
 
     validate: validateCue,
@@ -344,7 +346,7 @@ const CueCardInternal = ({
     if (!isCueSelected || !cueRef.current) {
       return;
     }
-    const elementId = `ref-${cue.id}`;
+    const elementId = `ref-${cueId}`;
     const element = document.getElementById(elementId);
     if (!element) return;
 
@@ -369,17 +371,13 @@ const CueCardInternal = ({
     // let this offset be the delta scroll pos of the cue list between now and desired.
     // 1. Get the current scroll position of the container
 
-    console.log({ container });
-
     // split logic: if deltaY is negative, then we need to "scroll down" or "move the cards up"
     //              if deltaY is positive, then we need to "scroll up" or "move the cards down"
 
-    console.log("scrolling!!");
     if (deltaY < 0) {
       // 2. get the target scroll position
       const targetScrollPos = curScrollPos + deltaY * -1;
 
-      console.log({ curScrollPos, targetScrollPos, deltaY });
       // 3. scroll the container to the target scroll position
       container?.scrollTo({
         top: targetScrollPos,
@@ -402,7 +400,7 @@ const CueCardInternal = ({
         behavior: "smooth",
       });
     }
-  }, [cue.id, isCueSelected, setOffset, cueRef.current]);
+  }, [cueId, isCueSelected, setOffset, cueRef.current]);
 
   // This is required to set the z-index of the card that has the Combobox dropdown (colour select) open,
   // so that the dropdown is not hidden behind the next card.
@@ -410,9 +408,9 @@ const CueCardInternal = ({
   const [isAtLeastOneComboboxOpened, setAtLeastOneComboboxOpened] = useState<boolean>(false);
 
   // const onJumpToCue = () => {
-  //   setSelectedCueId(cue.id);
+  //   setSelectedCueId(cueId);
 
-  //   const element = document.getElementById(`ref-${cue.id}`);
+  //   const element = document.getElementById(`ref-${cueId}`);
   //   if (!element) return;
 
   //   const y = element.getBoundingClientRect().top + window.scrollY - 128;
@@ -451,8 +449,8 @@ const CueCardInternal = ({
       const activeItemId = useAppStore.getState().activeItemId;
       const item = queryClient.getQueryData<Item>(["item", activeItemId]);
       if (!item) return;
-      await deleteCue({ cueId: cue.id, itemId: item.id });
-      const updatedRawLyrics = removeCueFromRawLyrics(item.rawLyrics, cue.id);
+      await deleteCue({ cueId: _cue.id, itemId: item.id });
+      const updatedRawLyrics = removeCueFromRawLyrics(item.rawLyrics, _cue.id);
 
       // update Item to remove from rawlyrics
       // TODO @combine-updates: can probably calculate insertCueInRichContent in the backend, so we can save one query
@@ -547,7 +545,7 @@ const CueCardInternal = ({
   // ALWAYS map first, so we preserve the numbering of cues (Cue 1, cue 2, cue 3...)
   let cuesIdsOtherThanThisList = cueOrder
     .map((cueId, index) => ({ value: cueId, label: `Cue ${index + 1}` }))
-    .filter((c) => c.value !== cue.id);
+    .filter((c) => c.value !== cueId);
   if (query.length > 0) {
     // show the indexes-1 that match:
     //   search "1" --> show 0, 10,
@@ -568,7 +566,7 @@ const CueCardInternal = ({
 
   // --- Visualiser ---------
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>({
-    key: `${cue.id}-viewmode`,
+    key: `${cueId}-viewmode`,
     defaultValue: "Table",
   });
 
@@ -627,7 +625,7 @@ const CueCardInternal = ({
 
   useCueViewModeTracking({
     activeFixtureGroupId,
-    cueId: cue.id,
+    cueId: cueId,
     viewMode,
     setActiveFixtureGroupId,
     setViewMode,
@@ -636,11 +634,25 @@ const CueCardInternal = ({
   // --- Version Control ---------
   // A user has one `Main` version, and they can swap between versions.
   // However, only the Main version will get saved.
-  const onAddVersion = () => {
+  const onAddVersion = async () => {
+    if (!alternates) return; // eh; not sure if this will every hit
     // copy the current cue settings
     const currentSettings = structuredClone(form.getValues());
-    setCueVersions((prevVersions) => [...prevVersions, currentSettings]);
-    onChangeVersion(cueVersions.length, currentSettings); // the new version is not in state yet
+
+    try {
+      const alternateResp = await createAlternate({
+        ...currentSettings,
+        cueId: _cue.id,
+
+        type: "user",
+        name: `Version ${alternates.length + 1}`,
+        updatedBy: userId || undefined,
+      });
+
+      const alternateId = alternateResp.alternateCue.id;
+
+      onChangeVersion(alternateId, currentSettings); // the new version is not in state yet
+    } catch (e) {}
   };
 
   /**
@@ -650,8 +662,8 @@ const CueCardInternal = ({
    * @param newVersionIndex
    * @param newVersionCue if onAddVersion is called, the cue at newVersionIndex may not be populated yet. pass in this value, it will take priority.
    */
-  const onChangeVersion = (newVersionIndex: number, newVersionCue?: Cue) => {
-    const replacementCue = newVersionCue ?? cueVersions[newVersionIndex];
+  const onChangeVersion = (newVersionIndex: string, newVersionCue?: Cue) => {
+    const replacementCue = newVersionCue ?? (alternates || []).find((a) => a.id === newVersionIndex);
     if (!replacementCue) return;
 
     // Purposely disable `onValuesChange` when changing the version.
@@ -659,19 +671,15 @@ const CueCardInternal = ({
     try {
       form.setInitialValues(replacementCue);
       form.setValues(replacementCue);
-      setCurrentViewingVersionIndex(newVersionIndex);
+      setCurrentViewingAlternateId(newVersionIndex);
       setIsDirty(false);
     } finally {
       isChangingVersionRef.current = false;
     }
   };
 
-  const onUpdateVersion = (updatedCue: Cue, versionIndex: number) => {
-    setCueVersions((prevVersions) => {
-      const newVersions = [...prevVersions];
-      newVersions[versionIndex] = updatedCue;
-      return newVersions;
-    });
+  const onChangeToMain = (cue: Cue) => {
+    onChangeVersion("main", cue);
   };
 
   /**
@@ -681,29 +689,38 @@ const CueCardInternal = ({
    * @returns
    */
   const onSwapVersion = async () => {
-    const versionIndex = currentViewingVersionIndex;
     const activeItemId = useAppStore.getState().activeItemId;
-    if (versionIndex === 0 || !activeItemId || form.validate().hasErrors) return;
+    const alternateId = currentViewingAlternateId;
+    if (!activeItemId || alternateId === "main" || form.validate().hasErrors || !alternateId) return;
 
     const alternateVersion = structuredClone(form.getValues());
-    const previousMain = structuredClone(cueVersions[0]);
+    const previousMain = structuredClone(_cue);
     debouncedSave.cancel();
 
     try {
-      // Persist the promoted version directly: this render still views an alternate.
+      // Replace the MAIN version with the alternate.
       const { cue: savedMain } = await updateCue({
         cueId: _cue.id,
         itemId: activeItemId,
-        requestBody: { ...alternateVersion, updatedBy: userId || undefined },
+        // Must override the `cue id` when swapping cues!
+        requestBody: { ...alternateVersion, id: _cue.id, updatedBy: userId || undefined },
       });
 
-      setCueVersions((prevVersions) => {
-        const newVersions = [...prevVersions];
-        newVersions[0] = savedMain;
-        newVersions[versionIndex] = previousMain;
-        return newVersions;
+      // Replace the OLD version alternate with the main.
+      await updateAlternate({
+        alternateId,
+        // Must override the `alternate id` when swapping cues!
+        requestBody: { ...previousMain, id: alternateId, updatedBy: userId || undefined },
       });
-      onChangeVersion(0, savedMain);
+
+      // setCueVersions((prevVersions) => {
+      //   const newVersions = [...prevVersions];
+      //   newVersions[0] = savedMain;
+      //   newVersions[versionIndex] = previousMain;
+      //   return newVersions;
+      // });
+
+      onChangeToMain(savedMain); // switch to main version, which is now the promoted version
     } catch (error) {
       console.error(error);
     }
@@ -740,9 +757,9 @@ const CueCardInternal = ({
                   Cue {cueNumber}
                 </Title>
                 {showCueIdentifiers && (
-                  <Tooltip label={`Cue ID: ${cue.id}`}>
+                  <Tooltip label={`Cue ID: ${cueId}`}>
                     <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
-                      {cue.id.slice(0, 4)}
+                      {cueId.slice(0, 4)}
                     </Text>
                   </Tooltip>
                 )}
@@ -830,7 +847,7 @@ const CueCardInternal = ({
 
               {/* Version control */}
               {/* If no versions exist, show text "Create alt. version" */}
-              {cueVersions.length > 1 ? (
+              {alternates && alternates.length > 0 ? (
                 <Group gap="xs">
                   {/* <Button variant="transparent" size="xs">
                     <Code fz="sm">
@@ -840,26 +857,25 @@ const CueCardInternal = ({
                   <Select
                     allowDeselect={false}
                     style={{ width: "200px" }}
-                    value={currentViewingVersionIndex}
+                    value={currentViewingAlternateId}
                     comboboxProps={{
-                      onOptionSubmit: (optionValue) => {
-                        const value = Number(optionValue);
-                        if (value === -1) {
+                      onOptionSubmit: (value) => {
+                        if (value === "add") {
                           onAddVersion();
+                        } else if (value === "main") {
+                          onChangeToMain(_cue);
                         } else {
                           onChangeVersion(value);
                         }
                       },
                     }}
                     data={[
-                      { value: 0, label: "Main" },
+                      { value: "main", label: "Main" },
                       {
                         group: "Alternatives",
-                        items: cueVersions
-                          .slice(1)
-                          .map((_, index) => ({ value: index + 1, label: `Version ${index + 1}` })),
+                        items: alternates.map((alternate) => ({ value: alternate.id, label: alternate.name })),
                       },
-                      { group: "Actions", items: [{ value: -1, label: "Create new version" }] },
+                      { group: "Actions", items: [{ value: "add", label: "Create new version" }] },
                     ]}
                   />
                   <Tooltip label="Swap the main version with this version. ">
@@ -867,7 +883,7 @@ const CueCardInternal = ({
                       size="xs"
                       variant="subtle"
                       onClick={() => void onSwapVersion()}
-                      disabled={currentViewingVersionIndex === 0}
+                      disabled={currentViewingAlternateId === "main"}
                     >
                       <IconVersions width="1rem" />
                     </Button>
@@ -889,7 +905,7 @@ const CueCardInternal = ({
                 </Tooltip>
               )}
               <Group flex={1} justify="end">
-                {isDirty && <Loader size="1.25rem" type="bars" />}
+                {showLoadingIcon && <Loader size="1.25rem" type="bars" />}
 
                 <ViewModeSelect
                   props={{

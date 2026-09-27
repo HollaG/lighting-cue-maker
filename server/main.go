@@ -37,6 +37,7 @@ func main() {
 		&models.AttributeConfiguration{},
 		&models.Item{},
 		&models.Cue{},
+		&models.AlternateCue{},
 		&models.BumpConfiguration{},
 		&models.Bump{},
 		&models.Fixture{},

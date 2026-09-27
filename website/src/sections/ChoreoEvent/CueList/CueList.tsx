@@ -13,6 +13,7 @@ import { CustomCoverLoader } from "../../../components/Loader/CustomCoverLoader"
 import { ViewModeSelect, type ViewMode } from "../../../components/Cues/CueCard/ViewModeSelect";
 import classes from "./CueList.module.css";
 import { getCueOrder } from "../../../utils/cue/cueForm";
+import { useGetAllAlternates } from "../../../query/alternate-cue/useGetAllAlternates";
 
 type CueListProps = {
   itemId: string;
@@ -39,6 +40,8 @@ export const CueList = memo(
     onDecreaseWidth,
   }: CueListProps) => {
     const { cues, isCuesLoading } = useGetCues({ itemId });
+    const { allAlternates, isAllAlternatesLoading } = useGetAllAlternates({ itemId });
+    console.log("allAlternates", allAlternates, isAllAlternatesLoading);
 
     // The store's derived order updates later in EventPage's effect on band changes.
     // Instead of using the store's order, which causes some issues with the scroll position
@@ -149,7 +152,7 @@ export const CueList = memo(
             </ActionIcon>
           </Tooltip>
         </Group>
-        {isCuesLoading && (
+        {(isCuesLoading || isAllAlternatesLoading) && (
           <Stack className={classes.cards}>
             <CustomCoverLoader isLoading>
               <CueCard
@@ -164,6 +167,7 @@ export const CueList = memo(
                   deletedAt: new Date(),
                   transition: { holdTimeMs: 0, transitionTimeMs: 0 },
                 }}
+                alternates={[]}
                 cueNumber={0}
                 isCueSelected={false}
                 fixtureGroups={event.fixtureGroups}
@@ -187,6 +191,8 @@ export const CueList = memo(
                   deletedAt: new Date(),
                   transition: { holdTimeMs: 0, transitionTimeMs: 0 },
                 }}
+                alternates={[]}
+
                 cueNumber={0}
                 isCueSelected={false}
                 fixtureGroups={event.fixtureGroups}
@@ -210,6 +216,8 @@ export const CueList = memo(
                   deletedAt: new Date(),
                   transition: { holdTimeMs: 0, transitionTimeMs: 0 },
                 }}
+                alternates={[]}
+
                 cueNumber={0}
                 isCueSelected={false}
                 fixtureGroups={event.fixtureGroups}
@@ -223,7 +231,7 @@ export const CueList = memo(
           </Stack>
         )}
         {showCueList && itemId && <></>}
-        {cues && cues.length > 0 ? (
+        {cues && cues.length > 0 && allAlternates ? (
           <Stack
             ref={cueListScrollRef}
             className={classes.cards}
@@ -266,6 +274,7 @@ export const CueList = memo(
                 <Box key={cue.id} mb="md">
                   <CueCard
                     cue={cue}
+                    alternates={allAlternates.get(cue.id) || []}
                     cueNumber={index + 1}
                     isCueSelected={currentlySelectedCueId === cue.id}
                     fixtureGroups={event.fixtureGroups}

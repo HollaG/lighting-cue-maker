@@ -12,7 +12,7 @@ import { insertCueInRichContent } from "../../utils/cue/cueForm";
 import { generateRaw } from "../../utils/convertText";
 import { useCreateBump } from "../../query/bump/useCreateBump";
 import { insertBumpInRichContent, removeBumpFromRawLyrics } from "../../utils/bumpUtils";
-import { useDeleteBump } from "../../query/useDeleteBump";
+import { useDeleteBump } from "../../query/bump/useDeleteBump";
 import { insertTimingMarkerInRichContent, removeTimingMarkerFromContent } from "../../utils/timingUtils";
 import type { IndicatorTimingMode } from "../../store/slices/timingSlice";
 import type { InputMode } from "../../store/slices/lyricsSlice";
