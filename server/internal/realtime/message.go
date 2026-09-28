@@ -81,6 +81,7 @@ type ClientMessagePresenceUpdateData struct {
 	ViewConfig                 json.RawMessage `json:"viewConfig,omitempty"` // opaque string, frontend can parse it as needed
 	AccordionState             json.RawMessage `json:"accordionState,omitempty"`
 	Visualiser3DCameraPosition json.RawMessage `json:"visualiser3DCameraPosition,omitempty"`
+	SelectedVersion            json.RawMessage `json:"selectedVersion,omitempty"`
 }
 
 type ClientMessagePresenceFollowData struct {

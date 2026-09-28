@@ -48,6 +48,7 @@ import { ViewModeSelect, type ViewMode } from "./ViewModeSelect";
 import { CueContents } from "../CueContents/CueContents";
 import { CueNotices } from "../CueNotices/CueNotices";
 import { useCueViewModeTracking } from "../../../hooks/realtime/useCueViewModeTracking";
+import { useActiveVersionTracking } from "../../../hooks/realtime/useActiveVersionTracking";
 import { useRealtimeStore } from "../../../store/realtimeStore";
 import { useCreateAlternate } from "../../../query/alternate-cue/useCreateAlternate";
 import { useGetAlternates } from "../../../query/alternate-cue/useGetAlternates";
@@ -127,6 +128,7 @@ const CueCardInternal = ({
   globalViewMode,
 }: CueCardProps) => {
   const [currentViewingAlternateId, setCurrentViewingAlternateId] = useState<string | "main">("main");
+  const [pendingFollowedVersionId, setPendingFollowedVersionId] = useState<string | null>(null);
 
   /** Main and alternate versions use different update endpoints. */
   const shouldPersist = currentViewingAlternateId === "main";
@@ -136,6 +138,20 @@ const CueCardInternal = ({
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
   const userId = useRealtimeStore((s) => s.user?.userId || null);
+  const followingUserId = useRealtimeStore((s) => s.followingUserId);
+
+  useActiveVersionTracking({
+    cueId: _cue.id,
+    selectedVersionId: currentViewingAlternateId,
+    setFollowedVersionId: (versionId) => {
+      if (versionId === currentViewingAlternateId) return;
+      if (versionId === "main") {
+        onChangeToMain(_cue);
+      } else {
+        onChangeAlternateVersion(versionId);
+      }
+    },
+  });
 
   const { mutateAsync: updateCue } = useUpdateCue();
   const { mutateAsync: deleteCue } = useDeleteCue();
@@ -162,6 +178,18 @@ const CueCardInternal = ({
     currentViewingAlternateId === "main"
       ? _cue
       : (alternates || []).find((a) => a.alternateId === currentViewingAlternateId) || _cue;
+
+  // Track the available alternates and reset to `main` if not found.
+  // Why not just do it as a side effect of `delete()`?
+  // We might have upstream updates that remove an alternate. Then, we wouldn't be able to reset to main.
+  useEffect(() => {
+    if (currentViewingAlternateId === "main") return;
+    if (!alternates || alternates.length === 0) return;
+    if (!alternates.find((a) => a.alternateId === currentViewingAlternateId)) {
+      //reset to main
+      onChangeToMain(_cue);
+    }
+  }, [currentViewingAlternateId, alternates]);
 
   // --- Form ---------
   const initialValues: FormData = useMemo(
@@ -628,6 +656,12 @@ const CueCardInternal = ({
     setViewMode,
   });
 
+  useActiveVersionTracking({
+    cueId,
+    selectedVersionId: currentViewingAlternateId,
+    setFollowedVersionId: setPendingFollowedVersionId,
+  });
+
   // --- Version Control ---------
   const [versionQuery, setVersionQuery] = useState("");
   const [renamingAlternateId, setRenamingAlternateId] = useState<string | null>(null);
@@ -691,6 +725,24 @@ const CueCardInternal = ({
   const onChangeToMain = (cue: Cue) => {
     onChangeAlternateVersion("main", cue);
   };
+
+  // A followed user's alternate may arrive before its query finishes loading.
+  useEffect(() => {
+    if (!pendingFollowedVersionId) return;
+    if (!followingUserId) {
+      setPendingFollowedVersionId(null);
+      return;
+    }
+    if (pendingFollowedVersionId === currentViewingAlternateId) {
+      setPendingFollowedVersionId(null);
+    } else if (pendingFollowedVersionId === "main") {
+      onChangeToMain(_cue);
+      setPendingFollowedVersionId(null);
+    } else if (alternates?.some((alternate) => alternate.alternateId === pendingFollowedVersionId)) {
+      onChangeAlternateVersion(pendingFollowedVersionId);
+      setPendingFollowedVersionId(null);
+    }
+  }, [pendingFollowedVersionId, currentViewingAlternateId, alternates, _cue, followingUserId]);
 
   /**
    * Swap the current viewing version with the main verison,

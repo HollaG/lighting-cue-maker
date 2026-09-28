@@ -60,6 +60,11 @@ export type ClientMessagePresenceUpdateData = {
   visualiser3DCameraPosition?: {
     [cueId: string]: Visualiser3DCameraView | null;
   };
+
+  /** Sent when a user changes the version. */
+  selectedVersion?: {
+    [cueId: string]: { id: string | "main" };
+  };
 };
 
 // "Live View" data
