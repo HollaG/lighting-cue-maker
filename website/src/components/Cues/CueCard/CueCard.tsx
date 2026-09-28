@@ -51,6 +51,7 @@ import { useCreateAlternate } from "../../../query/alternate-cue/useCreateAltern
 import { useGetAlternates } from "../../../query/alternate-cue/useGetAlternates";
 import type { AlternateCue } from "../../../types/alternate-cue";
 import { useUpdateAlternate } from "../../../query/alternate-cue/useUpdateAlternate";
+import { cueFormValues } from "../../../utils/alternates";
 
 type FormData = Cue;
 
@@ -122,12 +123,10 @@ const CueCardInternal = ({
   fixtures,
   globalViewMode,
 }: CueCardProps) => {
-  // TODO: Version Control! :)
-  // const [currentViewingVersionIndex, setCurrentViewingVersionIndex] = useState<number>(0); // 0 is MAIN
-  const [currentViewingAlternateId, setCurrentViewingAlternateId] = useState<string | "main">("main"); // null is MAIN
+  const [currentViewingAlternateId, setCurrentViewingAlternateId] = useState<string | "main">("main");
 
-  /** Whether we should persist this cue in the database. */
-  const shouldPersist = currentViewingAlternateId === "main"; // only persist the MAIN version to the DB
+  /** Main and alternate versions use different update endpoints. */
+  const shouldPersist = currentViewingAlternateId === "main";
 
   const queryClient = useQueryClient();
   const cueOrder = useAppStore((s) => s.cueOrder);
@@ -154,17 +153,11 @@ const CueCardInternal = ({
   /** This is the ORIGINAL cue ID. */
   const cueId = _cue.id;
 
-  /** This is the current cue OR the alternate cue.
-   * Very important note:
-   * cue.id can either refer to the ORIGINAL cue ID, or the Alternate ID.
-   *
-   * To be sure, always use `cueId` above if intending to refer to the original cue ID.
-   *
-   */
+  /** The viewed cue always has the parent cue ID; alternates have a separate alternateId. */
   const cue =
     currentViewingAlternateId === "main"
       ? _cue
-      : (alternates || []).find((a) => a.id === currentViewingAlternateId) || _cue; // -1 because alternates is 0-indexed, but MAIN is index 0
+      : (alternates || []).find((a) => a.alternateId === currentViewingAlternateId) || _cue;
 
   // --- Form ---------
   const initialValues: FormData = useMemo(
@@ -632,8 +625,7 @@ const CueCardInternal = ({
   });
 
   // --- Version Control ---------
-  // A user has one `Main` version, and they can swap between versions.
-  // However, only the Main version will get saved.
+  // A user has one Main version and can promote an alternate into it.
   const onAddVersion = async () => {
     if (!alternates) return; // eh; not sure if this will every hit
     // copy the current cue settings
@@ -642,36 +634,35 @@ const CueCardInternal = ({
     try {
       const alternateResp = await createAlternate({
         ...currentSettings,
-        cueId: _cue.id,
-
-        type: "user",
-        name: `Version ${alternates.length + 1}`,
+        id: _cue.id,
+        alternateType: "user",
+        alternateName: `Version ${alternates.length + 1}`,
         updatedBy: userId || undefined,
       });
 
-      const alternateId = alternateResp.alternateCue.id;
+      const alternateId = alternateResp.alternateCue.alternateId;
 
-      onChangeVersion(alternateId, currentSettings); // the new version is not in state yet
+      onChangeAlternateVersion(alternateId, alternateResp.alternateCue);
     } catch (e) {}
   };
 
   /**
-   * Orchestrates the change of the current viewing version of the cue.
-   *
-   *
-   * @param newVersionIndex
-   * @param newVersionCue if onAddVersion is called, the cue at newVersionIndex may not be populated yet. pass in this value, it will take priority.
+   * Loads a version into the cue form without carrying its alternate metadata.
+   * The new alternate may not be in the query cache yet, so creation passes its response.
    */
-  const onChangeVersion = (newVersionIndex: string, newVersionCue?: Cue) => {
-    const replacementCue = newVersionCue ?? (alternates || []).find((a) => a.id === newVersionIndex);
+  const onChangeAlternateVersion = (newVersionId: string, newVersionCue?: Cue) => {
+    const replacementCue = newVersionCue ?? (alternates || []).find((a) => a.alternateId === newVersionId);
     if (!replacementCue) return;
 
     // Purposely disable `onValuesChange` when changing the version.
     isChangingVersionRef.current = true;
     try {
-      form.setInitialValues(replacementCue);
-      form.setValues(replacementCue);
-      setCurrentViewingAlternateId(newVersionIndex);
+      const replacementValues = cueFormValues(replacementCue);
+      form.setInitialValues(replacementValues);
+      // reset removes fields from the previous version; setValues also notifies form watchers.
+      form.reset();
+      form.setValues(replacementValues);
+      setCurrentViewingAlternateId(newVersionId);
       setIsDirty(false);
     } finally {
       isChangingVersionRef.current = false;
@@ -679,7 +670,7 @@ const CueCardInternal = ({
   };
 
   const onChangeToMain = (cue: Cue) => {
-    onChangeVersion("main", cue);
+    onChangeAlternateVersion("main", cue);
   };
 
   /**
@@ -709,8 +700,7 @@ const CueCardInternal = ({
       // Replace the OLD version alternate with the main.
       await updateAlternate({
         alternateId,
-        // Must override the `alternate id` when swapping cues!
-        requestBody: { ...previousMain, id: alternateId, updatedBy: userId || undefined },
+        requestBody: { ...previousMain, id: _cue.id, updatedBy: userId || undefined },
       });
 
       // setCueVersions((prevVersions) => {
@@ -865,7 +855,7 @@ const CueCardInternal = ({
                         } else if (value === "main") {
                           onChangeToMain(_cue);
                         } else {
-                          onChangeVersion(value);
+                          onChangeAlternateVersion(value);
                         }
                       },
                     }}
@@ -873,7 +863,7 @@ const CueCardInternal = ({
                       { value: "main", label: "Main" },
                       {
                         group: "Alternatives",
-                        items: alternates.map((alternate) => ({ value: alternate.id, label: alternate.name })),
+                        items: alternates.map((alternate) => ({ value: alternate.alternateId, label: alternate.alternateName })),
                       },
                       { group: "Actions", items: [{ value: "add", label: "Create new version" }] },
                     ]}

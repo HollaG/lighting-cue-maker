@@ -23,6 +23,7 @@ export type CueMode = CueConfig["mode"];
  * Cues indicate
  */
 export interface Cue {
+  /** Unique ID corresponding to a cue. */
   id: string; // must be generated and stable, so that if cue X-1 is deleted, then ... (idk lol)
   comments: string;
 

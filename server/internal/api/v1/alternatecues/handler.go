@@ -86,16 +86,16 @@ func upsertAlternateCue(c *gin.Context) {
 			response.InternalError(c, "Failed to get alternate cue")
 			return
 		}
-		if req.CueId != "" && req.CueId != alternate.CueUuid {
+		if req.Id != "" && req.Id != alternate.CueUuid {
 			response.BadRequest(c, "Cue ID does not match alternate cue", nil)
 			return
 		}
 	} else {
-		if req.CueId == "" {
+		if req.Id == "" {
 			response.BadRequest(c, "Cue ID is required", nil)
 			return
 		}
-		alternate.CueUuid = req.CueId
+		alternate.CueUuid = req.Id
 	}
 	if !validateParentCue(c, alternate.CueUuid) {
 		return
@@ -105,12 +105,12 @@ func upsertAlternateCue(c *gin.Context) {
 	// Select only supplied fields so partial updates preserve omitted values,
 	// while explicit empty strings and empty assignments can still clear them.
 	fields := []string{}
-	if req.Name != nil {
-		alternate.Name = *req.Name
+	if req.AlternateName != nil {
+		alternate.Name = *req.AlternateName
 		fields = append(fields, "Name")
 	}
-	if req.Type != nil {
-		alternate.Type = *req.Type
+	if req.AlternateType != nil {
+		alternate.Type = *req.AlternateType
 		fields = append(fields, "Type")
 	}
 	if req.Assignments != nil {

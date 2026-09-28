@@ -20,12 +20,14 @@ export const useUpdateAlternate = () => {
       api.put<UpdateAlternateCueReq, UpdateAlternateCueRes>(`/api/v1/alternate-cues/${alternateId}`, requestBody),
 
     onSuccess: (res) => {
-      const queryKey = makeGetAlternatesQueryKey(res.alternateCue.cueId);
+      const queryKey = makeGetAlternatesQueryKey(res.alternateCue.id);
       const alternates = queryClient.getQueryData<AlternateCue[]>(queryKey);
       if (alternates) {
         queryClient.setQueryData(
           queryKey,
-          alternates.map((alternate) => (alternate.id === res.alternateCue.id ? res.alternateCue : alternate)),
+          alternates.map((alternate) =>
+            alternate.alternateId === res.alternateCue.alternateId ? res.alternateCue : alternate,
+          ),
         );
       }
 

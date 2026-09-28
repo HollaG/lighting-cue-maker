@@ -9,15 +9,14 @@ import (
 
 // Request DTOs
 type UpsertAlternateCueReq struct {
-	Id          string            `json:"id,omitempty"`
-	CueId       string            `json:"cueId,omitempty"`
-	Name        *string           `json:"name,omitempty"`
-	Type        *AlternateCueType `json:"type,omitempty" binding:"omitempty,oneof=user ai"`
-	Assignments *map[string]any   `json:"assignments,omitempty"`
-	Comments    *string           `json:"comments,omitempty"`
-	Transition  datatypes.JSON    `json:"transition,omitempty"`
-	CueConfig   datatypes.JSON    `json:"cueConfig,omitempty"`
-	UpdatedBy   *string           `json:"updatedBy,omitempty" binding:"omitempty,uuid"`
+	Id            string            `json:"id,omitempty"`
+	AlternateName *string           `json:"alternateName,omitempty"`
+	AlternateType *AlternateCueType `json:"alternateType,omitempty" binding:"omitempty,oneof=user ai"`
+	Assignments   *map[string]any   `json:"assignments,omitempty"`
+	Comments      *string           `json:"comments,omitempty"`
+	Transition    datatypes.JSON    `json:"transition,omitempty"`
+	CueConfig     datatypes.JSON    `json:"cueConfig,omitempty"`
+	UpdatedBy     *string           `json:"updatedBy,omitempty" binding:"omitempty,uuid"`
 }
 
 type AlternateCueType string
@@ -29,13 +28,15 @@ const (
 
 // DB Model
 type AlternateCue struct {
-	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
-	// These fields are specific to the AlternateCue
-	CueUuid string `json:"cueId" gorm:"type:uuid;not null;index"`
+	// note that it is `alternateId` in JSON
+	Uuid string `json:"alternateId" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
-	Name string           `json:"name" gorm:"type:text;not null"`
-	Type AlternateCueType `json:"type" gorm:"type:text;not null"`
+	// note that it is `id` in JSON - this matches the expected struct of Cue.
+	CueUuid string `json:"id" gorm:"type:uuid;not null;index"`
+
+	Name string           `json:"alternateName" gorm:"type:text;not null"`
+	Type AlternateCueType `json:"alternateType" gorm:"type:text;not null"`
 
 	// These fields are the same as `Cue` struct
 	Assignments datatypes.JSON `json:"assignments" gorm:"serializer:json"`

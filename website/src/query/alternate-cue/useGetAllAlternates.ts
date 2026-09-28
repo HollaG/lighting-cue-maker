@@ -21,13 +21,12 @@ export const useGetAllAlternates = ({ itemId }: { itemId?: string | null }) => {
     queryFn: async () => {
       const res = await api.get<GetAlternateCuesRes>(`/api/v1/alternate-cues?itemId=${itemId}`);
 
-      // the return result is a list of [cue1, alternate1], [cue2, alternate2], etc
-      // group by cueId and set the query data for all useGetAlternates so we don't fire 50 queries at once for all cues
+      // Group by parent cue ID and seed each cue's alternate query.
       const alternatesByCue = new Map<string, AlternateCue[]>();
       for (const alternate of res.alternateCues) {
-        const alternates = alternatesByCue.get(alternate.cueId) ?? [];
+        const alternates = alternatesByCue.get(alternate.id) ?? [];
         alternates.push(alternate);
-        alternatesByCue.set(alternate.cueId, alternates);
+        alternatesByCue.set(alternate.id, alternates);
       }
 
       for (const [cueId, alternates] of alternatesByCue) {
@@ -42,9 +41,9 @@ export const useGetAllAlternates = ({ itemId }: { itemId?: string | null }) => {
     select: (data) => {
       const alternatesByCue = new Map<string, AlternateCue[]>();
       for (const alternate of data) {
-        const alternates = alternatesByCue.get(alternate.cueId) ?? [];
+        const alternates = alternatesByCue.get(alternate.id) ?? [];
         alternates.push(alternate);
-        alternatesByCue.set(alternate.cueId, alternates);
+        alternatesByCue.set(alternate.id, alternates);
       }
 
       return alternatesByCue;
