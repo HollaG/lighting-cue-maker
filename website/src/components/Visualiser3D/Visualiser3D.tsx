@@ -50,6 +50,7 @@ import {
 } from "@tabler/icons-react";
 import { useUpsertFixture } from "../../query/fixtures/useUpsertFixtures";
 import { useQueryClient } from "@tanstack/react-query";
+import { useVisualiser3DTracking } from "../../hooks/realtime/useVisualiser3DTracking";
 
 export const Visualiser3D = ({
   eventId,
@@ -639,6 +640,8 @@ export const Visualiser3D = ({
  * This is to be used within cues and within the run page.
  */
 export const StaticVisualiser3D = ({
+  cueId,
+
   visualiser,
   fixtures,
   // fixtureGroups,
@@ -653,6 +656,8 @@ export const StaticVisualiser3D = ({
   // isBlackout = false,
   controls,
 }: {
+  cueId: string; // only for realtime tracking identification
+
   visualiser: Visualiser;
   fixtures: Fixture[];
   // fixtureGroups: FixtureGroup[];
@@ -668,6 +673,25 @@ export const StaticVisualiser3D = ({
 
   controls?: React.ReactNode;
 }) => {
+  // Live updates
+  const { onCameraMove } = useVisualiser3DTracking({
+    cueId,
+    setCameraPosition: (position) => {
+      const controls = _cameraControlRef.current;
+      if (!controls) return;
+
+      _setCameraPosition(controls, position, true);
+      // setLookAt wraps the horizontal angle at 180 degrees. Choose the
+      // equivalent turn nearest to the current angle to avoid a full spin.
+      const [x, , z] = position.position;
+      const [tx, , tz] = position.target;
+      const desiredAngle = Math.atan2(x - tx, z - tz);
+      const currentAngle = controls.azimuthAngle;
+      const shortestDelta = Math.atan2(Math.sin(desiredAngle - currentAngle), Math.cos(desiredAngle - currentAngle));
+      void controls.rotateAzimuthTo(currentAngle + shortestDelta, true);
+    },
+  });
+
   // Controls (todo: save in state)
   const environment = visualiser.config3D || {
     haze: 0.5,
@@ -675,6 +699,24 @@ export const StaticVisualiser3D = ({
   }; // no need for state, no editing needed
 
   const _cameraControlRef = useRef<CameraControls | null>(null);
+  const lastCameraUpdateRef = useRef(0);
+
+  /** Read the controls instance held by the callback ref, then publish a camera sample. */
+  const publishCameraPosition = (force = false) => {
+    const controls = _cameraControlRef.current;
+    if (!controls) return;
+    const now = performance.now();
+    if (!force && now - lastCameraUpdateRef.current < 50) return;
+    lastCameraUpdateRef.current = now;
+
+    const position = controls.getPosition(new Vector3());
+    const target = controls.getTarget(new Vector3());
+    onCameraMove({
+      position: [position.x, position.y, position.z],
+      target: [target.x, target.y, target.z],
+      fov: 70,
+    });
+  };
 
   // Use a callback ref here so we can trigger the position setting only after that component has been loaded
   const cameraControlRef = useCallback((node: CameraControls | null) => {
@@ -825,6 +867,8 @@ export const StaticVisualiser3D = ({
                       selectedObjectIds={selectedObjectIds}
                       onObjectSelect={undefined} // noop, selecting of cubiods not allowed
                       cameraRef={cameraControlRef}
+                      onCameraMove={() => publishCameraPosition()}
+                      onCameraRest={() => publishCameraPosition(true)}
                       onFixtureSelect={onFixtureSelect}
 
                       updateStageElement={() => {}} // noop

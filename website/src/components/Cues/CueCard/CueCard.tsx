@@ -773,6 +773,7 @@ const CueCardInternal = ({
         }}
 
         data-cursor-surface="cueCard"
+        data-cursor-anchor={cueId}
       >
         <CardBase isActive={isCueSelected} shadow={isCueSelected ? "lg" : "none"}>
           <Stack gap={"md"}>

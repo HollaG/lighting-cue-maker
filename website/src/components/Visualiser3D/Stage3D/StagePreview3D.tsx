@@ -24,6 +24,8 @@ export const StagePreview3D = ({
   selectedObjectIds,
   onObjectSelect,
   // onFixtureChange,
+  onCameraMove,
+  onCameraRest,
   updateStageElement,
   gui,
 
@@ -37,6 +39,8 @@ export const StagePreview3D = ({
   selectedObjectIds?: string[];
 
   cameraRef?: React.RefCallback<CameraControls | null>;
+  onCameraMove?: () => void;
+  onCameraRest?: () => void;
 
   /** Only provided when ViewOnly is false. Both are never provided together. */
   onObjectSelect?: (objectId: string) => void;
@@ -79,7 +83,6 @@ export const StagePreview3D = ({
   const humans = stageElements.filter((element) => element.type === "default_human");
 
   const onChange = useDebouncedCallback((newFixtureProps: UpdateFixtureIn3DReq) => {
-    console.log("upserting fixture in 3D", newFixtureProps);
     upsertFixtureIn3D(newFixtureProps);
   }, 100);
 
@@ -212,6 +215,8 @@ export const StagePreview3D = ({
 
       <CameraControls
         ref={cameraRef}
+        onControl={onCameraMove}
+        onRest={onCameraRest}
         makeDefault
         dollyToCursor
         infinityDolly

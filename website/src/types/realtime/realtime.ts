@@ -1,6 +1,7 @@
 // feature[class=Realtime] Client and server message types
 
 import type { ViewMode } from "../../components/Cues/CueCard/ViewModeSelect";
+import type { Visualiser3DCameraView } from "../visualiser3d";
 import type { ChatMessageData } from "./chat";
 import type { CursorAnchor, CursorSurface } from "./cursors";
 
@@ -35,15 +36,30 @@ export type ClientMessageInvalidateQueryData = {
   queryKey: string[];
 };
 
-// Cursor & scroll data. Fields will only be sent when changed
+/**
+ * Realtime Information that clients use to determine actions.
+ *
+ */
 export type ClientMessagePresenceUpdateData = {
-  // Omitted means unchanged; null hides the cursor. Scroll fields can be added here later.
+  /** Cursor tracking information. Sent at 24 Hz */
   cursor?: CursorAnchor | null;
 
+  /** Unused: instead, we determine scroll based on the cursor position */
   scroll?: Record<CursorSurface, { x: number; y: number }> | null;
+
+  /** Sent when a user changes their selected cue, EXCEPT when user is following someone. */
   currentlySelectedCueId?: string | null; // null if user unselected
 
-  viewConfig?: { [cueId: string]: { viewMode: ViewMode; activeFixtureGroupIds: string[] } }; // force a change in view mode for a specific cue
+  /** Sent when a user changes their view mode, EXCEPT when user is following someone. */
+  viewConfig?: { [cueId: string]: { viewMode: ViewMode; activeFixtureGroupIds: string[] } };
+
+  /** Unused (not important enough): Sent when a user opens the Transition accordions. */
+  accordionState?: { [cueId: string]: { transitionAccordionOpen?: boolean; triggerAccordionOpen?: boolean } };
+
+  /** Sent when a user moves the 3D visualiser camera. */
+  visualiser3DCameraPosition?: {
+    [cueId: string]: Visualiser3DCameraView | null;
+  };
 };
 
 // "Live View" data

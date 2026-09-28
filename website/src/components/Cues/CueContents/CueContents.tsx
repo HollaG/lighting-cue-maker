@@ -295,6 +295,7 @@ export const CueContents = ({
         <Box mb="md" data-cursor-anchor={`fixture-group-${cue.id}`}>
           {visualiser ? (
             <StaticVisualiser3D
+              cueId={cue.id}
               fixtureGroupsAssignment={enabledFixtureGroupAssignments}
               fixtures={fixtures}
               visualiser={visualiser}
