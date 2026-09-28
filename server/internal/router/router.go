@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"lighting-cue-maker/server/config"
+	"lighting-cue-maker/server/internal/api/v1/ai"
 	"lighting-cue-maker/server/internal/api/v1/alternatecues"
 	"lighting-cue-maker/server/internal/api/v1/attributeconfigurations"
 	"lighting-cue-maker/server/internal/api/v1/bumpconfigurations"
@@ -53,5 +54,6 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		attributeconfigurations.Register(v1.Group("/attribute-config"))
 		qlc.Register(v1.Group("/qlc"))
 		visualiser.Register(v1.Group("/visualiser"))
+		ai.Register(v1.Group("/ai"))
 	}
 }

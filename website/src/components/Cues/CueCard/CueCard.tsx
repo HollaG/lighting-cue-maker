@@ -56,6 +56,8 @@ import type { AlternateCue } from "../../../types/alternate-cue";
 import { useUpdateAlternate } from "../../../query/alternate-cue/useUpdateAlternate";
 import { alternateUpdateValues, cueFormValues } from "../../../utils/alternates";
 import { useDeleteAlternate } from "../../../query/alternate-cue/useDeleteAlternate";
+import { useCreateAlternateAi } from "../../../query/alternate-cue/useCreateAlternateAi";
+import { generateRaw } from "../../../utils/convertText";
 
 type FormData = Cue;
 
@@ -161,6 +163,8 @@ const CueCardInternal = ({
   const { alternates } = useGetAlternates({ cueId: _cue.id });
   const { mutateAsync: updateAlternate } = useUpdateAlternate();
   const { mutateAsync: deleteAlternate } = useDeleteAlternate();
+
+  const { mutateAsync: createAlternateAi } = useCreateAlternateAi();
 
   const [isCollapsed] = useLocalStorage({ key: `cue-${_cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
@@ -811,6 +815,18 @@ const CueCardInternal = ({
     }
   };
 
+  const onCreateAiVersion = async () => {
+    try {
+      await createAlternateAi({
+        cue: _cue,
+        fixtureGroups: fixtureGroups,
+        lyrics: generateRaw(useAppStore.getState().content),
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <form onSubmit={form.onSubmit(() => debouncedSave.flush())}>
       <div
@@ -1110,7 +1126,11 @@ const CueCardInternal = ({
                       <Menu.Label>
                         <Code>AI Alternatives (0/3)</Code>
                       </Menu.Label>
-                      <Menu.Item leftSection={<IconPencilAi size={16} />} color="var(--mantine-color-lime-light-color)">
+                      <Menu.Item
+                        onClick={onCreateAiVersion}
+                        leftSection={<IconPencilAi size={16} />}
+                        color="var(--mantine-color-lime-light-color)"
+                      >
                         Generate
                       </Menu.Item>
                     </Menu.Dropdown>
