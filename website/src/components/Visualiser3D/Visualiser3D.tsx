@@ -8,6 +8,7 @@ import {
   Group,
   HoverCard,
   Kbd,
+  LoadingOverlay,
   MantineProvider,
   SegmentedControl,
   Stack,
@@ -21,7 +22,7 @@ import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/type
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { Visualiser3DControls } from "./Visualiser3DControls";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type {
   Visualiser3DCameraView,
   Visualiser3DEnvironment,
@@ -410,39 +411,54 @@ export const Visualiser3D = ({
               // ref={containerRef}
               style={{ position: "relative", width: "100%", height: "100%" }}
             >
-              <Canvas
-                gl={createVisualiser3DRenderer}
-                onCreated={configureVisualiser3DRenderer}
-                shadows="percentage"
-                camera={{ position: visualiser.defaultCameraView?.position || [0, 2, 5], fov: 70, near: 0.1, far: 100 }}
-
-                onMouseDown={(event) => {
-                  // Prevent browser middle-click autoscrolling.
-                  if (event.button === 1) {
-                    event.preventDefault();
-                  }
-                }}
-                onAuxClick={(event) => {
-                  if (event.button === 1) {
-                    event.preventDefault();
-                  }
-                }}
+              <Suspense
+                fallback={
+                  <LoadingOverlay
+                    visible
+                    loaderProps={{
+                      type: "bars",
+                    }}
+                  />
+                }
               >
-                <StagePreview3D
-                  environment={environment}
-                  fixtures={fixtures}
-                  stageElements={stageElements}
-                  selectedObjectIds={selectedObjectId ? [selectedObjectId] : undefined}
-                  onObjectSelect={onObjectSelect}
-                  cameraRef={cameraControlRef}
+                <Canvas
+                  gl={createVisualiser3DRenderer}
+                  onCreated={configureVisualiser3DRenderer}
+                  shadows="percentage"
+                  camera={{
+                    position: visualiser.defaultCameraView?.position || [0, 2, 5],
+                    fov: 70,
+                    near: 0.1,
+                    far: 100,
+                  }}
 
-                  updateStageElement={onUpdateElement}
-                  gui={gui}
+                  onMouseDown={(event) => {
+                    // Prevent browser middle-click autoscrolling.
+                    if (event.button === 1) {
+                      event.preventDefault();
+                    }
+                  }}
+                  onAuxClick={(event) => {
+                    if (event.button === 1) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <StagePreview3D
+                    environment={environment}
+                    fixtures={fixtures}
+                    stageElements={stageElements}
+                    selectedObjectIds={selectedObjectId ? [selectedObjectId] : undefined}
+                    onObjectSelect={onObjectSelect}
+                    cameraRef={cameraControlRef}
 
-                  getAttribute={getAttribute}
-                />
-              </Canvas>
+                    updateStageElement={onUpdateElement}
+                    gui={gui}
 
+                    getAttribute={getAttribute}
+                  />
+                </Canvas>
+              </Suspense>
               <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
                 <Button size="sm" onClick={onResetViewport} variant="outline" color="gray">
                   {" "}
@@ -768,46 +784,57 @@ export const StaticVisualiser3D = ({
                 // ref={containerRef}
                 style={{ position: "relative", width: "100%", height: "100%" }}
               >
-                <Canvas
-                  frameloop="demand"
-                  gl={createVisualiser3DRenderer}
-                  onCreated={configureVisualiser3DRenderer}
-                  shadows="percentage"
-                  camera={{
-                    position: visualiser.defaultCameraView?.position || [0, 2, 5],
-                    fov: 70,
-                    near: 0.1,
-                    far: 100,
-                  }}
-
-                  onMouseDown={(event) => {
-                    // Prevent browser middle-click autoscrolling.
-                    if (event.button === 1) {
-                      event.preventDefault();
-                    }
-                  }}
-                  onAuxClick={(event) => {
-                    if (event.button === 1) {
-                      event.preventDefault();
-                    }
-                  }}
+                <Suspense
+                  fallback={
+                    <LoadingOverlay
+                      visible
+                      loaderProps={{
+                        type: "bars",
+                      }}
+                    />
+                  }
                 >
-                  <StagePreview3D
-                    environment={environment}
-                    fixtures={fixtures}
-                    stageElements={visualiser.objects3D || []}
-                    selectedObjectIds={selectedObjectIds}
-                    onObjectSelect={undefined} // noop, selecting of cubiods not allowed
-                    cameraRef={cameraControlRef}
-                    onFixtureSelect={onFixtureSelect}
+                  <Canvas
+                    frameloop="demand"
+                    gl={createVisualiser3DRenderer}
+                    onCreated={configureVisualiser3DRenderer}
+                    shadows="percentage"
+                    camera={{
+                      position: visualiser.defaultCameraView?.position || [0, 2, 5],
+                      fov: 70,
+                      near: 0.1,
+                      far: 100,
+                    }}
 
-                    updateStageElement={() => {}} // noop
-                    gui={null} // no GUI for static
+                    onMouseDown={(event) => {
+                      // Prevent browser middle-click autoscrolling.
+                      if (event.button === 1) {
+                        event.preventDefault();
+                      }
+                    }}
+                    onAuxClick={(event) => {
+                      if (event.button === 1) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <StagePreview3D
+                      environment={environment}
+                      fixtures={fixtures}
+                      stageElements={visualiser.objects3D || []}
+                      selectedObjectIds={selectedObjectIds}
+                      onObjectSelect={undefined} // noop, selecting of cubiods not allowed
+                      cameraRef={cameraControlRef}
+                      onFixtureSelect={onFixtureSelect}
 
-                    isViewOnly
-                    getAttribute={getAttribute}
-                  />
-                </Canvas>
+                      updateStageElement={() => {}} // noop
+                      gui={null} // no GUI for static
+
+                      isViewOnly
+                      getAttribute={getAttribute}
+                    />
+                  </Canvas>
+                </Suspense>
                 {/* Help button */}
                 <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
                   <HoverCard
