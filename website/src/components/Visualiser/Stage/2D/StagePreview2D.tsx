@@ -706,6 +706,7 @@ export const StaticStagePreview2D = ({
       {/* Height constrained to viewport minus 128px => width constrained to viewport height - 128/4*3 */}
       <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
         <Group align="start" style={{ flexWrap: "nowrap" }}>
+          {/* Specifically allow the view to shrink, because if we don't, and we allow it to expand, it will never shrink again (if viewport changes) */}
           <Box style={{ flex: 1, minWidth: 0 }}>
             <AspectRatio ratio={4 / 3}>
               <CustomCoverLoader isLoading={isLoading}>

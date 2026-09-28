@@ -814,144 +814,152 @@ export const StaticVisualiser3D = ({
   return (
     <Flex className={classes["preview-container"]}>
       <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
-        <Group align="start">
-          <AspectRatio flex={1} ratio={4 / 3}>
-            <MantineProvider
-              forceColorScheme="dark"
-              getRootElement={() => document.getElementById("preview-viewer") || document.body}
-            >
-              <Box
-                id="preview-viewer"
-                className={classes["preview-viewer"]}
-                // ref={containerRef}
-                style={{ position: "relative", width: "100%", height: "100%" }}
+        <Group align="start" style={{ flexWrap: "nowrap" }}>
+          {/* Specifically allow the view to shrink, because if we don't, and we allow it to expand, it will never shrink again (if viewport changes) */}
+          <Box style={{ flex: 1, minWidth: 0 }}>
+            <AspectRatio flex={1} ratio={4 / 3}>
+              <MantineProvider
+                forceColorScheme="dark"
+                getRootElement={() => document.getElementById("preview-viewer") || document.body}
               >
-                <Suspense
-                  fallback={
-                    <LoadingOverlay
-                      visible
-                      loaderProps={{
-                        type: "bars",
-                      }}
-                    />
-                  }
+                <Box
+                  id="preview-viewer"
+                  className={classes["preview-viewer"]}
+                  // ref={containerRef}
+                  style={{ position: "relative", width: "100%", height: "100%" }}
                 >
-                  <Canvas
-                    frameloop="demand"
-                    gl={createVisualiser3DRenderer}
-                    onCreated={configureVisualiser3DRenderer}
-                    shadows="percentage"
-                    camera={{
-                      position: visualiser.defaultCameraView?.position || [0, 2, 5],
-                      fov: 70,
-                      near: 0.1,
-                      far: 100,
-                    }}
-
-                    onMouseDown={(event) => {
-                      // Prevent browser middle-click autoscrolling.
-                      if (event.button === 1) {
-                        event.preventDefault();
-                      }
-                    }}
-                    onAuxClick={(event) => {
-                      if (event.button === 1) {
-                        event.preventDefault();
-                      }
-                    }}
+                  <Suspense
+                    fallback={
+                      <LoadingOverlay
+                        visible
+                        loaderProps={{
+                          type: "bars",
+                        }}
+                      />
+                    }
                   >
-                    <StagePreview3D
-                      environment={environment}
-                      fixtures={fixtures}
-                      stageElements={visualiser.objects3D || []}
-                      selectedObjectIds={selectedObjectIds}
-                      onObjectSelect={undefined} // noop, selecting of cubiods not allowed
-                      cameraRef={cameraControlRef}
-                      onCameraMove={() => publishCameraPosition()}
-                      onCameraRest={() => publishCameraPosition(true)}
-                      onFixtureSelect={onFixtureSelect}
+                    <Canvas
+                      frameloop="demand"
+                      gl={createVisualiser3DRenderer}
+                      onCreated={configureVisualiser3DRenderer}
+                      shadows="percentage"
+                      camera={{
+                        position: visualiser.defaultCameraView?.position || [0, 2, 5],
+                        fov: 70,
+                        near: 0.1,
+                        far: 100,
+                      }}
 
-                      updateStageElement={() => {}} // noop
-                      gui={null} // no GUI for static
-
-                      isViewOnly
-                      getAttribute={getAttribute}
-                    />
-                  </Canvas>
-                </Suspense>
-                {/* Help button */}
-                <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
-                  <HoverCard
-                    position="left"
-                    shadow="md"
-                    styles={{
-                      dropdown: {
-                        backgroundColor: "var(--mantine-color-dark-6)",
-                        borderColor: "var(--mantine-color-dark-4)",
-                      },
-                    }}
-                  >
-                    <HoverCard.Target>
-                      <Button variant="transparent" color="white" size="sm" leftSection={<IconHelpCircle size={16} />}>
-                        Help
-                      </Button>
-                    </HoverCard.Target>
-                    <HoverCard.Dropdown
-                      style={{
-                        color: "white",
+                      onMouseDown={(event) => {
+                        // Prevent browser middle-click autoscrolling.
+                        if (event.button === 1) {
+                          event.preventDefault();
+                        }
+                      }}
+                      onAuxClick={(event) => {
+                        if (event.button === 1) {
+                          event.preventDefault();
+                        }
                       }}
                     >
-                      <Stack>
-                        <Group gap="xs">
-                          <IconTransfer width="1rem" />
+                      <StagePreview3D
+                        environment={environment}
+                        fixtures={fixtures}
+                        stageElements={visualiser.objects3D || []}
+                        selectedObjectIds={selectedObjectIds}
+                        onObjectSelect={undefined} // noop, selecting of cubiods not allowed
+                        cameraRef={cameraControlRef}
+                        onCameraMove={() => publishCameraPosition()}
+                        onCameraRest={() => publishCameraPosition(true)}
+                        onFixtureSelect={onFixtureSelect}
+
+                        updateStageElement={() => {}} // noop
+                        gui={null} // no GUI for static
+
+                        isViewOnly
+                        getAttribute={getAttribute}
+                      />
+                    </Canvas>
+                  </Suspense>
+                  {/* Help button */}
+                  <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
+                    <HoverCard
+                      position="left"
+                      shadow="md"
+                      styles={{
+                        dropdown: {
+                          backgroundColor: "var(--mantine-color-dark-6)",
+                          borderColor: "var(--mantine-color-dark-4)",
+                        },
+                      }}
+                    >
+                      <HoverCard.Target>
+                        <Button
+                          variant="transparent"
+                          color="white"
+                          size="sm"
+                          leftSection={<IconHelpCircle size={16} />}
+                        >
+                          Help
+                        </Button>
+                      </HoverCard.Target>
+                      <HoverCard.Dropdown
+                        style={{
+                          color: "white",
+                        }}
+                      >
+                        <Stack>
+                          <Group gap="xs">
+                            <IconTransfer width="1rem" />
+                            <Text>
+                              <Code fz="md" bg="var(--mantine-color-dark-8)">
+                                Right Click and Drag
+                              </Code>{" "}
+                              to move the view around
+                            </Text>
+                          </Group>
+                          <Group gap="xs">
+                            <IconRotate360 width="1rem" />
+                            <Text>
+                              <Code fz="md" bg="var(--mantine-color-dark-8)">
+                                Left Click and Drag
+                              </Code>{" "}
+                              to rotate the view
+                            </Text>
+                          </Group>
+                          <Group gap="xs">
+                            <IconZoomPan width="1rem" />
+                            <Text>
+                              <Code fz="md" bg="var(--mantine-color-dark-8)">
+                                Scroll
+                              </Code>{" "}
+                              to zoom in and out
+                            </Text>
+                          </Group>
+                          <Divider />
                           <Text>
+                            You can{" "}
                             <Code fz="md" bg="var(--mantine-color-dark-8)">
-                              Right Click and Drag
+                              Left Click
                             </Code>{" "}
-                            to move the view around
+                            on a light to change its settings.
                           </Text>
-                        </Group>
-                        <Group gap="xs">
-                          <IconRotate360 width="1rem" />
-                          <Text>
-                            <Code fz="md" bg="var(--mantine-color-dark-8)">
-                              Left Click and Drag
-                            </Code>{" "}
-                            to rotate the view
-                          </Text>
-                        </Group>
-                        <Group gap="xs">
-                          <IconZoomPan width="1rem" />
-                          <Text>
-                            <Code fz="md" bg="var(--mantine-color-dark-8)">
-                              Scroll
-                            </Code>{" "}
-                            to zoom in and out
-                          </Text>
-                        </Group>
-                        <Divider />
-                        <Text>
-                          You can{" "}
-                          <Code fz="md" bg="var(--mantine-color-dark-8)">
-                            Left Click
-                          </Code>{" "}
-                          on a light to change its settings.
-                        </Text>
-                      </Stack>
-                    </HoverCard.Dropdown>
-                  </HoverCard>
+                        </Stack>
+                      </HoverCard.Dropdown>
+                    </HoverCard>
+                  </Box>
+                  <Box></Box>
+                  <Box></Box>
+                  <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
+                    <Button size="xs" onClick={onResetViewport} variant="outline" color="gray">
+                      {" "}
+                      Reset view
+                    </Button>
+                  </Group>
                 </Box>
-                <Box></Box>
-                <Box></Box>
-                <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
-                  <Button size="xs" onClick={onResetViewport} variant="outline" color="gray">
-                    {" "}
-                    Reset view
-                  </Button>
-                </Group>
-              </Box>
-            </MantineProvider>
-          </AspectRatio>
+              </MantineProvider>
+            </AspectRatio>
+          </Box>
           {controls && (
             <Box className={classes["preview-controls"]}>
               {/* <VisualiserControls stageElements={stageElements} fixtureGroups={fixtureGroups} stageRef={stageRef} /> */}
