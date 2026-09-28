@@ -10,6 +10,7 @@ import (
 // Request DTOs
 type UpsertAlternateCueReq struct {
 	Id            string            `json:"id,omitempty"`
+	AlternateId   *string           `json:"alternateId,omitempty"`
 	AlternateName *string           `json:"alternateName,omitempty"`
 	AlternateType *AlternateCueType `json:"alternateType,omitempty" binding:"omitempty,oneof=user ai"`
 	Assignments   *map[string]any   `json:"assignments,omitempty"`

@@ -57,10 +57,10 @@ func getAlternateCues(c *gin.Context) {
 }
 
 func upsertAlternateCue(c *gin.Context) {
-	alternateID := c.Param("alternateCueId")
+	alternateID := c.Param("alternateId")
 	if alternateID != "" {
 		if err := uuid.Validate(alternateID); err != nil {
-			response.BadRequest(c, "Invalid alternate cue ID", nil)
+			response.BadRequest(c, "Invalid alternate ID", nil)
 			return
 		}
 	}
@@ -175,4 +175,35 @@ func validateParentCue(c *gin.Context, cueID string) bool {
 		return false
 	}
 	return true
+}
+
+// TODO: permission control via finding the parent event ID
+func deleteAlternateCue(c *gin.Context) {
+	alternateID := c.Param("alternateId")
+	if alternateID == "" {
+		response.BadRequest(c, "Alternate cue ID is required", nil)
+		return
+	}
+	if err := uuid.Validate(alternateID); err != nil {
+		response.BadRequest(c, "Invalid alternate cue ID", nil)
+		return
+	}
+
+	var alternate models.AlternateCue
+	err := database.DB().Where("uuid = ?", alternateID).First(&alternate).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		response.NotFound(c, "Alternate cue not found")
+		return
+	}
+	if err != nil {
+		response.InternalError(c, "Failed to get alternate cue")
+		return
+	}
+
+	if err := database.DB().Delete(&alternate).Error; err != nil {
+		response.InternalError(c, "Failed to delete alternate cue")
+		return
+	}
+
+	response.OK(c, map[string]any{"deletedAlternateCue": alternate})
 }

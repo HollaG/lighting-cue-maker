@@ -4,20 +4,22 @@ import {
   Accordion,
   Box,
   Button,
+  Code,
   Collapse,
   Flex,
   Group,
+  Input,
   Loader,
   Menu,
   NumberInput,
   Popover,
   px,
   Radio,
-  Select,
   SimpleGrid,
   Stack,
   Text,
   Textarea,
+  TextInput,
   Title,
   Tooltip,
 } from "@mantine/core";
@@ -27,7 +29,7 @@ import { useAppStore } from "../../../store/appStore";
 import { type FixtureGroupConfiguration, type Item } from "../../../types/types";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { IconVersions } from "@tabler/icons-react";
+import { IconCheck, IconChevronDown, IconPencilAi, IconPlus } from "@tabler/icons-react";
 import { useForm, type FormErrors } from "@mantine/form";
 import { useDebouncedCallback, useLocalStorage } from "@mantine/hooks";
 import { useUpdateCue } from "../../../query/cue/useUpdateCue";
@@ -51,7 +53,8 @@ import { useCreateAlternate } from "../../../query/alternate-cue/useCreateAltern
 import { useGetAlternates } from "../../../query/alternate-cue/useGetAlternates";
 import type { AlternateCue } from "../../../types/alternate-cue";
 import { useUpdateAlternate } from "../../../query/alternate-cue/useUpdateAlternate";
-import { cueFormValues } from "../../../utils/alternates";
+import { alternateUpdateValues, cueFormValues } from "../../../utils/alternates";
+import { useDeleteAlternate } from "../../../query/alternate-cue/useDeleteAlternate";
 
 type FormData = Cue;
 
@@ -141,6 +144,7 @@ const CueCardInternal = ({
   const { mutateAsync: createAlternate, isPending: isCreatingAlternate } = useCreateAlternate();
   const { alternates } = useGetAlternates({ cueId: _cue.id });
   const { mutateAsync: updateAlternate } = useUpdateAlternate();
+  const { mutateAsync: deleteAlternate } = useDeleteAlternate();
 
   const [isCollapsed] = useLocalStorage({ key: `cue-${_cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
@@ -236,7 +240,7 @@ const CueCardInternal = ({
       } else {
         await updateAlternate({
           alternateId: currentViewingAlternateId,
-          requestBody: { ...form.getValues(), updatedBy: userId || undefined },
+          requestBody: { ...alternateUpdateValues(formValues), updatedBy: userId || undefined },
         });
       }
 
@@ -625,6 +629,21 @@ const CueCardInternal = ({
   });
 
   // --- Version Control ---------
+  const [versionQuery, setVersionQuery] = useState("");
+  const [renamingAlternateId, setRenamingAlternateId] = useState<string | null>(null);
+  const userAlternates = useMemo(() => (alternates || []).filter((a) => a.alternateType === "user"), [alternates]);
+  // const aiAlternates = useMemo(() => (alternates || []).filter((a) => a.alternateType === "ai"), [alternates]);
+
+  const filteredUserAlternates = useMemo(() => {
+    if (versionQuery.length === 0) return userAlternates;
+    return userAlternates.filter((a) => a.alternateName.toLowerCase().includes(versionQuery.toLowerCase()));
+  }, [userAlternates, versionQuery]);
+
+  // const filteredAiAlternates = useMemo(() => {
+  //   if (versionQuery.length === 0) return aiAlternates;
+  //   return aiAlternates.filter((a) => a.alternateName.toLowerCase().includes(versionQuery.toLowerCase()));
+  // }, [aiAlternates, versionQuery]);
+
   // A user has one Main version and can promote an alternate into it.
   const onAddVersion = async () => {
     if (!alternates) return; // eh; not sure if this will every hit
@@ -677,11 +696,13 @@ const CueCardInternal = ({
    * Swap the current viewing version with the main verison,
    * and save the alternate in the database.
    *
+   * @param _alternateId The alternate version to swap with the main version. If not provided, uses the current viewing alternate ID.
+   *
    * @returns
    */
-  const onSwapVersion = async () => {
+  const onSwapVersion = async (_alternateId?: string) => {
     const activeItemId = useAppStore.getState().activeItemId;
-    const alternateId = currentViewingAlternateId;
+    const alternateId = _alternateId ?? currentViewingAlternateId;
     if (!activeItemId || alternateId === "main" || form.validate().hasErrors || !alternateId) return;
 
     const alternateVersion = structuredClone(form.getValues());
@@ -700,7 +721,7 @@ const CueCardInternal = ({
       // Replace the OLD version alternate with the main.
       await updateAlternate({
         alternateId,
-        requestBody: { ...previousMain, id: _cue.id, updatedBy: userId || undefined },
+        requestBody: { ...alternateUpdateValues(previousMain), updatedBy: userId || undefined },
       });
 
       // setCueVersions((prevVersions) => {
@@ -711,6 +732,28 @@ const CueCardInternal = ({
       // });
 
       onChangeToMain(savedMain); // switch to main version, which is now the promoted version
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const onChangeVersionName = async (alternateId: string, newName: string) => {
+    try {
+      await updateAlternate({
+        alternateId,
+        requestBody: { alternateName: newName, updatedBy: userId || undefined },
+      });
+
+      setRenamingAlternateId(null);
+    } catch (e) {
+      // show error
+      console.error(e);
+    }
+  };
+
+  const onDeleteVersion = async (alternate: AlternateCue) => {
+    try {
+      await deleteAlternate({ alternateId: alternate.alternateId, cueId: _cue.id });
     } catch (error) {
       console.error(error);
     }
@@ -838,56 +881,194 @@ const CueCardInternal = ({
               {/* Version control */}
               {/* If no versions exist, show text "Create alt. version" */}
               {alternates && alternates.length > 0 ? (
-                <Group gap="xs">
-                  {/* <Button variant="transparent" size="xs">
-                    <Code fz="sm">
-                      {currentViewingVersionIndex === 0 ? "Main" : `Version ${currentViewingVersionIndex}`}
-                    </Code>
-                  </Button> */}
-                  <Select
-                    allowDeselect={false}
-                    style={{ width: "200px" }}
-                    value={currentViewingAlternateId}
-                    comboboxProps={{
-                      onOptionSubmit: (value) => {
-                        if (value === "add") {
-                          onAddVersion();
-                        } else if (value === "main") {
-                          onChangeToMain(_cue);
-                        } else {
-                          onChangeAlternateVersion(value);
+                // <Group gap="xs">
+                //   {/* <Button variant="transparent" size="xs">
+                //     <Code fz="sm">
+                //       {currentViewingVersionIndex === 0 ? "Main" : `Version ${currentViewingVersionIndex}`}
+                //     </Code>
+                //   </Button> */}
+                //   <Select
+                //     allowDeselect={false}
+                //     style={{ width: "200px" }}
+                //     value={currentViewingAlternateId}
+                //     comboboxProps={{
+                //       onOptionSubmit: (value) => {
+                //         if (value === "add") {
+                //           onAddVersion();
+                //         } else if (value === "main") {
+                //           onChangeToMain(_cue);
+                //         } else {
+                //           onChangeAlternateVersion(value);
+                //         }
+                //       },
+                //     }}
+                //     data={[
+                //       { value: "main", label: "Main" },
+                //       {
+                //         group: "Alternatives",
+                //         items: alternates.map((alternate) => ({ value: alternate.alternateId, label: alternate.alternateName })),
+                //       },
+                //       { group: "Actions", items: [{ value: "add", label: "Create new version" }] },
+                //     ]}
+                //   />
+                //   <Tooltip label="Swap the main version with this version. ">
+                //     <Button
+                //       size="xs"
+                //       variant="subtle"
+                //       onClick={() => void onSwapVersion()}
+                //       disabled={currentViewingAlternateId === "main"}
+                //     >
+                //       <IconVersions width="1rem" />
+                //     </Button>
+                //   </Tooltip>
+                // </Group>
+
+                <Group>
+                  <Menu shadow="md" closeOnItemClick={false}>
+                    <Menu.Target>
+                      <Input
+                        component="button"
+                        type="button"
+                        pointer
+                        rightSection={<IconChevronDown size={16} />}
+                        style={{ width: 200 }}
+                      >
+                        {currentViewingAlternateId === "main"
+                          ? "Main"
+                          : alternates.find((alternate) => alternate.alternateId === currentViewingAlternateId)
+                              ?.alternateName}
+                      </Input>
+                    </Menu.Target>
+                    <Menu.Dropdown mah={500}>
+                      <Menu.Search
+                        placeholder="Search versions..."
+                        value={versionQuery}
+                        onChange={(e) => setVersionQuery(e.target.value)}
+                      />
+                      <Menu.Label>Final version</Menu.Label>
+
+                      <Menu.Item
+                        onClick={() => onChangeToMain(_cue)}
+                        leftSection={
+                          <IconCheck
+                            width="1rem"
+                            style={{
+                              opacity: currentViewingAlternateId === "main" ? 1 : 0,
+                              transition: "opacity 0.15s",
+                            }}
+                          />
                         }
-                      },
-                    }}
-                    data={[
-                      { value: "main", label: "Main" },
-                      {
-                        group: "Alternatives",
-                        items: alternates.map((alternate) => ({ value: alternate.alternateId, label: alternate.alternateName })),
-                      },
-                      { group: "Actions", items: [{ value: "add", label: "Create new version" }] },
-                    ]}
-                  />
-                  <Tooltip label="Swap the main version with this version. ">
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      onClick={() => void onSwapVersion()}
-                      disabled={currentViewingAlternateId === "main"}
-                    >
-                      <IconVersions width="1rem" />
-                    </Button>
-                  </Tooltip>
+                      >
+                        Main{" "}
+                      </Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Label>User alternatives</Menu.Label>
+                      {filteredUserAlternates.length > 0 ? (
+                        filteredUserAlternates.map((alternate) => (
+                          <Menu.Sub
+                            key={alternate.alternateId}
+                            offset={12}
+                            safeAreaPolygon={{ buffer: 12, requireIntent: false }}
+                          >
+                            <Menu.Sub.Target>
+                              <Menu.Sub.Item
+                                onClick={() => onChangeAlternateVersion(alternate.alternateId)}
+                                leftSection={
+                                  <IconCheck
+                                    width="1rem"
+                                    style={{
+                                      opacity: currentViewingAlternateId === alternate.alternateId ? 1 : 0,
+                                      transition: "opacity 0.15s",
+                                    }}
+                                  />
+                                }
+                                key={alternate.alternateId}
+                              >
+                                {alternate.alternateName}
+                              </Menu.Sub.Item>
+                            </Menu.Sub.Target>
+                            <Menu.Sub.Dropdown>
+                              <Menu.Item onClick={() => onChangeAlternateVersion(alternate.alternateId)}>
+                                {" "}
+                                View version{" "}
+                              </Menu.Item>
+                              <Menu.Divider />
+                              {renamingAlternateId === alternate.alternateId ? (
+                                <Box p="xs">
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+
+                                      const formData = new FormData(e.currentTarget);
+                                      const newName = formData.get("alternateName") as string;
+                                      onChangeVersionName(alternate.alternateId, newName);
+                                    }}
+                                  >
+                                    <TextInput
+                                      name="alternateName"
+                                      autoFocus
+                                      defaultValue={alternate.alternateName}
+                                      rightSectionWidth={60}
+                                      rightSection={
+                                        <Button type="submit" variant="transparent" size="compact-xs">
+                                          Save
+                                        </Button>
+                                      }
+                                    />
+                                  </form>
+                                </Box>
+                              ) : (
+                                <Menu.Item
+                                  onClick={() => {
+                                    setRenamingAlternateId(alternate.alternateId);
+                                  }}
+                                >
+                                  Rename
+                                </Menu.Item>
+                              )}
+
+                              <Tooltip withArrow position="right" label="Swap the main version with this version.">
+                                <Menu.Item onClick={() => onSwapVersion(alternate.alternateId)}> Set as Main</Menu.Item>
+                              </Tooltip>
+                              <Menu.Divider />
+                              <Menu.Item color="red" onClick={() => onDeleteVersion(alternate)}>
+                                {" "}
+                                Delete{" "}
+                              </Menu.Item>
+                            </Menu.Sub.Dropdown>
+                          </Menu.Sub>
+                        ))
+                      ) : (
+                        <Menu.Item>
+                          <Text c="dimmed" size="sm" ta="center" py="xs">
+                            No versions found
+                          </Text>
+                        </Menu.Item>
+                      )}
+                      <Menu.Item
+                        onClick={onAddVersion}
+                        leftSection={<IconPlus size={16} />}
+                        color="var(--mantine-color-lime-light-color)"
+                      >
+                        Create alternative
+                      </Menu.Item>
+
+                      <Menu.Divider />
+                      <Menu.Label>
+                        <Code>AI Alternatives (0/3)</Code>
+                      </Menu.Label>
+                      <Menu.Item leftSection={<IconPencilAi size={16} />} color="var(--mantine-color-lime-light-color)">
+                        Generate
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
                 </Group>
               ) : (
                 <Tooltip label="Experiment with different settings by creating alternative versions, without losing your original cue.">
                   <Button
                     variant="transparent"
                     size="xs"
-                    // style={{
-                    //   textDecoration: "underline dotted",
-                    // }}
-                    // onClick={open}
+
                     onClick={onAddVersion}
                   >
                     Create alt. version

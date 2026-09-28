@@ -24,8 +24,9 @@ export type CreateAlternateCueRes = {
   alternateCue: AlternateCue;
 };
 
-export type UpdateAlternateCueReq = Partial<Omit<AlternateCue, "id" | "alternateId" | "createdAt" | "updatedAt" | "deletedAt">> &
-  Pick<Cue, "id">;
+export type UpdateAlternateCueReq = Partial<
+  Omit<AlternateCue, "id" | "alternateId" | "createdAt" | "updatedAt" | "deletedAt">
+>;
 
 export type UpdateAlternateCueRes = {
   alternateCue: AlternateCue;
