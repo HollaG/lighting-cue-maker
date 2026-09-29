@@ -50,15 +50,15 @@ func TestGroupAssignmentsFollowSelectedOrder(t *testing.T) {
 		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body))}, nil
 	})
 	ids := []string{"b", "unsupported", "a"}
-	cue, inputTokens, err := generateCueAssignmentsByGroup(context.Background(), req, "song context", ids)
+	cue, stats, err := generateCueAssignmentsByGroup(context.Background(), req, "song context", ids)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if calls != 2 {
 		t.Fatalf("expected 2 requests; unsupported attributes need no request, got %d", calls)
 	}
-	if inputTokens != 246 {
-		t.Fatalf("expected 246 tokens for two requests, got %d", inputTokens)
+	if stats.TotalInputTokens != 246 || len(stats.Output) != 2 {
+		t.Fatalf("expected 246 tokens and two responses, got %#v", stats)
 	}
 	config, _ := decodeCueObject(cue.CueConfig)
 	if !reflect.DeepEqual(config["enabledGroups"], []any{"b", "unsupported", "a"}) {

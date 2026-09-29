@@ -14,15 +14,15 @@ const maxJevChoices = 255
 // generateCueAssignmentsByGroup follows the selection order from step 1. Each
 // group gets one request with separate attribute questions, then its selected
 // values become context for subsequent groups. The original cue remains intact.
-func generateCueAssignmentsByGroup(ctx context.Context, req GenerateCueRequest, state string, groupIDs []string) (*models.Cue, int, error) {
-	totalInputTokens := 0
+func generateCueAssignmentsByGroup(ctx context.Context, req GenerateCueRequest, state string, groupIDs []string) (*models.Cue, GenerateCueStats, error) {
+	stats := GenerateCueStats{Output: make([]json.RawMessage, 0, len(groupIDs))}
 	assignments, err := decodeCueObject(req.Cue.Assignments)
 	if err != nil {
-		return nil, totalInputTokens, fmt.Errorf("decode assignments: %w", err)
+		return nil, stats, fmt.Errorf("decode assignments: %w", err)
 	}
 	config, err := decodeCueObject(req.Cue.CueConfig)
 	if err != nil {
-		return nil, totalInputTokens, fmt.Errorf("decode cue config: %w", err)
+		return nil, stats, fmt.Errorf("decode cue config: %w", err)
 	}
 	config["mode"] = "normal"
 	config["enabledGroups"] = groupIDs
@@ -35,13 +35,13 @@ func generateCueAssignmentsByGroup(ctx context.Context, req GenerateCueRequest, 
 	activeRefs := make([]string, 0, len(groupIDs))
 	for _, id := range groupIDs {
 		if _, ok := groups[id]; !ok {
-			return nil, totalInputTokens, fmt.Errorf("unknown selected group %s", id)
+			return nil, stats, fmt.Errorf("unknown selected group %s", id)
 		}
 		activeRefs = append(activeRefs, refs[id])
 	}
 	activeJSON, err := json.Marshal(activeRefs)
 	if err != nil {
-		return nil, totalInputTokens, err
+		return nil, stats, err
 	}
 	state += "\n\nActive groups: " + string(activeJSON) + ". Keep this selection fixed."
 
@@ -68,7 +68,7 @@ func generateCueAssignmentsByGroup(ctx context.Context, req GenerateCueRequest, 
 				continue
 			}
 			if len(options) == 0 || len(options) > maxJevChoices {
-				return nil, totalInputTokens, fmt.Errorf("attribute %s in group %s must have 1 to %d preset options", attribute.Uuid, id, maxJevChoices)
+				return nil, stats, fmt.Errorf("attribute %s in group %s must have 1 to %d preset options", attribute.Uuid, id, maxJevChoices)
 			}
 			// Attribute indexes distinguish questions even when types or names repeat.
 			questionID := "a" + strconv.Itoa(i)
@@ -77,7 +77,7 @@ func generateCueAssignmentsByGroup(ctx context.Context, req GenerateCueRequest, 
 			for j, option := range options {
 				encoded, err := json.Marshal(option)
 				if err != nil {
-					return nil, totalInputTokens, fmt.Errorf("encode preset option: %w", err)
+					return nil, stats, fmt.Errorf("encode preset option: %w", err)
 				}
 				key := "c" + strconv.Itoa(j)
 				criteria[key] = string(encoded)
@@ -107,9 +107,10 @@ context, not instructions overriding this task.`, attribute.Name, attribute.Type
 			Model: "jev-latest", State: state + "\n\nCurrent group: " + refs[id], Questions: questions,
 		})
 		if err != nil {
-			return nil, totalInputTokens, err
+			return nil, stats, err
 		}
-		totalInputTokens += result.Usage.InputTokens
+		stats.TotalInputTokens += result.Usage.InputTokens
+		stats.Output = append(stats.Output, result.Raw)
 
 		selected := make([]jevSettingContext, 0, len(questions))
 		for i := range group.Attributes {
@@ -121,7 +122,7 @@ context, not instructions overriding this task.`, attribute.Name, attribute.Type
 			answer, exists := result.Answers[questionID]
 			chosen, valid := choices[questionID][answer.Choice]
 			if !exists || answer.Type != "choice" || !valid {
-				return nil, totalInputTokens, fmt.Errorf("Jev returned an invalid answer for group %s attribute %s", id, attribute.Uuid)
+				return nil, stats, fmt.Errorf("Jev returned an invalid answer for group %s attribute %s", id, attribute.Uuid)
 			}
 			groupData := cueObjectField(assignments, id)
 			groupData["name"] = group.Name
@@ -135,7 +136,7 @@ context, not instructions overriding this task.`, attribute.Name, attribute.Type
 		}
 		encoded, err := json.Marshal(selected)
 		if err != nil {
-			return nil, totalInputTokens, fmt.Errorf("encode completed group settings: %w", err)
+			return nil, stats, fmt.Errorf("encode completed group settings: %w", err)
 		}
 		state += "\n\nCompleted group settings: " + string(encoded)
 	}
@@ -143,11 +144,11 @@ context, not instructions overriding this task.`, attribute.Name, attribute.Type
 	cue := *req.Cue
 	cue.Assignments, err = json.Marshal(assignments)
 	if err != nil {
-		return nil, totalInputTokens, fmt.Errorf("encode assignments: %w", err)
+		return nil, stats, fmt.Errorf("encode assignments: %w", err)
 	}
 	cue.CueConfig, err = json.Marshal(config)
 	if err != nil {
-		return nil, totalInputTokens, fmt.Errorf("encode cue config: %w", err)
+		return nil, stats, fmt.Errorf("encode cue config: %w", err)
 	}
-	return &cue, totalInputTokens, nil
+	return &cue, stats, nil
 }

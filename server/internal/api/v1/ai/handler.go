@@ -45,6 +45,12 @@ type JevResponse struct {
 	Model   string               `json:"model"`
 	Answers map[string]JevAnswer `json:"answers"`
 	Usage   JevUsage             `json:"usage"`
+	Raw     json.RawMessage      `json:"-"`
+}
+
+type GenerateCueStats struct {
+	TotalInputTokens int               `json:"totalInputTokens"`
+	Output           []json.RawMessage `json:"output"`
 }
 
 type JevAnswer struct {
@@ -209,16 +215,15 @@ Do not choose individual group settings.`,
 	fixtureGroupIDs := groupChoices[fixtureGroupAnswer.Choice]
 
 	// Generate each group's supported attributes together, carrying earlier results forward.
-	cue, assignmentInputTokens, err := generateCueAssignmentsByGroup(c.Request.Context(), req, jevReq.State, fixtureGroupIDs)
+	cue, stats, err := generateCueAssignmentsByGroup(c.Request.Context(), req, jevReq.State, fixtureGroupIDs)
 	if err != nil {
 		log.Printf("Failed to generate cue assignments: %v", err)
 		response.InternalError(c, "Failed to generate cue")
 		return
 	}
-	response.OK(c, gin.H{
-		"cue":   cue,
-		"stats": gin.H{"totalInputTokens": jevResponse.Usage.InputTokens + assignmentInputTokens},
-	})
+	stats.TotalInputTokens += jevResponse.Usage.InputTokens
+	stats.Output = append([]json.RawMessage{jevResponse.Raw}, stats.Output...)
+	response.OK(c, gin.H{"cue": cue, "stats": stats})
 }
 
 func pollJev(ctx context.Context, request JevRequest) (*JevResponse, error) {
@@ -263,5 +268,7 @@ func pollJev(ctx context.Context, request JevRequest) (*JevResponse, error) {
 	if err := json.Unmarshal(responseBody, &result); err != nil {
 		return nil, fmt.Errorf("decode Jev response: %w", err)
 	}
+	// Keep the full upstream JSON, including fields outside our typed view.
+	result.Raw = responseBody
 	return &result, nil
 }

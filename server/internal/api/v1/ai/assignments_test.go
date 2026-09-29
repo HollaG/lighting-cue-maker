@@ -124,7 +124,11 @@ func TestGenerateCueAssignments(t *testing.T) {
 						delete(answers, "a1")
 					}
 				}
-				body, _ := json.Marshal(JevResponse{Answers: answers, Usage: JevUsage{InputTokens: calls * 100, OutputTokens: 25}})
+				body, _ := json.Marshal(map[string]any{
+					"model": "test-model", "answers": answers,
+					"usage":     JevUsage{InputTokens: calls * 100, OutputTokens: 25},
+					"requestId": calls, // An upstream field outside our typed response must survive.
+				})
 				return &http.Response{StatusCode: http.StatusOK, Status: "200 OK", Body: io.NopCloser(bytes.NewReader(body))}, nil
 			})
 			recorder := httptest.NewRecorder()
@@ -146,7 +150,8 @@ func TestGenerateCueAssignments(t *testing.T) {
 				Data    struct {
 					Cue   models.Cue `json:"cue"`
 					Stats struct {
-						TotalInputTokens int `json:"totalInputTokens"`
+						TotalInputTokens int               `json:"totalInputTokens"`
+						Output           []json.RawMessage `json:"output"`
 					} `json:"stats"`
 				} `json:"data"`
 			}
@@ -155,6 +160,24 @@ func TestGenerateCueAssignments(t *testing.T) {
 			}
 			if result.Data.Stats.TotalInputTokens != 600 {
 				t.Fatalf("expected 100 + 200 + 300 input tokens, got %d", result.Data.Stats.TotalInputTokens)
+			}
+			if len(result.Data.Stats.Output) != 3 {
+				t.Fatalf("expected all 3 model responses, got %d", len(result.Data.Stats.Output))
+			}
+			for i, raw := range result.Data.Stats.Output {
+				var output struct {
+					JevResponse
+					RequestID int `json:"requestId"`
+				}
+				if err := json.Unmarshal(raw, &output); err != nil {
+					t.Fatal(err)
+				}
+				if output.RequestID != i+1 || output.Model != "test-model" || output.Usage.InputTokens != (i+1)*100 || output.Usage.OutputTokens != 25 {
+					t.Fatalf("response fields or call order were lost: %s", raw)
+				}
+				if (i == 0 && len(output.Answers) != 1) || (i > 0 && len(output.Answers) != 2) {
+					t.Fatalf("model answers were lost: %s", raw)
+				}
 			}
 			if !result.Success || result.Data.Cue.Uuid != cue.Uuid || result.Data.Cue.Comments != cue.Comments || !bytes.Equal(result.Data.Cue.Transition, cue.Transition) {
 				t.Fatalf("cue fields were not preserved: %#v", result)
