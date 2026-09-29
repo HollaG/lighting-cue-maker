@@ -236,6 +236,7 @@ export const EventPage = () => {
     <Box>
       {/* Live elements */}
       <RemoteCursorOverlay itemId={validActiveItemId ?? undefined} />
+
       <ChatContainer key={validActiveItemId} itemId={validActiveItemId || undefined} />
 
       <Container size={"xl"} mt="4rem">

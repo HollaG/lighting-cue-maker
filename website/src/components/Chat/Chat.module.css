@@ -6,6 +6,7 @@
   bottom: 16px;
   z-index: 500;
   box-shadow: var(--mantine-shadow-md);
+  transition: transform 0.2s ease-out;
 }
 
 .launcher {
@@ -30,6 +31,7 @@
   border-radius: var(--mantine-radius-lg);
   background: var(--mantine-color-body);
   box-shadow: var(--mantine-shadow-xl);
+  transition: transform 0.2s ease-out;
 }
 
 .info {

@@ -3,6 +3,7 @@
 import {
   ActionIcon,
   Avatar,
+  Box,
   Button,
   Group,
   HoverCard,
@@ -11,6 +12,7 @@ import {
   Paper,
   Stack,
   Text,
+  Title,
   Tooltip,
   Transition,
 } from "@mantine/core";
@@ -121,44 +123,68 @@ export const ChatContainer = ({ itemId }: { itemId?: string }) => {
     }
   };
 
+  const [previousColor, setPreviousColor] = useState<string | undefined>(undefined);
+  const [previousName, setPreviousName] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (followingUserId) {
+      const color = getColorFromId(followingUserId);
+      setPreviousColor(color);
+
+      const name = participants.find((p) => p.userId === followingUserId)?.name;
+      setPreviousName(name);
+    }
+  }, [followingUserId]);
+
+  const mantineColor = previousColor
+    ? `light-dark(var(--mantine-color-${previousColor}-2), var(--mantine-color-${previousColor}-9))`
+    : undefined;
   return (
     <>
+      <Transition mounted={!!followingUserId} transition="slide-up">
+        {(styles) => (
+          <Box
+            style={{
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "32px",
+              zIndex: 100,
+              backgroundColor: mantineColor,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+
+              ...styles,
+            }}
+          >
+            <Title order={6} style={{ margin: 0, fontSize: "0.8rem" }}>
+              Following {previousName ?? "Unknown User"}'s view
+            </Title>
+          </Box>
+        )}
+      </Transition>
+
       <HoverCard position="left" withArrow>
         <HoverCard.Target>
-          {followingUserId ? (
-            <ActionIcon
-              className={classes.screenShareLauncher}
-              onClick={() => setFollowingUserId(null)}
-              size={48}
-              radius="lg"
-              // variant="gradient"
-              variant="filled"
-              color={getColorFromId(followingUserId)}
-              aria-label="Follow someone's view"
-            >
-              <IconDeviceDesktopCancel size={24} />
-              {/* <StopFollowingIcon /> */}
-              {/* <img
-              src={StopFollowingIcon}
-              alt="Stop following"
-              width={24}
-              height={24}
-              style={{ filter: "brightness(0) invert(1)" }}
-            /> */}
-            </ActionIcon>
-          ) : (
-            <ActionIcon
-              className={classes.screenShareLauncher}
-              onClick={() => console.log("Screen share clicked")}
-              size={48}
-              radius="lg"
-              variant="light"
-              autoContrast
-              aria-label="Follow someone's view"
-            >
-              <IconScreenShare size={24} />
-            </ActionIcon>
-          )}
+          <ActionIcon
+            className={classes.screenShareLauncher}
+            onClick={() => (followingUserId ? setFollowingUserId(null) : console.log("Screen share clicked"))}
+            size={48}
+            radius="lg"
+            variant={followingUserId ? "filled" : "light"}
+            autoContrast
+            aria-label="Follow someone's view"
+
+            color={followingUserId ? getColorFromId(followingUserId) : undefined}
+
+            style={{
+              transform: `translateY(${followingUserId ? "-32px" : "0"})`,
+            }}
+          >
+            {followingUserId ? <IconDeviceDesktopCancel size={24} /> : <IconScreenShare size={24} />}
+          </ActionIcon>
         </HoverCard.Target>
         <HoverCard.Dropdown>
           <Stack>
@@ -217,6 +243,11 @@ export const ChatContainer = ({ itemId }: { itemId?: string }) => {
             aria-controls={chatIsOpen ? panelId : undefined}
 
             disabled={!canUseChat}
+
+            style={{
+              transform: `translateY(${followingUserId ? "-32px" : "0"})`,
+              transition: "transform 0.2s ease-out",
+            }}
           >
             <IconMessages size={24} />
           </ActionIcon>
@@ -237,7 +268,11 @@ export const ChatContainer = ({ itemId }: { itemId?: string }) => {
               role="region"
               aria-labelledby={titleId}
               className={classes.panel}
-              style={styles}
+              style={{
+                ...styles,
+
+                transform: `translateY(${followingUserId ? "-32px" : "0"})`,
+              }}
               onKeyDown={(event) => {
                 // Chat typing must not trigger the event page's keyboard shortcuts.
                 event.stopPropagation();

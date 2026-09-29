@@ -122,7 +122,7 @@ export function Cursor({
         size="sm"
         style={{
           position: "fixed",
-          bottom: 10,
+          bottom: 10 + (followingUserId ? 32 : 0),
           display: "flex",
           alignItems: "center",
           visibility: "hidden",
