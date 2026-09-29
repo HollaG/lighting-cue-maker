@@ -164,7 +164,7 @@ const CueCardInternal = ({
   const { mutateAsync: updateAlternate } = useUpdateAlternate();
   const { mutateAsync: deleteAlternate } = useDeleteAlternate();
 
-  const { mutateAsync: createAlternateAi } = useCreateAlternateAi();
+  const { mutateAsync: createAlternateAi, isPending: isCreatingAlternateAi } = useCreateAlternateAi();
 
   const [isCollapsed] = useLocalStorage({ key: `cue-${_cue.id}-collapsed`, defaultValue: false });
   const [isDirty, setIsDirty] = useState(false);
@@ -843,7 +843,7 @@ const CueCardInternal = ({
 
     try {
       const { cue, stats } = await createAlternateAi({
-        cue: _cue,
+        cue: form.getValues(), // send over the current visible cue (incld the comments)
         fixtureGroups: fixtureGroups,
         lyrics: convertRawIdToExpanded(generateRaw(useAppStore.getState().content)),
 
@@ -861,6 +861,10 @@ const CueCardInternal = ({
       });
 
       onAddVersion({ cue, type: "ai" });
+
+      // Note: AI versions may be incomplete due to the AI generation being limited to some attributes only.
+      // Show errors
+      setIsDirty(true);
 
       // create a new alternate
     } catch (e) {
@@ -1157,7 +1161,7 @@ const CueCardInternal = ({
                       )}
                       <Menu.Item
                         onClick={() => onAddVersion({ cue: form.getValues(), type: "user" })}
-                        leftSection={<IconPlus size={16} />}
+                        leftSection={isCreatingAlternate ? <Loader size="1rem" type="bars" /> : <IconPlus size={16} />}
                         color="var(--mantine-color-lime-light-color)"
                       >
                         Create alternative
@@ -1253,7 +1257,9 @@ const CueCardInternal = ({
 
                       <Menu.Item
                         onClick={onCreateAiVersion}
-                        leftSection={<IconPencilAi size={16} />}
+                        leftSection={
+                          isCreatingAlternateAi ? <Loader size="1rem" type="bars" /> : <IconPencilAi size={16} />
+                        }
                         color="var(--mantine-color-lime-light-color)"
                       >
                         Generate (up to 3)
