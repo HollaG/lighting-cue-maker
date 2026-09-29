@@ -1,3 +1,5 @@
+import { convertUuidForDatabase } from "./convertUuid";
+
 // possible embedded rich types:
 //  1. cue (embedded as 2 options:)
 //    a. with lyrics
@@ -72,3 +74,12 @@ export const generateRaw = (content: string[][]) => {
   });
   return c.join("\n");
 };
+
+/** Expand embedded cue IDs in raw lyrics while leaving all other text unchanged. */
+export const convertRawIdToExpanded = (content: string) =>
+  content.replace(/([{<]cueId=)([^=]+)(=cueId[}>])/g, (marker, start: string, id: string, end: string) => {
+    if (!/^[0-9a-zA-Z]{22}$/.test(id)) {
+      return marker;
+    }
+    return `${start}${convertUuidForDatabase(id)}${end}`;
+  });

@@ -57,7 +57,7 @@ import { useUpdateAlternate } from "../../../query/alternate-cue/useUpdateAltern
 import { alternateUpdateValues, cueFormValues } from "../../../utils/alternates";
 import { useDeleteAlternate } from "../../../query/alternate-cue/useDeleteAlternate";
 import { useCreateAlternateAi } from "../../../query/alternate-cue/useCreateAlternateAi";
-import { generateRaw } from "../../../utils/convertText";
+import { convertRawIdToExpanded, generateRaw } from "../../../utils/convertText";
 
 type FormData = Cue;
 
@@ -670,30 +670,37 @@ const CueCardInternal = ({
   const [versionQuery, setVersionQuery] = useState("");
   const [renamingAlternateId, setRenamingAlternateId] = useState<string | null>(null);
   const userAlternates = useMemo(() => (alternates || []).filter((a) => a.alternateType === "user"), [alternates]);
-  // const aiAlternates = useMemo(() => (alternates || []).filter((a) => a.alternateType === "ai"), [alternates]);
+  const aiAlternates = useMemo(() => (alternates || []).filter((a) => a.alternateType === "ai"), [alternates]);
 
   const filteredUserAlternates = useMemo(() => {
     if (versionQuery.length === 0) return userAlternates;
     return userAlternates.filter((a) => a.alternateName.toLowerCase().includes(versionQuery.toLowerCase()));
   }, [userAlternates, versionQuery]);
 
-  // const filteredAiAlternates = useMemo(() => {
-  //   if (versionQuery.length === 0) return aiAlternates;
-  //   return aiAlternates.filter((a) => a.alternateName.toLowerCase().includes(versionQuery.toLowerCase()));
-  // }, [aiAlternates, versionQuery]);
+  const filteredAiAlternates = useMemo(() => {
+    if (versionQuery.length === 0) return aiAlternates;
+    return aiAlternates.filter((a) => a.alternateName.toLowerCase().includes(versionQuery.toLowerCase()));
+  }, [aiAlternates, versionQuery]);
 
   // A user has one Main version and can promote an alternate into it.
-  const onAddVersion = async () => {
+  const onAddVersion = async ({ cue, type = "user" }: { cue?: Cue; type?: "user" | "ai" }) => {
     if (!alternates) return; // eh; not sure if this will every hit
     // copy the current cue settings
-    const currentSettings = structuredClone(form.getValues());
+    const currentSettings = cue ?? structuredClone(form.getValues());
+
+    let name = "";
+    if (type === "user") {
+      name = `Version ${alternates.filter((a) => a.alternateType === "user").length + 1}`;
+    } else if (type === "ai") {
+      name = `Generation ${alternates.filter((a) => a.alternateType === "ai").length + 1}`;
+    }
 
     try {
       const alternateResp = await createAlternate({
         ...currentSettings,
         id: _cue.id,
-        alternateType: "user",
-        alternateName: `Version ${alternates.length + 1}`,
+        alternateType: type,
+        alternateName: name,
         updatedBy: userId || undefined,
       });
 
@@ -709,6 +716,7 @@ const CueCardInternal = ({
    */
   const onChangeAlternateVersion = (newVersionId: string, newVersionCue?: Cue) => {
     const replacementCue = newVersionCue ?? (alternates || []).find((a) => a.alternateId === newVersionId);
+
     if (!replacementCue) return;
 
     // Purposely disable `onValuesChange` when changing the version.
@@ -816,12 +824,45 @@ const CueCardInternal = ({
   };
 
   const onCreateAiVersion = async () => {
+    if (aiAlternates.length >= 3) {
+      notifications.show({
+        title: "AI Generation Limit Reached",
+        message: "You can only create up to 3 AI-generated versions per cue.",
+        color: "red",
+      });
+      return;
+    }
+    const cueOrder = useAppStore.getState().cueOrder;
+    const cueIndex = cueOrder.indexOf(cueId);
+    const previousCueId = cueIndex > 0 ? cueOrder[cueIndex - 1] : null;
+    const nextCueId = cueIndex < cueOrder.length - 1 ? cueOrder[cueIndex + 1] : null;
+
+    const cues = queryClient.getQueryData<Cue[]>(["cues", useAppStore.getState().activeItemId]) || [];
+    const previousCue = previousCueId ? cues.find((c) => c.id === previousCueId) : undefined;
+    const nextCue = nextCueId ? cues.find((c) => c.id === nextCueId) : undefined;
+
     try {
-      await createAlternateAi({
+      const { cue, stats } = await createAlternateAi({
         cue: _cue,
         fixtureGroups: fixtureGroups,
-        lyrics: generateRaw(useAppStore.getState().content),
+        lyrics: convertRawIdToExpanded(generateRaw(useAppStore.getState().content)),
+
+        nextCue: nextCue?.cueConfig.mode === "unknown" ? undefined : nextCue,
+        previousCue: previousCue?.cueConfig.mode === "unknown" ? undefined : previousCue,
       });
+
+      const tokenCostPer1Million = 0.42;
+      const cost = ((stats.totalInputTokens / 1_000_000) * tokenCostPer1Million * 100) / 100;
+
+      notifications.show({
+        title: "AI Generation Complete",
+        message: `Used ${stats.totalInputTokens} tokens, total cost $${cost}.`,
+        color: "green",
+      });
+
+      onAddVersion({ cue, type: "ai" });
+
+      // create a new alternate
     } catch (e) {
       console.error(e);
     }
@@ -1115,7 +1156,7 @@ const CueCardInternal = ({
                         </Menu.Item>
                       )}
                       <Menu.Item
-                        onClick={onAddVersion}
+                        onClick={() => onAddVersion({ cue: form.getValues(), type: "user" })}
                         leftSection={<IconPlus size={16} />}
                         color="var(--mantine-color-lime-light-color)"
                       >
@@ -1124,14 +1165,98 @@ const CueCardInternal = ({
 
                       <Menu.Divider />
                       <Menu.Label>
-                        <Code>AI Alternatives (0/3)</Code>
+                        <Code>AI Alternatives ({aiAlternates.length}/3)</Code>
                       </Menu.Label>
+                      {filteredAiAlternates.length > 0 ? (
+                        filteredAiAlternates.map((alternate) => (
+                          <Menu.Sub
+                            key={alternate.alternateId}
+                            offset={12}
+                            safeAreaPolygon={{ buffer: 12, requireIntent: false }}
+                          >
+                            <Menu.Sub.Target>
+                              <Menu.Sub.Item
+                                onClick={() => onChangeAlternateVersion(alternate.alternateId)}
+                                leftSection={
+                                  <IconCheck
+                                    width="1rem"
+                                    style={{
+                                      opacity: currentViewingAlternateId === alternate.alternateId ? 1 : 0,
+                                      transition: "opacity 0.15s",
+                                    }}
+                                  />
+                                }
+                                key={alternate.alternateId}
+                              >
+                                {alternate.alternateName}
+                              </Menu.Sub.Item>
+                            </Menu.Sub.Target>
+                            <Menu.Sub.Dropdown>
+                              <Menu.Item onClick={() => onChangeAlternateVersion(alternate.alternateId)}>
+                                {" "}
+                                View version{" "}
+                              </Menu.Item>
+                              <Menu.Divider />
+                              {renamingAlternateId === alternate.alternateId ? (
+                                <Box p="xs">
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+
+                                      const formData = new FormData(e.currentTarget);
+                                      const newName = formData.get("alternateName") as string;
+                                      onChangeVersionName(alternate.alternateId, newName);
+                                    }}
+                                  >
+                                    <TextInput
+                                      name="alternateName"
+                                      autoFocus
+                                      defaultValue={alternate.alternateName}
+                                      rightSectionWidth={60}
+                                      rightSection={
+                                        <Button type="submit" variant="transparent" size="compact-xs">
+                                          Save
+                                        </Button>
+                                      }
+                                    />
+                                  </form>
+                                </Box>
+                              ) : (
+                                <Menu.Item
+                                  onClick={() => {
+                                    setRenamingAlternateId(alternate.alternateId);
+                                  }}
+                                >
+                                  Rename
+                                </Menu.Item>
+                              )}
+
+                              <Tooltip withArrow position="right" label="Swap the main version with this version.">
+                                <Menu.Item onClick={() => onSwapVersion(alternate.alternateId)}> Set as Main</Menu.Item>
+                              </Tooltip>
+                              {/* <Menu.Divider /> */}
+                              {/* Deleting not allowed for Alternates */}
+                              {/* <Menu.Item color="red" onClick={() => onDeleteVersion(alternate)}>
+                                {" "}
+                                Delete{" "}
+                              </Menu.Item> */}
+                            </Menu.Sub.Dropdown>
+                          </Menu.Sub>
+                        ))
+                      ) : (
+                        <Menu.Item>
+                          <Text c="dimmed" size="sm" ta="center" py="xs">
+                            No versions found
+                          </Text>
+                        </Menu.Item>
+                      )}
+
                       <Menu.Item
                         onClick={onCreateAiVersion}
                         leftSection={<IconPencilAi size={16} />}
                         color="var(--mantine-color-lime-light-color)"
                       >
-                        Generate
+                        Generate (up to 3)
                       </Menu.Item>
                     </Menu.Dropdown>
                   </Menu>
@@ -1142,7 +1267,7 @@ const CueCardInternal = ({
                     variant="transparent"
                     size="xs"
 
-                    onClick={onAddVersion}
+                    onClick={() => onAddVersion({ cue: form.getValues(), type: "user" })}
                   >
                     Create alt. version
                   </Button>

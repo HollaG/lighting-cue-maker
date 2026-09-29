@@ -7,9 +7,15 @@ export type AiCreateVersionReq = {
 
   cue: Cue; // only need cueConfig and cueId
 
+  previousCue?: Cue;
+  nextCue?: Cue;
+
   fixtureGroups: FixtureGroupConfiguration[];
 };
 
 export type AiCreateVersionRes = {
   cue: Cue; // the fully populated cue
+  stats: {
+    totalInputTokens: number;
+  };
 };
