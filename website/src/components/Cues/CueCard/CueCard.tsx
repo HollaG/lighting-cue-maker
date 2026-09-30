@@ -181,19 +181,22 @@ const CueCardInternal = ({
   const cue =
     currentViewingAlternateId === "main"
       ? _cue
-      : (alternates || []).find((a) => a.alternateId === currentViewingAlternateId) || _cue;
+      : (alternates || []).find((a) => a.alternateId === currentViewingAlternateId) || _cue; // fallback to main
 
   // Track the available alternates and reset to `main` if not found.
   // Why not just do it as a side effect of `delete()`?
   // We might have upstream updates that remove an alternate. Then, we wouldn't be able to reset to main.
-  useEffect(() => {
-    if (currentViewingAlternateId === "main") return;
-    if (!alternates || alternates.length === 0) return;
-    if (!alternates.find((a) => a.alternateId === currentViewingAlternateId)) {
-      //reset to main
-      onChangeToMain(_cue);
-    }
-  }, [currentViewingAlternateId, alternates]);
+  // New update ~ The only way a upstream update would remove an alternate by itself
+  //              is when someone ELSE deletes the alternate, and the Live integration refreshes.
+  //              However, we still don't need to reset it, because the Live integration will send a message to the client to change to main.
+  // useEffect(() => {
+  //   if (currentViewingAlternateId === "main") return;
+  //   if (!alternates || alternates.length === 0) return;
+  //   if (!alternates.find((a) => a.alternateId === currentViewingAlternateId)) {
+  //     //reset to main
+  //     onChangeToMain(_cue);
+  //   }
+  // }, [currentViewingAlternateId, alternates]);
 
   // --- Form ---------
   const initialValues: FormData = useMemo(
@@ -281,10 +284,10 @@ const CueCardInternal = ({
       setShowNotices(true);
       setShowWarnings(true);
       setShowErrors(true);
+      setIsDirty(false);
     } catch (e) {
       console.error(e);
     } finally {
-      setIsDirty(false);
     }
   }
 
@@ -818,6 +821,9 @@ const CueCardInternal = ({
   const onDeleteVersion = async (alternate: AlternateCue) => {
     try {
       await deleteAlternate({ alternateId: alternate.alternateId, cueId: _cue.id });
+
+      // reset to main
+      onChangeToMain(_cue);
     } catch (error) {
       console.error(error);
     }
@@ -1057,7 +1063,7 @@ const CueCardInternal = ({
                       <Menu.Search
                         placeholder="Search versions..."
                         value={versionQuery}
-                        onChange={(e) => setVersionQuery(e.target.value)}
+                        onChange={(e) => setVersionQuery(e.currentTarget.value)}
                       />
                       <Menu.Label>Final version</Menu.Label>
 
