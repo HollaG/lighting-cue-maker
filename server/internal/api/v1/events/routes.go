@@ -7,6 +7,7 @@ import (
 // Register mounts all event routes onto the given router group.
 func Register(rg *gin.RouterGroup) {
 	rg.POST("", createEvent)
+	rg.POST("/duplicate", duplicateEvent)
 	rg.GET("/:eventId", getEvent)
 	rg.PATCH("/:eventId", updateEvent)
 }

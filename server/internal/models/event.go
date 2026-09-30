@@ -7,6 +7,10 @@ import (
 )
 
 // Request DTOs
+type DuplicateLightEventReq struct {
+	EventID string `json:"eventId" binding:"required,uuid"`
+}
+
 type CreateLightEventReq struct {
 	Name               string                               `json:"name"`
 	CuesPerBand        int                                  `json:"cuesPerBand"`

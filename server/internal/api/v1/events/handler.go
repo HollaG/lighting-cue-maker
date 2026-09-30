@@ -23,6 +23,32 @@ func (e *updateEventRequestError) Error() string {
 	return e.message
 }
 
+func duplicateEvent(c *gin.Context) {
+	var req models.DuplicateLightEventReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "A valid eventId is required", nil)
+		return
+	}
+
+	var newEventID string
+	err := database.DB().WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+		var err error
+		newEventID, err = duplicateEventStructure(tx, req.EventID)
+		return err
+	})
+	if errors.Is(err, errEventNotFound) {
+		response.NotFound(c, "Event not found")
+		return
+	}
+	if err != nil {
+		fmt.Println(err)
+		response.InternalError(c, "Failed to duplicate event")
+		return
+	}
+
+	response.Created(c, map[string]any{"newEventId": newEventID})
+}
+
 func createEvent(c *gin.Context) {
 	var req models.CreateLightEventReq
 	if err := c.ShouldBindJSON(&req); err != nil {

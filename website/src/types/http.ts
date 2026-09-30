@@ -25,6 +25,14 @@ export type CreateEventRes = {
   event: LightEventConfiguration;
 };
 
+export type DuplicateEventReq = {
+  eventId: string;
+};
+
+export type DuplicateEventRes = {
+  newEventId: string;
+};
+
 export type CreateItemReq = {
   eventId: string;
   name: string;
