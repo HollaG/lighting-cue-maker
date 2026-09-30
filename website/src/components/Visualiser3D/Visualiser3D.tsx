@@ -51,6 +51,7 @@ import {
 import { useUpsertFixture } from "../../query/fixtures/useUpsertFixtures";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVisualiser3DTracking } from "../../hooks/realtime/useVisualiser3DTracking";
+import { hasAValue } from "../../utils/cue/cueForm";
 
 export const Visualiser3D = ({
   eventId,
@@ -805,7 +806,27 @@ export const StaticVisualiser3D = ({
       );
     }
 
+    const hasPresetColour =
+      getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR) !== undefined;
+
+    if (fixture.fixtureGroupId === "7834604b-7208-42ee-a484-526c38953e30")
+      console.log({ hasPresetColour, attribute, fixtureGroupId: fixture.fixtureGroupId, attributeAssignment });
+
     // We will never return a DynamicValueType here (checked above)
+    if (attribute === AttributeTypes.PRESET_INTENSITY && hasPresetColour) {
+      // we're trying to find the intensity AND the colour attribute exists
+      // Special case: if colour doesn't exist, set intensity to 0. This is because we require both colour and intensity.
+      // (Note: some fixtures in real life don't need a colour set first, for example CMY fixtures will show white if a colour is not selected. However, let's just assume this case for now)
+      const colourAssignment = getSpecificAttributeGivenTheType(
+        fixture.fixtureGroupId,
+        AttributeTypes.PRESET_COLOUR,
+      )!.value;
+
+      if (!hasAValue(AttributeTypes.PRESET_COLOUR, colourAssignment)) {
+        return undefined;
+      }
+    }
+
     return attributeAssignment
       ? (attributeAssignment.value[attribute] as Exclude<ValueAssignment[typeof attribute], DynamicValueType>)
       : undefined;
