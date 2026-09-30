@@ -1,11 +1,11 @@
 // @ts-nocheck
 
-import { ActionIcon, Box, Flex, Group, Select, Transition } from "@mantine/core";
+import { ActionIcon, Alert, Box, Code, Collapse, Flex, Group, Select, Stack, Title, Transition } from "@mantine/core";
 import { useAppStore, type InputMode } from "../../store/appStore";
 import { ContentControlFixed } from "./ContentControlFixed";
 import { useState } from "react";
 import { useInViewport } from "@mantine/hooks";
-import { IconChevronLeft, IconChevronRight, IconPin, IconPinnedOff } from "@tabler/icons-react";
+import { IconChevronLeft, IconChevronRight, IconInfoCircle, IconPin, IconPinnedOff } from "@tabler/icons-react";
 
 export const ContentControl = ({
   eventId,
@@ -30,6 +30,11 @@ export const ContentControl = ({
   const currentlySelectedBumpId = useAppStore((s) => s.currentlySelectedBumpId);
 
   const inputMode = useAppStore((s) => s.inputMode);
+
+  // Extra controls for always showing the floating one:
+  // 1. always show when we're moving a cue
+  const isMovingCue = useAppStore((s) => s.isMovingCue);
+  const cueBeingMoved = `Cue ${cueOrder.indexOf(currentlySelectedCueId ?? "") + 1}`; // TODO: get the actual cue name instead of just the index
 
   const [alwaysShow, setAlwaysShow] = useState(false);
 
@@ -97,6 +102,8 @@ export const ContentControl = ({
     setAlwaysShow(true);
   };
 
+  const shouldShowFloatingControl = (!inViewport || alwaysShow || isMovingCue) && showCues;
+
   return (
     <Box style={{ width: "100%" }}>
       <Box ref={defaultControlRef}>
@@ -109,7 +116,7 @@ export const ContentControl = ({
       </Box>
 
       <Transition
-        mounted={(!inViewport || alwaysShow) && showCues}
+        mounted={shouldShowFloatingControl}
         transition="fade-down"
         duration={250}
         timingFunction="ease-in-out"
@@ -135,74 +142,85 @@ export const ContentControl = ({
               borderTopRightRadius: "0",
             }}
           >
-            <Group gap="xs">
-              {inputMode === "cue" ? (
-                <Group gap="xs">
-                  <ActionIcon variant="light" color="lime" size={"lg"} onClick={onCuePrevious}>
-                    <IconChevronLeft width={"1.25rem"} />
-                  </ActionIcon>
-                  <Box w={"130px"}>
-                    <Select
-                      comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
-                      allowDeselect={false}
-                      value={currentlySelectedCueId}
-                      onChange={(value) => {
-                        setCurrentlySelectedCueId(value ?? "");
-                        onSelectCue(value);
-                      }}
-                      data={cueOrder.map((cueId, index) => ({
-                        value: cueId,
-                        label: `Cue ${index + 1}`,
-                      }))}
-                      size="sm"
-                      placeholder="Select cue"
-                    />
-                  </Box>
-                  <ActionIcon variant="light" color="lime" size="lg" onClick={onCueNext}>
-                    <IconChevronRight width={"1.25rem"} />
-                  </ActionIcon>
-                </Group>
-              ) : inputMode === "bump" ? (
-                <Group gap="xs">
-                  <ActionIcon variant="light" color="lime" size={"xl"} onClick={onBumpPrevious}>
-                    <IconChevronLeft width={"1.25rem"} />
-                  </ActionIcon>
-                  <Box w={"130px"}>
-                    <Select
-                      comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
-                      allowDeselect={false}
-                      value={currentlySelectedBumpId}
-                      onChange={(value) => {
-                        setCurrentlySelectedBumpId(value ?? "");
-                        onSelectBump(value);
-                      }}
-                      data={bumpOrder.map((bumpId, index) => ({
-                        value: bumpId,
-                        label: `Bump ${index + 1}`,
-                      }))}
-                      placeholder="Select bump"
-                      size="xs"
-                    />
-                  </Box>
-                  <ActionIcon variant="light" color="lime" size="lg" onClick={onBumpNext}>
-                    <IconChevronRight width={"1.25rem"} />
-                  </ActionIcon>
-                </Group>
-              ) : (
-                <></>
-              )}
+            <Stack gap="0">
+              <Group gap="xs">
+                {inputMode === "cue" ? (
+                  <Group gap="xs">
+                    <ActionIcon variant="light" color="lime" size={"lg"} onClick={onCuePrevious}>
+                      <IconChevronLeft width={"1.25rem"} />
+                    </ActionIcon>
+                    <Box w={"130px"}>
+                      <Select
+                        comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+                        allowDeselect={false}
+                        value={currentlySelectedCueId}
+                        onChange={(value) => {
+                          setCurrentlySelectedCueId(value ?? "");
+                          onSelectCue(value);
+                        }}
+                        data={cueOrder.map((cueId, index) => ({
+                          value: cueId,
+                          label: `Cue ${index + 1}`,
+                        }))}
+                        size="sm"
+                        placeholder="Select cue"
+                      />
+                    </Box>
+                    <ActionIcon variant="light" color="lime" size="lg" onClick={onCueNext}>
+                      <IconChevronRight width={"1.25rem"} />
+                    </ActionIcon>
+                  </Group>
+                ) : inputMode === "bump" ? (
+                  <Group gap="xs">
+                    <ActionIcon variant="light" color="lime" size={"xl"} onClick={onBumpPrevious}>
+                      <IconChevronLeft width={"1.25rem"} />
+                    </ActionIcon>
+                    <Box w={"130px"}>
+                      <Select
+                        comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+                        allowDeselect={false}
+                        value={currentlySelectedBumpId}
+                        onChange={(value) => {
+                          setCurrentlySelectedBumpId(value ?? "");
+                          onSelectBump(value);
+                        }}
+                        data={bumpOrder.map((bumpId, index) => ({
+                          value: bumpId,
+                          label: `Bump ${index + 1}`,
+                        }))}
+                        placeholder="Select bump"
+                        size="xs"
+                      />
+                    </Box>
+                    <ActionIcon variant="light" color="lime" size="lg" onClick={onBumpNext}>
+                      <IconChevronRight width={"1.25rem"} />
+                    </ActionIcon>
+                  </Group>
+                ) : (
+                  <></>
+                )}
 
-              <Flex flex={1}></Flex>
-              <ContentControlFixed
-                eventId={eventId}
-                deleteExtraSpaces={deleteExtraSpaces}
-                onFinishAddingLyrics={onFinishAddingLyrics}
-                showTitle={false}
-              />
-              <ActionIcon ml="xs" size="md" variant="transparent" onClick={() => setAlwaysShow(!alwaysShow)}>
-                {alwaysShow ? <IconPinnedOff width={"2rem"} /> : <IconPin width={"2rem"} />}
-              </ActionIcon>
-            </Group>
+                <Flex flex={1}></Flex>
+                <ContentControlFixed
+                  eventId={eventId}
+                  deleteExtraSpaces={deleteExtraSpaces}
+                  onFinishAddingLyrics={onFinishAddingLyrics}
+                  showTitle={false}
+                />
+                <ActionIcon ml="xs" size="md" variant="transparent" onClick={() => setAlwaysShow(!alwaysShow)}>
+                  {alwaysShow ? <IconPinnedOff width={"2rem"} /> : <IconPin width={"2rem"} />}
+                </ActionIcon>
+              </Group>
+              <Collapse expanded={isMovingCue}>
+                <Alert variant="light" icon={<IconInfoCircle width="1rem" />} mt="md">
+                  You are moving the position of{" "}
+                  <Title order={6} display={"inline-block"}>
+                    {cueBeingMoved}
+                  </Title>
+                  , click on a word or space to move it to
+                </Alert>
+              </Collapse>
+            </Stack>
           </Box>
         )}
       </Transition>

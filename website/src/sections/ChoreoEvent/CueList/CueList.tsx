@@ -41,7 +41,6 @@ export const CueList = memo(
   }: CueListProps) => {
     const { cues, isCuesLoading } = useGetCues({ itemId });
     const { allAlternates, isAllAlternatesLoading } = useGetAllAlternates({ itemId });
-    console.log("allAlternates", allAlternates, isAllAlternatesLoading);
 
     // The store's derived order updates later in EventPage's effect on band changes.
     // Instead of using the store's order, which causes some issues with the scroll position

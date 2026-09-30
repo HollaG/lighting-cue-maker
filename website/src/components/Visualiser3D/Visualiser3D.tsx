@@ -809,9 +809,6 @@ export const StaticVisualiser3D = ({
     const hasPresetColour =
       getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR) !== undefined;
 
-    if (fixture.fixtureGroupId === "7834604b-7208-42ee-a484-526c38953e30")
-      console.log({ hasPresetColour, attribute, fixtureGroupId: fixture.fixtureGroupId, attributeAssignment });
-
     // We will never return a DynamicValueType here (checked above)
     if (attribute === AttributeTypes.PRESET_INTENSITY && hasPresetColour) {
       // we're trying to find the intensity AND the colour attribute exists

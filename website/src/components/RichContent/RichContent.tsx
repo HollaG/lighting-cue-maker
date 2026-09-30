@@ -8,8 +8,8 @@ import { useGetEvent } from "../../query/event/useGetEvent";
 import { RichWord } from "./RichWord";
 import { useCreateCue } from "../../query/cue/useCreateCue";
 import { useUpdateItem } from "../../query/item/useUpdateItem";
-import { insertCueInRichContent } from "../../utils/cue/cueForm";
-import { generateRaw } from "../../utils/convertText";
+import { insertCueInRichContent, removeCueFromRawLyrics } from "../../utils/cue/cueForm";
+import { generateRaw, generateRich } from "../../utils/convertText";
 import { useCreateBump } from "../../query/bump/useCreateBump";
 import { insertBumpInRichContent, removeBumpFromRawLyrics } from "../../utils/bumpUtils";
 import { useDeleteBump } from "../../query/bump/useDeleteBump";
@@ -17,6 +17,7 @@ import { insertTimingMarkerInRichContent, removeTimingMarkerFromContent } from "
 import type { IndicatorTimingMode } from "../../store/slices/timingSlice";
 import type { InputMode } from "../../store/slices/lyricsSlice";
 import type { BumpConfiguration } from "../../types/types";
+import { useAppStore } from "../../store/appStore";
 
 interface RichContentInternalProps {
   itemId: string;
@@ -48,7 +49,10 @@ const RichContentInternal = ({
   const { mutateAsync: createCue } = useCreateCue();
   const { mutateAsync: createBump } = useCreateBump();
   const { mutateAsync: deleteBump } = useDeleteBump();
-  const { mutate: updateItem } = useUpdateItem();
+  const { mutateAsync: updateItem } = useUpdateItem();
+
+  const isMovingCue = useAppStore((state) => state.isMovingCue);
+  const setIsMovingCue = useAppStore((state) => state.setIsMovingCue);
 
   const bumpNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -79,6 +83,7 @@ const RichContentInternal = ({
         const cueId = target.dataset.cueId;
         if (cueId) {
           setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
+          setIsMovingCue(false); // stop moving cue if we clicked on another cue
         }
       }
     }
@@ -94,6 +99,7 @@ const RichContentInternal = ({
       const cueId = target.dataset.cueId;
       if (cueId) {
         setCurrentlySelectedCueId(currentlySelectedCueId === cueId ? undefined : cueId);
+        setIsMovingCue(false); // stop moving cue if we clicked on another cue
       }
     } else if (action === "select-bump") {
       // ignore if not in bump mode
@@ -139,6 +145,36 @@ const RichContentInternal = ({
       });
     } else if (action === "add") {
       if (inputMode === "cue") {
+        if (isMovingCue && currentlySelectedCueId) {
+          // If we're moving the cue, first we need to remove it, then re-add it at the new location
+          const newRawLyrics = removeCueFromRawLyrics(item.rawLyrics, currentlySelectedCueId!);
+          const newContent = generateRich(newRawLyrics);
+          const updatedContent = insertCueInRichContent(
+            currentlySelectedCueId!,
+            lineIndex,
+            wordIndex,
+            isSpace,
+            newContent,
+          );
+          const updatedRawLyrics = generateRaw(updatedContent);
+
+          updateItem({
+            itemId: item.id,
+            requestBody: {
+              rawLyrics: updatedRawLyrics,
+            },
+          }).then(() => {
+            setIsMovingCue(false);
+
+            setCurrentlySelectedCueId(undefined);
+            // wait for react to propagate this update
+            setTimeout(() => {
+              setCurrentlySelectedCueId(currentlySelectedCueId);
+            }, 0);
+          });
+          return;
+        }
+
         createCue({
           itemId,
         })

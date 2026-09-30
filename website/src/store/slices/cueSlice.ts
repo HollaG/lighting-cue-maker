@@ -12,6 +12,9 @@ export interface CueSlice {
   showCueIdentifiers: boolean;
   setShowCueIdentifiers: (showCueIdentifiers: boolean) => void;
   toggleShowCueIdentifiers: () => void;
+
+  isMovingCue: boolean;
+  setIsMovingCue: (isMovingCue: boolean) => void;
 }
 
 export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set) => ({
@@ -26,4 +29,7 @@ export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set) => ({
   setShowCueIdentifiers: (showCueIdentifiers) => set({ showCueIdentifiers }),
   toggleShowCueIdentifiers: () => set((state) => ({ showCueIdentifiers: !state.showCueIdentifiers })),
   toggleShowCues: () => set((state) => ({ showCues: !state.showCues, currentlySelectedCueId: undefined })),
+
+  isMovingCue: false,
+  setIsMovingCue: (isMovingCue) => set({ isMovingCue }),
 });

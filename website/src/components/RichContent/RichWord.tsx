@@ -1,9 +1,10 @@
 import React from "react";
-import { Box, Text, Center, Group } from "@mantine/core";
+import { Box, Text, Center, Group, HoverCard, Button } from "@mantine/core";
 import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { type InputMode } from "../../store/slices/lyricsSlice";
+import { useAppStore } from "../../store/appStore";
 
 interface RichWordProps {
   word: string;
@@ -23,6 +24,14 @@ const richIdentifiers = ["cue", "bump"] as const;
 const BOTTOM_GAP = "4px";
 
 const RichWordInternal = ({ word, index1, index2, order, isSelected, inputMode, bumpNameMap }: RichWordProps) => {
+  const setIsMovingCue = useAppStore((state) => state.setIsMovingCue);
+  const setCurrentlySelectedCueId = useAppStore((state) => state.setCurrentlySelectedCueId);
+
+  const onCueMove = (cueId: string) => {
+    setIsMovingCue(true);
+    setCurrentlySelectedCueId(cueId);
+  };
+
   if (word === "-")
     return (
       <Text variant="lyric" style={{ marginBottom: BOTTOM_GAP }}>
@@ -43,22 +52,30 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected, inputMode, 
 
         const bumpConfigurationName = idType === "bump" ? bumpNameMap?.[id] || "" : "";
         return (
-          <Center
-            id={`ref-${id}`}
-            data-action={`select-${idType}`}
-            {...{ [`data-${idType}-id`]: id, [`data-bump-name`]: bumpConfigurationName || undefined }}
-            className={clsx(
-              classes["richContainer"],
-              classes[`is-${idType}`],
-              classes["indicator"],
-              isSelected ? classes["selected"] : "",
-            )}
-            data-line-index={index1}
-            data-word-index={index2}
-            dangerouslySetInnerHTML={{
-              __html: `${getDisplayText(idType, order[idType], bumpConfigurationName) as string}`,
-            }}
-          ></Center>
+          <HoverCard shadow="md" withArrow position="top" id={`ref-${id}`}>
+            <HoverCard.Target>
+              <Center
+                data-action={`select-${idType}`}
+                {...{ [`data-${idType}-id`]: id, [`data-bump-name`]: bumpConfigurationName || undefined }}
+                className={clsx(
+                  classes["richContainer"],
+                  classes[`is-${idType}`],
+                  classes["indicator"],
+                  isSelected ? classes["selected"] : "",
+                )}
+                data-line-index={index1}
+                data-word-index={index2}
+                dangerouslySetInnerHTML={{
+                  __html: `${getDisplayText(idType, order[idType], bumpConfigurationName) as string}`,
+                }}
+              />
+            </HoverCard.Target>
+            <HoverCard.Dropdown>
+              <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
+                Move cue
+              </Button>
+            </HoverCard.Dropdown>
+          </HoverCard>
         );
       }
 
@@ -71,30 +88,38 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected, inputMode, 
       const bumpConfigurationName = idType === "bump" ? bumpNameMap?.[id] || "" : "";
 
       return (
-        <Group
-          id={`ref-${id}`}
-          data-action={`select-${idType}`}
-          {...{ [`data-${idType}-id`]: id, [`data-bump-name`]: bumpConfigurationName || undefined }}
-          gap={0}
-          className={clsx(classes["richContainer"], classes[`is-${idType}`], isSelected ? classes["selected"] : "")}
-          data-line-index={index1}
-          data-word-index={index2}
-        >
-          <Text
-            variant="lyric"
-            className={clsx(classes["lyric"])}
-            dangerouslySetInnerHTML={{
-              __html: textContent,
-            }}
-          ></Text>
-          <Box className={classes["indicator"]}>
-            <Text
-              dangerouslySetInnerHTML={{
-                __html: `${getDisplayText(idType, order[idType], bumpConfigurationName) as string}`,
-              }}
-            ></Text>
-          </Box>
-        </Group>
+        <HoverCard shadow="md" withArrow position="top" id={`ref-${id}`}>
+          <HoverCard.Target>
+            <Group
+              data-action={`select-${idType}`}
+              {...{ [`data-${idType}-id`]: id, [`data-bump-name`]: bumpConfigurationName || undefined }}
+              gap={0}
+              className={clsx(classes["richContainer"], classes[`is-${idType}`], isSelected ? classes["selected"] : "")}
+              data-line-index={index1}
+              data-word-index={index2}
+            >
+              <Text
+                variant="lyric"
+                className={clsx(classes["lyric"])}
+                dangerouslySetInnerHTML={{
+                  __html: textContent,
+                }}
+              ></Text>
+              <Box className={classes["indicator"]}>
+                <Text
+                  dangerouslySetInnerHTML={{
+                    __html: `${getDisplayText(idType, order[idType], bumpConfigurationName) as string}`,
+                  }}
+                ></Text>
+              </Box>
+            </Group>
+          </HoverCard.Target>
+          <HoverCard.Dropdown>
+            <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
+              Move cue
+            </Button>
+          </HoverCard.Dropdown>
+        </HoverCard>
       );
     } else {
       if (word === " ") {
