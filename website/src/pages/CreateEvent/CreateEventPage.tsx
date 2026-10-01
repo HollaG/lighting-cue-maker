@@ -1,17 +1,16 @@
-import { Alert, Button, Container, Flex, Group, TextInput, Tooltip } from "@mantine/core";
+import { Button, Container, Flex, Group, TextInput, Tooltip } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
 import { EventForm } from "../../components/EventForm/EventForm";
 import { eventFormValuesToCreateRequest } from "../../components/EventForm/eventFormModel";
 import { useCreateEvent } from "../../query/event/useCreateEvent";
 import { notifications } from "../../utils/notifications";
-import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
 import { useDuplicateEvent } from "../../query/event/useDuplicateEvent";
 
 export const CreateEventPage = () => {
   const navigate = useNavigate();
 
-  const { mutateAsync: createEvent, isPending: isCreating } = useCreateEvent();
+  const { mutateAsync: createEvent } = useCreateEvent();
   const { mutateAsync: duplicateEvent, isPending: isDuplicating } = useDuplicateEvent();
 
   return (

@@ -1,6 +1,19 @@
 // @ts-nocheck
 
-import { ActionIcon, Alert, Box, Code, Collapse, Flex, Group, Select, Stack, Title, Transition } from "@mantine/core";
+import {
+  ActionIcon,
+  Alert,
+  Box,
+  Button,
+  Code,
+  Collapse,
+  Flex,
+  Group,
+  Select,
+  Stack,
+  Title,
+  Transition,
+} from "@mantine/core";
 import { useAppStore, type InputMode } from "../../store/appStore";
 import { ContentControlFixed } from "./ContentControlFixed";
 import { useState } from "react";
@@ -35,6 +48,7 @@ export const ContentControl = ({
   // 1. always show when we're moving a cue
   const isMovingCue = useAppStore((s) => s.isMovingCue);
   const cueBeingMoved = `Cue ${cueOrder.indexOf(currentlySelectedCueId ?? "") + 1}`; // TODO: get the actual cue name instead of just the index
+  const setIsMovingCue = useAppStore((s) => s.setIsMovingCue);
 
   const [alwaysShow, setAlwaysShow] = useState(false);
 
@@ -213,11 +227,26 @@ export const ContentControl = ({
               </Group>
               <Collapse expanded={isMovingCue}>
                 <Alert variant="light" icon={<IconInfoCircle width="1rem" />} mt="md">
-                  You are moving the position of{" "}
-                  <Title order={6} display={"inline-block"}>
-                    {cueBeingMoved}
-                  </Title>
-                  , click on a word or space to move it to
+                  <Box
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "stretch",
+                    }}
+                  >
+                    <span>
+                      Moving the position of{" "}
+                      <Title order={6} display={"inline-block"}>
+                        {cueBeingMoved}
+                      </Title>
+                      , click on a word or space to move it to
+                    </span>
+                    <Button size="compact-xs" variant="transparent" py={0} onClick={() => setIsMovingCue(false)}>
+                      Cancel move
+                    </Button>
+                  </Box>
                 </Alert>
               </Collapse>
             </Stack>

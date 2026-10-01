@@ -1376,7 +1376,9 @@ const CueCardInternal = ({
                 <Accordion>
                   <Accordion.Item value="holdTime">
                     <Accordion.Control>
-                      Change to next cue (currently {holdTimeMs === -1 ? "manually" : `after ${holdTimeMs / 1000}s`})
+                      {/* Change to next cue (currently {holdTimeMs === -1 ? "manually" : `after ${holdTimeMs / 1000}s`}) */}
+                      Cue hold time (currently {holdTimeMs === -1 ? "infinite" : `${holdTimeMs / 1000}s, then next cue`}
+                      )
                     </Accordion.Control>
                     <Accordion.Panel>
                       <Radio.Group
