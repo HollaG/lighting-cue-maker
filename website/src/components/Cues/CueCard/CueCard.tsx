@@ -1430,7 +1430,7 @@ const CueCardInternal = ({
                 <Accordion>
                   <Accordion.Item value="holdTime">
                     <Accordion.Control>
-                      Cue transition time (currently{" "}
+                      Cue transition time to next cue (currently{" "}
                       {transitionTimeMs === 0 ? "Instant" : `${transitionTimeMs / 1000}s`})
                     </Accordion.Control>
                     <Accordion.Panel>

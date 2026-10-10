@@ -70,11 +70,13 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected, inputMode, 
                 }}
               />
             </HoverCard.Target>
-            <HoverCard.Dropdown>
-              <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
-                Move cue
-              </Button>
-            </HoverCard.Dropdown>
+            {inputMode !== "disabled" && (
+              <HoverCard.Dropdown>
+                <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
+                  Move cue
+                </Button>
+              </HoverCard.Dropdown>
+            )}
           </HoverCard>
         );
       }
@@ -114,11 +116,13 @@ const RichWordInternal = ({ word, index1, index2, order, isSelected, inputMode, 
               </Box>
             </Group>
           </HoverCard.Target>
-          <HoverCard.Dropdown>
-            <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
-              Move cue
-            </Button>
-          </HoverCard.Dropdown>
+          {inputMode !== "disabled" && (
+            <HoverCard.Dropdown>
+              <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
+                Move cue
+              </Button>
+            </HoverCard.Dropdown>
+          )}
         </HoverCard>
       );
     } else {

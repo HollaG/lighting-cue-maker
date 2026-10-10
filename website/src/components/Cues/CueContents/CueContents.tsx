@@ -303,6 +303,8 @@ export const CueContents = ({
               onFixtureSelect={onFixtureSelect}
               isLoading={isDirty}
 
+              // transitionTime={cue.transition.transitionTimeMs}
+
               controls={
                 <Switch.Group
                   name="cueConfig.enabledGroups"

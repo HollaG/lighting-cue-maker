@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useRealtime } from "../../context/realtime";
+import { useOptionalRealtime } from "../../context/realtime";
 import { useRealtimeStore } from "../../store/realtimeStore";
 import { ClientMessageType, ServerMessageType } from "../../types/realtime/realtime";
 import type { Visualiser3DCameraView } from "../../types/visualiser3d";
@@ -11,7 +11,8 @@ export const useVisualiser3DTracking = ({
   cueId: string;
   setCameraPosition: (newCameraPosition: Visualiser3DCameraView) => void;
 }) => {
-  const { sendMessage, status, registerListener } = useRealtime();
+  const realtime = useOptionalRealtime();
+  const registerListener = realtime?.registerListener;
   const followingUserId = useRealtimeStore((state) => state.followingUserId);
   const isFollowing = !!followingUserId;
 
@@ -26,8 +27,8 @@ export const useVisualiser3DTracking = ({
   // }, [cameraPosition, isFollowing, sendMessage, status]);
 
   const onCameraMove = (position: Visualiser3DCameraView) => {
-    if (status !== "connected" || isFollowing) return; // do NOT update others when we're following someone
-    sendMessage(ClientMessageType.ClientMessagePresenceUpdate, {
+    if (realtime?.status !== "connected" || isFollowing) return; // do NOT update others when we're following someone
+    realtime.sendMessage(ClientMessageType.ClientMessagePresenceUpdate, {
       visualiser3DCameraPosition: {
         [cueId]: position,
       },
@@ -36,6 +37,8 @@ export const useVisualiser3DTracking = ({
 
   // updating our camera position from others
   useEffect(() => {
+    // Run mode has no realtime provider, so camera tracking is disabled there.
+    if (!registerListener) return;
     const unregister = registerListener(ServerMessageType.ServerMessagePresenceUpdate, (data) => {
       if (data.userId === followingUserId) {
         // we want to listen to updates from this person
@@ -47,7 +50,7 @@ export const useVisualiser3DTracking = ({
     return () => {
       unregister();
     };
-  }, [followingUserId, registerListener, setCameraPosition]);
+  }, [cueId, followingUserId, registerListener, setCameraPosition]);
 
   return {
     onCameraMove,

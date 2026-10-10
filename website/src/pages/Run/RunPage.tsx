@@ -16,7 +16,8 @@ import { getCueOrder } from "../../utils/cue/cueForm";
 import type { Item } from "../../types/types";
 import { RichContent } from "../../components/RichContent/RichContent";
 import { generateRich } from "../../utils/convertText";
-import { StaticStagePreview2D } from "../../components/Visualiser/Stage/2D/StagePreview2D";
+import { StaticVisualiser3D } from "../../components/Visualiser3D/Visualiser3D";
+// import { StaticStagePreview2D } from "../../components/Visualiser/Stage/2D/StagePreview2D";
 import { CustomCoverLoader } from "../../components/Loader/CustomCoverLoader";
 import { IconAlertCircle, IconArrowLeft, IconInfoCircle, IconMinimize } from "@tabler/icons-react";
 import { useForm } from "@mantine/form";
@@ -27,6 +28,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import clsx from "clsx";
 
 type DisplayMode = "lyrics" | "visualiser" | "settings" | "controls" | "preview";
+
 // const displayModeOptions: Option<DisplayMode>[] = [
 //   { label: "Lyrics", value: "lyrics" },
 //   { label: "Visualiser", value: "visualiser" },
@@ -41,13 +43,13 @@ export const RunPage = () => {
 
   const { event, isEventLoading } = useGetEvent({ eventId });
   const { items, isItemsLoading } = useGetItems({ eventId });
-  const { item, isItemLoading } = useGetItem({ itemId: itemId ?? undefined });
-  const { cues, isCuesLoading } = useGetCues({ itemId: itemId ?? undefined });
+  const { item } = useGetItem({ itemId: itemId ?? undefined });
+  const { cues } = useGetCues({ itemId: itemId ?? undefined });
   const { visualiser, isVisualiserLoading } = useGetOrCreateVisualiser({ eventId });
   const { fixtures, isFixturesLoading } = useGetFixturesByEventId({ event: event || undefined });
 
   const isPageLoading = isEventLoading || isItemsLoading || isVisualiserLoading || isFixturesLoading;
-  const isItemAndCuesLoading = isItemLoading || isCuesLoading;
+  // const isItemAndCuesLoading = isItemLoading || isCuesLoading;
 
   const [displayMode] = useState<DisplayMode>("visualiser");
 
@@ -57,7 +59,7 @@ export const RunPage = () => {
   const { toggle, fullscreen } = useFullscreenDocument();
   useEffect(() => {
     if (!fullscreen) {
-      toggle();
+      // toggle();
     }
   }, []); // skip the fullscreen dep
 
@@ -211,6 +213,16 @@ export const RunPage = () => {
     return [];
   }, [cues]);
 
+  // Re-render helper for Visualiser: it does not render on first pass.
+  // TODO: figure out why (to replicate, remove the render guard from the Visualiser's parent component.)
+  const [render, setRender] = useState(false);
+  useEffect(() => {
+    if (!visualiser) return;
+    setTimeout(() => setRender(true), 10);
+
+    return () => setRender(false); // reset render when visualiser changes
+  }, [visualiser]);
+
   return (
     <Flex
       style={{
@@ -345,16 +357,15 @@ export const RunPage = () => {
             )}
           </div>
           <div className={classes.visualiser}>
-            {/* TODO: add 3d support */}
-            {visualiser && (
-              <CustomCoverLoader
-                isLoading={isItemAndCuesLoading}
-                overlayProps={{
-                  color: "black",
-                }}
-              >
-                <Box>
-                  <StaticStagePreview2D
+            {visualiser && render && (
+              // <CustomCoverLoader
+              //   isLoading={isItemAndCuesLoading}
+              //   overlayProps={{
+              //     color: "black",
+              //   }}
+              // >
+              <Box>
+                {/* <StaticStagePreview2D
                     isBlackout={currentCue?.cueConfig.mode === "blackout"}
                     eventId={eventId}
                     visualiser={visualiser}
@@ -363,26 +374,39 @@ export const RunPage = () => {
                     fixtureGroupsAssignment={currentCue?.assignments ?? {}}
                     isLoading={false}
                     onFixtureSelect={() => {}}
-                  />
+                  /> */}
+                <StaticVisualiser3D
+                  cueId={currentCue?.id ?? "run-current"}
+                  visualiser={visualiser}
+                  fixtures={fixtures}
+                  activeFixtureGroupId={"0"}
+                  // StaticVisualiser3D ignores isBlackout; empty assignments turn the lights off.
+                  fixtureGroupsAssignment={
+                    currentCue?.cueConfig.mode === "blackout" ? {} : (currentCue?.assignments ?? {})
+                  }
+                  isLoading={false}
+                  onFixtureSelect={() => {}}
+                  transitionTime={currentCue?.transition.transitionTimeMs}
+                />
 
-                  <Stack
-                    style={{
-                      position: "absolute",
-                      bottom: "1rem",
-                      right: "1rem",
-                      backgroundColor: "var(--mantine-color-lime-light)",
-                      padding: "0.5rem",
-                      borderRadius: "0.5rem",
-                      align: "end",
-                      justify: "end",
-                    }}
-                    gap="0"
-                  >
-                    <Text style={{ textAlign: "end", fontWeight: "bold" }}>{item?.name}</Text>
-                    <Text style={{ textAlign: "end" }}>Cue {currentCueIndex + 1}</Text>
-                  </Stack>
-                </Box>
-              </CustomCoverLoader>
+                <Stack
+                  style={{
+                    position: "absolute",
+                    bottom: "4rem",
+                    right: "1rem",
+                    backgroundColor: "var(--mantine-color-lime-light)",
+                    padding: "0.5rem",
+                    borderRadius: "0.5rem",
+                    align: "end",
+                    justify: "end",
+                  }}
+                  gap="0"
+                >
+                  <Text style={{ textAlign: "end", fontWeight: "bold" }}>{item?.name}</Text>
+                  <Text style={{ textAlign: "end" }}>Cue {currentCueIndex + 1}</Text>
+                </Stack>
+              </Box>
+              // </CustomCoverLoader>
             )}
           </div>
           <div className={classes.settings}>
@@ -506,16 +530,25 @@ export const RunPage = () => {
           )}
 
           <div className={classes.preview}>
-            {visualiser && (
+            {visualiser && render && (
               <Box>
                 <CustomCoverLoader isLoading={itemId === null} content={<div>Please select a cue!</div>}>
-                  <StaticStagePreview2D
+                  {/* <StaticStagePreview2D
                     isBlackout={nextCue?.cueConfig.mode === "blackout"}
                     eventId={eventId}
                     visualiser={visualiser}
                     fixtures={fixtures}
                     activeFixtureGroupId={"0"}
                     fixtureGroupsAssignment={nextCue?.assignments ?? {}}
+                    isLoading={false}
+                    onFixtureSelect={() => {}}
+                  /> */}
+                  <StaticVisualiser3D
+                    cueId={nextCue?.id ?? "run-next"}
+                    visualiser={visualiser}
+                    fixtures={fixtures}
+                    activeFixtureGroupId={"0"}
+                    fixtureGroupsAssignment={nextCue?.cueConfig.mode === "blackout" ? {} : (nextCue?.assignments ?? {})}
                     isLoading={false}
                     onFixtureSelect={() => {}}
                   />

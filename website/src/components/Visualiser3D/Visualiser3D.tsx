@@ -14,6 +14,7 @@ import {
   Stack,
   Text,
   Tooltip,
+  Progress,
 } from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
@@ -31,7 +32,7 @@ import type {
 } from "../../types/visualiser3d";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useUpsertVisualiser } from "../../query/visualiser/useUpsertVisualiser";
-import type { CameraControls } from "@react-three/drei";
+import { type CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { Visualiser } from "../../types/visualiser";
 import { useDebouncedCallback, useDebouncedValue, useDidUpdate } from "@mantine/hooks";
@@ -656,8 +657,11 @@ export const StaticVisualiser3D = ({
   // isLoading,
   // isBlackout = false,
   controls,
+
+  transitionTime,
 }: {
-  cueId: string; // only for realtime tracking identification
+  /** Only used for realtime tracking (to distinguish), can ignore if not realtime, just pass in a fake value */
+  cueId: string;
 
   visualiser: Visualiser;
   fixtures: Fixture[];
@@ -673,7 +677,58 @@ export const StaticVisualiser3D = ({
   isBlackout?: boolean;
 
   controls?: React.ReactNode;
+
+  transitionTime?: number; // in ms, for interpolating between two fixtureGroupAssignments
 }) => {
+  // Interpolate between two fixtureGroupAssignments IF transitionTime is set
+  const transitionTimeRef = useRef<number>(transitionTime || 0);
+  const [transitionPercent, setTransitionPercent] = useState<number>(100);
+  useEffect(() => {
+    // Whenever the fixtureGroupAssignment changes, check the previous transition time (given by the Ref)
+    if (transitionTimeRef.current === 0) {
+      // immediately transition
+      setTransitionPercent(100);
+      transitionTimeRef.current = transitionTime || 0; // set the new transition time
+    } else {
+      // animate from 0 to 100 over transitionTime milliseconds
+      setTransitionPercent(0);
+
+      const startTime = performance.now();
+      const animate = () => {
+        const now = performance.now();
+        const elapsed = now - startTime;
+        const percent = Math.min((elapsed / (transitionTimeRef.current || 0)) * 100, 100);
+        // setTransitionPercent(percent);
+        if (percent < 100) {
+          requestAnimationFrame(animate);
+        } else {
+          transitionTimeRef.current = transitionTime || 0; // set the new transition time
+          setTransitionPercent(100); // ensure we end at 100
+        }
+      };
+
+      requestAnimationFrame(animate);
+
+      setTimeout(() => setTransitionPercent(99), 1); // use Mantine's inbuilt transitioner
+    }
+  }, [fixtureGroupsAssignment]);
+
+  // const [fixtureGroupsAssignment, setFixtureGroupsAssignment] =
+  //   useState<FixtureGroupsAssignment>(_fixtureGroupsAssignment);
+
+  // // Track changes in the assignment from upstream
+  // useEffect(() => {
+  //   if (transitionTime === 0) {
+  //     // immediately transition
+  //     setFixtureGroupsAssignment(_fixtureGroupsAssignment);
+  //     setTransitionTime(0); // set the new transition time
+  //   } else {
+  //     // start a lerp
+  //     // also set the new transition time
+  //     setTransitionTime(_transitionTime);
+  //   }
+  // }, [_fixtureGroupsAssignment]);
+
   // Live updates
   const { onCameraMove } = useVisualiser3DTracking({
     cueId,
@@ -896,9 +951,29 @@ export const StaticVisualiser3D = ({
 
                         isViewOnly
                         getAttribute={getAttribute}
+
+                        transitionTime={transitionTime}
                       />
                     </Canvas>
                   </Suspense>
+                  {/* Transition status */}
+                  {transitionPercent < 100 && (
+                    <Box
+                      style={{
+                        position: "absolute",
+                        top: "1rem",
+                        right: "1rem",
+                        width: "250px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "end",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <Progress transitionDuration={transitionTimeRef.current} value={transitionPercent} />
+                      <Text style={{ textAlign: "right" }}> {transitionTimeRef.current}ms </Text>
+                    </Box>
+                  )}
                   {/* Help button */}
                   <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
                     <HoverCard

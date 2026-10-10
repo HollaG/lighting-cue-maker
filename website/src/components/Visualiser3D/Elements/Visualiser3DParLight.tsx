@@ -9,6 +9,7 @@ import {
   convert3DPropsToFixtureRepresentation,
   getFixture3DPosition,
   getFixture3DRotation,
+  lerp,
 } from "../../../utils/visualiser";
 import { useAppStore } from "../../../store/appStore";
 
@@ -23,23 +24,90 @@ export const Visualiser3DParLight = ({
   onChange,
   viewOnly = false,
 
-  intensityAttribute,
-  colourAttribute,
+  intensityAttribute: nextIntensityAttribute,
+  colourAttribute: nextColourAttribute,
   gui,
+
+  transitionTime: nextTransitionTime = 0,
 }: {
   fixture: Fixture;
   isSelected: boolean;
   onSelect: (fixtureId: string) => void;
   onChange: (newProps: UpdateFixtureIn3DReq) => void;
 
-  intensityAttribute?: PresetIntensityOption;
-  colourAttribute?: PresetColourOption;
   gui: GUI | null;
 
   viewOnly?: boolean;
+
+  intensityAttribute?: PresetIntensityOption;
+  colourAttribute?: PresetColourOption;
+  /** Specify the transition time to the next assignment, so we can animate it */
+  transitionTime?: number;
 }) => {
   const theme = useMantineTheme();
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
+
+  // Transition logic
+  const [transitionTime, setTransitionTime] = useState<number>(nextTransitionTime);
+  const [intensityAttribute, setIntensityAttribute] = useState<PresetIntensityOption | undefined>(
+    nextIntensityAttribute,
+  );
+  const [colourAttribute, setColourAttribute] = useState<PresetColourOption | undefined>(nextColourAttribute);
+
+  useEffect(() => {
+    // if any of the attributes change, we need to start animating between them
+    if (transitionTime === 0) {
+      // if the current transition time is 0, just straightaway update
+      setIntensityAttribute(nextIntensityAttribute);
+      setColourAttribute(nextColourAttribute);
+      setTransitionTime(nextTransitionTime);
+    } else {
+      // animate between the current and next attribute
+      // const frameCount
+
+      const startedAt = performance.now();
+      const animate = () => {
+        const now = performance.now();
+        const elapsed = now - startedAt;
+        // use the old transition time until we're done transitioning
+        const t = Math.min(elapsed / transitionTime, 1);
+
+        const newIntensity = lerp(
+          "presetIntensity",
+          { presetIntensity: intensityAttribute },
+          { presetIntensity: nextIntensityAttribute },
+          t,
+          1,
+        ).presetIntensity;
+
+        const newColour = lerp(
+          "presetColour",
+          { presetColour: colourAttribute },
+          { presetColour: nextColourAttribute },
+          t,
+          1,
+        ).presetColour;
+
+        setIntensityAttribute(newIntensity);
+        setColourAttribute(newColour);
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // finished animating, set the final values
+          setIntensityAttribute(nextIntensityAttribute);
+          setColourAttribute(nextColourAttribute);
+          setTransitionTime(nextTransitionTime);
+        }
+      };
+
+      const animationFrame = requestAnimationFrame(animate);
+
+      return () => {
+        cancelAnimationFrame(animationFrame);
+      };
+    }
+  }, [nextIntensityAttribute, nextColourAttribute, nextTransitionTime]);
 
   // react state for beam angle so we can dynamically update it
   const [beamAngle, setBeamAngle] = useState(fixture.beamAngle || 15);

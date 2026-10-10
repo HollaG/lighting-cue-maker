@@ -8,6 +8,8 @@ import {
   convert3DPropsToFixtureRepresentation,
   getFixture3DPosition,
   getFixture3DRotation,
+  lerp,
+  lerpPosition,
 } from "../../../utils/visualiser";
 import { useAppStore } from "../../../store/appStore";
 import type { GUI } from "lil-gui";
@@ -21,11 +23,13 @@ export const Visualiser3DMovingLight = ({
   onChange,
   viewOnly = false,
 
-  intensityAttribute,
-  colourAttribute,
-  positionAttribute,
+  intensityAttribute: nextIntensityAttribute,
+  colourAttribute: nextColourAttribute,
+  positionAttribute: nextPositionAttribute,
 
   gui,
+
+  transitionTime: nextTransitionTime = 0,
 }: {
   fixture: Fixture;
   isSelected: boolean;
@@ -34,6 +38,8 @@ export const Visualiser3DMovingLight = ({
 
   intensityAttribute?: PresetIntensityOption;
   colourAttribute?: PresetColourOption;
+  /** Specify the transition time to the next assignment, so we can animate it */
+  transitionTime?: number;
 
   /** For 3D, pan refers to rotation about the Y-axis, and tilt refers to rotation about the X-axis. */
   positionAttribute?: PositionOption;
@@ -43,6 +49,78 @@ export const Visualiser3DMovingLight = ({
 }) => {
   const theme = useMantineTheme();
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
+
+  // Transition logic
+  const [transitionTime, setTransitionTime] = useState<number>(nextTransitionTime);
+  const [intensityAttribute, setIntensityAttribute] = useState<PresetIntensityOption | undefined>(
+    nextIntensityAttribute,
+  );
+  const [colourAttribute, setColourAttribute] = useState<PresetColourOption | undefined>(nextColourAttribute);
+
+  // Note: once the show is running, never set position to undefined. Always use the last known position.
+  const [positionAttribute, setPositionAttribute] = useState<PositionOption | undefined>(nextPositionAttribute);
+
+  useEffect(() => {
+    // if any of the attributes change, we need to start animating between them
+    if (transitionTime === 0) {
+      // if the current transition time is 0, just straightaway update
+      setIntensityAttribute(nextIntensityAttribute);
+      setColourAttribute(nextColourAttribute);
+      if (nextPositionAttribute) {
+        setPositionAttribute(nextPositionAttribute);
+      }
+      setTransitionTime(nextTransitionTime);
+    } else {
+      // animate between the current and next attribute
+      // const frameCount
+
+      const startedAt = performance.now();
+      const animate = () => {
+        const now = performance.now();
+        const elapsed = now - startedAt;
+        const t = Math.min(elapsed / transitionTime, 1);
+
+        const newIntensity = lerp(
+          "presetIntensity",
+          { presetIntensity: intensityAttribute },
+          { presetIntensity: nextIntensityAttribute },
+          t,
+          1,
+        ).presetIntensity;
+
+        const newColour = lerp(
+          "presetColour",
+          { presetColour: colourAttribute },
+          { presetColour: nextColourAttribute },
+          t,
+          1,
+        ).presetColour;
+
+        const newPosition = lerpPosition(positionAttribute || { pan: 0, tilt: 0 }, nextPositionAttribute, t, 1);
+        console.log({ positionAttribute, nextPositionAttribute, newPosition });
+        setIntensityAttribute(newIntensity);
+        setColourAttribute(newColour);
+        if (nextPositionAttribute) setPositionAttribute(newPosition);
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // finished animating, set the final values
+          setIntensityAttribute(nextIntensityAttribute);
+          setColourAttribute(nextColourAttribute);
+          if (nextPositionAttribute) setPositionAttribute(nextPositionAttribute);
+          setTransitionTime(nextTransitionTime);
+        }
+      };
+
+      const animationFrame = requestAnimationFrame(animate);
+
+      return () => {
+        cancelAnimationFrame(animationFrame);
+      };
+    }
+  }, [nextIntensityAttribute, nextColourAttribute, nextPositionAttribute, nextTransitionTime]);
+
   const [beamAngle, setBeamAngle] = useState(fixture.beamAngle || 15);
   const beamControls = useMemo(() => ({ angle: fixture.beamAngle || 15 }), []);
 

@@ -32,6 +32,8 @@ export const StagePreview3D = ({
   isViewOnly = false,
   onFixtureSelect,
   getAttribute,
+
+  transitionTime,
 }: {
   environment: Visualiser3DEnvironment;
   fixtures: Fixture[];
@@ -61,6 +63,8 @@ export const StagePreview3D = ({
     fixture: Fixture,
     attribute: AttributeTypes,
   ) => string | number | boolean | string[] | ColourOption | PositionOption | null | undefined;
+
+  transitionTime?: number; // in ms, for interpolating between two fixtureGroupAssignments
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
 
@@ -134,6 +138,8 @@ export const StagePreview3D = ({
           intensityAttribute={
             getAttribute?.(fixture, AttributeTypes.PRESET_INTENSITY) as PresetIntensityOption | undefined
           }
+
+          transitionTime={transitionTime}
         />
       ))}
       {bars.map((fixture) => (
@@ -157,6 +163,7 @@ export const StagePreview3D = ({
           intensityAttribute={
             getAttribute?.(fixture, AttributeTypes.PRESET_INTENSITY) as PresetIntensityOption | undefined
           }
+          transitionTime={transitionTime}
         />
       ))}
       {movingHeads.map((fixture) => (
@@ -183,6 +190,7 @@ export const StagePreview3D = ({
             getAttribute?.(fixture, AttributeTypes.PRESET_INTENSITY) as PresetIntensityOption | undefined
           }
           positionAttribute={getAttribute?.(fixture, AttributeTypes.PRESET_POSITION) as PositionOption | undefined}
+          transitionTime={transitionTime}
         />
       ))}
 
