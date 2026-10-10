@@ -181,7 +181,9 @@ export const EventPage = () => {
   };
 
   const controls = useMemo(() => {
-    return items.map((item) => (
+    const sorted = [...items];
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+    return sorted.map((item) => (
       <UnstyledButton
         key={item.id}
         className={classes.control}
