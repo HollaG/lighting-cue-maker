@@ -63,6 +63,11 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
   const [functionList, setFunctionList] = useState<{ [fnId: string]: QLCFunction }>({});
   const [groupedFnList, setGroupedFnList] = useState<GroupedFnList>();
 
+  const [enabledItems, setEnabledItems] = useLocalStorage<string[]>({
+    defaultValue: [],
+    key: "qlc-enabled-items",
+  }); // ids
+
   const [preview, setPreview] = useLocalStorage<QLCEventJson>({
     defaultValue: {},
     key: "qlc-preview",
@@ -172,7 +177,16 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
       .reduce((a, b) => Math.max(a, b), 0);
 
     const fileStr = fileXml;
-    const resultXml = generateAndInsertPreviewCollections(fileStr, preview, res?.items ?? [], highestFnId + 1);
+
+    // remove disabled items from the preview
+    const filteredPreview: QLCEventJson = {};
+    for (const itemId of enabledItems) {
+      if (preview[itemId]) {
+        filteredPreview[itemId] = preview[itemId];
+      }
+    }
+
+    const resultXml = generateAndInsertPreviewCollections(fileStr, filteredPreview, res?.items ?? [], highestFnId + 1);
 
     if (!resultXml) {
       console.error("[exportToQlc] XML generation failed — check console for details");
@@ -206,6 +220,9 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
     }
     const json = generatePreview(res.items, values.mappings, values.advancedOptions, functionList);
     setPreview(json);
+
+    const itemIds = Object.keys(json);
+    setEnabledItems(itemIds); // reset to all selected
   };
 
   const addFunctionsToCue = (itemId: string, cueIndex: number, functionIds: string[]) => {
@@ -361,12 +378,15 @@ export const QLCConverter = ({ event }: { event: LightEventConfiguration }) => {
                 groupedFnList={groupedFnList || []}
                 removeFunctionFromCue={removeFunctionFromCue}
                 addFunctionsToCue={addFunctionsToCue}
+                enabledItems={enabledItems}
+                setEnabledItems={setEnabledItems}
               />
               <Center>
                 <Button
                   color="green"
                   rightSection={<IconDownload width={"1rem"} />}
                   onClick={() => exportPreviewToQlc()}
+                  disabled={!fileXml || Object.keys(preview).length === 0 || enabledItems.length === 0}
                 >
                   {" "}
                   Export{" "}
