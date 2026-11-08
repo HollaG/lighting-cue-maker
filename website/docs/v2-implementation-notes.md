@@ -23,6 +23,39 @@
 - The resolver and the exporter run in the **frontend** (TypeScript), one implementation shared by preview and export. The backend stores and validates data.
 - [v2-schema.dbml](v2-schema.dbml) is a dbdiagram.io rendering of the diagram's tables, for reference.
 
+## API (`/api/v2`)
+
+- Everything except the fixture library lives under `/events/{eventId}`. One middleware checks the event (and later auth) for all of it.
+- Parent IDs come **from the path only**; any `eventId` / `fixtureGroupId` in a body is ignored. Handlers still check that path and body IDs belong to that event (`WHERE uuid = ? AND event_id = ?`).
+- `GET` reads, `POST` writes, `DELETE` deletes (soft).
+- Bulk `POST` = upsert: a row without `id` is created, a row with `id` is updated (it must belong to the event). Rows not in the request are left alone; removing goes through `DELETE`. One transaction per request.
+- Responses use the shared envelope (`success`, `data`, `error`, `message`); `data` is what the table shows.
+- Cues and items (user side) will get per-row endpoints instead of bulk, because many users edit them at once.
+
+| Method | URL | Request | Response |
+|---|---|---|---|
+| GET | `/fixture-templates` | – | `{ fixtureTemplates: FixtureTemplate[] }` |
+| GET | `/events` | – | `{ events: Event[] }` (no children) |
+| POST | `/events` | `{ event: CreateEvent, templateIds: string[] }` | `{ event: Event }` |
+| GET | `/events/{eventId}` | – | `{ event: Event }` with fixtures, groups → option sets, visualiser |
+| POST | `/events/{eventId}` | `{ event: UpsertEvent, templateIds?: string[] }` | `{ event: Event }` |
+| DELETE | `/events/{eventId}` | – | – |
+| POST | `/events/{eventId}/patched-fixtures` | `{ fixtures: UpsertFixture[] }` | `{ fixtures: Fixture[] }` |
+| GET | `/events/{eventId}/patched-fixtures` | – | `{ fixtures: Fixture[] }` |
+| DELETE | `/events/{eventId}/patched-fixtures/{fixtureId}` | – | – (also removes it from every group) |
+| POST | `/events/{eventId}/fixture-groups` | `{ fixtureGroups: UpsertFixtureGroup[] }` | `{ fixtureGroups: FixtureGroup[] }` |
+| GET | `/events/{eventId}/fixture-groups/{fixtureGroupId}` | – | `{ fixtureGroup: FixtureGroup }` |
+| DELETE | `/events/{eventId}/fixture-groups/{fixtureGroupId}` | – | – |
+| POST | `/events/{eventId}/visualiser` | `{ visualiser: UpsertVisualiser }` | `{ visualiser: Visualiser }` |
+| GET | `/events/{eventId}/visualiser` | – | `{ visualiser: Visualiser }` |
+| DELETE | `/events/{eventId}/visualiser` | – | – |
+| POST | `/events/{eventId}/fixture-groups/{fixtureGroupId}/option-sets` | `{ optionSets: UpsertOptionSet[] }` | `{ optionSets: OptionSet[] }` |
+| GET | `/events/{eventId}/fixture-groups/{fixtureGroupId}/option-sets/{optionSetId}` | – | `{ optionSet: OptionSet }` |
+| DELETE | `/events/{eventId}/fixture-groups/{fixtureGroupId}/option-sets/{optionSetId}` | – | – |
+
+- `templateIds`: the server copies each library template the event doesn't have yet into `events.fixture_templates`. The copy keeps the library template's ID (one copy per template per event), so the client can use library IDs as `fixtureTemplateId` straight away.
+- Visualiser: one per event (unique index). `POST` restores a soft-deleted one instead of inserting.
+
 Rules and decisions to remember while building CueSketch v2. The data structures themselves live in the draw.io diagram ("version 2" page), which is the source of truth. This file only records the rules that the diagram can't show.
 
 ## Roles

@@ -17,6 +17,7 @@ import (
 	"lighting-cue-maker/server/internal/api/v1/ping"
 	"lighting-cue-maker/server/internal/api/v1/qlc"
 	"lighting-cue-maker/server/internal/api/v1/visualiser"
+	"lighting-cue-maker/server/internal/api/v2/fixturetemplates"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -55,5 +56,11 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		qlc.Register(v1.Group("/qlc"))
 		visualiser.Register(v1.Group("/visualiser"))
 		ai.Register(v1.Group("/ai"))
+	}
+
+	// API v2
+	v2 := r.Group("/api/v2")
+	{
+		fixturetemplates.Register(v2.Group("/fixture-templates"))
 	}
 }
