@@ -5,6 +5,7 @@ import (
 
 	"lighting-cue-maker/server/config"
 	"lighting-cue-maker/server/internal/models"
+	modelsv2 "lighting-cue-maker/server/internal/models/v2"
 	"lighting-cue-maker/server/internal/realtime"
 	"lighting-cue-maker/server/internal/router"
 	"lighting-cue-maker/server/pkg/database"
@@ -44,6 +45,10 @@ func main() {
 		&models.Visualiser{},
 	); err != nil {
 		log.Fatalf("database: AutoMigrate failed: %v", err)
+	}
+
+	if err := modelsv2.Migrate(database.DB()); err != nil {
+		log.Fatalf("database: v2 migration failed: %v", err)
 	}
 
 	r := gin.Default()
