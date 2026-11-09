@@ -22,6 +22,7 @@ import (
 	"lighting-cue-maker/server/internal/api/v2/fixturegroups"
 	"lighting-cue-maker/server/internal/api/v2/fixturetemplates"
 	"lighting-cue-maker/server/internal/api/v2/patchedfixtures"
+	visualiserv2 "lighting-cue-maker/server/internal/api/v2/visualiser"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -73,5 +74,6 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		eventsv2.RegisterScoped(event)
 		patchedfixtures.Register(event.Group("/patched-fixtures"))
 		fixturegroups.Register(event.Group("/fixture-groups"))
+		visualiserv2.Register(event.Group("/visualiser"))
 	}
 }

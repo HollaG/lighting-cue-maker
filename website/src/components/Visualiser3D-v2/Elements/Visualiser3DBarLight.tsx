@@ -1,0 +1,194 @@
+import { useEffect, useRef, useState } from "react";
+import { useMantineTheme } from "@mantine/core";
+import type { Fixture, UpdateFixtureIn3DReq } from "../../../types/fixtures";
+import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
+
+import * as THREE from "three";
+import { Helper } from "@react-three/drei";
+import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
+import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
+import {
+  convert3DPropsToFixtureRepresentation,
+  getFixture3DPosition,
+  getFixture3DRotation,
+  lerp,
+} from "../../../utils/visualiser";
+import { useAppStore } from "../../../store/appStore";
+import type { GUI } from "lil-gui";
+import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
+import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
+
+export const Visualiser3DBarLight = ({
+  fixture,
+  isSelected,
+  onSelect,
+  onChange,
+  viewOnly = false,
+
+  intensityAttribute: nextIntensityAttribute,
+  colourAttribute: nextColourAttribute,
+  gui,
+
+  transitionTime: nextTransitionTime = 0,
+}: {
+  fixture: Fixture;
+  isSelected: boolean;
+  onSelect: (fixtureId: string) => void;
+  onChange: (newProps: UpdateFixtureIn3DReq) => void;
+
+  intensityAttribute?: PresetIntensityOption;
+  colourAttribute?: PresetColourOption;
+  /** Specify the transition time to the next assignment, so we can animate it */
+  transitionTime?: number;
+  gui: GUI | null;
+
+  viewOnly?: boolean;
+}) => {
+  const theme = useMantineTheme();
+  const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
+
+  // Transition logic
+  const [transitionTime, setTransitionTime] = useState<number>(nextTransitionTime);
+  const [intensityAttribute, setIntensityAttribute] = useState<PresetIntensityOption | undefined>(
+    nextIntensityAttribute,
+  );
+  const [colourAttribute, setColourAttribute] = useState<PresetColourOption | undefined>(nextColourAttribute);
+
+  useEffect(() => {
+    // if any of the attributes change, we need to start animating between them
+    if (transitionTime === 0) {
+      // if the current transition time is 0, just straightaway update
+      setIntensityAttribute(nextIntensityAttribute);
+      setColourAttribute(nextColourAttribute);
+      setTransitionTime(nextTransitionTime);
+    } else {
+      // animate between the current and next attribute
+      // const frameCount
+
+      const startedAt = performance.now();
+      const animate = () => {
+        const now = performance.now();
+        const elapsed = now - startedAt;
+        const t = Math.min(elapsed / transitionTime, 1);
+
+        const newIntensity = lerp(
+          "presetIntensity",
+          { presetIntensity: intensityAttribute },
+          { presetIntensity: nextIntensityAttribute },
+          t,
+          1,
+        ).presetIntensity;
+
+        const newColour = lerp(
+          "presetColour",
+          { presetColour: colourAttribute },
+          { presetColour: nextColourAttribute },
+          t,
+          1,
+        ).presetColour;
+
+        setIntensityAttribute(newIntensity);
+        setColourAttribute(newColour);
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // finished animating, set the final values
+          setIntensityAttribute(nextIntensityAttribute);
+          setColourAttribute(nextColourAttribute);
+          setTransitionTime(nextTransitionTime);
+        }
+      };
+
+      const animationFrame = requestAnimationFrame(animate);
+
+      return () => {
+        cancelAnimationFrame(animationFrame);
+      };
+    }
+  }, [nextIntensityAttribute, nextColourAttribute, nextTransitionTime]);
+
+  const mode = useAppStore((state) => state.transformMode);
+  const setMode = useAppStore((state) => state.setTransformMode);
+  useVisualiser3DGuiControls({
+    gui,
+    object: mesh,
+    isSelected: isSelected && !viewOnly,
+    title: fixture.name.trim() || "Bar light",
+    onFinishChange: () => {
+      if (mesh) onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+    },
+  });
+
+  // Force the fixture to not change mode
+  const oldMode = useRef(mode);
+  useEffect(() => {
+    if (!isSelected) return;
+    if (isSelected && mode === "scale") setMode(oldMode.current);
+    if (mode === "scale" && mode !== oldMode.current) {
+      // force set it back
+      setMode(oldMode.current);
+    } else {
+      oldMode.current = mode;
+    }
+  }, [mode, isSelected]);
+
+  // Custom logic to draw
+  // As the bars are using rectarealight which is quite low-power, we need to multiply the intensity.
+  // Colour represents the colour of the light, in hex format.
+  const intensity = isSelected && !viewOnly ? 100 : intensityAttribute ? intensityAttribute * 1 : 0;
+  const colour = colourAttribute?.hex || "#ffffff";
+
+  return (
+    <>
+      <mesh
+        ref={setMesh}
+        castShadow
+        receiveShadow
+        position={getFixture3DPosition(fixture)}
+        rotation={getFixture3DRotation(fixture)}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(fixture.id);
+        }}
+      >
+        {/* Bar light, 1m x 0.07 x 0.07 */}
+        <boxGeometry args={[1, 0.07, 0.07]} />
+        <meshStandardMaterial color="#eeeeee" />
+
+        {isSelected && (
+          // Only the enlarged shell's back faces show around the solid fixture.
+          <mesh raycast={() => {}}>
+            <boxGeometry args={[1.008, 0.078, 0.078]} />
+            <meshBasicMaterial color={theme.colors.lime[4]} side={THREE.BackSide} toneMapped={false} fog={false} />
+          </mesh>
+        )}
+
+        {/* RectAreaLight emits along local -Z, so rotate it to face local +Y. */}
+        {(isSelected || viewOnly) && (
+          <rectAreaLight
+            layers-mask={VOLUMETRIC_LIGHT_MASK}
+            position={[0, 0.07 / 2 + 0.0001, 0]}
+            rotation={[Math.PI / 2, 0, Math.PI / 2]}
+            width={0.07}
+            height={1}
+            intensity={intensity}
+            color={colour}
+          >
+            <Helper type={RectAreaLightHelper} />
+          </rectAreaLight>
+        )}
+      </mesh>
+      {!viewOnly && isSelected && mesh && (
+        <Visualiser3DTransformControls
+          object={mesh}
+          mode={mode}
+          space={mode === "translate" ? "world" : "local"}
+          onMouseUp={() => {
+            onChange(convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture));
+          }}
+        />
+      )}
+    </>
+  );
+};

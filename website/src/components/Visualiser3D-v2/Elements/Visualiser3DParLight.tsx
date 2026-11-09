@@ -1,0 +1,257 @@
+import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
+import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMantineTheme } from "@mantine/core";
+
+import * as THREE from "three";
+import {
+  convert3DPropsToFixtureRepresentation,
+  getFixture3DPosition,
+  getFixture3DRotation,
+  lerp,
+} from "../../../utils/visualiser-v2";
+import { useAppStore } from "../../../store/appStore";
+
+import type { GUI } from "lil-gui";
+import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
+import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
+import type { PatchedFixture, UpsertPatchedFixture } from "../../../types-v2/patchedFixture";
+import type { FixtureTemplate } from "../../../types-v2/fixtureTemplates";
+
+export const Visualiser3DParLight = ({
+  fixture,
+  fixtureTemplate,
+  isSelected,
+  onSelect,
+  onChange,
+  viewOnly = false,
+
+  intensityAttribute: nextIntensityAttribute,
+  colourAttribute: nextColourAttribute,
+  gui,
+
+  transitionTime: nextTransitionTime = 0,
+}: {
+  fixture: PatchedFixture;
+  fixtureTemplate: FixtureTemplate;
+
+  isSelected: boolean;
+  onSelect: (fixtureId: string) => void;
+  onChange: (newProps: UpsertPatchedFixture) => void;
+
+  gui: GUI | null;
+
+  viewOnly?: boolean;
+
+  intensityAttribute?: PresetIntensityOption;
+  colourAttribute?: PresetColourOption;
+  /** Specify the transition time to the next assignment, so we can animate it */
+  transitionTime?: number;
+}) => {
+  const theme = useMantineTheme();
+  const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
+
+  // Transition logic
+  const [transitionTime, setTransitionTime] = useState<number>(nextTransitionTime);
+  const [intensityAttribute, setIntensityAttribute] = useState<PresetIntensityOption | undefined>(
+    nextIntensityAttribute,
+  );
+  const [colourAttribute, setColourAttribute] = useState<PresetColourOption | undefined>(nextColourAttribute);
+
+  // useEffect(() => {
+  //   // if any of the attributes change, we need to start animating between them
+  //   if (transitionTime === 0) {
+  //     // if the current transition time is 0, just straightaway update
+  //     setIntensityAttribute(nextIntensityAttribute);
+  //     setColourAttribute(nextColourAttribute);
+  //     setTransitionTime(nextTransitionTime);
+  //   } else {
+  //     // animate between the current and next attribute
+  //     // const frameCount
+
+  //     const startedAt = performance.now();
+  //     const animate = () => {
+  //       const now = performance.now();
+  //       const elapsed = now - startedAt;
+  //       // use the old transition time until we're done transitioning
+  //       const t = Math.min(elapsed / transitionTime, 1);
+
+  //       const newIntensity = lerp(
+  //         "presetIntensity",
+  //         { presetIntensity: intensityAttribute },
+  //         { presetIntensity: nextIntensityAttribute },
+  //         t,
+  //         1,
+  //       ).presetIntensity;
+
+  //       const newColour = lerp(
+  //         "presetColour",
+  //         { presetColour: colourAttribute },
+  //         { presetColour: nextColourAttribute },
+  //         t,
+  //         1,
+  //       ).presetColour;
+
+  //       setIntensityAttribute(newIntensity);
+  //       setColourAttribute(newColour);
+
+  //       if (t < 1) {
+  //         requestAnimationFrame(animate);
+  //       } else {
+  //         // finished animating, set the final values
+  //         setIntensityAttribute(nextIntensityAttribute);
+  //         setColourAttribute(nextColourAttribute);
+  //         setTransitionTime(nextTransitionTime);
+  //       }
+  //     };
+
+  //     const animationFrame = requestAnimationFrame(animate);
+
+  //     return () => {
+  //       cancelAnimationFrame(animationFrame);
+  //     };
+  //   }
+  // }, [nextIntensityAttribute, nextColourAttribute, nextTransitionTime]);
+
+  // react state for beam angle so we can dynamically update it
+  // const [beamAngle, setBeamAngle] = useState(fixture.beamAngle || 15);
+  // ref for lil-gui: we can't directly modify beamAngle (we need another object, then we can call `onChange` and actually update the state)
+  // const beamControls = useMemo(() => ({ angle: fixture.beamAngle || 15 }), []);
+
+  const beamAngle =
+    fixtureTemplate.properties.minBeamAngle === fixtureTemplate.properties.maxBeamAngle
+      ? fixtureTemplate.properties.minBeamAngle
+      : fixtureTemplate.properties.minBeamAngle || 15;
+  const [beamControls, setBeamAngle] = useState({ angle: beamAngle });
+
+  const mode = useAppStore((state) => state.transformMode);
+  const setMode = useAppStore((state) => state.setTransformMode);
+
+  const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
+
+  // for future use - synchronise on upstream fixture.angle changes
+  // useEffect(() => {
+  //   const nextBeamAngle = fixture.beamAngle || 15;
+  //   beamControls.angle = nextBeamAngle;
+  //   setBeamAngle(nextBeamAngle);
+  // }, [beamControls, fixture.beamAngle]);
+
+  useVisualiser3DGuiControls({
+    gui,
+    object: mesh,
+    isSelected: isSelected && !viewOnly,
+    title: fixture.name.trim() || "Par light",
+    // addCustomControls: (folder) => {
+    //   folder
+    //     .addFolder("Beam")
+    //     .add(beamControls, "angle", 1, 180, 1)
+    //     .name("Full angle")
+    //     .onChange(setBeamAngle) // update the react state
+    //     .listen();
+    // },
+    onFinishChange: () => {
+      if (!mesh) return;
+      onChange({
+        ...convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture),
+        // beamAngle: beamControls.angle,
+      });
+    },
+  });
+
+  // Force the fixture to not change mode
+  const oldMode = useRef(mode);
+  useEffect(() => {
+    if (!isSelected) return;
+    if (isSelected && mode === "scale") setMode(oldMode.current);
+    if (mode === "scale" && mode !== oldMode.current) {
+      // force set it back
+      setMode(oldMode.current);
+    } else {
+      oldMode.current = mode;
+    }
+  }, [mode, isSelected]);
+
+  // Custom logic to draw
+  // Intensity represents the literal intensity here. 0-100, don't need to map.
+  // Colour represents the colour of the light, in hex format.
+  const intensity = isSelected && !viewOnly ? 100 : intensityAttribute || 0;
+  const colour = colourAttribute?.hex || "#ffffff";
+
+  return (
+    <>
+      <mesh
+        ref={setMesh}
+        castShadow
+        receiveShadow
+        position={getFixture3DPosition(fixture)}
+        rotation={getFixture3DRotation(fixture)}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(fixture.id);
+        }}
+        // onPointerDown={(event) => {
+        //   console.log("onPointerDown fired for Par light");
+        //   event.stopPropagation();
+        //   onSelect(fixture.id);
+        // }}
+      >
+        <cylinderGeometry args={[0.105, 0.105, 0.104, 32]} />
+        <meshStandardMaterial color="#eeeeee" />
+
+        {isSelected && (
+          // Only the enlarged shell's back faces show around the solid fixture.
+          <mesh raycast={() => {}}>
+            <cylinderGeometry args={[0.109, 0.109, 0.112, 32]} />
+            <meshBasicMaterial color={theme.colors.lime[4]} side={THREE.BackSide} toneMapped={false} fog={false} />
+          </mesh>
+        )}
+
+        {/* <spotLight
+          position={[0, -0.052, 0]}
+          target={spotlightTarget}
+          intensity={150}
+          angle={THREE.MathUtils.degToRad(beamAngle / 2)}
+          penumbra={0.5}
+          distance={10}
+          castShadow
+        >
+          {isSelected && <Helper type={THREE.SpotLightHelper} />}
+        </spotLight> */}
+
+        <spotLight
+          layers-mask={VOLUMETRIC_LIGHT_MASK}
+          // Include solid objects when shadows are rendered from the haze layer.
+          shadow-camera-layers-mask={VOLUMETRIC_LIGHT_MASK}
+          distance={20}
+          position={[0, 0.052, 0]}
+          target={spotlightTarget}
+          intensity={intensity}
+          angle={THREE.MathUtils.degToRad(beamAngle ? beamAngle / 2 : 15)}
+          penumbra={0.5}
+          castShadow
+          color={colour}
+        />
+
+        <primitive object={spotlightTarget} position={[0, 1, 0]} />
+
+        {/* <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
+          <Helper type={THREE.SpotLightHelper} />
+        </spotLight> */}
+      </mesh>
+
+      {!viewOnly && isSelected && mesh && (
+        <Visualiser3DTransformControls
+          object={mesh}
+          mode={mode}
+          space={mode === "translate" ? "world" : "local"}
+          onMouseUp={() => {
+            const _mesh = mesh;
+            if (!_mesh) return;
+
+            onChange(convert3DPropsToFixtureRepresentation(_mesh.position, _mesh.rotation, fixture));
+          }}
+        />
+      )}
+    </>
+  );
+};
