@@ -149,7 +149,16 @@ export const Visualiser3D = ({
   const setMode = useAppStore((state) => state.setTransformMode);
   useHotkey("W", () => setMode("translate"));
   useHotkey("E", () => setMode("rotate"));
-  useHotkey("R", () => setMode("scale"));
+  useHotkey("R", () => setScaleMode());
+
+  const setScaleMode = () => {
+    // do not set if one of the selected objs is a fixture
+    const isFixtureSelected = selectedIds.some((id) => fixtures.some((f) => f.id === id));
+
+    if (!isFixtureSelected) {
+      setMode("scale");
+    }
+  };
 
   useHotkey("Mod+Z", () => void applyHistory("undo"));
   useHotkey("Mod+Shift+Z", () => void applyHistory("redo"));
@@ -182,6 +191,11 @@ export const Visualiser3D = ({
       if (!additive || !isFixtureId(id) || !prev.every(isFixtureId)) return [id];
       return prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id];
     });
+
+    // if new object is fixture, set to transform mode
+    if (fixtures.some((f) => f.id === id)) {
+      setMode("translate");
+    }
   };
 
   const _cameraControlRef = useRef<CameraControls | null>(null);
@@ -416,6 +430,7 @@ export const Visualiser3D = ({
   };
 
   const isFixture = (selectedObjectId && fixtures.some((f) => f.id === selectedObjectId)) || false;
+  const isAtLeastOneFixtureSelected = selectedIds.some((id) => fixtures.some((f) => f.id === id));
   const isElement = (selectedObjectId && stageElements.some((el) => el.id === selectedObjectId)) || false;
   // const previewFixtureId = useAppStore((state) => state.previewFixtureId);
   // const previewPositionId = useAppStore((state) => state.previewPositionId);
@@ -607,7 +622,7 @@ export const Visualiser3D = ({
                             <Kbd>R</Kbd> Scale
                           </Group>
                         ),
-                        disabled: false, // fixtures cannot be scaled, only moved and rotated
+                        disabled: isAtLeastOneFixtureSelected, // fixtures cannot be scaled, only moved and rotated
                       },
                     ]}
                     value={mode}
