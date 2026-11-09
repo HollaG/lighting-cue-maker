@@ -212,15 +212,28 @@ export const Visualiser3DSelectionTransform = ({
         alignCentre: () => run((p) => align(p, arrange.axis, AlignTo.CENTRE)),
         alignMax: () => run((p) => align(p, arrange.axis, AlignTo.MAX)),
         distribute: () => run((p) => distribute(p, arrange.axis, arrange.order)),
-        spread: () => run((p) => spread(p, arrange.axis, arrange.spacing, arrange.order)),
+      };
+
+      // Spread is computed from the saved placements every time, so dragging the slider back and forth
+      // never compounds. Spread keeps the centre, so the pivot doesn't need to move.
+      const spreadSaved = (p: Placement[]) => spread(p, arrange.axis, arrange.spacing, arrange.order);
+      const previewSpread = () => {
+        if (drag.current) return;
+        for (const p of spreadSaved(latest.current.placements)) {
+          latest.current.getMesh(p.id)?.position.set(p.posX / 100, p.posY / 100, p.posZ / 100);
+        }
       };
       arrangeFolder.add(actions, "alignMin").name("Align to min");
       arrangeFolder.add(actions, "alignCentre").name("Align to centre");
       arrangeFolder.add(actions, "alignMax").name("Align to max");
       const distributeButton = arrangeFolder.add(actions, "distribute").name("Distribute evenly");
       if (fixtures.length < 3) distributeButton.disable();
-      arrangeFolder.add(arrange, "spacing", 0, 2000, 1).name("Spacing (cm)");
-      arrangeFolder.add(actions, "spread").name("Spread with spacing");
+      // Live preview while dragging (meshes only), one save on release. Negative spacing reverses the order.
+      arrangeFolder
+        .add(arrange, "spacing", -2000, 2000, 1)
+        .name("Spread spacing (cm)")
+        .onChange(previewSpread)
+        .onFinishChange(() => run(spreadSaved));
     }
 
     return () => folder.destroy();

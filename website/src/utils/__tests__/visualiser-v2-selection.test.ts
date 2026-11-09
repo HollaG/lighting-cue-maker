@@ -51,6 +51,10 @@ describe("selection ops", () => {
     expect(xs(spread([at("a", 0), at("b", 5), at("c", 40)], "x", 50))).toEqual([-30, 20, 70]);
   });
 
+  it("spread with negative spacing reverses the order", () => {
+    expect(xs(spread([at("a", 0), at("b", 5), at("c", 40)], "x", -50))).toEqual([70, 20, -30]);
+  });
+
   it("spread by selection order follows the array, not positions", () => {
     expect(xs(spread([at("a", 100), at("b", 0)], "x", 100, ArrangeOrder.SELECTION))).toEqual([0, 100]);
   });
