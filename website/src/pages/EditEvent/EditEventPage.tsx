@@ -1,74 +1,18 @@
-import { Alert, Box, Button, Center, Container, Group, Loader } from "@mantine/core";
+import { Alert, Button, Center, Container, Flex, Group, Loader } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { useNavigate, useParams } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { EventForm } from "../../components/EventForm/EventForm";
-import {
-  eventFormValuesToUpdateRequest,
-  eventToEventFormValues,
-  getAddedBumpConfigurationNames,
-  type EventFormValues,
-} from "../../components/EventForm/eventFormModel";
-import { useCreateBumpConfiguration } from "../../query/bump/useCreateBumpConfiguration";
-import { useGetEvent } from "../../query/event/useGetEvent";
-import { useUpdateEvent } from "../../query/event/useUpdateEvent";
-import { notifications } from "../../utils/notifications";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { EventManagementWrapper } from "../../components/EventManagement/EventManagementWrapper";
+import { useGetEvent } from "../../query-v2/events/useGetEvent";
 
+// v2 event setup in edit mode. The v1 edit page (EventForm) is in git history.
 export const EditEventPage = () => {
   const { eventId } = useParams({ from: "/events/$eventId/edit/" });
+  const { step } = useSearch({ from: "/events/$eventId/edit/" });
   const navigate = useNavigate();
-  const { event, isEventLoading: isLoading, isError } = useGetEvent({ eventId });
 
-  const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useUpdateEvent();
-  const { mutateAsync: createBumpConfiguration, isPending: isCreatingBumpConfiguration } = useCreateBumpConfiguration();
-  const isSubmitting = isUpdatingEvent || isCreatingBumpConfiguration;
+  const { event, isEventLoading, isEventError } = useGetEvent(eventId);
 
-  const initialValues = useMemo(() => (event ? eventToEventFormValues(event) : null), [event]);
-
-  const returnToEvent = () =>
-    navigate({
-      to: "/events/$eventId",
-      params: { eventId },
-    });
-
-  const editVisualiser = () => {
-    navigate({
-      to: "/events/$eventId/visuals/update",
-      params: { eventId },
-      search: { from: "edit" },
-    });
-  };
-
-  const onSubmit = async (values: EventFormValues) => {
-    try {
-      const newBumpNames = getAddedBumpConfigurationNames(event?.bumpConfigurations ?? [], values.bumpConfigurations);
-
-      await updateEvent({
-        eventId,
-        requestBody: eventFormValuesToUpdateRequest(values),
-      });
-
-      for (const name of newBumpNames) {
-        await createBumpConfiguration({ eventId, name });
-      }
-
-      notifications.show({
-        title: "Event updated",
-        message: "Your event settings were saved successfully.",
-        color: "teal",
-      });
-
-      await returnToEvent();
-    } catch (error) {
-      notifications.show({
-        title: "Unable to update event",
-        message: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
-        color: "red",
-      });
-    }
-  };
-
-  if (isLoading) {
+  if (isEventLoading) {
     return (
       <Center mih="50vh">
         <Loader />
@@ -76,7 +20,7 @@ export const EditEventPage = () => {
     );
   }
 
-  if (isError || !event || !initialValues) {
+  if (isEventError || !event) {
     return (
       <Container size="xl" mt="4rem">
         <Alert color="red" title="Event not found">
@@ -94,26 +38,14 @@ export const EditEventPage = () => {
             type="button"
             leftSection={<IconArrowLeft width="1rem" />}
             variant="transparent"
-            onClick={returnToEvent}
+            onClick={() => navigate({ to: "/" })}
           >
-            Back to event
+            Back to home
           </Button>
-
-          <Box flex={1} />
-          <Button type="button" variant="light" onClick={editVisualiser}>
-            Edit visualisers
-          </Button>
+          <Flex flex={1} />
         </Group>
       </Container>
-      <EventForm
-        key={event.id}
-        mode="edit"
-        initialValues={initialValues}
-        isSubmitting={isSubmitting}
-        submitLabel="Save changes"
-        onSubmit={onSubmit}
-        onCancel={returnToEvent}
-      />
+      <EventManagementWrapper eventId={eventId} step={step} />
     </Container>
   );
 };

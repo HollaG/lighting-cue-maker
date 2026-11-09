@@ -13,7 +13,7 @@ import (
 
 // Base is embedded in every v2 table.
 type Base struct {
-	Uuid string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Id string `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 
 	CreatedAt time.Time      `json:"createdAt" gorm:"not null;autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"not null;autoUpdateTime"`

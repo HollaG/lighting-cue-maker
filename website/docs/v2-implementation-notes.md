@@ -16,7 +16,7 @@
 - v2 is new code alongside: handlers in `server/internal/api/v2/...` mounted at `/api/v2`, models in `server/internal/models/v2` with `TableName()` returning `"v2.<table>"`.
 - **Database:** v1 tables stay in the `public` schema. No data migration, no deletion. v2 tables live in a `v2` Postgres schema (`CREATE SCHEMA IF NOT EXISTS v2`, then a separate `AutoMigrate` for v2 models).
 - Table names are snake_case plural (`v2.cues`, `v2.option_sets`); Go/TS types singular.
-- The diagram's `order` fields are `sort_order` / `sortOrder` in the DB and JSON (`order` is a reserved SQL word). The primary key column is `uuid`; JSON calls it `id`.
+- The diagram's `order` fields are `sort_order` / `sortOrder` in the DB and JSON (`order` is a reserved SQL word). The primary key column is `id` (renamed from `uuid`; `v2.Migrate` renames old columns on startup).
 - Every v2 table has `createdAt`, `updatedAt`, `deletedAt`, even where the diagram omits them (use one shared embedded struct).
 - v2 realtime gets its own message types/channel.
 - **Frontend:** the v1 frontend is deployed manually, so v1 frontend code on this branch can be replaced or deleted freely. Reuse the shared parts (`Visualiser3D`, `realtime/`, `lib/api.ts`, input components). The frontend talks to `/api/v2` only.
@@ -26,7 +26,7 @@
 ## API (`/api/v2`)
 
 - Everything except the fixture library lives under `/events/{eventId}`. One middleware checks the event (and later auth) for all of it.
-- Parent IDs come **from the path only**; any `eventId` / `fixtureGroupId` in a body is ignored. Handlers still check that path and body IDs belong to that event (`WHERE uuid = ? AND event_id = ?`).
+- Parent IDs come **from the path only**; any `eventId` / `fixtureGroupId` in a body is ignored. Handlers still check that path and body IDs belong to that event (`WHERE id = ? AND event_id = ?`).
 - `GET` reads, `POST` writes, `DELETE` deletes (soft).
 - Bulk `POST` = upsert: a row without `id` is created, a row with `id` is updated (it must belong to the event). Rows not in the request are left alone; removing goes through `DELETE`. One transaction per request.
 - Responses use the shared envelope (`success`, `data`, `error`, `message`); `data` is what the table shows.
@@ -176,7 +176,9 @@ The LD must be able to add, edit and delete setup items without breaking existin
 
 - Heads (QLC+ "Emitters") belong to the **mode**.
   - No heads means one head containing all channels, which is QLC+'s behaviour. The whole fixture is then one pixel and one beam.
-- **Master dimmer:** an intensity channel that is coarse, has no colour, and is **in no head**. With the automatic all-channels head, there is no master dimmer.
+- **Master dimmer comes from the channel type:** `MASTER_DIMMER` controls the whole fixture, `DIMMER` controls one head. Head membership doesn't decide it (QLC+ files sometimes list the master inside a head). The LD can change the type.
+  - Import: `Preset="IntensityMasterDimmer"` → `MASTER_DIMMER`, `Preset="IntensityDimmer"` → `DIMMER`.
+  - Import fallback for files without presets (`<Group>Intensity</Group>`, no colour): a dimmer in no head of a multi-head mode → `MASTER_DIMMER`, otherwise `DIMMER`.
 - A `.qxf` channel comes in one of two forms:
   - `Preset="IntensityRed"`: look the preset up in a table to get type, colour and fine.
   - `<Group Byte="0">Intensity</Group>` + `<Colour>`: combine group and colour into our `ChannelType`.

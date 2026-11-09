@@ -17,7 +17,7 @@ func TestAllTablesAreInV2Schema(t *testing.T) {
 		if !strings.HasPrefix(s.Table, "v2.") {
 			t.Errorf("%T: table %q is not in the v2 schema", m, s.Table)
 		}
-		for _, col := range []string{"uuid", "created_at", "updated_at", "deleted_at"} {
+		for _, col := range []string{"id", "created_at", "updated_at", "deleted_at"} {
 			if s.LookUpField(col) == nil {
 				t.Errorf("%T: missing base column %q", m, col)
 			}

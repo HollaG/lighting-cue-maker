@@ -17,7 +17,11 @@ import (
 	"lighting-cue-maker/server/internal/api/v1/ping"
 	"lighting-cue-maker/server/internal/api/v1/qlc"
 	"lighting-cue-maker/server/internal/api/v1/visualiser"
+	"lighting-cue-maker/server/internal/api/v2/eventscope"
+	eventsv2 "lighting-cue-maker/server/internal/api/v2/events"
+	"lighting-cue-maker/server/internal/api/v2/fixturegroups"
 	"lighting-cue-maker/server/internal/api/v2/fixturetemplates"
+	"lighting-cue-maker/server/internal/api/v2/patchedfixtures"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -62,5 +66,12 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 	v2 := r.Group("/api/v2")
 	{
 		fixturetemplates.Register(v2.Group("/fixture-templates"))
+		eventsv2.Register(v2.Group("/events"))
+
+		// Everything under one event goes through eventscope.Require.
+		event := v2.Group("/events/:eventId", eventscope.Require)
+		eventsv2.RegisterScoped(event)
+		patchedfixtures.Register(event.Group("/patched-fixtures"))
+		fixturegroups.Register(event.Group("/fixture-groups"))
 	}
 }
