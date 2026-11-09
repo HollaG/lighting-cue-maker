@@ -10,6 +10,7 @@ import {
   Axis,
   align,
   distribute,
+  fan,
   getCentre,
   placementFromObject3D,
   placementsChanged,
@@ -19,6 +20,9 @@ import {
   type Placement,
 } from "../../../utils/visualiser-v2-selection";
 import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
+
+/** Where "Reset position" puts fixtures, in cm (5 m up, above the stage centre). */
+const RESET_POSITION_CM = { x: 0, y: 500, z: 0 };
 
 type DragState = {
   pivotStartInverse: THREE.Matrix4;
@@ -61,7 +65,13 @@ export const Visualiser3DSelectionTransform = ({
 
   /** Arrange settings survive selection changes. */
   const arrange = useMemo(
-    () => ({ axis: Axis.X as Axis, order: ArrangeOrder.POSITION as ArrangeOrder, spacing: 100 }),
+    () => ({
+      axis: Axis.X as Axis,
+      order: ArrangeOrder.POSITION as ArrangeOrder,
+      spacing: 100,
+      fanAxis: Axis.X as Axis,
+      fanStep: 0,
+    }),
     [],
   );
 
@@ -148,7 +158,9 @@ export const Visualiser3DSelectionTransform = ({
     if (placementsChanged(current, next)) latest.current.onCommit(next);
   };
 
-  const placementsKey = placements.map((p) => [p.id, p.posX, p.posY, p.posZ, p.rotX, p.rotY, p.rotZ].join(",")).join("|");
+  const placementsKey = placements
+    .map((p) => [p.id, p.posX, p.posY, p.posZ, p.rotX, p.rotY, p.rotZ].join(","))
+    .join("|");
   useLayoutEffect(() => {
     if (!drag.current) resetPivot();
     // resetPivot reads everything through refs; placementsKey is what actually changes.
@@ -162,6 +174,7 @@ export const Visualiser3DSelectionTransform = ({
     if (!gui || fixtures.length === 0) return;
 
     const folder = gui.addFolder(title);
+    const cleanups: (() => void)[] = [];
 
     // Typing in a field moves the pivot, exactly like dragging the gizmo.
     const live = <T extends { onChange: (fn: () => void) => T; onFinishChange: (fn: () => void) => T }>(
@@ -188,6 +201,17 @@ export const Visualiser3DSelectionTransform = ({
         () => (pivot.position[axis] = proxy.position[axis]),
       );
     }
+    positionFolder
+      .add(
+        {
+          reset: () =>
+            run((p) =>
+              p.map((f) => ({ ...f, posX: RESET_POSITION_CM.x, posY: RESET_POSITION_CM.y, posZ: RESET_POSITION_CM.z })),
+            ),
+        },
+        "reset",
+      )
+      .name(isSingle ? "Reset position" : "Reset all positions");
 
     const rotationFolder = folder.addFolder(isSingle ? "Rotation (°)" : "Rotate by (°)");
     for (const axis of Object.values(Axis)) {
@@ -199,10 +223,15 @@ export const Visualiser3DSelectionTransform = ({
         ),
       );
     }
+    rotationFolder
+      .add({ reset: () => run((p) => p.map((f) => ({ ...f, rotX: 0, rotY: 0, rotZ: 0 }))) }, "reset")
+      .name(isSingle ? "Reset rotation" : "Reset all rotations");
 
     if (fixtures.length >= 2) {
       const arrangeFolder = folder.addFolder("Arrange");
-      arrangeFolder.add(arrange, "axis", { "x (Red)": Axis.X, "y (Height)": Axis.Y, "z (Blue)": Axis.Z }).name("Axis");
+      arrangeFolder
+        .add(arrange, "axis", { "x (Red)": Axis.X, "y (Green, height)": Axis.Y, "z (Blue)": Axis.Z })
+        .name("Line axis (world)");
       arrangeFolder
         .add(arrange, "order", { "By position": ArrangeOrder.POSITION, "By selection order": ArrangeOrder.SELECTION })
         .name("Order");
@@ -214,15 +243,24 @@ export const Visualiser3DSelectionTransform = ({
         distribute: () => run((p) => distribute(p, arrange.axis, arrange.order)),
       };
 
-      // Spread is computed from the saved placements every time, so dragging the slider back and forth
-      // never compounds. Spread keeps the centre, so the pivot doesn't need to move.
-      const spreadSaved = (p: Placement[]) => spread(p, arrange.axis, arrange.spacing, arrange.order);
-      const previewSpread = () => {
+      // Sliders compute from the saved placements every time, so dragging back and forth never compounds.
+      // Spread keeps the centre and fan keeps positions, so the pivot doesn't need to move.
+      /** Show placements on the meshes without saving. */
+      const preview = (next: Placement[]) => {
         if (drag.current) return;
-        for (const p of spreadSaved(latest.current.placements)) {
-          latest.current.getMesh(p.id)?.position.set(p.posX / 100, p.posY / 100, p.posZ / 100);
+        for (const p of next) {
+          const mesh = latest.current.getMesh(p.id);
+          if (!mesh) continue;
+          mesh.position.set(p.posX / 100, p.posY / 100, p.posZ / 100);
+          mesh.rotation.set(
+            THREE.MathUtils.degToRad(p.rotX),
+            THREE.MathUtils.degToRad(p.rotY),
+            THREE.MathUtils.degToRad(p.rotZ),
+          );
         }
       };
+      const spreadSaved = (p: Placement[]) => spread(p, arrange.axis, arrange.spacing, arrange.order);
+      const fanSaved = (p: Placement[]) => fan(p, arrange.fanAxis, arrange.fanStep, arrange.axis, arrange.order);
       arrangeFolder.add(actions, "alignMin").name("Align to min");
       arrangeFolder.add(actions, "alignCentre").name("Align to centre");
       arrangeFolder.add(actions, "alignMax").name("Align to max");
@@ -232,11 +270,58 @@ export const Visualiser3DSelectionTransform = ({
       arrangeFolder
         .add(arrange, "spacing", -2000, 2000, 1)
         .name("Spread spacing (cm)")
-        .onChange(previewSpread)
+        .onChange(() => preview(spreadSaved(latest.current.placements)))
         .onFinishChange(() => run(spreadSaved));
+
+      // Fan: absolute angles around a LOCAL axis of the middle fixture. Order comes from "Line axis" + "Order".
+      const fanFolder = arrangeFolder.addFolder("Fan angles");
+      fanFolder
+        .add(arrange, "fanAxis", { "x (Red)": Axis.X, "y (Green)": Axis.Y, "z (Blue)": Axis.Z })
+        .name("Turn around (local)");
+      fanFolder
+        .add(arrange, "fanStep", -90, 90, 0.5)
+        .name("Fan step (°)")
+        .onChange(() => preview(fanSaved(latest.current.placements)))
+        .onFinishChange(() => run(fanSaved));
+      fanFolder
+        .add(
+          { alignRotation: () => run((p) => fan(p, arrange.fanAxis, 0, arrange.axis, arrange.order)) },
+          "alignRotation",
+        )
+        .name("Same angle as middle fixture");
+
+      // Local axes are invisible otherwise: while the pointer is over the fan controls, draw each fixture's
+      // red/green/blue axes (same colours as the dropdown and the gizmo).
+      const helpers: THREE.AxesHelper[] = [];
+      const showAxes = () => {
+        hideAxes();
+        for (const { id } of latest.current.placements) {
+          const mesh = latest.current.getMesh(id);
+          if (!mesh) continue;
+          const helper = new THREE.AxesHelper(0.5);
+          // Draw on top of the fixture body.
+          (helper.material as THREE.Material).depthTest = false;
+          helper.renderOrder = 999;
+          helper.raycast = () => {};
+          mesh.add(helper);
+          helpers.push(helper);
+        }
+      };
+      const hideAxes = () => {
+        for (const helper of helpers.splice(0)) {
+          helper.removeFromParent();
+          helper.dispose();
+        }
+      };
+      fanFolder.domElement.addEventListener("pointerenter", showAxes);
+      fanFolder.domElement.addEventListener("pointerleave", hideAxes);
+      cleanups.push(hideAxes);
     }
 
-    return () => folder.destroy();
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+      folder.destroy();
+    };
     // The callbacks read through refs; the folder only needs rebuilding when the selection itself changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gui, idsKey, title]);

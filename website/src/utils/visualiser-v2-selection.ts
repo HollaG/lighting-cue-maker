@@ -161,6 +161,55 @@ export const spread = (
   return result;
 };
 
+const UNIT_AXIS: Record<Axis, Vector3> = {
+  x: new Vector3(1, 0, 0),
+  y: new Vector3(0, 1, 0),
+  z: new Vector3(0, 0, 1),
+};
+
+const quaternionOf = (p: Placement) =>
+  new Quaternion().setFromEuler(
+    new Euler(MathUtils.degToRad(p.rotX), MathUtils.degToRad(p.rotY), MathUtils.degToRad(p.rotZ)),
+  );
+
+/**
+ * Fan the fixtures' angles out (absolute). Positions don't change.
+ *
+ * 1. Every fixture first takes the base rotation: the middle fixture's (in `order` along `orderAxis`).
+ * 2. Fixture i then turns `(i − (n−1)/2) × step` degrees around `rotateAxis` of that base rotation (a LOCAL axis).
+ *
+ * Local because every fixture shares the base rotation, so "local x" is the same direction for all of them. That keeps
+ * a fan of fixtures tilted 45° tilted, instead of tipping it sideways. Negative `step` reverses the fan;
+ * `step` 0 gives every fixture the same angle.
+ */
+export const fan = (
+  placements: Placement[],
+  rotateAxis: Axis,
+  step: number,
+  orderAxis: Axis,
+  order: ArrangeOrder = ArrangeOrder.POSITION,
+): Placement[] => {
+  if (placements.length < 2) return placements;
+  const indexes = orderIndexes(placements, orderAxis, order);
+  const base = quaternionOf(placements[indexes[Math.floor((indexes.length - 1) / 2)]]);
+
+  const result = [...placements];
+  indexes.forEach((index, i) => {
+    const angle = MathUtils.degToRad((i - (indexes.length - 1) / 2) * step);
+    // base × turn = turn around the base's local axis.
+    const rotation = new Euler().setFromQuaternion(
+      base.clone().multiply(new Quaternion().setFromAxisAngle(UNIT_AXIS[rotateAxis], angle)),
+    );
+    result[index] = {
+      ...placements[index],
+      rotX: MathUtils.radToDeg(rotation.x),
+      rotY: MathUtils.radToDeg(rotation.y),
+      rotZ: MathUtils.radToDeg(rotation.z),
+    };
+  });
+  return result;
+};
+
 /**
  * True when any position or rotation differs. Exact by default: round `after` first (see `roundPlacement`), so noisy
  * saved values (1.4e-14) still count as changed when the rounded value (0) is typed.

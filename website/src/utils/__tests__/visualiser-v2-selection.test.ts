@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { Euler, MathUtils, Quaternion, Vector3 } from "three";
 import {
   AlignTo,
   ArrangeOrder,
   align,
   distribute,
+  fan,
   getCentre,
   moveBy,
   placementsChanged,
@@ -64,6 +66,26 @@ describe("selection ops", () => {
     expect(p.posX).toBeCloseTo(0);
     expect(p.posZ).toBeCloseTo(-100);
     expect(p.rotY).toBeCloseTo(90);
+  });
+
+  it("fan: absolute, middle fixture's angle is the base, negative step reverses", () => {
+    const placements = [at("a", 0), { ...at("b", 100), rotY: 30 }, { ...at("c", 200), rotY: 77 }];
+    expect(fan(placements, "y", 10, "x").map((p) => Math.round(p.rotY))).toEqual([20, 30, 40]);
+    expect(fan(placements, "y", -10, "x").map((p) => Math.round(p.rotY))).toEqual([40, 30, 20]);
+    expect(fan(placements, "y", 0, "x").map((p) => Math.round(p.rotY))).toEqual([30, 30, 30]);
+    expect(fan(placements, "y", 10, "x").map((p) => p.posX)).toEqual([0, 100, 200]);
+  });
+
+  it("fan turns around the LOCAL axis of the base rotation", () => {
+    // Base is tilted 90° around X, so its local Z points along world -Y (down).
+    const tilted = (id: string, x: number) => ({ ...at(id, x), rotX: 90 });
+    const [first] = fan([tilted("a", 0), tilted("b", 100)], "z", 20, "x");
+    const q = new Quaternion().setFromEuler(
+      new Euler(MathUtils.degToRad(first.rotX), MathUtils.degToRad(first.rotY), MathUtils.degToRad(first.rotZ)),
+    );
+    // Turning around that local axis must not change where local Z points.
+    const localZ = new Vector3(0, 0, 1).applyQuaternion(q);
+    expect(localZ.y).toBeCloseTo(-1);
   });
 
   it("roundPlacement removes float noise and -0", () => {
