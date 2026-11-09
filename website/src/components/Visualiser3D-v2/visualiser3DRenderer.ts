@@ -18,7 +18,12 @@ export const createVisualiser3DRenderer: CanvasProps["gl"] = (props) => {
 
   const renderer = new WebGPURenderer(props as WebGPURendererParameters);
   const initialization = renderer.init().then(
-    () => renderer,
+    () => {
+      // A lost GPU device stops rendering with nothing in the console unless we log it.
+      const device = (renderer.backend as { device?: GPUDevice }).device;
+      void device?.lost.then((info) => console.error("WebGPU device lost:", info.reason, info.message));
+      return renderer;
+    },
     (error: unknown) => {
       rendererInitializations.delete(props.canvas);
       throw error;

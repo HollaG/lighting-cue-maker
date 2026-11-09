@@ -1,9 +1,10 @@
 import CheckerTexture from "../../../assets/checker.png";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CameraControls, useTexture } from "@react-three/drei";
 import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
-import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
+import { Visualiser3DFixture } from "../Elements/Visualiser3DFixture";
+import { getHeadCount } from "../../../utils/visualiser-v2-heads";
 import type { Fixture, PositionOption, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
@@ -22,6 +23,12 @@ import type { Placement } from "../../../utils/visualiser-v2-selection";
 import { Visualiser3DSelectionTransform } from "../Elements/Visualiser3DSelectionTransform";
 
 const logger = new Logger("StagePreview3D");
+
+/**
+ * At most this many lights cast shadows. Every shadow is a texture each lit material reads, and WebGPU's default limit
+ * is 16 per shader (30 shadowed pars turned the scene black). Shadows are also the most expensive part per light.
+ */
+const MAX_SHADOW_CASTERS = 8;
 
 export const StagePreview3D = ({
   eventId,
@@ -80,15 +87,24 @@ export const StagePreview3D = ({
   const cuboids = stageElements.filter((element) => element.type === "cuboid");
   const humans = stageElements.filter((element) => element.type === "default_human");
 
-  const pars = fixtures.filter((fixture) => {
-    const template = fixtureTemplates.find((t) => t.id === fixture.fixtureTemplateId);
-    return template && template?.type === "par";
-  });
+  const templatesById = useMemo(() => new Map(fixtureTemplates.map((t) => [t.id, t])), [fixtureTemplates]);
 
-  const bar_pixels = fixtures.filter((fixture) => {
-    const template = fixtureTemplates.find((t) => t.id === fixture.fixtureTemplateId);
-    return template?.type === "bar_pixel";
-  });
+  /**
+   * Which fixtures get one of the few shadow slots: the first single-head fixtures (only spotlights cast shadows), in
+   * fixture order. FIXED on purpose: it must not follow the selection.
+   *
+   * Turning castShadow off and back on for the same light at runtime (select A, then C, then A) left three's WebGPU
+   * renderer reusing cached bindings that pointed at A's destroyed shadow map, and rendering never recovered.
+   * Now the set only changes when fixtures are added or removed (which also recompiles shaders once).
+   */
+  const shadowCasterIds = useMemo(() => {
+    if (isViewOnly) return new Set<string>();
+    const ids = fixtures
+      .filter((f) => getHeadCount(templatesById.get(f.fixtureTemplateId), f.modeId) === 1)
+      .slice(0, MAX_SHADOW_CASTERS)
+      .map((f) => f.id);
+    return new Set(ids);
+  }, [fixtures, templatesById, isViewOnly]);
 
   // Fixture meshes by id, so one gizmo can move the whole selection.
   const meshes = useRef(new Map<string, THREE.Object3D>());
@@ -142,14 +158,15 @@ export const StagePreview3D = ({
         <Helper type={THREE.SpotLightHelper} />
       </spotLight> */}
 
-      {pars.map((fixture) => (
-        <Visualiser3DParLight
+      {fixtures.map((fixture) => (
+        <Visualiser3DFixture
           key={fixture.id}
           fixture={fixture}
-          fixtureTemplate={fixtureTemplates.find((t) => t.id === fixture.fixtureTemplateId)!}
+          fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
           isSelected={!!selectedObjectIds?.includes(fixture.id)}
           onSelect={(id, additive) => onObjectSelect?.(id, additive)}
           onMeshChange={onMeshChange}
+          castShadow={shadowCasterIds.has(fixture.id)}
           viewOnly={isViewOnly}
         />
       ))}

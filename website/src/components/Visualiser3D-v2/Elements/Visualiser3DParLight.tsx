@@ -170,7 +170,7 @@ export const Visualiser3DParLight = ({
           intensity={intensity}
           angle={THREE.MathUtils.degToRad(beamAngle ? beamAngle / 2 : 15)}
           penumbra={0.5}
-          castShadow
+          castShadow={false}
           color={colour}
         />
 
