@@ -1,21 +1,11 @@
-import { Visualiser3DTransformControls } from "./Visualiser3DTransformControls";
 import type { PresetColourOption, PresetIntensityOption } from "../../../types/types";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMantineTheme } from "@mantine/core";
 
 import * as THREE from "three";
-import {
-  convert3DPropsToFixtureRepresentation,
-  getFixture3DPosition,
-  getFixture3DRotation,
-  lerp,
-} from "../../../utils/visualiser-v2";
-import { useAppStore } from "../../../store/appStore";
-
-import type { GUI } from "lil-gui";
-import { useVisualiser3DGuiControls } from "./useVisualiser3DGuiControls";
+import { getFixture3DPosition, getFixture3DRotation } from "../../../utils/visualiser-v2";
 import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
-import type { PatchedFixture, UpsertPatchedFixture } from "../../../types-v2/patchedFixture";
+import type { PatchedFixture } from "../../../types-v2/patchedFixture";
 import type { FixtureTemplate } from "../../../types-v2/fixtureTemplates";
 
 export const Visualiser3DParLight = ({
@@ -23,12 +13,11 @@ export const Visualiser3DParLight = ({
   fixtureTemplate,
   isSelected,
   onSelect,
-  onChange,
+  onMeshChange,
   viewOnly = false,
 
   intensityAttribute: nextIntensityAttribute,
   colourAttribute: nextColourAttribute,
-  gui,
 
   transitionTime: nextTransitionTime = 0,
 }: {
@@ -36,10 +25,10 @@ export const Visualiser3DParLight = ({
   fixtureTemplate: FixtureTemplate;
 
   isSelected: boolean;
-  onSelect: (fixtureId: string) => void;
-  onChange: (newProps: UpsertPatchedFixture) => void;
-
-  gui: GUI | null;
+  /** `additive`: shift/ctrl/cmd was held, so add to or remove from the selection instead of replacing it. */
+  onSelect: (fixtureId: string, additive: boolean) => void;
+  /** Registers the mesh so the selection gizmo can move it. Moving and saving live in Visualiser3DSelectionTransform. */
+  onMeshChange?: (fixtureId: string, mesh: THREE.Mesh | null) => void;
 
   viewOnly?: boolean;
 
@@ -49,7 +38,6 @@ export const Visualiser3DParLight = ({
   transitionTime?: number;
 }) => {
   const theme = useMantineTheme();
-  const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
 
   // Transition logic
   const [transitionTime, setTransitionTime] = useState<number>(nextTransitionTime);
@@ -122,54 +110,7 @@ export const Visualiser3DParLight = ({
     fixtureTemplate.properties.minBeamAngle === fixtureTemplate.properties.maxBeamAngle
       ? fixtureTemplate.properties.minBeamAngle
       : fixtureTemplate.properties.minBeamAngle || 15;
-  const [beamControls, setBeamAngle] = useState({ angle: beamAngle });
-
-  const mode = useAppStore((state) => state.transformMode);
-  const setMode = useAppStore((state) => state.setTransformMode);
-
   const spotlightTarget = useMemo(() => new THREE.Object3D(), []);
-
-  // for future use - synchronise on upstream fixture.angle changes
-  // useEffect(() => {
-  //   const nextBeamAngle = fixture.beamAngle || 15;
-  //   beamControls.angle = nextBeamAngle;
-  //   setBeamAngle(nextBeamAngle);
-  // }, [beamControls, fixture.beamAngle]);
-
-  useVisualiser3DGuiControls({
-    gui,
-    object: mesh,
-    isSelected: isSelected && !viewOnly,
-    title: fixture.name.trim() || "Par light",
-    // addCustomControls: (folder) => {
-    //   folder
-    //     .addFolder("Beam")
-    //     .add(beamControls, "angle", 1, 180, 1)
-    //     .name("Full angle")
-    //     .onChange(setBeamAngle) // update the react state
-    //     .listen();
-    // },
-    onFinishChange: () => {
-      if (!mesh) return;
-      onChange({
-        ...convert3DPropsToFixtureRepresentation(mesh.position, mesh.rotation, fixture),
-        // beamAngle: beamControls.angle,
-      });
-    },
-  });
-
-  // Force the fixture to not change mode
-  const oldMode = useRef(mode);
-  useEffect(() => {
-    if (!isSelected) return;
-    if (isSelected && mode === "scale") setMode(oldMode.current);
-    if (mode === "scale" && mode !== oldMode.current) {
-      // force set it back
-      setMode(oldMode.current);
-    } else {
-      oldMode.current = mode;
-    }
-  }, [mode, isSelected]);
 
   // Custom logic to draw
   // Intensity represents the literal intensity here. 0-100, don't need to map.
@@ -180,14 +121,15 @@ export const Visualiser3DParLight = ({
   return (
     <>
       <mesh
-        ref={setMesh}
+        // Called with the mesh on mount and with null on unmount.
+        ref={(mesh) => onMeshChange?.(fixture.id, mesh)}
         castShadow
         receiveShadow
         position={getFixture3DPosition(fixture)}
         rotation={getFixture3DRotation(fixture)}
         onClick={(event) => {
           event.stopPropagation();
-          onSelect(fixture.id);
+          onSelect(fixture.id, event.shiftKey || event.ctrlKey || event.metaKey);
         }}
         // onPointerDown={(event) => {
         //   console.log("onPointerDown fired for Par light");
@@ -238,20 +180,6 @@ export const Visualiser3DParLight = ({
           <Helper type={THREE.SpotLightHelper} />
         </spotLight> */}
       </mesh>
-
-      {!viewOnly && isSelected && mesh && (
-        <Visualiser3DTransformControls
-          object={mesh}
-          mode={mode}
-          space={mode === "translate" ? "world" : "local"}
-          onMouseUp={() => {
-            const _mesh = mesh;
-            if (!_mesh) return;
-
-            onChange(convert3DPropsToFixtureRepresentation(_mesh.position, _mesh.rotation, fixture));
-          }}
-        />
-      )}
     </>
   );
 };

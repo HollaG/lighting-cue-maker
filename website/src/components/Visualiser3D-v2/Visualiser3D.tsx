@@ -19,6 +19,7 @@ import {
   Menu,
   Slider,
   SimpleGrid,
+  Select,
 } from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
@@ -64,6 +65,7 @@ import { Visualiser3DControls } from "./Visualiser3DControls";
 import type { PatchedFixture } from "../../types-v2/patchedFixture";
 import { CardBase } from "../Cues/CardBase";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
+import { useGetFixtureGroups } from "../../query-v2/fixture-groups/useGetFixtureGroups";
 
 export const Visualiser3D = ({
   visualiser,
@@ -108,17 +110,40 @@ export const Visualiser3D = ({
 
   // const { mutateAsync: restoreVisualiser } = useUpsertVisualiser({ recordHistory: false });
 
-  // can be either fixture ID or elemnt ID
-  // const [selectedId, setSelectedElementId] = useState<string | null>(null);
-  const selectedObjectId = useAppStore((state) => state.activeObjectId);
-  const setSelectedObjectId = useAppStore((state) => state.setActiveObjectId);
+  const { fixtureGroups } = useGetFixtureGroups(eventId);
+
+  /**
+   * Fixture IDs or one stage element ID. Several fixtures can be selected at once; stage elements are single-select.
+   * Order matters: distribute/spread "by selection order" follow it (a group's fixtureIds order when a group is picked).
+   */
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  /** The one selected object, or null when nothing or several things are selected. */
+  const selectedObjectId = selectedIds.length === 1 ? selectedIds[0] : null;
+  const setSelectedObjectId = (id: string | null) => setSelectedIds(id ? [id] : []);
 
   const selectedName =
-    stageElements.find((el) => el.id === selectedObjectId)?.name ??
-    fixtures.find((f) => f.id === selectedObjectId)?.name;
+    selectedIds.length > 1
+      ? `${selectedIds.length} fixtures`
+      : (stageElements.find((el) => el.id === selectedObjectId)?.name ??
+        fixtures.find((f) => f.id === selectedObjectId)?.name);
+
+  // The group whose fixtures are exactly the current selection, if any.
+  const selectedGroupId =
+    fixtureGroups.find(
+      (group) =>
+        group.fixtureIds.length > 0 &&
+        group.fixtureIds.length === selectedIds.length &&
+        group.fixtureIds.every((id) => selectedIds.includes(id)),
+    )?.id ?? null;
+
+  const onSelectGroup = (groupId: string | null) => {
+    const group = fixtureGroups.find((g) => g.id === groupId);
+    // Skip IDs of fixtures that no longer exist.
+    setSelectedIds(group ? group.fixtureIds.filter((id) => fixtures.some((f) => f.id === id)) : []);
+  };
 
   // Register hotkeys for element selected state
-  useHotkey("Escape", () => setSelectedObjectId(null));
+  useHotkey("Escape", () => setSelectedIds([]));
 
   const mode = useAppStore((state) => state.transformMode);
   const setMode = useAppStore((state) => state.setTransformMode);
@@ -150,8 +175,13 @@ export const Visualiser3D = ({
     }
   });
 
-  const onObjectSelect = (id: string) => {
-    setSelectedObjectId(id);
+  /** `additive` (shift/ctrl/cmd-click) toggles a fixture in the selection; stage elements always replace it. */
+  const onObjectSelect = (id: string, additive = false) => {
+    const isFixtureId = (objectId: string) => fixtures.some((f) => f.id === objectId);
+    setSelectedIds((prev) => {
+      if (!additive || !isFixtureId(id) || !prev.every(isFixtureId)) return [id];
+      return prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id];
+    });
   };
 
   const _cameraControlRef = useRef<CameraControls | null>(null);
@@ -432,8 +462,8 @@ export const Visualiser3D = ({
             </Button>
           </Group>
           <Group gap="xs" justify="center">
-            <Text fz="sm">{selectedObjectId ? "Selected: " + selectedName : "No object selected"}</Text>
-            {isElement ?? (
+            <Text fz="sm">{selectedIds.length > 0 ? "Selected: " + selectedName : "No object selected"}</Text>
+            {isElement && (
               <>
                 <Button
                   variant="subtle"
@@ -455,7 +485,20 @@ export const Visualiser3D = ({
               </>
             )}
           </Group>
-          <Group></Group>
+          <Group gap="xs" justify="flex-end">
+            <Text fz="xs" c="dimmed">
+              Shift+click to select more
+            </Text>
+            <Select
+              size="xs"
+              w="12rem"
+              placeholder="Select a fixture group"
+              data={fixtureGroups.map((group) => ({ value: group.id, label: group.name }))}
+              value={selectedGroupId}
+              onChange={onSelectGroup}
+              clearable
+            />
+          </Group>
         </Box>
       </CardBase>
       {/* // w="100%": take the parent's width even inside a centring flex parent, so the canvas // mounts at its final size
@@ -512,7 +555,7 @@ export const Visualiser3D = ({
                       environment={environment}
                       fixtures={fixtures}
                       stageElements={stageElements}
-                      selectedObjectIds={selectedObjectId ? [selectedObjectId] : undefined}
+                      selectedObjectIds={selectedIds}
                       onObjectSelect={onObjectSelect}
                       cameraRef={cameraControlRef}
 
@@ -539,7 +582,7 @@ export const Visualiser3D = ({
                 {/* Selected element controls */}
                 <Stack style={{ position: "absolute", top: "1rem", right: "1rem" }}>
                   <SegmentedControl
-                    disabled={!selectedObjectId}
+                    disabled={selectedIds.length === 0}
                     data={[
                       {
                         value: "translate",
@@ -617,8 +660,8 @@ export const Visualiser3D = ({
                       color="gray"
                       size="xs"
                       bg={"var(--mantine-color-dark-7)"}
-                      disabled={!selectedObjectId}
-                      onClick={() => setSelectedObjectId(null)}
+                      disabled={selectedIds.length === 0}
+                      onClick={() => setSelectedIds([])}
                     >
                       <Kbd size="xs" mr="xs">
                         ESC

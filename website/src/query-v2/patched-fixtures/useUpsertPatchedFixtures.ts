@@ -12,9 +12,15 @@ export type UpsertPatchedFixturesRes = {
 
 export const makeGetPatchedFixturesQueryKey = (eventId: string) => ["v2", "patchedFixtures", eventId] as const;
 
-/** Create or update several patched fixtures in one request. */
+/**
+ * Create or update several patched fixtures in one request.
+ *
+ * Updates (items with an `id`) are applied to the cached list straight away, so the visualiser doesn't jump back
+ * to the old positions while the request is in flight. The cache is rolled back if the request fails.
+ */
 export const useUpsertPatchedFixtures = (eventId: string) => {
   const queryClient = useQueryClient();
+  const queryKey = makeGetPatchedFixturesQueryKey(eventId);
 
   return useMutation({
     mutationFn: (fixtures: UpsertPatchedFixture[]) =>
@@ -23,8 +29,27 @@ export const useUpsertPatchedFixtures = (eventId: string) => {
         { fixtures },
       ),
 
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: makeGetPatchedFixturesQueryKey(eventId) });
+    onMutate: async (fixtures) => {
+      // Stop an older refetch from overwriting the optimistic values.
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<PatchedFixture[]>(queryKey);
+
+      const updates = new Map(fixtures.filter((f) => f.id).map((f) => [f.id!, f]));
+      if (previous && updates.size > 0) {
+        queryClient.setQueryData<PatchedFixture[]>(
+          queryKey,
+          previous.map((f) => (updates.has(f.id) ? { ...f, ...updates.get(f.id) } : f)),
+        );
+      }
+      return { previous };
+    },
+
+    onError: (_error, _fixtures, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+    },
+
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey });
     },
   });
 };

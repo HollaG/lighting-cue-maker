@@ -1,5 +1,5 @@
 import CheckerTexture from "../../../assets/checker.png";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { CameraControls, useTexture } from "@react-three/drei";
 import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
@@ -7,7 +7,6 @@ import { Visualiser3DParLight } from "../Elements/Visualiser3DParLight";
 import type { Fixture, PositionOption, UpdateFixtureIn3DReq } from "../../../types/fixtures";
 import { Visualiser3DBarLight } from "../Elements/Visualiser3DBarLight";
 import { Visualiser3DMovingLight } from "../Elements/Visualiser3DMovingLight";
-import { useDebouncedCallback } from "@mantine/hooks";
 import { useUpsertFixture } from "../../../query/fixtures/useUpsertFixtures";
 import { Visualiser3DCuboid } from "../Elements/Visualiser3DCuboid";
 import { Visualiser3DDefaultHuman } from "../Elements/Visualiser3DDefaultHuman";
@@ -15,10 +14,12 @@ import { GRID_SIZE, PLANE_SIZE } from "../../../utils/visualiser";
 import type { GUI } from "lil-gui";
 import { Visualiser3DVolumetrics } from "../Visualiser3DVolumetrics";
 import { AttributeTypes, type ColourOption, type PresetIntensityOption } from "../../../types/types";
-import type { PatchedFixture, UpsertPatchedFixture } from "../../../types-v2/patchedFixture";
+import type { PatchedFixture } from "../../../types-v2/patchedFixture";
 import type { FixtureTemplate } from "../../../types-v2/fixtureTemplates";
 import { useUpsertPatchedFixtures } from "../../../query-v2/patched-fixtures/useUpsertPatchedFixtures";
 import { Logger } from "../../../utils/logger";
+import type { Placement } from "../../../utils/visualiser-v2-selection";
+import { Visualiser3DSelectionTransform } from "../Elements/Visualiser3DSelectionTransform";
 
 const logger = new Logger("StagePreview3D");
 
@@ -53,8 +54,8 @@ export const StagePreview3D = ({
   onCameraMove?: () => void;
   onCameraRest?: () => void;
 
-  /** Only provided when ViewOnly is false. Both are never provided together. */
-  onObjectSelect?: (objectId: string) => void;
+  /** Only provided when ViewOnly is false. `additive`: shift/ctrl/cmd-click adds to the selection. */
+  onObjectSelect?: (objectId: string, additive?: boolean) => void;
   updateStageElement: (newElement: Visualiser3DObject) => void;
   gui: GUI | null;
 
@@ -89,11 +90,31 @@ export const StagePreview3D = ({
     return template?.type === "bar_pixel";
   });
 
-  const onChange = useDebouncedCallback((newFixtureProps: UpsertPatchedFixture) => {
-    upsertFixtureIn3D([newFixtureProps]);
-  }, 100);
+  // Fixture meshes by id, so one gizmo can move the whole selection.
+  const meshes = useRef(new Map<string, THREE.Object3D>());
+  const onMeshChange = useCallback((fixtureId: string, mesh: THREE.Object3D | null) => {
+    if (mesh) meshes.current.set(fixtureId, mesh);
+    else meshes.current.delete(fixtureId);
+  }, []);
+  const getMesh = useCallback((fixtureId: string) => meshes.current.get(fixtureId), []);
 
-  logger.info(pars);
+  // Selected fixtures in selection order (a group's order when a group was picked).
+  const selectedFixtures = (selectedObjectIds ?? [])
+    .map((id) => fixtures.find((f) => f.id === id))
+    .filter((f): f is PatchedFixture => !!f);
+
+  /** One request for the whole selection. The backend replaces every field, so send the full fixture. */
+  const onCommitPlacements = (placements: Placement[]) => {
+    const updates = placements.flatMap((placement) => {
+      const fixture = fixtures.find((f) => f.id === placement.id);
+      if (!fixture) return [];
+      const { createdAt: _c, updatedAt: _u, deletedAt: _d, eventId: _e, ...rest } = fixture;
+      return [{ ...rest, ...placement }];
+    });
+    if (updates.length === 0) return;
+    void upsertFixtureIn3D(updates).catch((error) => logger.error("Failed to save fixture placements", error));
+  };
+
   return (
     <>
       <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
@@ -127,12 +148,20 @@ export const StagePreview3D = ({
           fixture={fixture}
           fixtureTemplate={fixtureTemplates.find((t) => t.id === fixture.fixtureTemplateId)!}
           isSelected={!!selectedObjectIds?.includes(fixture.id)}
-          onSelect={onObjectSelect ? () => onObjectSelect(fixture.id) : () => {}}
-          onChange={isViewOnly ? () => {} : onChange}
-          gui={gui}
+          onSelect={(id, additive) => onObjectSelect?.(id, additive)}
+          onMeshChange={onMeshChange}
           viewOnly={isViewOnly}
         />
       ))}
+
+      {!isViewOnly && (
+        <Visualiser3DSelectionTransform
+          fixtures={selectedFixtures}
+          getMesh={getMesh}
+          gui={gui}
+          onCommit={onCommitPlacements}
+        />
+      )}
 
       {cuboids.map((cuboid) => (
         <Visualiser3DCuboid
