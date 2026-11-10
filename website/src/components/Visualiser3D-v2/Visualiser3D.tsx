@@ -793,428 +793,66 @@ export const Visualiser3D = ({
  * A version of the Visualiser that does not allow for editing.
  * However, it does allow for camera movement.
  *
- * This is to be used within cues and within the run page.
+ * Fills its parent, so give the parent a size.
  */
-// export const StaticVisualiser3D = ({
-//   cueId,
+export const StaticVisualiser3D = ({
+  visualiser,
+  eventId,
+  fixtures,
+}: {
+  visualiser: Visualiser;
+  eventId: string;
+  fixtures: PatchedFixture[];
+}) => {
+  const { event } = useGetEvent(eventId);
 
-//   visualiser,
-//   fixtures,
-//   // fixtureGroups,
-//   fixtureGroupsAssignment,
-//   // controls,
+  // Start at the LD's saved view. A callback ref, so this runs once the camera controls exist.
+  const cameraControlRef = useCallback((node: CameraControls | null) => {
+    if (!node || !visualiser.defaultCameraView) return;
+    const [x, y, z] = visualiser.defaultCameraView.position;
+    const [tx, ty, tz] = visualiser.defaultCameraView.target;
+    node.setLookAt(x, y, z, tx, ty, tz, false);
+  }, []);
 
-//   // Callback to open the relevant fixture group when something is selected
-//   activeFixtureGroupId,
-//   onFixtureSelect,
+  // No editing, so no state: read the saved environment directly.
+  const environment = visualiser.config3d || { haze: 0.5, ambientLight: 0.5 };
 
-//   // isLoading,
-//   // isBlackout = false,
-//   controls,
+  if (!event) return null;
 
-//   transitionTime,
-// }: {
-//   /** Only used for realtime tracking (to distinguish), can ignore if not realtime, just pass in a fake value */
-//   cueId: string;
-
-//   visualiser: Visualiser;
-//   fixtures: Fixture[];
-//   // fixtureGroups: FixtureGroup[];
-//   fixtureGroupsAssignment: FixtureGroupsAssignment;
-//   // controls: Visualiser3DControls;
-
-//   // Callback to open the relevant fixture group when something is selected
-//   activeFixtureGroupId?: string | null;
-//   onFixtureSelect: (fixtureId: string, fixtureGroupId: string) => void;
-
-//   isLoading: boolean;
-//   isBlackout?: boolean;
-
-//   controls?: React.ReactNode;
-
-//   transitionTime?: number; // in ms, for interpolating between two fixtureGroupAssignments
-// }) => {
-//   // Interpolate between two fixtureGroupAssignments IF transitionTime is set
-//   const transitionTimeRef = useRef<number>(transitionTime || 0);
-//   const [transitionPercent, setTransitionPercent] = useState<number>(100);
-//   useEffect(() => {
-//     // Whenever the fixtureGroupAssignment changes, check the previous transition time (given by the Ref)
-//     if (transitionTimeRef.current === 0) {
-//       // immediately transition
-//       setTransitionPercent(100);
-//       transitionTimeRef.current = transitionTime || 0; // set the new transition time
-//     } else {
-//       // animate from 0 to 100 over transitionTime milliseconds
-//       setTransitionPercent(0);
-
-//       const startTime = performance.now();
-//       const animate = () => {
-//         const now = performance.now();
-//         const elapsed = now - startTime;
-//         const percent = Math.min((elapsed / (transitionTimeRef.current || 0)) * 100, 100);
-//         // setTransitionPercent(percent);
-//         if (percent < 100) {
-//           requestAnimationFrame(animate);
-//         } else {
-//           transitionTimeRef.current = transitionTime || 0; // set the new transition time
-//           setTransitionPercent(100); // ensure we end at 100
-//         }
-//       };
-
-//       requestAnimationFrame(animate);
-
-//       setTimeout(() => setTransitionPercent(99), 1); // use Mantine's inbuilt transitioner
-//     }
-//   }, [fixtureGroupsAssignment]);
-
-//   // const [fixtureGroupsAssignment, setFixtureGroupsAssignment] =
-//   //   useState<FixtureGroupsAssignment>(_fixtureGroupsAssignment);
-
-//   // // Track changes in the assignment from upstream
-//   // useEffect(() => {
-//   //   if (transitionTime === 0) {
-//   //     // immediately transition
-//   //     setFixtureGroupsAssignment(_fixtureGroupsAssignment);
-//   //     setTransitionTime(0); // set the new transition time
-//   //   } else {
-//   //     // start a lerp
-//   //     // also set the new transition time
-//   //     setTransitionTime(_transitionTime);
-//   //   }
-//   // }, [_fixtureGroupsAssignment]);
-
-//   // Live updates
-//   const { onCameraMove } = useVisualiser3DTracking({
-//     cueId,
-//     setCameraPosition: (position) => {
-//       const controls = _cameraControlRef.current;
-//       if (!controls) return;
-
-//       _setCameraPosition(controls, position, true);
-//       // setLookAt wraps the horizontal angle at 180 degrees. Choose the
-//       // equivalent turn nearest to the current angle to avoid a full spin.
-//       const [x, , z] = position.position;
-//       const [tx, , tz] = position.target;
-//       const desiredAngle = Math.atan2(x - tx, z - tz);
-//       const currentAngle = controls.azimuthAngle;
-//       const shortestDelta = Math.atan2(Math.sin(desiredAngle - currentAngle), Math.cos(desiredAngle - currentAngle));
-//       void controls.rotateAzimuthTo(currentAngle + shortestDelta, true);
-//     },
-//   });
-
-//   // Controls (todo: save in state)
-//   const environment = visualiser.config3d || {
-//     haze: 0.5,
-//     ambientLight: 0.5,
-//   }; // no need for state, no editing needed
-
-//   const _cameraControlRef = useRef<CameraControls | null>(null);
-//   const lastCameraUpdateRef = useRef(0);
-
-//   /** Read the controls instance held by the callback ref, then publish a camera sample. */
-//   const publishCameraPosition = (force = false) => {
-//     const controls = _cameraControlRef.current;
-//     if (!controls) return;
-//     const now = performance.now();
-//     if (!force && now - lastCameraUpdateRef.current < 50) return;
-//     lastCameraUpdateRef.current = now;
-
-//     const position = controls.getPosition(new Vector3());
-//     const target = controls.getTarget(new Vector3());
-//     onCameraMove({
-//       position: [position.x, position.y, position.z],
-//       target: [target.x, target.y, target.z],
-//       fov: 70,
-//     });
-//   };
-
-//   // Use a callback ref here so we can trigger the position setting only after that component has been loaded
-//   const cameraControlRef = useCallback((node: CameraControls | null) => {
-//     if (node) {
-//       _cameraControlRef.current = node;
-//       console.log("camera control ref set to", node);
-//       if (visualiser.defaultCameraView) {
-//         const camera = node;
-//         _setCameraPosition(camera, visualiser.defaultCameraView);
-//       }
-//     }
-//   }, []);
-
-//   /**
-//    * Reset the camera to the last saved position
-//    */
-//   const onResetViewport = () => {
-//     if (_cameraControlRef.current) {
-//       if (visualiser.defaultCameraView) {
-//         const camera = _cameraControlRef.current;
-//         _setCameraPosition(camera, visualiser.defaultCameraView, true);
-//       }
-//     }
-//   };
-
-//   /**
-//    * Helper to set the camera position to a certain view.
-//    * @param camera
-//    * @param view
-//    * @param animate
-//    */
-//   const _setCameraPosition = (camera: CameraControls, view: Visualiser3DCameraView, animate?: boolean) => {
-//     const [x, y, z] = view.position;
-//     const [tx, ty, tz] = view.target;
-//     camera.setLookAt(x, y, z, tx, ty, tz, animate);
-//   };
-
-//   // Select all objects of that fixture group
-//   const selectedObjectIds = activeFixtureGroupId
-//     ? fixtures.filter((f) => f.fixtureGroupId === activeFixtureGroupId).map((f) => f.id)
-//     : undefined;
-
-//   // For view-only mode
-//   const getAttributeAssignmentsOfAFixtureGroup = (fixtureGroupId: string): AttributeAssignment[] => {
-//     const fixtureGroupAssignment = fixtureGroupsAssignment[fixtureGroupId];
-//     if (!fixtureGroupAssignment) return [];
-
-//     return Object.values(fixtureGroupAssignment.assignment);
-//   };
-//   const getSpecificAttributeGivenTheType = (
-//     fixtureGroupId: string,
-//     attributeType: string,
-//   ): AttributeAssignment | undefined => {
-//     const assignments = getAttributeAssignmentsOfAFixtureGroup(fixtureGroupId);
-//     return assignments.find((assignment) => assignment.type === attributeType);
-//   };
-
-//   /**
-//    * Get the attributes for a given Fixture.
-//    *
-//    * Guaranteed to never return DynamicValueType.
-//    *
-//    * @param fixture
-//    * @param attribute
-//    * @returns
-//    */
-//   const getAttribute = (
-//     fixture: Fixture,
-//     attribute: AttributeTypes,
-//   ): Exclude<ValueAssignment[typeof attribute], DynamicValueType> | PositionOption | undefined => {
-//     const attributeAssignment = getSpecificAttributeGivenTheType(fixture.fixtureGroupId, attribute);
-
-//     // DynamicValueType checking
-//     if (attribute === AttributeTypes.PRESET_POSITION && attributeAssignment) {
-//       // If the attribute is a position, we need to return the position object, not just the ID
-//       const positionOptionId = attributeAssignment.value[AttributeTypes.PRESET_POSITION]?.id;
-
-//       if (!positionOptionId) {
-//         return { pan: 0, tilt: 0 } satisfies PositionOption;
-//       }
-
-//       return (
-//         visualiser.fixtureAttributeMapping[fixture.fixtureGroupId]?.[AttributeTypes.PRESET_POSITION]?.[
-//           positionOptionId
-//         ]?.[fixture.id] ?? ({ pan: 0, tilt: 0 } satisfies PositionOption)
-//       );
-//     }
-
-//     const hasPresetColour =
-//       getSpecificAttributeGivenTheType(fixture.fixtureGroupId, AttributeTypes.PRESET_COLOUR) !== undefined;
-
-//     // We will never return a DynamicValueType here (checked above)
-//     if (attribute === AttributeTypes.PRESET_INTENSITY && hasPresetColour) {
-//       // we're trying to find the intensity AND the colour attribute exists
-//       // Special case: if colour doesn't exist, set intensity to 0. This is because we require both colour and intensity.
-//       // (Note: some fixtures in real life don't need a colour set first, for example CMY fixtures will show white if a colour is not selected. However, let's just assume this case for now)
-//       const colourAssignment = getSpecificAttributeGivenTheType(
-//         fixture.fixtureGroupId,
-//         AttributeTypes.PRESET_COLOUR,
-//       )!.value;
-
-//       if (!hasAValue(AttributeTypes.PRESET_COLOUR, colourAssignment)) {
-//         return undefined;
-//       }
-//     }
-
-//     return attributeAssignment
-//       ? (attributeAssignment.value[attribute] as Exclude<ValueAssignment[typeof attribute], DynamicValueType>)
-//       : undefined;
-//   };
-
-//   return (
-//     <Flex className={classes["preview-container"]}>
-//       <Box style={{ width: "100%", maxWidth: "calc(95vh * 4/3)", minWidth: 0 }}>
-//         <Group align="start" style={{ flexWrap: "nowrap" }}>
-//           {/* Specifically allow the view to shrink, because if we don't, and we allow it to expand, it will never shrink again (if viewport changes) */}
-//           <Box style={{ flex: 1, minWidth: 0 }}>
-//             <AspectRatio flex={1} ratio={4 / 3}>
-//               <MantineProvider
-//                 forceColorScheme="dark"
-//                 getRootElement={() => document.getElementById("preview-viewer") || document.body}
-//               >
-//                 <Box
-//                   id="preview-viewer"
-//                   className={classes["preview-viewer"]}
-//                   // ref={containerRef}
-//                   style={{ position: "relative", width: "100%", height: "100%" }}
-//                 >
-//                   <Suspense
-//                     fallback={
-//                       <LoadingOverlay
-//                         visible
-//                         loaderProps={{
-//                           type: "bars",
-//                         }}
-//                       />
-//                     }
-//                   >
-//                     <Canvas
-//                       frameloop="demand"
-//                       gl={createVisualiser3DRenderer}
-//                       onCreated={configureVisualiser3DRenderer}
-//                       shadows="percentage"
-//                       camera={{
-//                         position: visualiser.defaultCameraView?.position || [0, 2, 5],
-//                         fov: 70,
-//                         near: 0.1,
-//                         far: 100,
-//                       }}
-
-//                       onMouseDown={(event) => {
-//                         // Prevent browser middle-click autoscrolling.
-//                         if (event.button === 1) {
-//                           event.preventDefault();
-//                         }
-//                       }}
-//                       onAuxClick={(event) => {
-//                         if (event.button === 1) {
-//                           event.preventDefault();
-//                         }
-//                       }}
-//                     >
-//                       <StagePreview3D
-//                         environment={environment}
-//                         fixtures={fixtures}
-//                         stageElements={visualiser.objects3d || []}
-//                         selectedObjectIds={selectedObjectIds}
-//                         onObjectSelect={undefined} // noop, selecting of cubiods not allowed
-//                         cameraRef={cameraControlRef}
-//                         onCameraMove={() => publishCameraPosition()}
-//                         onCameraRest={() => publishCameraPosition(true)}
-//                         onFixtureSelect={onFixtureSelect}
-
-//                         updateStageElement={() => {}} // noop
-//                         gui={null} // no GUI for static
-
-//                         isViewOnly
-//                         getAttribute={getAttribute}
-
-//                         transitionTime={transitionTime}
-//                       />
-//                     </Canvas>
-//                   </Suspense>
-//                   {/* Transition status */}
-//                   {transitionPercent < 100 && (
-//                     <Box
-//                       style={{
-//                         position: "absolute",
-//                         top: "1rem",
-//                         right: "1rem",
-//                         width: "250px",
-//                         display: "flex",
-//                         flexDirection: "column",
-//                         justifyContent: "end",
-//                         gap: "0.5rem",
-//                       }}
-//                     >
-//                       <Progress transitionDuration={transitionTimeRef.current} value={transitionPercent} />
-//                       <Text style={{ textAlign: "right" }}> {transitionTimeRef.current}ms </Text>
-//                     </Box>
-//                   )}
-//                   {/* Help button */}
-//                   <Box style={{ position: "absolute", top: "1rem", left: "1rem" }}>
-//                     <HoverCard
-//                       position="left"
-//                       shadow="md"
-//                       styles={{
-//                         dropdown: {
-//                           backgroundColor: "var(--mantine-color-dark-6)",
-//                           borderColor: "var(--mantine-color-dark-4)",
-//                         },
-//                       }}
-//                     >
-//                       <HoverCard.Target>
-//                         <Button
-//                           variant="transparent"
-//                           color="white"
-//                           size="sm"
-//                           leftSection={<IconHelpCircle size={16} />}
-//                         >
-//                           Help
-//                         </Button>
-//                       </HoverCard.Target>
-//                       <HoverCard.Dropdown
-//                         style={{
-//                           color: "white",
-//                         }}
-//                       >
-//                         <Stack>
-//                           <Group gap="xs">
-//                             <IconTransfer width="1rem" />
-//                             <Text>
-//                               <Code fz="md" bg="var(--mantine-color-dark-8)">
-//                                 Right Click and Drag
-//                               </Code>{" "}
-//                               to move the view around
-//                             </Text>
-//                           </Group>
-//                           <Group gap="xs">
-//                             <IconRotate360 width="1rem" />
-//                             <Text>
-//                               <Code fz="md" bg="var(--mantine-color-dark-8)">
-//                                 Left Click and Drag
-//                               </Code>{" "}
-//                               to rotate the view
-//                             </Text>
-//                           </Group>
-//                           <Group gap="xs">
-//                             <IconZoomPan width="1rem" />
-//                             <Text>
-//                               <Code fz="md" bg="var(--mantine-color-dark-8)">
-//                                 Scroll
-//                               </Code>{" "}
-//                               to zoom in and out
-//                             </Text>
-//                           </Group>
-//                           <Divider />
-//                           <Text>
-//                             You can{" "}
-//                             <Code fz="md" bg="var(--mantine-color-dark-8)">
-//                               Left Click
-//                             </Code>{" "}
-//                             on a light to change its settings.
-//                           </Text>
-//                         </Stack>
-//                       </HoverCard.Dropdown>
-//                     </HoverCard>
-//                   </Box>
-//                   <Box></Box>
-//                   <Box></Box>
-//                   <Group style={{ position: "absolute", bottom: "1rem", right: "1rem" }}>
-//                     <Button size="xs" onClick={onResetViewport} variant="outline" color="gray">
-//                       {" "}
-//                       Reset view
-//                     </Button>
-//                   </Group>
-//                 </Box>
-//               </MantineProvider>
-//             </AspectRatio>
-//           </Box>
-//           {controls && (
-//             <Box className={classes["preview-controls"]}>
-//               {/* <VisualiserControls stageElements={stageElements} fixtureGroups={fixtureGroups} stageRef={stageRef} /> */}
-//               {controls}
-//             </Box>
-//           )}
-//         </Group>
-//       </Box>
-//     </Flex>
-//   );
-// };
+  return (
+    <Box className={classes["preview-viewer"]} style={{ position: "relative", width: "100%", height: "100%" }}>
+      <Suspense fallback={<LoadingOverlay visible loaderProps={{ type: "bars" }} />}>
+        <Canvas
+          gl={createVisualiser3DRenderer}
+          onCreated={configureVisualiser3DRenderer}
+          shadows="percentage"
+          camera={{
+            position: visualiser.defaultCameraView?.position || [0, 2, 5],
+            fov: 70,
+            near: 0.1,
+            far: 100,
+          }}
+          onMouseDown={(event) => {
+            // Prevent browser middle-click autoscrolling.
+            if (event.button === 1) event.preventDefault();
+          }}
+          onAuxClick={(event) => {
+            if (event.button === 1) event.preventDefault();
+          }}
+        >
+          <StagePreview3D
+            isViewOnly
+            eventId={eventId}
+            environment={environment}
+            fixtures={fixtures}
+            fixtureTemplates={event.fixtureTemplates}
+            stageElements={visualiser.objects3d || []}
+            cameraRef={cameraControlRef}
+            updateStageElement={() => {}} // view only
+            gui={null} // no editing panel
+          />
+        </Canvas>
+      </Suspense>
+    </Box>
+  );
+};

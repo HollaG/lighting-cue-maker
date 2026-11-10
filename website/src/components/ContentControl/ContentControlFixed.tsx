@@ -65,7 +65,7 @@ export const ContentControlFixed = ({
   const { colorScheme } = useMantineColorScheme();
 
   return (
-    <Group>
+    <Group style={{ width: "stretch" }}>
       {showTitle ? (
         <Title order={3} flex={1}>
           Lyrics

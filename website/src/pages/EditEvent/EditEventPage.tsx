@@ -34,14 +34,25 @@ export const EditEventPage = () => {
     <Container size="fluid" py="4rem">
       <Container size="xl">
         <Group mb="2rem">
-          <Button
-            type="button"
-            leftSection={<IconArrowLeft width="1rem" />}
-            variant="transparent"
-            onClick={() => navigate({ to: "/" })}
-          >
-            Back to home
-          </Button>
+          {!eventId ? (
+            <Button
+              type="button"
+              leftSection={<IconArrowLeft width="1rem" />}
+              variant="transparent"
+              onClick={() => navigate({ to: "/" })}
+            >
+              Back to home
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              leftSection={<IconArrowLeft width="1rem" />}
+              variant="transparent"
+              onClick={() => navigate({ to: `/events/${eventId}` })}
+            >
+              Back to event
+            </Button>
+          )}
           <Flex flex={1} />
         </Group>
       </Container>

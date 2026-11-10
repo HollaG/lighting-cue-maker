@@ -1,0 +1,50 @@
+/* ClickableCardBase: CardBase's look, behaving like a button. */
+.clickable {
+  /* Reset native <button> styles so it looks like CardBase. */
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: visible;
+  user-select: none;
+
+  /* Same backgrounds as CardBase: dark-7 in dark mode; white, or lime when active, in light mode. */
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 80ms ease;
+
+  @mixin hover {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+
+  &:active:not([data-disabled]) {
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 2px;
+  }
+
+  &[data-active] {
+    background-color: light-dark(var(--mantine-color-lime-light), var(--mantine-color-dark-7));
+    border-color: light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected));
+
+    @mixin hover {
+      background-color: light-dark(var(--mantine-color-lime-light-hover), var(--mantine-color-dark-6));
+    }
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.6;
+
+    @mixin hover {
+      background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+    }
+  }
+}

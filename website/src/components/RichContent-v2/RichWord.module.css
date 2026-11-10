@@ -1,0 +1,198 @@
+/* Special: for spaces, expand the space slightly so it's easier to click */
+.space {
+
+  width: calc(1rem / 2);
+  height: stretch;
+
+  &:hover {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+.lyric,
+.space {
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+
+  &.mode-cue:hover {
+    background-color: light-dark(var(--cue-color--light), var(--cue-color--dark));
+  }
+
+  &.mode-bump:hover {
+    background-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
+  }
+
+  &.mode-timing:hover {
+    background-color: light-dark(var(--mantine-color-grape-2), var(--mantine-color-grape-9));
+  }
+}
+
+/* Reset lyric margin for all lyric types */
+.lyric,
+.cue,
+.bump {
+  margin: 0rem;
+
+  transition: all 0.2s ease-in-out;
+}
+
+
+.indicator {
+  transition: all 0.2s ease-in-out;
+}
+
+.richContainer {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0);
+
+  /* Embedded indicators, e.g. Cue 2 or Bump Flash White */
+  &.indicator,
+  .indicator {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+
+    height: stretch;
+    text-align: center;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-width: 4px;
+    border-style: solid;
+
+
+  }
+
+  /* Content within a Rich Container should be surrounded with a border */
+  .lyric {
+    border-width: 4px;
+    border-style: solid;
+    margin: 0rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    text-align: center;
+  }
+
+
+  /* For when the Rich Content is selected */
+  &.selected {
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.15);
+    transform: translate(-2px, -2px);
+
+    &.is-cue {
+      /* background-color: light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected));
+      border-color: light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected)); */
+
+      .lyric,
+      .indicator,
+      &.indicator {
+        border-color: light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected));
+      }
+
+      .indicator,
+      &.indicator {
+        background-color: light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected));
+        border-color: light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected));
+
+      }
+    }
+
+    /* &.is-bump {
+
+    }
+
+    &.is-timing {
+
+    } */
+  }
+}
+
+.is-cue {
+
+
+  .lyric,
+  .indicator,
+  &.indicator {
+    border-color: light-dark(var(--cue-color--light), var(--cue-color--dark));
+  }
+
+  .indicator,
+  &.indicator {
+    background-color: light-dark(var(--cue-color--light), var(--cue-color--dark));
+    border-color: light-dark(var(--cue-color--light), var(--cue-color--dark));
+
+  }
+
+}
+
+.is-bump {
+
+
+  .lyric,
+  .indicator,
+  &.indicator {
+    border-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
+  }
+
+  .indicator,
+  &.indicator {
+    background-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
+    border-color: light-dark(var(--mantine-color-pink-2), var(--mantine-color-pink-9));
+
+  }
+
+}
+
+
+.is-timing {
+
+
+  .lyric,
+  .indicator,
+  &.indicator {
+    border-color: teal;
+  }
+
+  .indicator,
+  &.indicator {
+    background-color: teal;
+    border-color: teal;
+
+  }
+
+}
+
+/* sub,
+sup {
+  position: relative;
+  display: block;
+  font-size: .5em;
+  line-height: 1.2;
+}
+
+sub {
+  top: .3em
+}
+
+span:has(sub),
+span:has(sup) {
+  display: inline-block
+} */
+
+sup {
+  vertical-align: baseline;
+  position: relative;
+  top: -0.4em;
+}
+
+sub {
+  /* text-decoration: underline; */
+  font-weight: bolder;
+
+  vertical-align: baseline;
+  position: relative;
+  top: 0.4em;
+}

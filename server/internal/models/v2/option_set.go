@@ -20,6 +20,32 @@ const (
 	OptionSetTypeCustom OptionSetType = "Custom"
 )
 
+// Request DTOs. Keep these in sync with website/src/query-v2/option-sets.
+
+// UpsertOptionSetReq: no id = create, id = update. A field left out keeps its
+// current value (on create: its default; name, selectionType and type are
+// required on create). The event and fixture group come from the URL.
+type UpsertOptionSetReq struct {
+	Id            *string                 `json:"id,omitempty"`
+	Name          *string                 `json:"name,omitempty"`
+	Description   *string                 `json:"description,omitempty"`
+	SortOrder     *int                    `json:"sortOrder,omitempty"`
+	Priority      *int                    `json:"priority,omitempty"`
+	SelectionType *OptionSetSelectionType `json:"selectionType,omitempty"`
+	Type          *OptionSetType          `json:"type,omitempty"`
+	// Selectable[]. Replaced as a whole.
+	Selectables          datatypes.JSON `json:"selectables,omitempty"`
+	DefaultSelectableIds []string       `json:"defaultSelectableIds,omitempty"`
+	Required             *bool          `json:"required,omitempty"`
+}
+
+// UpsertOptionSetsReq is the body of POST /api/v2/events/{eventId}/fixture-groups/{fixtureGroupId}/option-sets.
+type UpsertOptionSetsReq struct {
+	OptionSets []UpsertOptionSetReq `json:"optionSets"`
+}
+
+// DB model
+
 // OptionSet is a group of Selectables (options).
 type OptionSet struct {
 	Base

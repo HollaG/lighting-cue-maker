@@ -17,10 +17,13 @@ import (
 	"lighting-cue-maker/server/internal/api/v1/ping"
 	"lighting-cue-maker/server/internal/api/v1/qlc"
 	"lighting-cue-maker/server/internal/api/v1/visualiser"
+	cuesv2 "lighting-cue-maker/server/internal/api/v2/cues"
 	"lighting-cue-maker/server/internal/api/v2/eventscope"
 	eventsv2 "lighting-cue-maker/server/internal/api/v2/events"
 	"lighting-cue-maker/server/internal/api/v2/fixturegroups"
 	"lighting-cue-maker/server/internal/api/v2/fixturetemplates"
+	itemsv2 "lighting-cue-maker/server/internal/api/v2/items"
+	"lighting-cue-maker/server/internal/api/v2/optionsets"
 	"lighting-cue-maker/server/internal/api/v2/patchedfixtures"
 	visualiserv2 "lighting-cue-maker/server/internal/api/v2/visualiser"
 
@@ -74,6 +77,9 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		eventsv2.RegisterScoped(event)
 		patchedfixtures.Register(event.Group("/patched-fixtures"))
 		fixturegroups.Register(event.Group("/fixture-groups"))
+		itemsv2.Register(event.Group("/items"))
+		cuesv2.Register(event.Group("/items/:itemId/cues"))
+		optionsets.Register(event.Group("/fixture-groups/:fixtureGroupId/option-sets"))
 		visualiserv2.Register(event.Group("/visualiser"))
 	}
 }

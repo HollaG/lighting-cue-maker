@@ -2,6 +2,7 @@ package patchedfixtures
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -204,4 +205,114 @@ func getPatchedFixtures(c *gin.Context) {
 	response.OK(c, map[string]any{
 		"fixtures": fixtures,
 	})
+}
+
+func deletePatchedFixture(c *gin.Context) {
+	eventId := eventscope.EventId(c)
+	fixtureId := c.Param("fixtureId")
+
+	if _, err := uuid.Parse(fixtureId); err != nil {
+		response.BadRequest(c, "Invalid fixture id", nil)
+		return
+	}
+
+	// 2 jobs, one transaction: delete the fixture, and remove it from every
+	// fixture group that references it (membership and grid cells).
+	err := database.DB().Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("event_id = ? AND id = ?", eventId, fixtureId).Delete(&modelsv2.PatchedFixture{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+
+		// Only the groups that list this fixture (jsonb containment).
+		var groups []modelsv2.FixtureGroup
+		if err := tx.Where("event_id = ? AND fixture_ids @> to_jsonb(?::text)", eventId, fixtureId).
+			Find(&groups).Error; err != nil {
+			return err
+		}
+
+		for _, g := range groups {
+			grid, err := gridWithoutFixture(g.Grid, fixtureId)
+			if err != nil {
+				return err
+			}
+			g.FixtureIds = withoutId(g.FixtureIds, fixtureId)
+			g.Grid = grid
+			// Select lists the columns so a null Grid is written too.
+			if err := tx.Model(&g).Select("FixtureIds", "Grid").Updates(&g).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		response.NotFound(c, "Fixture not found in this event")
+		return
+	}
+	if err != nil {
+		response.InternalError(c, "Failed to delete fixture")
+		return
+	}
+
+	response.OK(c, map[string]any{
+		"deleted": true,
+	})
+}
+
+func withoutId(ids []string, id string) []string {
+	kept := make([]string, 0, len(ids))
+	for _, other := range ids {
+		if other != id {
+			kept = append(kept, other)
+		}
+	}
+	return kept
+}
+
+// gridWithoutFixture drops the fixture's cells from a group's grid. Other grid
+// fields (cols, rows, ...) are kept as they were. A nil grid stays nil.
+func gridWithoutFixture(grid datatypes.JSON, fixtureId string) (datatypes.JSON, error) {
+	if len(grid) == 0 || string(grid) == "null" {
+		return grid, nil
+	}
+
+	var parsed map[string]json.RawMessage
+	if err := json.Unmarshal(grid, &parsed); err != nil {
+		return nil, err
+	}
+	rawCells, ok := parsed["cells"]
+	if !ok {
+		return grid, nil
+	}
+
+	var cells []json.RawMessage
+	if err := json.Unmarshal(rawCells, &cells); err != nil {
+		return nil, err
+	}
+	kept := make([]json.RawMessage, 0, len(cells))
+	for _, cell := range cells {
+		var ref struct {
+			FixtureId string `json:"fixtureId"`
+		}
+		if err := json.Unmarshal(cell, &ref); err != nil {
+			return nil, err
+		}
+		if ref.FixtureId != fixtureId {
+			kept = append(kept, cell)
+		}
+	}
+
+	newCells, err := json.Marshal(kept)
+	if err != nil {
+		return nil, err
+	}
+	parsed["cells"] = newCells
+	out, err := json.Marshal(parsed)
+	if err != nil {
+		return nil, err
+	}
+	return datatypes.JSON(out), nil
 }

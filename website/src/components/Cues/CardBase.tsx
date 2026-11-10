@@ -1,5 +1,6 @@
 import { Card, useMantineColorScheme, type CardProps } from "@mantine/core";
 import React from "react";
+import classes from "./CardBase.module.css";
 
 export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; shadow?: CardProps["shadow"] }> = ({
   isActive,
@@ -32,3 +33,36 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
     </Card>
   );
 };
+
+/**
+ * CardBase that behaves like a button: a real <button> (keyboard and screen readers work), with hover, pressed,
+ * focus, active (selected) and disabled states. Styles live in CardBase.module.css.
+ */
+export const ClickableCardBase = ({
+  isActive = false,
+  children,
+  shadow,
+  onClick,
+  disabled = false,
+}: {
+  isActive?: boolean;
+  children: React.ReactNode;
+  shadow?: CardProps["shadow"];
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  disabled?: boolean;
+}) => (
+  <Card
+    component="button"
+    type="button"
+    withBorder
+    shadow={shadow}
+    className={classes.clickable}
+    onClick={onClick}
+    disabled={disabled}
+    aria-pressed={isActive}
+    data-active={isActive || undefined}
+    data-disabled={disabled || undefined}
+  >
+    {children}
+  </Card>
+);

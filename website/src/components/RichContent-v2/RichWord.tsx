@@ -1,0 +1,254 @@
+import React from "react";
+import { Box, Text, Center, Group, HoverCard, Button } from "@mantine/core";
+import clsx from "clsx";
+import classes from "./RichWord.module.css";
+import { convertUuidForDatabase } from "../../utils/convertUuid";
+import { type InputMode } from "../../store/slices/lyricsSlice";
+import { useAppStore } from "../../store/appStore";
+
+interface RichWordProps {
+  word: string;
+  index1: number;
+  index2: number;
+  /** This cue's number in the item (1-based), shown on the marker. */
+  cueNumber: number;
+  isSelected?: boolean;
+  inputMode: InputMode | "disabled";
+}
+
+const richIdentifiers = ["cue"] as const;
+
+const BOTTOM_GAP = "4px";
+
+const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, inputMode }: RichWordProps) => {
+  const setIsMovingCue = useAppStore((state) => state.setIsMovingCue);
+  const setCurrentlySelectedCueId = useAppStore((state) => state.setCurrentlySelectedCueId);
+
+  const onCueMove = (cueId: string) => {
+    setIsMovingCue(true);
+    setCurrentlySelectedCueId(cueId);
+  };
+
+  if (word === "-")
+    return (
+      <Text variant="lyric" style={{ marginBottom: BOTTOM_GAP }}>
+        {word}
+      </Text>
+    );
+
+  // Check to see if it's
+  for (const idType of richIdentifiers) {
+    const isTagStart = word.startsWith(`{${idType}Id=`) || word.startsWith(`<${idType}Id=`);
+    if (isTagStart) {
+      const isTagEnd = word.endsWith(`=${idType}Id}`) || word.endsWith(`=${idType}Id>`);
+      // stand-alone
+      if (isTagEnd) {
+        // e.g. {cueId=xyz=cueId} or <cueId=xyz=cueId>
+        const rawId = word.split(/[{<]/)[1].split(`=${idType}Id`)[0].replace(`${idType}Id=`, "");
+        const id = convertUuidForDatabase(rawId);
+
+        return (
+          <HoverCard shadow="md" withArrow position="top" id={`ref-${id}`}>
+            <HoverCard.Target>
+              <Center
+                data-action={`select-${idType}`}
+                {...{ [`data-${idType}-id`]: id }}
+                className={clsx(
+                  classes["richContainer"],
+                  classes[`is-${idType}`],
+                  classes["indicator"],
+                  isSelected ? classes["selected"] : "",
+                )}
+                data-line-index={index1}
+                data-word-index={index2}
+                dangerouslySetInnerHTML={{
+                  __html: getDisplayText(cueNumber),
+                }}
+              />
+            </HoverCard.Target>
+            {inputMode !== "disabled" && (
+              <HoverCard.Dropdown>
+                <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
+                  Move cue
+                </Button>
+              </HoverCard.Dropdown>
+            )}
+          </HoverCard>
+        );
+      }
+
+      // e.g. {cueId=xyz=cueId}hello
+      const regex = new RegExp(`[\\{<]${idType}Id=(.*?)=${idType}Id[\\}>]`);
+      const match = word.match(regex);
+      const id = convertUuidForDatabase(match?.[1] || "");
+      const textContent = word.replace(regex, "");
+
+      return (
+        <HoverCard shadow="md" withArrow position="top" id={`ref-${id}`}>
+          <HoverCard.Target>
+            <Group
+              data-action={`select-${idType}`}
+              {...{ [`data-${idType}-id`]: id }}
+              gap={0}
+              className={clsx(classes["richContainer"], classes[`is-${idType}`], isSelected ? classes["selected"] : "")}
+              data-line-index={index1}
+              data-word-index={index2}
+            >
+              <Text
+                variant="lyric"
+                className={clsx(classes["lyric"])}
+                dangerouslySetInnerHTML={{
+                  __html: textContent,
+                }}
+              ></Text>
+              <Box className={classes["indicator"]}>
+                <Text
+                  dangerouslySetInnerHTML={{
+                    __html: getDisplayText(cueNumber),
+                  }}
+                ></Text>
+              </Box>
+            </Group>
+          </HoverCard.Target>
+          {inputMode !== "disabled" && (
+            <HoverCard.Dropdown>
+              <Button size="xs" variant="light" onClick={() => onCueMove(id)}>
+                Move cue
+              </Button>
+            </HoverCard.Dropdown>
+          )}
+        </HoverCard>
+      );
+    } else {
+      if (word === " ") {
+        return (
+          <Box
+            data-action="add"
+            data-line-index={index1}
+            data-word-index={index2}
+            data-is-space="true"
+            className={clsx(classes["space"], classes[`mode-${inputMode}`])}
+            style={{ marginBottom: BOTTOM_GAP }}
+          >
+            ㅤ
+          </Box>
+        );
+      }
+
+      // return (
+      //   <Text
+      //     data-action="add"
+      //     data-line-index={index1}
+      //     data-word-index={index2}
+      //     data-is-space="false"
+      //     variant="lyric"
+      //     className={clsx(classes["lyric"], classes[`mode-${inputMode}`])}
+      //   >
+      //     {word}
+      //   </Text>
+      // );
+    }
+  }
+  return (
+    <Text
+      data-action="add"
+      data-line-index={index1}
+      data-word-index={index2}
+      data-is-space="false"
+      variant="lyric"
+      className={clsx(classes["lyric"], classes[`mode-${inputMode}`])}
+      style={{ marginBottom: BOTTOM_GAP }}
+      dangerouslySetInnerHTML={{
+        __html: word,
+      }}
+    >
+      {/* {word} */}
+    </Text>
+  );
+};
+
+/*
+// Legacy implementation (cueId only, before loop over richIdentifiers):
+const RichWordInternalLegacy = ({ word, index1, index2, cueNumber, isSelected }: RichWordProps) => {
+  if (word === "-") return <Text variant="lyric">{word}</Text>;
+  if (word.startsWith("<cueId=")) {
+    if (word.endsWith("=cueId>")) {
+      const cueId = convertUuidForDatabase(word.split("<cueId=")[1].split("=cueId>")[0]);
+      return (
+        <Center
+          id={`ref-${cueId}`}
+          data-action="select-cue"
+          data-cue-id={cueId}
+          className={clsx(
+            classes["richContainer"],
+            classes["is-cue"],
+            classes["indicator"],
+            isSelected ? classes["selected"] : "",
+          )}
+        >
+          Cue {cueNumber}
+        </Center>
+      );
+    }
+
+    const textContent = word.replace(/<cueId=.*=cueId>/g, "");
+    const cueId = convertUuidForDatabase(word.match(/<cueId=(.*?)=cueId>/)?.[1] || "");
+
+    return (
+      <Group
+        id={`ref-${cueId}`}
+        data-action="select-cue"
+        data-cue-id={cueId}
+        gap={0}
+        className={clsx(classes["richContainer"], classes["is-cue"], isSelected ? classes["selected"] : "")}
+      >
+        <Text variant="lyric" className={clsx(classes["lyric"])}>
+          {textContent}
+        </Text>
+        <Box className={classes["indicator"]}>
+          <Text>Cue {cueNumber}</Text>
+        </Box>
+      </Group>
+    );
+  } else {
+    if (word === " ") {
+      return (
+        <Box
+          data-action="add"
+          data-line-index={index1}
+          data-word-index={index2}
+          data-is-space="true"
+          className={clsx(classes["space"], classes[`mode-${inputMode}`])}
+        >
+          ㅤ
+        </Box>
+      );
+    }
+
+    return (
+      <Text
+        data-action="add"
+        data-line-index={index1}
+        data-word-index={index2}
+        data-is-space="false"
+        variant="lyric"
+        className={clsx(classes["lyric"], classes[`mode-${inputMode}`])}
+      >
+        {word}
+      </Text>
+    );
+  }
+};
+*/
+
+export const RichWord = React.memo(RichWordInternal, (prevProps, nextProps) => {
+  return (
+    prevProps.word === nextProps.word &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.inputMode === nextProps.inputMode &&
+    prevProps.cueNumber === nextProps.cueNumber
+  );
+});
+
+/** The label on a cue marker, e.g. "#03". */
+const getDisplayText = (cueNumber: number) => `#${cueNumber.toString().padStart(2, "0")}`;

@@ -1,0 +1,534 @@
+// feature[class=Realtime] Event page integration for live queries, cursors and chat
+
+import {
+  Alert,
+  Anchor,
+  Box,
+  Button,
+  Center,
+  Code,
+  Container,
+  Drawer,
+  Flex,
+  FloatingIndicator,
+  Grid,
+  Group,
+  Image,
+  Kbd,
+  Loader,
+  Menu,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+  Title,
+  UnstyledButton,
+} from "@mantine/core";
+import { useAppStore } from "../../store/appStore";
+import classes from "./EventPage.module.css";
+import { RichContentWrapper } from "../../components/RichContent/RichContentWrapper";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// import { CueList } from "./CueList/CueList";
+import { useGetEvent } from "../../query/event/useGetEvent";
+import { useGetItems } from "../../query/item/useGetItems";
+import { useGetItem } from "../../query/item/useGetItem";
+import { type InputMode } from "../../store/slices/lyricsSlice";
+import { useCreateItem } from "../../query/item/useCreateItem";
+import { useUpdateItem } from "../../query/item/useUpdateItem";
+import {
+  IconArrowLeft,
+  IconEdit,
+  IconEye,
+  IconEyeClosed,
+  IconFileExport,
+  IconFileSpreadsheet,
+  IconInfoCircle,
+  IconLayoutSidebarRight,
+  IconLayoutSidebarRightCollapse,
+  IconPlayerPlay,
+} from "@tabler/icons-react";
+import { useDisclosure, useHotkeys, useLocalStorage, type HotkeyItem } from "@mantine/hooks";
+import { sanitize } from "../../utils/sanitize";
+import { ContentControl } from "../../components/ContentControl/ContentControl";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { saveRecentEvent } from "../../utils/recentEvents";
+import { CueList } from "../../sections/ChoreoEvent/CueList/CueList";
+import { QLCConverter } from "../../sections/QLCConverter/QLCConverter";
+
+import QlcLogo from "../../assets/qlc_logo.svg";
+import { useLiveQueryUpdates } from "../../hooks/realtime/useLiveQueryUpdates";
+import { RemoteCursorOverlay } from "../../components/Cursor/RemoteCursorOverlay";
+import { ChatContainer } from "../../components/Chat/ChatContainer";
+import { useActiveCueTracking } from "../../hooks/realtime/useActiveCueTracking";
+import { Acknowledgement } from "../../components/Acknowledgement/Acknowlegement";
+
+export const EventPage = () => {
+  // Realtime tracking stuff on the Event Page includes Live Queries, activeCue
+  useLiveQueryUpdates();
+  useActiveCueTracking();
+  // NOTE: evt is nullable!! remember to check
+
+  const { eventId } = useParams({
+    from: "/events/$eventId/",
+  });
+
+  const { event: evt, isEventLoading } = useGetEvent({ eventId });
+  const loadedEventId = evt?.id;
+  const loadedEventName = evt?.name;
+
+  const [showCueList] = useState(true);
+  const [isPendingCueListRendering] = useState(false);
+
+  useEffect(() => {
+    if (!loadedEventId || !loadedEventName) return;
+
+    // save to localstorage
+    saveRecentEvent({
+      eventId: loadedEventId,
+      eventName: loadedEventName,
+    });
+  }, [loadedEventId, loadedEventName, showCueList]);
+
+  const activeItemId = useAppStore((s) => s.activeItemId);
+  const showCues = useAppStore((s) => s.showCues);
+  const toggleShowCues = useAppStore((s) => s.toggleShowCues);
+
+  // useEffect(() => {
+  //   // begin rendering of cue list
+  //   // startCueListRenderTransition(() => {
+  //   //   setShowCueList(true);
+  //   // });
+  //   if (showCueList) {
+  //     setIsPendingCueListRendering(false);
+  //   }
+  //   setIsPendingCueListRendering(true);
+  //   setShowCueList(false);
+  //   setTimeout(() => {
+  //     setShowCueList(true);
+  //   }, 500);
+  // }, [showCueList, activeItemId, evt]);
+
+  const { items, isItemsLoading } = useGetItems({ eventId });
+
+  const validActiveItemId = items.some((item) => item.id === activeItemId) ? activeItemId : undefined;
+
+  const { item } = useGetItem({ itemId: validActiveItemId ?? undefined });
+
+  const { mutate: createItem, isPending: isItemCreating } = useCreateItem();
+  const { mutate: updateItem } = useUpdateItem();
+
+  const changeActiveItem = useAppStore((s) => s.changeActiveItem);
+  const itemName = useAppStore((s) => s.itemName);
+  const setItemName = useAppStore((s) => s.setItemName);
+  const inputMode = useAppStore((s) => s.inputMode);
+  const setInputMode = useAppStore((s) => s.setInputMode);
+
+  const inputTimingMode = useAppStore((s) => s.inputTimingMode);
+
+  const instantBumpMode = useAppStore((s) => s.instantAddBumpMode);
+  const setDerivedLyrics = useAppStore((s) => s.setDerivedLyrics);
+
+  const [internalRawLyrics, setInternalRawLyrics] = useState<string>("");
+
+  const setIndicatorNumber = useAppStore((s) => s.setIndicatorNumber);
+
+  const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
+  const toggleShowCueIdentifiers = useAppStore((s) => s.toggleShowCueIdentifiers);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Hotkeys for timing indicators
+  useHotkeys([1, 2, 3, 4, 5, 6, 7, 8].map((i): HotkeyItem => [i.toString(), () => setIndicatorNumber(i)]));
+
+  useEffect(() => {
+    const lyrics = item?.rawLyrics ?? "";
+    setInternalRawLyrics(sanitize(lyrics));
+    setDerivedLyrics(sanitize(lyrics));
+  }, [item?.rawLyrics, setDerivedLyrics]);
+
+  // for the Item selection
+  const [rootRef, setRootRef] = useState<HTMLDivElement | null>(null);
+  const [controlsRefs, setControlsRefs] = useState<Record<string, HTMLButtonElement | null>>({});
+
+  const setControlRef = useCallback(
+    (id: string) => (node: HTMLButtonElement | null) => {
+      setControlsRefs((previous) => (previous[id] === node ? previous : { ...previous, [id]: node }));
+    },
+    [],
+  );
+  const onClickFinishAddingLyricsButton = (switchTo: InputMode) => {
+    // setRawLyrics(internalRawLyrics);
+    saveUpdatedRawLyrics();
+    setInputMode(switchTo);
+  };
+
+  const saveUpdatedRawLyrics = () => {
+    if (!activeItemId) return;
+    updateItem({
+      itemId: activeItemId,
+      requestBody: {
+        rawLyrics: internalRawLyrics,
+      },
+    });
+  };
+
+  const onAddItem = () => {
+    if (!evt?.id || !itemName.trim()) return;
+    createItem({
+      eventId: evt.id,
+      name: itemName,
+    });
+  };
+
+  const controls = useMemo(() => {
+    const sorted = [...items];
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+    return sorted.map((item) => (
+      <UnstyledButton
+        key={item.id}
+        className={classes.control}
+        ref={setControlRef(item.id)}
+        onClick={() => {
+          changeActiveItem(item.id);
+        }}
+        mod={{ active: activeItemId === item.id }}
+        p={"xs"}
+      >
+        <span className={classes.controlLabel}>{item.name}</span>
+      </UnstyledButton>
+    ));
+  }, [items, activeItemId, changeActiveItem, setControlRef]);
+
+  const deleteExtraSpaces = () => {
+    setInternalRawLyrics(internalRawLyrics.replaceAll("\n\n\n", "\n\n"));
+  };
+
+  useEffect(() => {
+    if (item?.rawLyrics === "") {
+      setInputMode("raw");
+    }
+  }, [item?.rawLyrics, setInputMode]);
+
+  const navigate = useNavigate();
+  const onEdit = () =>
+    navigate({
+      to: "/events/$eventId/edit",
+      params: { eventId },
+    });
+
+  // QLC+ export controls
+  const [openedQlcExport, { open: openQlcExport, close: closeQlcExport }] = useDisclosure(false);
+
+  // Page size controls
+  const [cueFraction, setCueFraction] = useLocalStorage({ key: "cueFraction", defaultValue: "6" }); // range: 1 - 11
+  const decreaseFraction = () => setCueFraction((prev) => Math.max(1, Number(prev) - 1).toString());
+  const increaseFraction = () => setCueFraction((prev) => Math.min(11, Number(prev) + 1).toString());
+  const canDecreaseFraction = Number(cueFraction) > 3;
+  const canIncreaseFraction = Number(cueFraction) < 9;
+
+  // RUN mode
+  const onGoRunMode = () => {
+    navigate({
+      to: "/events/$eventId/run",
+      params: { eventId },
+    });
+  };
+
+  return (
+    <Box>
+      {/* Live elements */}
+      <RemoteCursorOverlay itemId={validActiveItemId ?? undefined} />
+
+      <ChatContainer key={validActiveItemId} itemId={validActiveItemId || undefined} />
+
+      <Container size={"xl"} mt="4rem">
+        <Group mb="2rem">
+          <Button
+            type="button"
+            leftSection={<IconArrowLeft width="1rem" />}
+            variant="transparent"
+            onClick={() => navigate({ to: "/" })}
+          >
+            Back to home
+          </Button>
+          <Flex flex={1} />
+
+          <Menu
+            width={200}
+            shadow={"sm"}
+            withArrow
+            position="bottom"
+            transitionProps={{ transition: "pop", duration: 100 }}
+          >
+            <Menu.Target>
+              <Button variant="subtle">Settings</Button>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Label>View options</Menu.Label>
+              <Menu.Item
+                leftSection={
+                  showCues ? <IconLayoutSidebarRightCollapse width="1rem" /> : <IconLayoutSidebarRight width="1rem" />
+                }
+                onClick={toggleShowCues}
+              >
+                {showCues ? "Hide " : "Show "}cues panel
+              </Menu.Item>
+              <Menu.Item
+                leftSection={showCueIdentifiers ? <IconEyeClosed width="1rem" /> : <IconEye width="1rem" />}
+                onClick={toggleShowCueIdentifiers}
+              >
+                {showCueIdentifiers ? "Hide " : "Show "}cue identifiers
+              </Menu.Item>
+              <Menu.Item leftSection={<IconPlayerPlay width="1rem" />} onClick={onGoRunMode}>
+                Enter RUN mode
+              </Menu.Item>
+              <Menu.Divider />
+
+              <Menu.Label>Export options</Menu.Label>
+
+              <Menu.Sub>
+                <Menu.Sub.Target>
+                  <Menu.Sub.Item leftSection={<IconFileExport width="1rem" />}>Export</Menu.Sub.Item>
+                </Menu.Sub.Target>
+                <Menu.Sub.Dropdown>
+                  <Menu.Item leftSection={<Image src={QlcLogo} width={16} height={16} />} onClick={openQlcExport}>
+                    QLC+ export
+                  </Menu.Item>
+                  <Menu.Item leftSection={<IconFileSpreadsheet width={"1rem"} />}>.xlsx sheet (WIP)</Menu.Item>
+                </Menu.Sub.Dropdown>
+              </Menu.Sub>
+
+              <Menu.Divider />
+              <Menu.Label>Event options</Menu.Label>
+              <Menu.Item leftSection={<IconEdit width="1rem" />} onClick={onEdit}>
+                Edit event
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+
+        {isEventLoading ? (
+          <Center>
+            <Loader type="bars" />
+          </Center>
+        ) : (
+          <Box my="xl" ml={0}>
+            <Stack>
+              <Group gap={0}>
+                <Title>{evt?.name}</Title>
+              </Group>
+              <Text> {evt?.description}</Text>
+              {evt?.externalLink && (
+                <Anchor href={evt?.externalLink} target="_blank">
+                  {evt.externalLink}
+                </Anchor>
+              )}
+            </Stack>
+          </Box>
+        )}
+        {items.length !== 0 ? (
+          <>
+            {/* <Group justify="center"> */}
+            <div className={classes.root} ref={setRootRef}>
+              {controls}
+
+              <FloatingIndicator
+                target={activeItemId ? controlsRefs[activeItemId] : null}
+                parent={rootRef}
+                className={classes.indicator}
+              />
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onAddItem();
+              }}
+            >
+              <Center mt="sm">
+                <Text size="sm"> Please select an item, or add a new item/band/act: </Text>
+                <TextInput
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  ml={"md"}
+                  placeholder="Your item name"
+                  rightSectionWidth={"80px"}
+                  rightSection={
+                    <Button
+                      type="submit"
+                      size="xs"
+                      variant="transparent"
+                      disabled={isItemsLoading}
+                      loading={isItemCreating}
+                      loaderProps={{ type: "bars" }}
+                    >
+                      Add item
+                    </Button>
+                  }
+                />
+              </Center>
+            </form>
+          </>
+        ) : (
+          <Center mt={"xl"}>
+            <Stack>
+              <Text size="sm"> to get started, enter your item/band/act's name: </Text>
+              <TextInput
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                ml={"md"}
+                placeholder="Your item name"
+                rightSectionWidth={"80px"}
+                rightSection={
+                  <Button size="xs" variant="transparent" onClick={() => onAddItem()}>
+                    Add item
+                  </Button>
+                }
+              />
+            </Stack>
+          </Center>
+        )}
+      </Container>
+      <Container fluid={showCues} size={!showCues ? "xl" : undefined} pb="12rem">
+        {!!item && (
+          <Grid px="xl" mt="1.5rem" align="stretch" style={{ position: "relative" }}>
+            <Grid.Col span={showCues ? 12 - Number(cueFraction) : 12}>
+              <Stack style={{ minHeight: "100vh", paddingBottom: "70rem" }}>
+                <Group>
+                  <Flex flex={1}>
+                    <ContentControl
+                      showCues={showCues}
+                      cueFraction={cueFraction}
+                      deleteExtraSpaces={deleteExtraSpaces}
+                      eventId={evt?.id || ""}
+                      onFinishAddingLyrics={onClickFinishAddingLyricsButton}
+                    />
+                  </Flex>
+                </Group>
+                <Alert
+                  variant="light"
+                  color="lime"
+                  icon={<IconInfoCircle />}
+                  style={{
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  {inputMode === "raw" ? (
+                    <Stack gap={"xs"}>
+                      <span>
+                        You can add any lyrics / spoken word during your set here. Once done, change to{" "}
+                        <Code>Cue mode</Code> to start adding cues.
+                      </span>
+                      <span>
+                        Do not modify or delete the embedded cue data! (<Code>{`{cueId=...=cueId}`}</Code>)
+                      </span>
+                      <span>Tip: use a hyphen (-) if you need to separate syllables.</span>
+                    </Stack>
+                  ) : (
+                    ""
+                  )}
+
+                  {inputMode === "cue" ? (
+                    <Stack gap="xs">
+                      <span>Click on any word or space to add a cue at that point.</span>
+                      <span>
+                        Tip: need to put a cue on a syllable? Use a hyphen (-) in <Code>Edit lyrics</Code> mode to
+                        separate the syllables.
+                      </span>
+                    </Stack>
+                  ) : (
+                    <></>
+                  )}
+
+                  {inputMode === "bump" ? (
+                    <Stack gap="xs">
+                      <span>
+                        Click on any word or space to add a bump for <Code>{instantBumpMode?.name}</Code> at that point.
+                        A bump is an instantaneous effect that will flash only at the point you specify.
+                      </span>
+                      Click again to remove.
+                    </Stack>
+                  ) : (
+                    <></>
+                  )}
+
+                  {inputMode === "timing" ? (
+                    <Stack gap="xs">
+                      <span>
+                        {" "}
+                        First, set the beat number you want to add by pressing <Kbd>1</Kbd> ... <Kbd>8</Kbd> on your
+                        keyboard, or use the "Beat to add" input.
+                      </span>
+                      <span>
+                        {" "}
+                        Then, click on any word or space to indicate the <Code>{inputTimingMode} beat</Code>.
+                      </span>
+                    </Stack>
+                  ) : (
+                    <></>
+                  )}
+                </Alert>
+                {inputMode === "raw" && (
+                  <Textarea
+                    variant="unstyled"
+                    autosize
+                    className={classes["lyric-input"]}
+                    value={internalRawLyrics}
+                    onChange={(e) => setInternalRawLyrics(e.target.value)}
+                    placeholder="Paste all your lyrics here! You can also include band introductions or other improv stuff."
+                    styles={{
+                      input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+                    }}
+                    minRows={14}
+                  />
+                )}
+
+                {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
+                  <div ref={contentRef} id="focus-trap-lyrics" tabIndex={-1} style={{ outline: "none" }}>
+                    <RichContentWrapper itemId={item.id} />
+                  </div>
+                )}
+              </Stack>
+            </Grid.Col>
+            {showCues && evt ? (
+              <Grid.Col span={Number(cueFraction)} className={classes.cueColumn}>
+                <Box className={classes.cueScrollArea}>
+                  <CueList
+                    key={item.id}
+                    itemId={item.id}
+                    rawLyrics={item.rawLyrics ?? ""}
+                    event={evt}
+                    showCueList={showCueList}
+                    isPendingRendering={isPendingCueListRendering}
+                    canIncreaseWidth={canIncreaseFraction}
+                    canDecreaseWidth={canDecreaseFraction}
+                    onIncreaseWidth={increaseFraction}
+                    onDecreaseWidth={decreaseFraction}
+                  />
+                </Box>
+              </Grid.Col>
+            ) : (
+              <></>
+            )}
+          </Grid>
+        )}
+      </Container>
+
+      <Container size="xl" mt="4rem">
+        <Acknowledgement />
+      </Container>
+
+      <Drawer
+        keepMounted
+        position="right"
+        size={"full"}
+        opened={openedQlcExport}
+        onClose={closeQlcExport}
+        title="QLC+ export"
+      >
+        {evt && <QLCConverter event={evt} />}
+      </Drawer>
+    </Box>
+  );
+};
