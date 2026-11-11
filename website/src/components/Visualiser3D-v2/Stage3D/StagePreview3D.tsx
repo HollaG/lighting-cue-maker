@@ -21,6 +21,7 @@ import { useUpsertPatchedFixtures } from "../../../query-v2/patched-fixtures/use
 import { Logger } from "../../../utils/logger";
 import type { Placement } from "../../../utils/visualiser-v2-selection";
 import { Visualiser3DSelectionTransform } from "../Elements/Visualiser3DSelectionTransform";
+import { VisualiserStats } from "../VisualiserStats";
 
 const logger = new Logger("StagePreview3D");
 
@@ -48,6 +49,7 @@ export const StagePreview3D = ({
   fixtureTemplates,
 
   isViewOnly = false,
+  dmxValuesByFixtureId,
 }: {
   eventId: string;
 
@@ -69,6 +71,8 @@ export const StagePreview3D = ({
   isViewOnly?: boolean;
 
   fixtures: PatchedFixture[];
+
+  dmxValuesByFixtureId?: Record<string, (number | null)[]>;
 }) => {
   const checkerTexture = useTexture(CheckerTexture);
 
@@ -133,6 +137,8 @@ export const StagePreview3D = ({
 
   return (
     <>
+      {/* FPS overlay: `window.stats = true` in the dev console. */}
+      <VisualiserStats />
       <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
       {/* The floor */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
@@ -162,6 +168,7 @@ export const StagePreview3D = ({
         <Visualiser3DFixture
           key={fixture.id}
           fixture={fixture}
+          dmxValues={dmxValuesByFixtureId?.[fixture.id]}
           fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
           isSelected={!!selectedObjectIds?.includes(fixture.id)}
           onSelect={(id, additive) => onObjectSelect?.(id, additive)}

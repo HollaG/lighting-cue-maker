@@ -6,6 +6,7 @@ import type { FixtureTemplate } from "../../../types-v2/fixtureTemplates";
 import { getFixture3DPosition, getFixture3DRotation } from "../../../utils/visualiser-v2";
 import { getBeamAngle, getFixtureBody, getHeadLayouts, type HeadLayout } from "../../../utils/visualiser-v2-heads";
 import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
+import { decodeHeadStates } from "../../../utils/visualiser-v2-decoder";
 
 /** What one head shows right now. Later this comes from the decoder (DMX → per-head state). */
 export type HeadState = {
@@ -28,6 +29,7 @@ const OUTLINE = 0.004;
 export const Visualiser3DFixture = ({
   fixture,
   fixtureTemplate,
+  dmxValues,
   isSelected,
   onSelect,
   onMeshChange,
@@ -37,6 +39,9 @@ export const Visualiser3DFixture = ({
 }: {
   fixture: PatchedFixture;
   fixtureTemplate: FixtureTemplate | undefined;
+
+  /** This fixture's DMX values, one per slot of its mode. Missing = no cue data (off, or white while selected). */
+  dmxValues?: (number | null)[];
 
   isSelected: boolean;
   /** `additive`: shift/ctrl/cmd was held, so add to or remove from the selection instead of replacing it. */
@@ -59,8 +64,19 @@ export const Visualiser3DFixture = ({
   );
   const beamAngle = getBeamAngle(fixtureTemplate?.properties);
 
-  // Until cues drive the lights: selected fixtures light up white in the editor so the LD can see them.
-  const states = heads.map((_, i) => headStates?.[i] ?? (isSelected && !viewOnly ? SELECTED : OFF));
+  // To let LDs view the fixtures better when building the scene, set the intensity to SELECTED when in build mode (viewOnly = false)
+  // Else, follow DMX values.
+
+  // DMX → one state per head (same order as `heads`). Only redone when this fixture's values or template change.
+  const decodedStates = useMemo(
+    () => (dmxValues ? decodeHeadStates(dmxValues, fixtureTemplate, fixture.modeId) : undefined),
+    [dmxValues, fixtureTemplate, fixture.modeId],
+  );
+
+  // Per head: selected in build mode → white; else the `headStates` prop if given, else the DMX, else off.
+  const states = heads.map((_, i) =>
+    isSelected && !viewOnly ? SELECTED : (headStates?.[i] ?? decodedStates?.[i] ?? OFF),
+  );
 
   return (
     <mesh
@@ -132,6 +148,7 @@ const HeadLens = ({ head, state, round }: { head: HeadLayout; state: HeadState; 
  * - 1 head: a spotlight (can cast a shadow, if StagePreview3D gave this fixture one of the few shadow slots).
  * - 2+ heads: a panel light (rectAreaLight) per head. No shadows, and no per-light texture, so they don't hit
  *   WebGPU's texture limit; they still cost per pixel × light.
+ *   Temporarily: one CombinedPanelLight for the whole fixture instead (see below).
  */
 const HeadLights = ({
   heads,
@@ -148,11 +165,13 @@ const HeadLights = ({
     return <SpotHeadLight head={heads[0]} state={states[0]} beamAngle={beamAngle} castShadow={castShadow} />;
   }
   return (
+    // Temporarily change to use ONE RectAreaLight for ALL heads, to save on GPU costs.
+    // <CombinedPanelLight heads={heads} states={states} />
     <>
-      {heads.map((head, i) =>
+      {heads.map((head, i) => (
         // An off head adds nothing; skip it instead of paying for it in every pixel.
-        states[i].intensity > 0 ? <PanelHeadLight key={head.index} head={head} state={states[i]} /> : null,
-      )}
+        <PanelHeadLight key={head.index} head={head} state={states[i]} />
+      ))}
     </>
   );
 };
@@ -201,3 +220,63 @@ const PanelHeadLight = ({ head, state }: { head: HeadLayout; state: HeadState })
     color={state.colour}
   />
 );
+
+/**
+ * TEMPORARY: one panel light for all of a multi-head fixture's heads, instead of one PanelHeadLight per head
+ * (4 bars × 8 heads = 32 area lights → 4). The lenses still show each head's own colour; only the light thrown onto
+ * the floor/objects/haze is blended.
+ *
+ * - Spans the heads' bounding box, so its total output matches the per-head panels (an area light's output is
+ *   intensity × area): the average intensity over the whole span ≈ the heads' sum.
+ * - Always mounted, even at intensity 0. Adding or removing lights changes every lit material's shader, which is
+ *   what caused the lag spike the first time lights came on.
+ */
+const CombinedPanelLight = ({ heads, states }: { heads: HeadLayout[]; states: HeadState[] }) => {
+  // Bounding box of the lenses on the top face (local X and Z). Only changes with the layout.
+  const { position, size } = useMemo(() => {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (const head of heads) {
+      minX = Math.min(minX, head.position[0] - head.size[0] / 2);
+      maxX = Math.max(maxX, head.position[0] + head.size[0] / 2);
+      minZ = Math.min(minZ, head.position[2] - head.size[1] / 2);
+      maxZ = Math.max(maxZ, head.position[2] + head.size[1] / 2);
+    }
+    return {
+      position: [(minX + maxX) / 2, heads[0].position[1] + 0.001, (minZ + maxZ) / 2] as [number, number, number],
+      size: [maxX - minX, maxZ - minZ] as [number, number],
+    };
+  }, [heads]);
+
+  const state = averageHeadStates(states);
+
+  return (
+    <rectAreaLight
+      layers-mask={VOLUMETRIC_LIGHT_MASK}
+      position={position}
+      // Same orientation as PanelHeadLight: local -Z turned to +Y, height runs along local Z.
+      rotation={[Math.PI / 2, 0, 0]}
+      width={size[0]}
+      height={size[1]}
+      intensity={state.intensity}
+      color={state.colour}
+    />
+  );
+};
+
+/**
+ * The light all heads give together, as one HeadState: each head's colour × its intensity, averaged, then split back
+ * into a full-brightness colour + intensity (like the decoder's toHeadState).
+ * Done in linear colour (THREE.Color converts the hex), so red + blue heads average to a half-bright purple.
+ */
+const averageHeadStates = (states: HeadState[]): HeadState => {
+  const sum = new THREE.Color(0, 0, 0);
+  for (const s of states) sum.add(new THREE.Color(s.colour).multiplyScalar(s.intensity / 100));
+  sum.multiplyScalar(1 / states.length);
+
+  const peak = Math.max(sum.r, sum.g, sum.b);
+  if (peak <= 0) return OFF;
+  return { colour: "#" + sum.multiplyScalar(1 / peak).getHexString(), intensity: peak * 100 };
+};

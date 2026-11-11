@@ -27,7 +27,7 @@ import type { Fixture, PositionOption } from "../../types/fixtures";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useHotkey } from "@tanstack/react-hotkeys";
 
@@ -66,6 +66,7 @@ import type { PatchedFixture } from "../../types-v2/patchedFixture";
 import { CardBase } from "../Cues/CardBase";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
 import { useGetFixtureGroups } from "../../query-v2/fixture-groups/useGetFixtureGroups";
+import { ResolutionScaleSelect, useVisualiserDpr } from "./ResolutionScaleSelect";
 
 export const Visualiser3D = ({
   visualiser,
@@ -91,6 +92,8 @@ export const Visualiser3D = ({
   const [gui, setGui] = useState<GUI | null>(null);
 
   const { event } = useGetEvent(eventId);
+  // Resolution scale, picked with the select below the viewer.
+  const dpr = useVisualiserDpr();
 
   useEffect(() => {
     if (!guiContainerRef.current) return;
@@ -545,6 +548,7 @@ export const Visualiser3D = ({
                   <Canvas
                     gl={createVisualiser3DRenderer}
                     onCreated={configureVisualiser3DRenderer}
+                    dpr={dpr}
                     shadows="percentage"
                     camera={{
                       position: visualiser.defaultCameraView?.position || [0, 2, 5],
@@ -785,6 +789,11 @@ export const Visualiser3D = ({
         }
       </Box> */}
       </Flex>
+
+      {/* Resolution scale, centred below the viewer. */}
+      <Group justify="center">
+        <ResolutionScaleSelect />
+      </Group>
     </Stack>
   );
 };
@@ -799,16 +808,19 @@ export const StaticVisualiser3D = ({
   visualiser,
   eventId,
   fixtures,
+  dmxValuesByFixtureId,
 }: {
   visualiser: Visualiser;
   eventId: string;
   fixtures: PatchedFixture[];
 
-  dmxValues?: {
+  dmxValuesByFixtureId?: {
     [fixtureId: string]: (number | null)[];
   };
 }) => {
   const { event } = useGetEvent(eventId);
+  // Resolution scale. The select for it lives on the page (e.g. EventPage), shared through localStorage.
+  const dpr = useVisualiserDpr();
 
   // Start at the LD's saved view. A callback ref, so this runs once the camera controls exist.
   const cameraControlRef = useCallback((node: CameraControls | null) => {
@@ -819,7 +831,7 @@ export const StaticVisualiser3D = ({
   }, []);
 
   // No editing, so no state: read the saved environment directly.
-  const environment = visualiser.config3d || { haze: 0.5, ambientLight: 0.5 };
+  const environment = useMemo(() => visualiser.config3d || { haze: 0.5, ambientLight: 0.5 }, [visualiser.config3d]);
 
   if (!event) return null;
 
@@ -829,6 +841,7 @@ export const StaticVisualiser3D = ({
         <Canvas
           gl={createVisualiser3DRenderer}
           onCreated={configureVisualiser3DRenderer}
+          dpr={dpr}
           shadows="percentage"
           camera={{
             position: visualiser.defaultCameraView?.position || [0, 2, 5],
@@ -854,6 +867,7 @@ export const StaticVisualiser3D = ({
             cameraRef={cameraControlRef}
             updateStageElement={() => {}} // view only
             gui={null} // no editing panel
+            dmxValuesByFixtureId={dmxValuesByFixtureId}
           />
         </Canvas>
       </Suspense>

@@ -45,6 +45,7 @@ import { Lyrics } from "../../components/Event/Lyrics";
 import { Cues } from "../../components/Event/Cues";
 import { popTransition } from "../../utils/animations";
 import { VisualiserInputProcessor } from "../../components/Visualiser3D-v2/Processing/VisualiserInputProcessor";
+import { ResolutionScaleSelect } from "../../components/Visualiser3D-v2/ResolutionScaleSelect";
 
 const logger = new Logger("EventPage.tsx");
 
@@ -373,6 +374,18 @@ export const EventPage = () => {
         <Button size="xs" variant="light" onClick={toggleDrawerHandler.bind(null, toggleCues, "cues")}>
           {openedCues ? "Hide" : "Show"} cues
         </Button>
+      </Box>
+
+      {/* Visualiser resolution scale */}
+      <Box
+        style={{
+          position: "absolute",
+          right: "0.5rem",
+          bottom: "0.5rem",
+          zIndex: 1000,
+        }}
+      >
+        <ResolutionScaleSelect />
       </Box>
 
       {/* Cues drawer */}

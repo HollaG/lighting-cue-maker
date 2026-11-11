@@ -50,7 +50,15 @@ export const VisualiserInputProcessor = ({
     logger.debug("dmx values", dmxValues);
   }, [dmxValues]);
 
-  return <StaticVisualiser3D key={visualiser.id} visualiser={visualiser} eventId={eventId} fixtures={fixtures} />;
+  return (
+    <StaticVisualiser3D
+      key={visualiser.id}
+      visualiser={visualiser}
+      eventId={eventId}
+      fixtures={fixtures}
+      dmxValuesByFixtureId={dmxValues ?? undefined}
+    />
+  );
 };
 type ResolverInput = {
   cue: Cue;

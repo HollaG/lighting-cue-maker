@@ -1,0 +1,19 @@
+/* Middle of the visualiser's right edge. */
+.stats {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.9;
+  /* Don't steal clicks or drags from the scene. */
+  pointer-events: none;
+}
+
+/* stats-gl positions each panel with inline styles; stack them in the column instead. */
+.stats canvas {
+  position: static !important;
+}
