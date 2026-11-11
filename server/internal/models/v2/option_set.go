@@ -18,6 +18,8 @@ const (
 	OptionSetTypePosition  OptionSetType = "Position"
 	// Pattern and movement selectables use Custom (simple dropdown).
 	OptionSetTypeCustom OptionSetType = "Custom"
+	// A plain dropdown of names. No effect on DMX.
+	OptionSetTypeValueless OptionSetType = "Valueless"
 )
 
 // Request DTOs. Keep these in sync with website/src/query-v2/option-sets.

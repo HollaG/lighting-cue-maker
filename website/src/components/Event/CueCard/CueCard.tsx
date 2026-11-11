@@ -8,6 +8,7 @@ import {
   Input,
   InputBase,
   Menu,
+  Select,
   SimpleGrid,
   Slider,
   Stack,
@@ -37,7 +38,8 @@ import type { FixtureGroup } from "../../../types-v2/fixtureGroups";
 import { OptionSetType, SelectableType, type OptionSet } from "../../../types-v2/optionSet";
 import { useQueryClient } from "@tanstack/react-query";
 import { makeGetCuesQueryKey } from "../../../query-v2/cues/useGetCues";
-import { IconHelpCircle, IconInfoSquareRounded } from "@tabler/icons-react";
+import { IconCaretDown, IconHelpCircle, IconInfoSquareRounded } from "@tabler/icons-react";
+import { popTransition } from "../../../utils/animations";
 
 /**
  * One cue in the cues panel: header actions (copy, preview, delete) and comments.
@@ -277,6 +279,15 @@ const CueCardFixtureGroupOptionSetPickers = ({ fixtureGroup, cue }: { fixtureGro
   );
 };
 
+/**
+ * Wraps the select/slider/whatever interactive components that users interact with when they
+ * change cue settings.
+ *
+ * This component has some shared logic, such as setting the enabled/disabled state, etc.
+ *
+ * @param param0
+ * @returns
+ */
 const OptionSetWrapper = ({ optionSet, eventId, cue }: { cue: Cue; optionSet: OptionSet; eventId: string }) => {
   const queryClient = useQueryClient();
   const { mutateAsync: upsertCue } = useUpsertCue(eventId, cue.itemId);
@@ -285,7 +296,7 @@ const OptionSetWrapper = ({ optionSet, eventId, cue }: { cue: Cue; optionSet: Op
   // The list of selectables for this option set
   const possibleSelectableIdsForOptionSet = optionSet.selectables.map((s) => s.id);
 
-  // the list of selectables currently selected
+  // the list of selectables currently selected for this option set.
   const selectedSelectableIds = cue.selectableIds.filter((id) => possibleSelectableIdsForOptionSet.includes(id));
 
   /** Replaces this option set's picks in the cue, keeping every other option set's picks. */
@@ -523,9 +534,55 @@ const OptionSetPositionType = () => {
   return <></>;
 };
 
+// Valueless refers to option sets that don't affect the DMX, so are just plain options.
+const OptionSetValuelessType = ({
+  optionSet,
+  selectedSelectableIds,
+  onChange,
+  disabled,
+}: OptionSetTypeToComponentProps) => {
+  // in the Valueless option set, all selectables should be of type SelectableType.VALUELESS. Sanity filter.
+  const valuelessSelectables = optionSet.selectables.filter((s) => s.type === SelectableType.VALUELESS);
+
+  const data = valuelessSelectables.map((s) => ({ value: s.id, label: s.name }));
+
+  // users can select from these selectables. (only 1 for now)
+  const selectedValue =
+    selectedSelectableIds.length > 0 ? valuelessSelectables.find((s) => s.id === selectedSelectableIds[0]) : undefined;
+
+  const onValueChange = (newSelectableId: string | undefined) => {
+    if (newSelectableId) {
+      onChange([newSelectableId]);
+    } else {
+      onChange([]);
+    }
+  };
+
+  return (
+    <Select
+      comboboxProps={{ transitionProps: popTransition }}
+      searchable
+      label={<OptionSetLabel optionSet={optionSet} />}
+      data={data}
+      placeholder={"Pick a value"}
+      size="sm"
+
+      value={selectedValue?.id ?? null}
+      onChange={(newValue) => onValueChange(newValue ?? undefined)}
+
+      clearable
+      rightSection={<IconCaretDown width="0.75rem" />}
+      clearSectionMode="clear"
+      required={optionSet.required}
+      disabled={disabled}
+      // readOnly={readOnly}
+    />
+  );
+};
 const OptionSetTypeToComponentMap = {
   [OptionSetType.INTENSITY]: OptionSetIntensityType,
   [OptionSetType.COLOUR]: OptionSetColourType,
   [OptionSetType.CUSTOM]: OptionSetCustomType,
   [OptionSetType.POSITION]: OptionSetPositionType,
+  [OptionSetType.VALUELESS]: OptionSetValuelessType,
 };

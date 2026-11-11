@@ -76,6 +76,19 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
           onClick={() => onAddOptionSet(OptionSetType.CUSTOM)}
           disabled={shouldDisableAdding(optionSets, OptionSetType.CUSTOM)}
         />
+
+        <OptionSetCreateOption
+          header="Single select"
+          description="Create generic selection sets that don't affect the visualiser."
+          onClick={() => onAddOptionSet(OptionSetType.VALUELESS)}
+          disabled={shouldDisableAdding(optionSets, OptionSetType.VALUELESS)}
+        />
+        {/* <OptionSetCreateOption
+          header="Multi select"
+          description="Create generic selection sets that don't affect the visualiser."
+          onClick={() => onAddOptionSet(OptionSetType.CUSTOM)}
+          disabled={shouldDisableAdding(optionSets, OptionSetType.CUSTOM)}
+        /> */}
       </SimpleGrid>
       <Divider />
       <Stack>

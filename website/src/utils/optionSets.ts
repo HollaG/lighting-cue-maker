@@ -11,6 +11,7 @@ export const MAX_COUNTS = {
   [OptionSetType.COLOUR]: 1,
   [OptionSetType.POSITION]: 1,
   [OptionSetType.CUSTOM]: Infinity,
+  [OptionSetType.VALUELESS]: Infinity,
 };
 
 export const shouldDisableAdding = (optionSets: OptionSet[], type: OptionSetType): boolean => {
@@ -18,6 +19,12 @@ export const shouldDisableAdding = (optionSets: OptionSet[], type: OptionSetType
   return existingCount >= MAX_COUNTS[type];
 };
 
+/**
+ * Get the default name of an option set, given a Type
+ *
+ * @param type
+ * @returns
+ */
 export const optionSetTypeToName = (type: OptionSetType): string => {
   switch (type) {
     case "Colour":
@@ -26,6 +33,8 @@ export const optionSetTypeToName = (type: OptionSetType): string => {
       return "Intensity";
     case "Position":
       return "Position";
+    case "Valueless":
+      return "Selection";
     case "Custom":
       return "Custom";
     default:
@@ -41,6 +50,8 @@ export const optionSetTypeToDescription = (type: OptionSetType): string => {
       return "All fixtures in the group will be at the selected brightness level";
     case "Position":
       return "All fixtures in the group will point at the selected position";
+    case "Valueless":
+      return "";
     case "Custom":
       return "";
     default:
@@ -64,6 +75,7 @@ export const getPremadeSelectablesForOptionSetType = (type: OptionSetType): Sele
 };
 
 // Some option set types are required to be filled in, some not
+// Set the default values; LDs can change them alter.
 export const optionSetTypeRequired = (type: OptionSetType): boolean => {
   switch (type) {
     case "Colour":
@@ -73,6 +85,8 @@ export const optionSetTypeRequired = (type: OptionSetType): boolean => {
     case "Position":
       return true;
     case "Custom":
+      return false;
+    case "Valueless":
       return false;
     default:
       return false;

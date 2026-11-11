@@ -11,6 +11,7 @@ import { CardBase } from "../../../../Cues/CardBase";
 import { CustomTextInput } from "../../../../CustomTextInput/CustomTextInput";
 import { IntensityOptionSet } from "./IntensityOptionSet";
 import { ColourOptionSet } from "./ColourOptionSet";
+import { ValuelessOptionSet } from "./ValuelessOptionSet";
 
 const logger = new Logger("OptionSetContainer.tsx");
 
@@ -60,6 +61,9 @@ export const OptionSetContainer = ({
       break;
     case OptionSetType.COLOUR:
       content = <ColourOptionSet optionSet={optionSet} upsertOptionSets={upsertOptionSets} />;
+      break;
+    case OptionSetType.VALUELESS:
+      content = <ValuelessOptionSet optionSet={optionSet} upsertOptionSets={upsertOptionSets} />;
       break;
   }
   return (

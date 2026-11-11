@@ -55,6 +55,8 @@ export const OptionSetType = {
   COLOUR: "Colour",
   POSITION: "Position",
   CUSTOM: "Custom",
+  /** A plain dropdown of names. No effect on DMX. */
+  VALUELESS: "Valueless",
 } as const;
 export type OptionSetType = (typeof OptionSetType)[keyof typeof OptionSetType];
 
@@ -78,6 +80,7 @@ export const SelectableType = {
   CUSTOM: "AppCustom",
   EFFECT_PATTERN: "AppSelectableEffectPattern",
   EFFECT_MOVEMENT: "AppSelectableEffectMovement",
+  VALUELESS: "AppValueless",
 } as const;
 export type SelectableType = (typeof SelectableType)[keyof typeof SelectableType];
 
@@ -148,6 +151,11 @@ export type MovementSelectable = SelectableBase & {
   spread: number;
 };
 
+/** A label only: the resolver ignores it, so it has no effect on DMX, preview or export. */
+export type ValuelessSelectable = SelectableBase & {
+  type: typeof SelectableType.VALUELESS;
+};
+
 /** One option inside an option set. `type` decides which fields it has. */
 export type Selectable =
   | IntensitySelectable
@@ -155,7 +163,8 @@ export type Selectable =
   | PositionSelectable
   | CustomSelectable
   | PatternSelectable
-  | MovementSelectable;
+  | MovementSelectable
+  | ValuelessSelectable;
 
 // --- Values used by selectables ---------------------------------------------------
 
