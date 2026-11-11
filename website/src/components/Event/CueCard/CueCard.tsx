@@ -249,7 +249,10 @@ export const CueCard = ({
                   <ActionIcon
                     variant={cueHasOverrides ? "light" : "outline"}
                     size="sm"
-                    onClick={() => setIsDmxDrawerOpen(true)}
+                    onClick={() => {
+                      setIsDmxDrawerOpen(true);
+                      setSelectedCueId(cue.id);
+                    }}
                   >
                     {cueHasOverrides ? <IconEdit size={"0.75rem"} /> : <IconPlus size={"0.75rem"} />}
                   </ActionIcon>
@@ -270,9 +273,13 @@ export const CueCard = ({
                   <OptionSetWrapper key={optionSet.id} optionSet={optionSet} eventId={fixtureGroup.eventId} cue={cue} />
                 ))} */}
 
-                {!cueHasOverrides && (
+                {!cueHasOverrides ? (
                   <Text c="dimmed" size="sm">
                     No custom settings yet
+                  </Text>
+                ) : (
+                  <Text c="dimmed" size="sm">
+                    Some values are overriden, click Edit to see them
                   </Text>
                 )}
               </Stack>

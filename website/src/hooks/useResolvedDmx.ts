@@ -18,12 +18,16 @@ const logger = new Logger("useResolvedDmx", "cyan");
 export const useResolvedDmx = (
   eventId: string,
   fixtures: PatchedFixture[],
-): { dmxValues: DmxValuesByFixtureId | null; dmxValuesWithOverrides: DmxValuesByFixtureId | null } => {
+): {
+  dmxValues: DmxValuesByFixtureId | null;
+  dmxValuesWithOverrides: DmxValuesByFixtureId | null;
+  isLoading: boolean;
+} => {
   const currentlySelectedCueId = useAppStore((state) => state.currentlySelectedCueId);
   const activeItemId = useAppStore((state) => state.activeItemId);
 
-  const { visualiserData } = useGetVisualiserData(eventId);
-  const { cue } = useGetCue(eventId, activeItemId, currentlySelectedCueId);
+  const { visualiserData, isVisualiserDataLoading } = useGetVisualiserData(eventId);
+  const { cue, isCueLoading } = useGetCue(eventId, activeItemId, currentlySelectedCueId);
 
   // Derived from the cue + setup data, so no state needed. Only recomputed when one of those changes.
   const dmxValues = useMemo(() => {
@@ -53,5 +57,6 @@ export const useResolvedDmx = (
     logger.debug("dmx values", dmxValues);
   }, [dmxValues]);
 
-  return { dmxValues, dmxValuesWithOverrides };
+  const isLoading = isVisualiserDataLoading || isCueLoading;
+  return { dmxValues, dmxValuesWithOverrides, isLoading };
 };

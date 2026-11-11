@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Group, OverflowList, Scroller, Stack, Text } from "@mantine/core";
+import { ActionIcon, Box, Button, Divider, Group, OverflowList, Scroller, Stack, Text } from "@mantine/core";
 import type { useResolvedDmx } from "../../hooks/useResolvedDmx";
 import { useCallback, useEffect, useState } from "react";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
@@ -9,6 +9,7 @@ import { Logger } from "../../utils/logger";
 import { DMXControl } from "./DMXControl/DMXControl";
 import { useGetCue } from "../../query-v2/cues/useGetCue";
 import { useUpsertCue } from "../../query-v2/cues/useUpsertCue";
+import { IconChevronDown } from "@tabler/icons-react";
 
 const logger = new Logger("DMXControlWrapper", "red");
 
@@ -23,6 +24,7 @@ export const DMXControlWrapper = ({
 }) => {
   const currentlyViewingFixtureIds = useAppStore((s) => s.currentlyViewingFixtureIds);
   const setCurrentlyViewingFixtureIds = useAppStore((s) => s.setCurrentlyViewingFixtureIds);
+  const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
 
   const cueId = useAppStore((s) => s.currentlySelectedCueId);
   const { cue } = useGetCue(eventId, itemId, cueId);
@@ -96,28 +98,33 @@ export const DMXControlWrapper = ({
   );
   return (
     <Stack gap="xs" style={{ height: "100%", overflow: "hidden" }}>
-      <Scroller>
-        <Group gap={"xs"} style={{ flexWrap: "nowrap" }} ml="xs">
-          {patchedFixtures.map((fixture) => (
-            <Button
-              size="xs"
-              key={fixture.id}
-              color={currentlyViewingFixtureIds.includes(fixture.id) ? "lime" : "gray"}
-              variant={currentlyViewingFixtureIds.includes(fixture.id) ? "light" : "outline"}
-              // Toggle: remove if already viewing, otherwise add (no duplicates).
-              onClick={() =>
-                setCurrentlyViewingFixtureIds(
-                  currentlyViewingFixtureIds.includes(fixture.id)
-                    ? currentlyViewingFixtureIds.filter((id) => id !== fixture.id)
-                    : [...currentlyViewingFixtureIds, fixture.id],
-                )
-              }
-            >
-              {fixture.name}
-            </Button>
-          ))}
-        </Group>
-      </Scroller>
+      <Group style={{ width: "100%", flex: "0 0 auto" }} align="flex-start">
+        <Scroller flex={1}>
+          <Group gap={"xs"} style={{ flexWrap: "nowrap" }} ml="xs">
+            {patchedFixtures.map((fixture) => (
+              <Button
+                size="xs"
+                key={fixture.id}
+                color={currentlyViewingFixtureIds.includes(fixture.id) ? "lime" : "gray"}
+                variant={currentlyViewingFixtureIds.includes(fixture.id) ? "light" : "outline"}
+                // Toggle: remove if already viewing, otherwise add (no duplicates).
+                onClick={() =>
+                  setCurrentlyViewingFixtureIds(
+                    currentlyViewingFixtureIds.includes(fixture.id)
+                      ? currentlyViewingFixtureIds.filter((id) => id !== fixture.id)
+                      : [...currentlyViewingFixtureIds, fixture.id],
+                  )
+                }
+              >
+                {fixture.name}
+              </Button>
+            ))}
+          </Group>
+        </Scroller>
+        <ActionIcon mr="xs" variant="transparent" onClick={() => setIsDmxDrawerOpen(false)}>
+          <IconChevronDown size="1rem" />
+        </ActionIcon>
+      </Group>
 
       <Box
         style={{

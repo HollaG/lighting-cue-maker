@@ -83,7 +83,7 @@ export const EventPage = () => {
   const { items, isItemsLoading } = useGetItems(eventId);
   const { visualiser, isVisualiserLoading } = useGetVisualiser(eventId);
   const { patchedFixtures } = useGetPatchedFixtures(eventId);
-  const { dmxValuesWithOverrides: dmxValuesByFixture } = useResolvedDmx(eventId, patchedFixtures);
+  const { dmxValuesWithOverrides: dmxValuesByFixture, isLoading } = useResolvedDmx(eventId, patchedFixtures);
 
   const [selectedItemId, setSelectedItemId] = useLocalStorage({
     key: `${eventId}-item-selected`,
@@ -201,9 +201,15 @@ export const EventPage = () => {
 
         styles={{ body: { height: "100%", padding: 0, paddingTop: "var(--mantine-spacing-xs)" } }} // force the drawer body to be 100% height, never overflow
       >
-        {!dmxValuesByFixture ? (
+        {isLoading ? (
           <Center h="100%">
             <Loader type="bars" />
+          </Center>
+        ) : !dmxValuesByFixture ? (
+          <Center h="100%">
+            <Text c="dimmed" size="sm">
+              Select a cue to control the fixtures
+            </Text>
           </Center>
         ) : (
           <DMXControlWrapper itemId={selectedItemId} eventId={eventId} dmxValuesByFixtureId={dmxValuesByFixture} />

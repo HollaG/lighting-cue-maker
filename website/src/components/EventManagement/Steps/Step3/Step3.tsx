@@ -1,6 +1,10 @@
-import { Box, Button, Group, MultiSelect, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import { Box, Button, Group, Loader, MultiSelect, NumberInput, Select, SimpleGrid, Stack, Text, Title } from "@mantine/core";
 import { useState } from "react";
 import { useGetEvent } from "../../../../query-v2/events/useGetEvent";
+import { useUpdateEvent } from "../../../../query-v2/events/useUpdateEvent";
+import { useGetFixtureTemplates } from "../../../../query-v2/fixture-templates/useGetFixtureTemplates";
+import { useUpsertPatchedFixtures } from "../../../../query-v2/patched-fixtures/useUpsertPatchedFixtures";
+import type { UpsertPatchedFixture } from "../../../../types-v2/patchedFixture";
 import { useGetFixtureGroups } from "../../../../query-v2/fixture-groups/useGetFixtureGroups";
 import { useUpsertFixtureGroups } from "../../../../query-v2/fixture-groups/useUpsertFixtureGroups";
 import { useDeletePatchedFixture } from "../../../../query-v2/patched-fixtures/useDeletePatchedFixture";
@@ -23,6 +27,54 @@ export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string
   const { mutateAsync: upsertFixtureGroups } = useUpsertFixtureGroups(eventId);
 
   const fixtureTemplates = event?.fixtureTemplates ?? [];
+
+  // --- Add fixtures (saved straight away) ---------
+  // Picks from the global library; the server copies a template into the event the first time it's used.
+  const { fixtureTemplates: libraryTemplates, isFixtureTemplatesLoading } = useGetFixtureTemplates();
+  const { mutateAsync: updateEvent, isPending: isUpdateEventPending } = useUpdateEvent();
+  const { mutateAsync: upsertPatchedFixtures, isPending: isUpsertFixturesPending } = useUpsertPatchedFixtures(eventId);
+
+  const librarySelectData = Object.entries(
+    libraryTemplates.reduce(
+      (acc, template) => {
+        (acc[template.manufacturer] ??= []).push({ label: template.name, value: template.id });
+        return acc;
+      },
+      {} as Record<string, { label: string; value: string }[]>,
+    ),
+  ).map(([manufacturer, items]) => ({ group: manufacturer, items }));
+
+  const [newTemplateId, setNewTemplateId] = useState<string | null>(null);
+  const newTemplate = libraryTemplates.find((t) => t.id === newTemplateId);
+  const [newModeId, setNewModeId] = useState<string | null>(null);
+  const [newCount, setNewCount] = useState<number>(1);
+
+  const onAddFixtures = async () => {
+    if (!newTemplate || !newModeId || newCount < 1) return;
+    try {
+      // Copy the template into the event first, so the new fixtures' fixtureTemplateId/modeId resolve.
+      // The server only adds templates the event doesn't have yet, so this is safe to send every time.
+      await updateEvent({ eventId, req: { fixtureTemplateIds: [newTemplate.id] } });
+
+      const fixture: UpsertPatchedFixture = {
+        eventId,
+        name: `${newTemplate.manufacturer} ${newTemplate.name}`,
+        fixtureTemplateId: newTemplate.id,
+        modeId: newModeId,
+        posX: 0,
+        posY: 0,
+        posZ: 0,
+        rotX: 0,
+        rotY: 0,
+        rotZ: 0,
+      };
+      await upsertPatchedFixtures(Array.from({ length: newCount }, () => ({ ...fixture })));
+
+      setNewCount(1); // keep the template and mode picked, so adding more of the same is quick
+    } catch {
+      // api errors handled by api.ts
+    }
+  };
 
   const patchedFixturesGroupedByManufacturer = patchedFixtures.reduce(
     (acc, fixture) => {
@@ -84,6 +136,40 @@ export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string
               {" "}
               Fixture list{" "}
             </Title>
+            <Group gap="xs" mb="md" wrap="nowrap" align="flex-end">
+              <Select
+                disabled={isFixtureTemplatesLoading}
+                placeholder="Select a fixture model"
+                data={librarySelectData}
+                searchable
+                flex={1}
+                rightSection={isFixtureTemplatesLoading ? <Loader size="xs" type="bars" /> : undefined}
+                value={newTemplateId}
+                onChange={(id) => {
+                  setNewTemplateId(id);
+                  // the old mode belongs to the previous template; default to the new one's first mode
+                  setNewModeId(libraryTemplates.find((t) => t.id === id)?.modes[0]?.id ?? null);
+                }}
+              />
+              <Select
+                w="8rem"
+                data={newTemplate ? newTemplate.modes.map((mode) => ({ value: mode.id, label: mode.name })) : []}
+                placeholder="Mode"
+                disabled={!newTemplate}
+                allowDeselect={false}
+                value={newModeId}
+                onChange={setNewModeId}
+              />
+              <NumberInput w="4rem" value={newCount} onChange={(v) => setNewCount(Number(v) || 1)} min={1} />
+              <Button
+                variant="light"
+                onClick={onAddFixtures}
+                disabled={!newTemplate || !newModeId}
+                loading={isUpdateEventPending || isUpsertFixturesPending}
+              >
+                Add
+              </Button>
+            </Group>
             <Stack gap="xs">
               {patchedFixtures.map((fixture) => (
                 <FixtureItem

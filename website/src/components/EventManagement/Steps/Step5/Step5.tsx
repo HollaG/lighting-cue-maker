@@ -69,7 +69,7 @@ export const Step5 = ({ eventId, onDone }: { eventId: string; onDone: () => void
         <Title order={4} flex={1}>
           Configure presets
         </Title>
-        <Text> Here, you can set up your presets for easy cue configuration.</Text>
+        <Text> Here, you can set up your presets for users to easily configure cues.</Text>
 
         <Grid>
           <Grid.Col span={3}>

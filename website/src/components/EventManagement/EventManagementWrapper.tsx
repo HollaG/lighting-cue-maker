@@ -2,7 +2,6 @@ import { Button, Center, Group, Stack, Stepper } from "@mantine/core";
 import { useIsMutating } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Step1 } from "./Steps/Step1/Step1";
-import { Step2 } from "./Steps/Step2/Step2";
 import { Step3 } from "./Steps/Step3/Step3";
 import { Step4 } from "./Steps/Step4/Step4";
 import { Step5 } from "./Steps/Step5/Step5";
@@ -17,12 +16,8 @@ const STEPS: {
     description: "Basic event details",
   },
   {
-    label: "Fixtures",
-    description: "Manage lights",
-  },
-  {
-    label: "Fixture groups",
-    description: "Configure fixture groupings",
+    label: "Fixtures & groups",
+    description: "Add lights and group them",
   },
   {
     label: "Fixture placements",
@@ -61,10 +56,6 @@ export const EventManagementWrapper = ({ eventId, step = 0 }: { eventId?: string
       mutationKey: ["event-config-1"],
     }) > 0;
 
-  const isSavingStep2 =
-    useIsMutating({
-      mutationKey: ["event-config-2"],
-    }) > 0;
   const isSavingStep3 =
     useIsMutating({
       mutationKey: ["event-config-3"],
@@ -78,7 +69,7 @@ export const EventManagementWrapper = ({ eventId, step = 0 }: { eventId?: string
       mutationKey: ["event-config-5"],
     }) > 0;
 
-  const isNextLoading = isSavingStep1 || isSavingStep2 || isSavingStep3 || isSavingStep4 || isSavingStep5;
+  const isNextLoading = isSavingStep1 || isSavingStep3 || isSavingStep4 || isSavingStep5;
 
   const onGoToEvent = () => {
     // url: /events/${eventId}
@@ -88,6 +79,20 @@ export const EventManagementWrapper = ({ eventId, step = 0 }: { eventId?: string
   };
   return (
     <Stack px={"4rem"} gap="2rem" style={{ maxWidth: "125rem", margin: "auto" }}>
+      <Center>
+        <Group>
+          <Button variant="subtle" onClick={prevStep} disabled={active === 0}>
+            Back
+          </Button>
+          {active !== STEPS.length - 1 ? (
+            <Button type="submit" form={STEP_FORM_ID} loading={isNextLoading}>
+              Next step
+            </Button>
+          ) : (
+            <Button onClick={onGoToEvent}> Go to event</Button>
+          )}
+        </Group>
+      </Center>
       <Stepper
         active={active}
         onStepClick={(index) => eventId && goToStep(eventId, index)}
@@ -103,22 +108,14 @@ export const EventManagementWrapper = ({ eventId, step = 0 }: { eventId?: string
                 onDone={(id) => goToStep(id, 1, !eventId)}
               />
             ) : index === 1 ? (
-              // TODO: save the fixtures before moving on
+              // Fixtures & groups (adds fixtures directly; the old separate fixture step was merged in here)
               eventId ? (
-                <Step2
-                  eventId={eventId}
-
-                  onDone={() => goToStep(eventId, 2)}
-                />
+                <Step3 onDone={() => goToStep(eventId, 2)} eventId={eventId} />
               ) : null
             ) : index === 2 ? (
               eventId ? (
-                <Step3 onDone={() => goToStep(eventId, 3)} eventId={eventId} />
-              ) : null
-            ) : index === 3 ? (
-              eventId ? (
                 <StepForm onSubmit={nextStep}>
-                  <Step4 onDone={() => goToStep(eventId, 4)} eventId={eventId} />
+                  <Step4 onDone={() => goToStep(eventId, 3)} eventId={eventId} />
                 </StepForm>
               ) : null
             ) : (

@@ -1,4 +1,4 @@
-import { Divider, Group, SimpleGrid, Stack, Title, Tooltip } from "@mantine/core";
+import { Box, Divider, Group, SimpleGrid, Stack, Title, Tooltip } from "@mantine/core";
 import { IconHelpCircle } from "@tabler/icons-react";
 import { useGetOptionSets } from "../../../../../query-v2/option-sets/useGetOptionSets";
 import { useUpsertOptionSets } from "../../../../../query-v2/option-sets/useUpsertOptionSets";
@@ -6,6 +6,7 @@ import type { FixtureGroup } from "../../../../../types-v2/fixtureGroups";
 import { OptionSetSelectionType, OptionSetType, type UpsertOptionSet } from "../../../../../types-v2/optionSet";
 import {
   getPremadeSelectablesForOptionSetType,
+  MAX_COUNTS,
   optionSetTypeRequired,
   optionSetTypeToDescription,
   optionSetTypeToName,
@@ -57,24 +58,28 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
           description="Allow adjusting intensity of the lights in the group"
           onClick={() => onAddOptionSet(OptionSetType.INTENSITY)}
           disabled={shouldDisableAdding(optionSets, OptionSetType.INTENSITY)}
+          disabledReason={limitReason(OptionSetType.INTENSITY, "intensity")}
         />
         <OptionSetCreateOption
           header="Colour (fixed)"
           description="Allow choosing from a fixed set of colours"
           onClick={() => onAddOptionSet(OptionSetType.COLOUR)}
           disabled={shouldDisableAdding(optionSets, OptionSetType.COLOUR)}
+          disabledReason={limitReason(OptionSetType.COLOUR, "colour")}
         />
         <OptionSetCreateOption
           header="Positions"
           description="Allow choosing a fixed set of positions"
           onClick={() => onAddOptionSet(OptionSetType.POSITION)}
           disabled={shouldDisableAdding(optionSets, OptionSetType.POSITION)}
+          disabledReason={limitReason(OptionSetType.POSITION, "position")}
         />
         <OptionSetCreateOption
           header="Custom"
           description="Set any value directly using DMX values"
           onClick={() => onAddOptionSet(OptionSetType.CUSTOM)}
           disabled={shouldDisableAdding(optionSets, OptionSetType.CUSTOM)}
+          disabledReason={limitReason(OptionSetType.CUSTOM, "custom")}
         />
 
         <OptionSetCreateOption
@@ -82,6 +87,7 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
           description="Create generic selection sets that don't affect the visualiser."
           onClick={() => onAddOptionSet(OptionSetType.VALUELESS)}
           disabled={shouldDisableAdding(optionSets, OptionSetType.VALUELESS)}
+          disabledReason={limitReason(OptionSetType.VALUELESS, "single select")}
         />
         {/* <OptionSetCreateOption
           header="Multi select"
@@ -103,4 +109,10 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
       </Stack>
     </Stack>
   );
+};
+
+/** Tooltip text for an option set type that has reached its MAX_COUNTS limit. */
+const limitReason = (type: OptionSetType, label: string): string => {
+  const max = MAX_COUNTS[type];
+  return `Cannot add more than ${max} ${label} option set${max > 1 ? "s" : ""}`;
 };
