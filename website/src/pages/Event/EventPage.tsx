@@ -50,6 +50,7 @@ import { VisualiserInputProcessor } from "../../components/Visualiser3D-v2/Proce
 import { ResolutionScaleSelect } from "../../components/Visualiser3D-v2/ResolutionScaleSelect";
 import { useResolvedDmx } from "../../hooks/useResolvedDmx";
 import { DMXControlWrapper } from "../../components/DMX/DMXControlWrapper";
+import { RichContentWrapper } from "../../components/RichContent-v2/RichContentWrapper";
 
 const logger = new Logger("EventPage.tsx");
 
@@ -394,7 +395,7 @@ export const EventPage = () => {
         }}
       >
         <Button size="xs" variant="light" onClick={toggleDrawerHandler.bind(null, toggleLyrics, "lyrics")}>
-          {openedLyrics ? "Hide" : "Show"} lyrics
+          {openedLyrics ? "Hide" : "Manage"} lyrics
         </Button>
       </Box>
       {/* Lyrics drawer */}
@@ -414,6 +415,27 @@ export const EventPage = () => {
       >
         <Lyrics itemId={selectedItemId} eventId={eventId} />
       </Drawer>
+
+      {/* Lyrics "preview area" */}
+      <Box
+        className={classes.hideScrollbar}
+        style={{
+          position: "absolute",
+          left: "0.5rem",
+          // centered
+          top: "50%",
+          transform: "translateY(-50%)",
+          // Enough for ~7 lines.
+          height: "20rem",
+          width: "26rem",
+          overflowY: "auto", // "scroll" always reserves a scrollbar track
+          zIndex: getDefaultZIndex("modal") - 1, // below all modals
+        }}
+      >
+        <Box style={{ zoom: 0.75 }}>
+          <RichContentWrapper itemId={selectedItemId} eventId={eventId} />
+        </Box>
+      </Box>
 
       {/* Cues */}
       <Box

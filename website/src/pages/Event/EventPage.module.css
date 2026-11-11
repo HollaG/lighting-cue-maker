@@ -55,3 +55,11 @@
 
   border-radius: var(--mantine-radius-md);
 }
+/* Still scrolls (wheel, touch, keyboard); just no visible scrollbar. */
+.hideScrollbar {
+  scrollbar-width: none; /* Firefox, Chrome/Edge 121+ */
+
+  &::-webkit-scrollbar {
+    display: none; /* Safari and older Chromium */
+  }
+}
