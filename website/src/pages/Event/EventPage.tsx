@@ -29,6 +29,7 @@ import { StaticVisualiser3D } from "../../components/Visualiser3D-v2/Visualiser3
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../../store/appStore";
 import { Logger } from "../../utils/logger";
+import { saveRecentEvent } from "../../utils/recentEvents";
 import QlcLogo from "../../assets/qlc_logo.svg";
 import classes from "./EventPage.module.css";
 import {
@@ -84,6 +85,14 @@ export const EventPage = () => {
   const { visualiser, isVisualiserLoading } = useGetVisualiser(eventId);
   const { patchedFixtures } = useGetPatchedFixtures(eventId);
   const { dmxValuesWithOverrides: dmxValuesByFixture, isLoading } = useResolvedDmx(eventId, patchedFixtures);
+
+  // Remember this event for "Past events" on the home page. Waits for the name, so the list never shows a blank entry;
+  // a rename updates the stored name the next time the event loads.
+  const eventName = evt?.name;
+  useEffect(() => {
+    if (!eventName) return;
+    saveRecentEvent({ eventId, eventName });
+  }, [eventId, eventName]);
 
   const [selectedItemId, setSelectedItemId] = useLocalStorage({
     key: `${eventId}-item-selected`,
@@ -426,7 +435,7 @@ export const EventPage = () => {
           position: "absolute",
           right: "0.5rem",
           bottom: "0.5rem",
-          zIndex: 1000,
+          zIndex: getDefaultZIndex("modal") - 1, // below all modals
         }}
       >
         <ResolutionScaleSelect />
