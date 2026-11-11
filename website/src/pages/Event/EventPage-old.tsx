@@ -61,6 +61,7 @@ import { RemoteCursorOverlay } from "../../components/Cursor/RemoteCursorOverlay
 import { ChatContainer } from "../../components/Chat/ChatContainer";
 import { useActiveCueTracking } from "../../hooks/realtime/useActiveCueTracking";
 import { Acknowledgement } from "../../components/Acknowledgement/Acknowlegement";
+import { popTransition } from "../../utils/animations";
 
 export const EventPage = () => {
   // Realtime tracking stuff on the Event Page includes Live Queries, activeCue
@@ -258,7 +259,7 @@ export const EventPage = () => {
             shadow={"sm"}
             withArrow
             position="bottom"
-            transitionProps={{ transition: "pop", duration: 100 }}
+            transitionProps={popTransition}
           >
             <Menu.Target>
               <Button variant="subtle">Settings</Button>

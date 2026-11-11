@@ -1001,48 +1001,6 @@ const CueCardInternal = ({
               {/* Version control */}
               {/* If no versions exist, show text "Create alt. version" */}
               {alternates && alternates.length > 0 ? (
-                // <Group gap="xs">
-                //   {/* <Button variant="transparent" size="xs">
-                //     <Code fz="sm">
-                //       {currentViewingVersionIndex === 0 ? "Main" : `Version ${currentViewingVersionIndex}`}
-                //     </Code>
-                //   </Button> */}
-                //   <Select
-                //     allowDeselect={false}
-                //     style={{ width: "200px" }}
-                //     value={currentViewingAlternateId}
-                //     comboboxProps={{
-                //       onOptionSubmit: (value) => {
-                //         if (value === "add") {
-                //           onAddVersion();
-                //         } else if (value === "main") {
-                //           onChangeToMain(_cue);
-                //         } else {
-                //           onChangeAlternateVersion(value);
-                //         }
-                //       },
-                //     }}
-                //     data={[
-                //       { value: "main", label: "Main" },
-                //       {
-                //         group: "Alternatives",
-                //         items: alternates.map((alternate) => ({ value: alternate.alternateId, label: alternate.alternateName })),
-                //       },
-                //       { group: "Actions", items: [{ value: "add", label: "Create new version" }] },
-                //     ]}
-                //   />
-                //   <Tooltip label="Swap the main version with this version. ">
-                //     <Button
-                //       size="xs"
-                //       variant="subtle"
-                //       onClick={() => void onSwapVersion()}
-                //       disabled={currentViewingAlternateId === "main"}
-                //     >
-                //       <IconVersions width="1rem" />
-                //     </Button>
-                //   </Tooltip>
-                // </Group>
-
                 <Group>
                   <Menu shadow="md" closeOnItemClick={false}>
                     <Menu.Target>

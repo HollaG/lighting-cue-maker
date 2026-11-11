@@ -107,7 +107,7 @@ export const ContentControlFixed = ({
         <Menu.Target>
           <Box style={{ width: "250px" }}>
             <Select
-              comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+              comboboxProps={{ transitionProps: popTransition }}
               description={
                 <span style={{ display: "flex" }}>
                   <span style={{ flex: 1 }}>Editor mode</span>
@@ -206,7 +206,7 @@ export const ContentControlFixed = ({
 
       {/* <Input.Wrapper label="Input mode" mx={0}>
                     <Select
-                      comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+                      comboboxProps={{ transitionProps: popTransition }}
                       data={InputModes}
                       value={inputMode}
                       onChange={(value) => setInputMode(value as InputMode)}

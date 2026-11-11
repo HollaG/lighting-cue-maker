@@ -10,6 +10,7 @@ import { SliderPresetsOptionsHandler } from "./Handlers/SliderPresetsOptionsHand
 import { PresetIntensityHandler } from "./Handlers/PresetIntensityHandler";
 import { PresetColourHandler } from "./Handlers/PresetColourHandler";
 import { PresetPositionHandler } from "./Handlers/PresetPositionHandler";
+import { popTransition } from "../../../../utils/animations";
 
 const ATTRIBUTE_OPTIONS: Option<AttributeTypes>[] = [
   { label: "Text input", value: AttributeTypes.TEXT },
@@ -162,7 +163,7 @@ export const AddAttributeCard = ({
             key={form.key(`${baseFieldName}.type`)}
             {...form.getInputProps(`${baseFieldName}.type`)}
 
-            comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+            comboboxProps={{ transitionProps: popTransition }}
           />
         </Box>
 

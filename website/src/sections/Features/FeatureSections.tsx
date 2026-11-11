@@ -13,6 +13,7 @@ import { FixtureGroupCard } from "../../components/FixtureGroup/FixtureGroupCard
 import { RichContentDemo } from "../../components/RichContent/RichContentDemo";
 import { CueCardDemo } from "../../components/Cues/CueCard/CueCardDemo";
 import type { FixtureGroupConfiguration } from "../../types/types";
+import { popTransition } from "../../utils/animations";
 
 const movingHeadFormValues = {
   ...createEmptyEventFormValues(),
@@ -107,7 +108,7 @@ export const CreateSection = () => {
       <Text>Configure your venue's lighting groups, and specify the capabilities of each group.</Text>
       <Center my="lg">
         <Select
-          comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+          comboboxProps={{ transitionProps: popTransition }}
           allowDeselect={false}
           label="Light Group"
           value={lightGroup}

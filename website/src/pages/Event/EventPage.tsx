@@ -42,6 +42,8 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 import { Lyrics } from "../../components/Event/Lyrics";
+import { Cues } from "../../components/Event/Cues";
+import { popTransition } from "../../utils/animations";
 
 const logger = new Logger("EventPage.tsx");
 
@@ -194,7 +196,7 @@ export const EventPage = () => {
               shadow={"sm"}
               withArrow
               position="bottom"
-              transitionProps={{ transition: "pop", duration: 100 }}
+              transitionProps={popTransition}
             >
               <Menu.Target>
                 <Button variant="subtle">Settings</Button>
@@ -343,6 +345,7 @@ export const EventPage = () => {
       <Drawer
         opened={openedLyrics}
         onClose={closeLyrics}
+        keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
         position="left"
         size="lg"
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
@@ -374,6 +377,7 @@ export const EventPage = () => {
       <Drawer
         opened={openedCues}
         onClose={closeCues}
+        keepMounted // closing only hides it: cue cards keep their state and don't re-render on reopen
         position="right"
         size="lg"
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
@@ -384,7 +388,7 @@ export const EventPage = () => {
         closeOnEscape
         closeOnClickOutside={false} // allow manipulating the 3d visualiser
       >
-        <Lyrics itemId={selectedItemId} eventId={eventId} />
+        <Cues eventId={eventId} itemId={selectedItemId} />
       </Drawer>
 
       {/* Main visualiser */}

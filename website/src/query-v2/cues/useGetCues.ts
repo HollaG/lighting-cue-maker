@@ -11,6 +11,12 @@ export const makeGetCuesQueryKey = (eventId: string, itemId: string) => ["v2", "
 export const cuesUrl = (eventId: string, itemId: string) =>
   `/api/v2/events/${encodeURIComponent(eventId)}/items/${encodeURIComponent(itemId)}/cues`;
 
+/** Shared by useGetCues and useGetCue so both fill the same cache entry the same way. */
+export const fetchCues = async (eventId: string, itemId: string) => {
+  const res = await api.get<GetCuesRes>(cuesUrl(eventId, itemId));
+  return res.cues;
+};
+
 /**
  * All cues of one item, oldest first. The server does NOT order them by position: cue order comes from the
  * markers in `Item.rawLyrics`, so the client orders them. Pass `null` for either id to wait.
@@ -18,10 +24,7 @@ export const cuesUrl = (eventId: string, itemId: string) =>
 export const useGetCues = (eventId: string | null | undefined, itemId: string | null | undefined) => {
   const query = useQuery({
     queryKey: makeGetCuesQueryKey(eventId ?? "", itemId ?? ""),
-    queryFn: async () => {
-      const res = await api.get<GetCuesRes>(cuesUrl(eventId!, itemId!));
-      return res.cues;
-    },
+    queryFn: () => fetchCues(eventId!, itemId!),
     enabled: !!eventId && !!itemId,
   });
 

@@ -13,6 +13,7 @@ import {
 } from "../../../../../utils/optionSets";
 import { OptionSetContainer } from "./OptionSetContainer";
 import { OptionSetCreateOption } from "./OptionSetCreateOption";
+import { popTransition } from "../../../../../utils/animations";
 
 export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGroup }) => {
   const { optionSets } = useGetOptionSets(fixtureGroup.eventId, fixtureGroup.id);
@@ -43,7 +44,7 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
           multiline
           w={400}
           withArrow
-          transitionProps={{ transition: "pop", duration: 100 }}
+          transitionProps={popTransition}
 
           label="Users can select one (or multiple) options from these sets when configuring. For example, a colour option set can have red, green, and blue as options."
         >

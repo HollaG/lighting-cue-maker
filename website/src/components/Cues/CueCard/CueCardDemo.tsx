@@ -32,6 +32,7 @@ import {
 } from "../../../types/types";
 import { createDefaultValueAssignment } from "../../../utils/cue/cueForm";
 import { CardBase } from "../CardBase";
+import { popTransition } from "../../../utils/animations";
 
 export type CueCardDemoProps = {
   fixtureGroups: FixtureGroupConfiguration[];
@@ -171,7 +172,7 @@ const DemoAttributeInput = ({
     case AttributeTypes.SELECT:
       return (
         <Select
-          comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+          comboboxProps={{ transitionProps: popTransition }}
           {...commonProps}
           searchable
           clearable

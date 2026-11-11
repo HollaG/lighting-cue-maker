@@ -19,6 +19,7 @@ import { ContentControlFixed } from "./ContentControlFixed";
 import { useState } from "react";
 import { useInViewport } from "@mantine/hooks";
 import { IconChevronLeft, IconChevronRight, IconInfoCircle, IconPin, IconPinnedOff } from "@tabler/icons-react";
+import { popTransition } from "../../utils/animations";
 
 export const ContentControl = ({
   eventId,
@@ -165,7 +166,7 @@ export const ContentControl = ({
                     </ActionIcon>
                     <Box w={"130px"}>
                       <Select
-                        comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+                        comboboxProps={{ transitionProps: popTransition }}
                         allowDeselect={false}
                         value={currentlySelectedCueId}
                         onChange={(value) => {
@@ -191,7 +192,7 @@ export const ContentControl = ({
                     </ActionIcon>
                     <Box w={"130px"}>
                       <Select
-                        comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+                        comboboxProps={{ transitionProps: popTransition }}
                         allowDeselect={false}
                         value={currentlySelectedBumpId}
                         onChange={(value) => {

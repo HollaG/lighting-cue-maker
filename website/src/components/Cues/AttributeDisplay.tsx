@@ -8,6 +8,7 @@ import { BooleanSelect } from "./Selects/BooleanSelect";
 import { ColourSelect } from "./Selects/ColourSelect";
 import { PositionSelect } from "./Selects/PositionSelect";
 import type { JSX } from "react/jsx-runtime";
+import { popTransition } from "../../utils/animations";
 
 interface AttributeDisplayProps {
   attribute: AttributeConfiguration;
@@ -59,7 +60,7 @@ export function AttributeDisplay({
     case AttributeTypes.SELECT:
       returnedComponent = (
         <Select
-          comboboxProps={{ transitionProps: { transition: "pop", duration: 100 } }}
+          comboboxProps={{ transitionProps: popTransition }}
           searchable
           label={name}
           data={optionPossibleValues[AttributeTypes.SELECT]}

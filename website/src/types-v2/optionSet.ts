@@ -69,7 +69,7 @@ export type OptionSetType = (typeof OptionSetType)[keyof typeof OptionSetType];
  *
  * In short, the difference between OptionSetType and SelectableType:
  *   OptionSetType: configure how the website presents the selection
- *   SelectableType: configure how the app applies the selection to the fixtures
+ *   SelectableType: configure how the website applies the selection to the fixtures
  */
 export const SelectableType = {
   INTENSITY: "AppPresetIntensity",
