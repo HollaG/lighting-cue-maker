@@ -1,6 +1,6 @@
 INSERT INTO v2.fixture_templates
   (name, manufacturer, model, type, channels, modes, properties, import_type, raw_source, created_at, updated_at)
-VALUES (
+SELECT
   'LPC-007',
   'Betopper',
   'LPC-007',
@@ -125,4 +125,7 @@ VALUES (
 </FixtureDefinition>
 $qxf$,
   now(), now()
+-- Only if the library doesn't have it yet. Soft-deleted rows count too, so a removed template stays removed.
+WHERE NOT EXISTS (
+  SELECT 1 FROM v2.fixture_templates WHERE manufacturer = 'Betopper' AND model = 'LPC-007'
 );

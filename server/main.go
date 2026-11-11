@@ -51,6 +51,12 @@ func main() {
 		log.Fatalf("database: v2 migration failed: %v", err)
 	}
 
+	// Built-in fixture library: adds the templates that are missing. Not fatal on purpose:
+	// an incomplete library shouldn't stop the server (and v1) from starting.
+	if err := modelsv2.SeedFixtureTemplates(database.DB()); err != nil {
+		log.Printf("database: seeding fixture templates: %v", err)
+	}
+
 	r := gin.Default()
 	router.Setup(r, cfg)
 
