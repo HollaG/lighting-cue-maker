@@ -1,6 +1,16 @@
 import type { FixtureTemplate, PhysicalProperties } from "../types-v2/fixtureTemplates";
 
 /**
+ * Certain rules on Heads apply:
+ *
+ * 1. A Head can only have up to one colour channel of each colour.
+ * 2. A Head can only have up to one dimmer channel.
+ *
+ * Note: Position channels are not supported yet.
+ *
+ */
+
+/**
  * Where a fixture's heads sit in 3D. Pure functions, no three.js.
  *
  * One head = one beam. Heads come from the fixture's mode; a mode without heads is one head with every channel
