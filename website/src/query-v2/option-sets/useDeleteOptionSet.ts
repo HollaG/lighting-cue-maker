@@ -3,6 +3,7 @@ import { api } from "../../lib/api";
 import type { OptionSet } from "../../types-v2/optionSet";
 import { makeGetOptionSetsQueryKey, makeOptionSetsQueryKeyPrefix, optionSetsUrl } from "./useGetOptionSets";
 import { makeGetOptionSetQueryKey } from "./useGetOptionSet";
+import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
 
 /**
  * Soft-deletes one option set. Cues keep their references to it, so restoring it brings them back
@@ -24,6 +25,7 @@ export const useDeleteOptionSet = (eventId: string, fixtureGroupId: string) => {
       );
       queryClient.removeQueries({ queryKey: makeGetOptionSetQueryKey(eventId, fixtureGroupId, optionSetId) });
       void queryClient.invalidateQueries({ queryKey: makeOptionSetsQueryKeyPrefix(eventId, fixtureGroupId) });
+      invalidateVisualiserData(queryClient, eventId);
     },
   });
 };

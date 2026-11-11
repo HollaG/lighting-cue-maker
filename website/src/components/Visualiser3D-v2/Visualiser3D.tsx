@@ -803,6 +803,10 @@ export const StaticVisualiser3D = ({
   visualiser: Visualiser;
   eventId: string;
   fixtures: PatchedFixture[];
+
+  dmxValues?: {
+    [fixtureId: string]: (number | null)[];
+  };
 }) => {
   const { event } = useGetEvent(eventId);
 

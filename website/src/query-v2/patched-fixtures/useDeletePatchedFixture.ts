@@ -4,6 +4,7 @@ import type { PatchedFixture } from "../../types-v2/patchedFixture";
 import type { FixtureGroup } from "../../types-v2/fixtureGroups";
 import { makeGetPatchedFixturesQueryKey } from "./useUpsertPatchedFixtures";
 import { makeGetFixtureGroupsQueryKey } from "../fixture-groups/useGetFixtureGroups";
+import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
 
 /**
  * Soft-deletes one patched fixture.
@@ -43,6 +44,7 @@ export const useDeletePatchedFixture = (eventId: string) => {
 
       void queryClient.invalidateQueries({ queryKey: fixturesKey });
       void queryClient.invalidateQueries({ queryKey: groupsKey });
+      invalidateVisualiserData(queryClient, eventId);
     },
   });
 };

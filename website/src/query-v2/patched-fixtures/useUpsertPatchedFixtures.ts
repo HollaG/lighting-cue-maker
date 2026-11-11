@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { PatchedFixture, UpsertPatchedFixture } from "../../types-v2/patchedFixture";
+import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
 
 export type UpsertPatchedFixturesReq = {
   fixtures: UpsertPatchedFixture[];
@@ -50,6 +51,7 @@ export const useUpsertPatchedFixtures = (eventId: string) => {
 
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey });
+      invalidateVisualiserData(queryClient, eventId);
     },
   });
 };

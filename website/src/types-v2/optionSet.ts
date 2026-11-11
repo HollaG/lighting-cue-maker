@@ -63,8 +63,8 @@ export type OptionSetType = (typeof OptionSetType)[keyof typeof OptionSetType];
 /**
  * SelectableTypes defines how values are applied to fixtures.
  * For example:
- *    AppPresetIntensity & value 40%: App knows to set the intensity channel to 40% for all fixtures in the group.
- *   AppPresetColour & value Red: App knows to set the red channel to 100% for all fixtures in the group.
+ *    AppSelectableIntensity & value 40%: App knows to set the intensity channel to 40% for all fixtures in the group.
+ *   AppSelectableColour & value Red: App knows to set the red channel to 100% for all fixtures in the group.
  *     It also knows if there is CMY instead, to use those channels instead.
  *
  * In short, the difference between OptionSetType and SelectableType:
@@ -72,12 +72,12 @@ export type OptionSetType = (typeof OptionSetType)[keyof typeof OptionSetType];
  *   SelectableType: configure how the website applies the selection to the fixtures
  */
 export const SelectableType = {
-  INTENSITY: "AppPresetIntensity",
-  COLOUR: "AppPresetColour",
-  POSITION: "AppPresetPosition",
+  INTENSITY: "AppSelectableIntensity",
+  COLOUR: "AppSelectableColour",
+  POSITION: "AppSelectablePosition",
   CUSTOM: "AppCustom",
-  EFFECT_PATTERN: "AppPresetEffectPattern",
-  EFFECT_MOVEMENT: "AppPresetEffectMovement",
+  EFFECT_PATTERN: "AppSelectableEffectPattern",
+  EFFECT_MOVEMENT: "AppSelectableEffectMovement",
 } as const;
 export type SelectableType = (typeof SelectableType)[keyof typeof SelectableType];
 

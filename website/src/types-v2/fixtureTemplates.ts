@@ -95,8 +95,6 @@ export type ChannelRole = (typeof ChannelRole)[keyof typeof ChannelRole];
 // TODO(draw.io): ChannelType values are not defined yet. These are the ones the
 // resolver rules in the implementation notes rely on.
 export const ChannelType = {
-  // intensity
-  INTENSITY: "intensity",
   /** Controls the whole fixture, whichever head the source file lists it in. */
   MASTER_DIMMER: "masterDimmer",
   /** Controls one head. */

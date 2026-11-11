@@ -22,14 +22,17 @@ const MIN_LEVEL: LogLevel = import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.INFO
  */
 export class Logger {
   readonly label: string;
+  /** CSS colour for the `[label]` prefix, e.g. "cyan" or "#4dabf7". Leave out for the default text colour. */
+  readonly color?: string;
 
-  constructor(label: string) {
+  constructor(label: string, color?: string) {
     this.label = label;
+    this.color = color;
   }
 
-  /** A logger whose label is nested under this one: `parent:child`. */
+  /** A logger whose label is nested under this one: `parent:child`. Keeps the parent's colour. */
   child(label: string): Logger {
-    return new Logger(`${this.label}:${label}`);
+    return new Logger(`${this.label}:${label}`, this.color);
   }
 
   debug(...args: unknown[]) {
@@ -51,6 +54,11 @@ export class Logger {
   private log(level: LogLevel, ...args: unknown[]) {
     if (LEVEL_ORDER[level] < LEVEL_ORDER[MIN_LEVEL]) return;
     // Pass args through untouched so objects stay expandable in devtools.
-    console[level](`[${this.label}]`, ...args);
+    if (this.color) {
+      // %c styles only the prefix; the args after it are separate, so they keep the normal colour.
+      console[level](`%c[${this.label}]`, `color: ${this.color}; font-weight: bold`, ...args);
+    } else {
+      console[level](`[${this.label}]`, ...args);
+    }
   }
 }

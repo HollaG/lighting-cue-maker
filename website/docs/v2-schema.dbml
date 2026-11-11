@@ -136,8 +136,8 @@ Table v2.option_sets {
       uuid: string
       name: string
       fixtureIds: string[] | "all"   // default "all"
-      type: SelectableType  // AppPresetIntensity | AppPresetColour | AppPresetPosition
-                            // | AppCustom | AppPresetEffectPattern | AppPresetEffectMovement
+      type: SelectableType  // AppSelectableIntensity | AppSelectableColour | AppSelectablePosition
+                            // | AppCustom | AppSelectableEffectPattern | AppSelectableEffectMovement
       // intensity
       percent: int
       // colour

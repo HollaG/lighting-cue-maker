@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { FixtureGroup } from "../../types-v2/fixtureGroups";
 import { makeGetFixtureGroupsQueryKey } from "./useGetFixtureGroups";
+import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
 
 /** Soft-deletes one fixture group. */
 export const useDeleteFixtureGroup = (eventId: string) => {
@@ -21,6 +22,7 @@ export const useDeleteFixtureGroup = (eventId: string) => {
         prev?.filter((g) => g.id !== fixtureGroupId),
       );
       void queryClient.invalidateQueries({ queryKey: makeGetFixtureGroupsQueryKey(eventId) });
+      invalidateVisualiserData(queryClient, eventId);
     },
   });
 };

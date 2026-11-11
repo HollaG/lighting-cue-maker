@@ -3,6 +3,7 @@ import { api } from "../../lib/api";
 import type { OptionSet, UpsertOptionSet } from "../../types-v2/optionSet";
 import { makeGetOptionSetsQueryKey, makeOptionSetsQueryKeyPrefix, optionSetsUrl } from "./useGetOptionSets";
 import { makeGetOptionSetQueryKey } from "./useGetOptionSet";
+import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
 
 // Keep in sync with UpsertOptionSetsReq in server/internal/models/v2/option_set.go.
 export type UpsertOptionSetsReq = {
@@ -41,6 +42,7 @@ export const useUpsertOptionSets = (eventId: string, fixtureGroupId: string) => 
       }
       // Then refetch to pick up the server's order (sortOrder).
       void queryClient.invalidateQueries({ queryKey: makeOptionSetsQueryKeyPrefix(eventId, fixtureGroupId) });
+      invalidateVisualiserData(queryClient, eventId);
     },
   });
 };

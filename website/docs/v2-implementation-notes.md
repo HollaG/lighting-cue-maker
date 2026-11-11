@@ -37,7 +37,7 @@
 | GET | `/fixture-templates` | – | `{ fixtureTemplates: FixtureTemplate[] }` |
 | GET | `/events` | – | `{ events: Event[] }` (no children) |
 | POST | `/events` | `{ event: CreateEvent, templateIds: string[] }` | `{ event: Event }` |
-| GET | `/events/{eventId}` | – | `{ event: Event }` with fixtures, groups → option sets, visualiser |
+| GET | `/events/{eventId}` | – | `{ event: Event }` (includes `fixtureTemplates`; preloading fixtures, groups, option sets and visualiser is a TODO) |
 | POST | `/events/{eventId}` | `{ event: UpsertEvent, templateIds?: string[] }` | `{ event: Event }` |
 | DELETE | `/events/{eventId}` | – | – |
 | POST | `/events/{eventId}/patched-fixtures` | `{ fixtures: UpsertFixture[] }` | `{ fixtures: Fixture[] }` |
@@ -49,6 +49,7 @@
 | POST | `/events/{eventId}/visualiser` | `{ visualiser: UpsertVisualiser }` | `{ visualiser: Visualiser }` |
 | GET | `/events/{eventId}/visualiser` | – | `{ visualiser: Visualiser }` |
 | DELETE | `/events/{eventId}/visualiser` | – | – |
+| GET | `/events/{eventId}/visualiser-data` | – | `{ fixtures, fixtureTemplates, fixtureGroups, optionSets }`, read in one transaction. Everything the cue resolver needs. |
 | POST | `/events/{eventId}/fixture-groups/{fixtureGroupId}/option-sets` | `{ optionSets: UpsertOptionSet[] }` | `{ optionSets: OptionSet[] }` |
 | GET | `/events/{eventId}/fixture-groups/{fixtureGroupId}/option-sets/{optionSetId}` | – | `{ optionSet: OptionSet }` |
 | DELETE | `/events/{eventId}/fixture-groups/{fixtureGroupId}/option-sets/{optionSetId}` | – | – |
@@ -113,19 +114,7 @@ The LD must be able to add, edit and delete setup items without breaking existin
   - `common` finds channels **by `ChannelType`** on each fixture, because channel IDs differ between templates. Fixtures without that channel type are skipped.
   - `individual` targets one fixture's channel by ID and overrides `common`.
   - `common` is reliable for linear channels (dimmer, RGB, zoom, pan/tilt). It is unreliable for ranged channels (shutter, gobo, colour wheel), because the same DMX value means different things on different fixtures.
-- Intensity, per fixture:
-  - master dimmer present: set the master to the value and open the per-head dimmers fully;
-  - else per-head dimmers: set them;
-  - else no dimmer: scale the colour channels.
-- Colour is one value for all fixtures (no per-fixture map). `hex` is the complete look and must work on its own; `mix` is an optional exact recipe for fixtures that can do better. Brightness comes only from intensity: the colour picker has hue/saturation only, so `hex` is always at full brightness. Per fixture:
-  - Use `mix` only if the fixture has **every** channel `mix` sets above 0. Otherwise ignore it (a partial mix looks wrong, e.g. warm white without its amber).
-  - Otherwise derive from `hex`:
-    - RGB: set directly.
-    - RGBW: extract white (`w = min(r,g,b)`, subtract it from r/g/b). Saturated colours are unchanged.
-    - CMY: convert QLC+-style (CMYK with the K dropped), so dim colours come out fully saturated and black comes out as open white.
-    - Amber/UV/lime/indigo: 0. Only set through `mix`.
-    - Wheel only: use the nearest capability colour.
-    - No colour channels: skip.
+- Colour is one value for all fixtures (no per-fixture map). `hex` is the complete look and must work on its own; `mix` is an optional exact recipe for fixtures that can do better. Brightness comes only from intensity: the colour picker has hue/saturation only, so `hex` is always at full brightness.
   - Fake colours (UV on RGB) by picking a `hex` that looks close, e.g. a purple for UV.
   - Pattern selectables use the same `Colour` type.
 - Position is per fixture: `positions: {[fixtureId]: Position}`, values 16-bit (0–65535) as DMX, not degrees.

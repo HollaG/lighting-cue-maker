@@ -44,6 +44,7 @@ import {
 import { Lyrics } from "../../components/Event/Lyrics";
 import { Cues } from "../../components/Event/Cues";
 import { popTransition } from "../../utils/animations";
+import { VisualiserInputProcessor } from "../../components/Visualiser3D-v2/Processing/VisualiserInputProcessor";
 
 const logger = new Logger("EventPage.tsx");
 
@@ -61,10 +62,11 @@ export const EventPage = () => {
     // only one drawer can be open at a time, so close the others if its open
     if (domain === "event") {
       closeLyrics();
+      closeCues();
     } else if (domain === "lyrics") {
       closeEventDetails();
     } else if (domain === "cues") {
-      // TODO
+      closeEventDetails();
     }
     toggleCb();
   };
@@ -86,6 +88,12 @@ export const EventPage = () => {
   }, [eventId]);
 
   const selectedItem = items.find((item) => item.id === selectedItemId);
+
+  // Mirror the selected item into the app store (`activeItemId`), for components that aren't handed it as a prop.
+  // The page's per-event local storage above stays the source of truth, so each event still remembers its own item.
+  // `changeActiveItem` also clears the selected cue when the item changes, so a cue from the previous item isn't kept.
+  const changeActiveItem = useAppStore((s) => s.changeActiveItem);
+  useEffect(() => changeActiveItem(selectedItemId || null), [selectedItemId, changeActiveItem]);
 
   const navigate = useNavigate();
   const onEdit = () => navigate({ to: "/events/$eventId/edit", params: { eventId } });
@@ -191,13 +199,7 @@ export const EventPage = () => {
             </Button>
             <Flex flex={1} />
 
-            <Menu
-              width={200}
-              shadow={"sm"}
-              withArrow
-              position="bottom"
-              transitionProps={popTransition}
-            >
+            <Menu width={200} shadow={"sm"} withArrow position="bottom" transitionProps={popTransition}>
               <Menu.Target>
                 <Button variant="subtle">Settings</Button>
               </Menu.Target>
@@ -394,7 +396,7 @@ export const EventPage = () => {
       {/* Main visualiser */}
       <Box h="100dvh" w="100%">
         {visualiser ? (
-          <StaticVisualiser3D
+          <VisualiserInputProcessor
             key={visualiser.id}
             visualiser={visualiser}
             eventId={eventId}

@@ -26,6 +26,7 @@ import (
 	"lighting-cue-maker/server/internal/api/v2/optionsets"
 	"lighting-cue-maker/server/internal/api/v2/patchedfixtures"
 	visualiserv2 "lighting-cue-maker/server/internal/api/v2/visualiser"
+	"lighting-cue-maker/server/internal/api/v2/visualiserdata"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -81,5 +82,6 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		cuesv2.Register(event.Group("/items/:itemId/cues"))
 		optionsets.Register(event.Group("/fixture-groups/:fixtureGroupId/option-sets"))
 		visualiserv2.Register(event.Group("/visualiser"))
+		visualiserdata.Register(event.Group("/visualiser-data"))
 	}
 }

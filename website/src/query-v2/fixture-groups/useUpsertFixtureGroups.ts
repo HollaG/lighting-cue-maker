@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { FixtureGroup, UpsertFixtureGroup } from "../../types-v2/fixtureGroups";
 import { makeGetFixtureGroupsQueryKey } from "./useGetFixtureGroups";
+import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
 
 // Keep in sync with the fixture-groups request in server/internal/api/v2.
 export type UpsertFixtureGroupsReq = {
@@ -40,6 +41,7 @@ export const useUpsertFixtureGroups = (eventId: string) => {
       });
       // Then refetch to pick up anything the server changed (e.g. sort order).
       void queryClient.invalidateQueries({ queryKey: makeGetFixtureGroupsQueryKey(eventId) });
+      invalidateVisualiserData(queryClient, eventId);
     },
   });
 };
