@@ -25,10 +25,10 @@ import { useGetItems } from "../../query-v2/items/useGetItems";
 import { useUpsertItem } from "../../query-v2/items/useUpsertItem";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
 import { useGetVisualiser } from "../../query-v2/visualiser/useGetVisualiser";
-import { StaticVisualiser3D } from "../../components/Visualiser3D-v2/Visualiser3D";
+// import { StaticVisualiser3D } from "../../components/Visualiser3D-v2/Visualiser3D";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../../store/appStore";
-import { Logger } from "../../utils/logger";
+// import { Logger } from "../../utils/logger";
 import { saveRecentEvent } from "../../utils/recentEvents";
 import QlcLogo from "../../assets/qlc_logo.svg";
 import classes from "./EventPage.module.css";
@@ -52,7 +52,7 @@ import { useResolvedDmx } from "../../hooks/useResolvedDmx";
 import { DMXControlWrapper } from "../../components/DMX/DMXControlWrapper";
 import { RichContentWrapper } from "../../components/RichContent-v2/RichContentWrapper";
 
-const logger = new Logger("EventPage.tsx");
+// const logger = new Logger("EventPage.tsx");
 
 export const EventPage = () => {
   const { eventId } = useParams({
@@ -61,8 +61,8 @@ export const EventPage = () => {
   const [openedEventDetails, { open: openEventDetails, close: closeEventDetails, toggle: toggleEventDetails }] =
     useDisclosure(false);
 
-  const [openedLyrics, { open: openLyrics, close: closeLyrics, toggle: toggleLyrics }] = useDisclosure(false);
-  const [openedCues, { open: openCues, close: closeCues, toggle: toggleCues }] = useDisclosure(false);
+  const [openedLyrics, { /* open: openLyrics, */ close: closeLyrics, toggle: toggleLyrics }] = useDisclosure(false);
+  const [openedCues, { /* open: openCues, */ close: closeCues, toggle: toggleCues }] = useDisclosure(false);
   // for DMX drawer, the open/close state is in the app store, so that each individual CueCard can open it remotely.
   const isDmxDrawerOpen = useAppStore((s) => s.isDmxDrawerOpen);
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
@@ -105,7 +105,7 @@ export const EventPage = () => {
     if (!selectedItemId) openEventDetails();
   }, [eventId]);
 
-  const selectedItem = items.find((item) => item.id === selectedItemId);
+  // const selectedItem = items.find((item) => item.id === selectedItemId);
 
   // Mirror the selected item into the app store (`activeItemId`), for components that aren't handed it as a prop.
   // The page's per-event local storage above stays the source of truth, so each event still remembers its own item.

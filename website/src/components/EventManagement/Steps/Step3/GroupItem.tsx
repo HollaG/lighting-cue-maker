@@ -35,7 +35,7 @@ export const GroupItem = ({
   const [selectedNewFixtureIds, setSelectedNewFixtureIds] = useState<string[]>([]);
 
   const { mutateAsync: deleteFixtureGroup } = useDeleteFixtureGroup(eventId);
-  const { mutateAsync: upsertFixtureGroups, isPending: isUpserting } = useUpsertFixtureGroups(eventId);
+  const { mutateAsync: upsertFixtureGroups /* , isPending: isUpserting */ } = useUpsertFixtureGroups(eventId);
 
   // handle saving the text fields
   const [name, setName] = useState(group.name);

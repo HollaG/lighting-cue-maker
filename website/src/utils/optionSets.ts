@@ -3,7 +3,7 @@ import {
   SelectableType,
   type OptionSet,
   type Selectable,
-  type SelectableBase,
+  // type SelectableBase,
 } from "../types-v2/optionSet";
 
 export const MAX_COUNTS = {
@@ -97,17 +97,17 @@ export const optionSetTypeRequired = (type: OptionSetType): boolean => {
 // Rule 1: 0..1 Intensity can exist
 // Rule 2: 0..1 Colour can exist
 // Rule 3: 0..1 Position can exist
-const isAllowedOptionSetType = (type: OptionSetType, existingOptionSets: OptionSetType[]): boolean => {
-  switch (type) {
-    case "Intensity":
-      return !existingOptionSets.includes("Intensity");
-    case "Colour":
-      return !existingOptionSets.includes("Colour");
-    case "Position":
-      return !existingOptionSets.includes("Position");
-    case "Custom":
-      return true;
-    default:
-      return false; // disallow multiple by default
-  }
-};
+// const isAllowedOptionSetType = (type: OptionSetType, existingOptionSets: OptionSetType[]): boolean => {
+  // switch (type) {
+    // case "Intensity":
+      // return !existingOptionSets.includes("Intensity");
+    // case "Colour":
+      // return !existingOptionSets.includes("Colour");
+    // case "Position":
+      // return !existingOptionSets.includes("Position");
+    // case "Custom":
+      // return true;
+    // default:
+      // return false; // disallow multiple by default
+  // }
+// };

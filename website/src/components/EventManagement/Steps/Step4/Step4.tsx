@@ -4,7 +4,7 @@ import { useGetVisualiser } from "../../../../query-v2/visualiser/useGetVisualis
 import { Visualiser3D } from "../../../Visualiser3D-v2/Visualiser3D";
 
 /** Visualisation placements */
-export const Step4 = ({ eventId, onDone }: { eventId: string; onDone: () => void }) => {
+export const Step4 = ({ eventId /* , onDone */ }: { eventId: string; onDone: () => void }) => {
   const { visualiser, isVisualiserLoading } = useGetVisualiser(eventId);
 
   const { patchedFixtures: fixtures } = useGetPatchedFixtures(eventId);

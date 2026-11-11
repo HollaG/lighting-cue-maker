@@ -13,7 +13,7 @@ import {
 import { float, pass, screenCoordinate, screenUV } from "three/tsl";
 import { bayer16 } from "three/addons/tsl/math/Bayer.js";
 import { gaussianBlur } from "three/addons/tsl/display/GaussianBlurNode.js";
-import { getFixture3DPosition, PLANE_SIZE } from "../../utils/visualiser";
+import { /* getFixture3DPosition, */ PLANE_SIZE } from "../../utils/visualiser";
 import { VOLUMETRIC_LIGHTING_LAYER } from "./visualiser3DRenderer";
 import type { Visualiser3DEnvironment } from "../../types-v2/visualiser";
 import type { PatchedFixture } from "../../types-v2/patchedFixture";

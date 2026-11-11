@@ -19,7 +19,7 @@ export const Visualiser3DParLight = ({
   intensityAttribute: nextIntensityAttribute,
   colourAttribute: nextColourAttribute,
 
-  transitionTime: nextTransitionTime = 0,
+  // transitionTime: nextTransitionTime = 0,
 }: {
   fixture: PatchedFixture;
   fixtureTemplate: FixtureTemplate;
@@ -40,11 +40,11 @@ export const Visualiser3DParLight = ({
   const theme = useMantineTheme();
 
   // Transition logic
-  const [transitionTime, setTransitionTime] = useState<number>(nextTransitionTime);
-  const [intensityAttribute, setIntensityAttribute] = useState<PresetIntensityOption | undefined>(
+  // const [transitionTime, setTransitionTime] = useState<number>(nextTransitionTime);
+  const [intensityAttribute /* , setIntensityAttribute */] = useState<PresetIntensityOption | undefined>(
     nextIntensityAttribute,
   );
-  const [colourAttribute, setColourAttribute] = useState<PresetColourOption | undefined>(nextColourAttribute);
+  const [colourAttribute /* , setColourAttribute */] = useState<PresetColourOption | undefined>(nextColourAttribute);
 
   // useEffect(() => {
   //   // if any of the attributes change, we need to start animating between them

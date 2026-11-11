@@ -231,52 +231,52 @@ const PanelHeadLight = ({ head, state }: { head: HeadLayout; state: HeadState })
  * - Always mounted, even at intensity 0. Adding or removing lights changes every lit material's shader, which is
  *   what caused the lag spike the first time lights came on.
  */
-const CombinedPanelLight = ({ heads, states }: { heads: HeadLayout[]; states: HeadState[] }) => {
-  // Bounding box of the lenses on the top face (local X and Z). Only changes with the layout.
-  const { position, size } = useMemo(() => {
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
-    for (const head of heads) {
-      minX = Math.min(minX, head.position[0] - head.size[0] / 2);
-      maxX = Math.max(maxX, head.position[0] + head.size[0] / 2);
-      minZ = Math.min(minZ, head.position[2] - head.size[1] / 2);
-      maxZ = Math.max(maxZ, head.position[2] + head.size[1] / 2);
-    }
-    return {
-      position: [(minX + maxX) / 2, heads[0].position[1] + 0.001, (minZ + maxZ) / 2] as [number, number, number],
-      size: [maxX - minX, maxZ - minZ] as [number, number],
-    };
-  }, [heads]);
+// const CombinedPanelLight = ({ heads, states }: { heads: HeadLayout[]; states: HeadState[] }) => {
+  // // Bounding box of the lenses on the top face (local X and Z). Only changes with the layout.
+  // const { position, size } = useMemo(() => {
+    // let minX = Infinity;
+    // let maxX = -Infinity;
+    // let minZ = Infinity;
+    // let maxZ = -Infinity;
+    // for (const head of heads) {
+      // minX = Math.min(minX, head.position[0] - head.size[0] / 2);
+      // maxX = Math.max(maxX, head.position[0] + head.size[0] / 2);
+      // minZ = Math.min(minZ, head.position[2] - head.size[1] / 2);
+      // maxZ = Math.max(maxZ, head.position[2] + head.size[1] / 2);
+    // }
+    // return {
+      // position: [(minX + maxX) / 2, heads[0].position[1] + 0.001, (minZ + maxZ) / 2] as [number, number, number],
+      // size: [maxX - minX, maxZ - minZ] as [number, number],
+    // };
+  // }, [heads]);
 
-  const state = averageHeadStates(states);
+  // const state = averageHeadStates(states);
 
-  return (
-    <rectAreaLight
-      layers-mask={VOLUMETRIC_LIGHT_MASK}
-      position={position}
-      // Same orientation as PanelHeadLight: local -Z turned to +Y, height runs along local Z.
-      rotation={[Math.PI / 2, 0, 0]}
-      width={size[0]}
-      height={size[1]}
-      intensity={state.intensity}
-      color={state.colour}
-    />
-  );
-};
+  // return (
+    // <rectAreaLight
+      // layers-mask={VOLUMETRIC_LIGHT_MASK}
+      // position={position}
+      // // Same orientation as PanelHeadLight: local -Z turned to +Y, height runs along local Z.
+      // rotation={[Math.PI / 2, 0, 0]}
+      // width={size[0]}
+      // height={size[1]}
+      // intensity={state.intensity}
+      // color={state.colour}
+    // />
+  // );
+// };
 
 /**
  * The light all heads give together, as one HeadState: each head's colour × its intensity, averaged, then split back
  * into a full-brightness colour + intensity (like the decoder's toHeadState).
  * Done in linear colour (THREE.Color converts the hex), so red + blue heads average to a half-bright purple.
  */
-const averageHeadStates = (states: HeadState[]): HeadState => {
-  const sum = new THREE.Color(0, 0, 0);
-  for (const s of states) sum.add(new THREE.Color(s.colour).multiplyScalar(s.intensity / 100));
-  sum.multiplyScalar(1 / states.length);
+// const averageHeadStates = (states: HeadState[]): HeadState => {
+  // const sum = new THREE.Color(0, 0, 0);
+  // for (const s of states) sum.add(new THREE.Color(s.colour).multiplyScalar(s.intensity / 100));
+  // sum.multiplyScalar(1 / states.length);
 
-  const peak = Math.max(sum.r, sum.g, sum.b);
-  if (peak <= 0) return OFF;
-  return { colour: "#" + sum.multiplyScalar(1 / peak).getHexString(), intensity: peak * 100 };
-};
+  // const peak = Math.max(sum.r, sum.g, sum.b);
+  // if (peak <= 0) return OFF;
+  // return { colour: "#" + sum.multiplyScalar(1 / peak).getHexString(), intensity: peak * 100 };
+// };

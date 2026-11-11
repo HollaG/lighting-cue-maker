@@ -1,17 +1,17 @@
-import { ActionIcon, Box, Button, Divider, Group, OverflowList, Scroller, Stack, Text } from "@mantine/core";
+import { ActionIcon, Box, Button, /* Divider, */ Group, /* OverflowList, */ Scroller, Stack, Text } from "@mantine/core";
 import type { useResolvedDmx } from "../../hooks/useResolvedDmx";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback /* , useEffect, useState */ } from "react";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
 import { useAppStore } from "../../store/appStore";
 import { CardBase } from "../Cues/CardBase";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
-import { Logger } from "../../utils/logger";
+// import { Logger } from "../../utils/logger";
 import { DMXControl } from "./DMXControl/DMXControl";
 import { useGetCue } from "../../query-v2/cues/useGetCue";
 import { useUpsertCue } from "../../query-v2/cues/useUpsertCue";
 import { IconChevronDown } from "@tabler/icons-react";
 
-const logger = new Logger("DMXControlWrapper", "red");
+// const logger = new Logger("DMXControlWrapper", "red");
 
 export const DMXControlWrapper = ({
   eventId,
@@ -30,7 +30,7 @@ export const DMXControlWrapper = ({
   const { cue } = useGetCue(eventId, itemId, cueId);
   const { mutateAsync: upsertCue } = useUpsertCue(eventId, itemId);
 
-  const { patchedFixtures, isPatchedFixturesLoading } = useGetPatchedFixtures(eventId);
+  const { patchedFixtures /* , isPatchedFixturesLoading */ } = useGetPatchedFixtures(eventId);
   const { event } = useGetEvent(eventId);
   const fixtureTemplates = event?.fixtureTemplates ?? [];
   const overrides = cue?.overrides || {};

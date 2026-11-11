@@ -1,12 +1,12 @@
-import { Box, Checkbox, NumberInput, Slider, Stack, Text } from "@mantine/core";
-import type { useResolvedDmx } from "../../../hooks/useResolvedDmx";
+import { Box, Checkbox, NumberInput, Slider, Stack /* , Text */ } from "@mantine/core";
+// import type { useResolvedDmx } from "../../../hooks/useResolvedDmx";
 import { ChannelType, type Channel } from "../../../types-v2/fixtureTemplates";
-import type { PatchedFixture } from "../../../types-v2/patchedFixture";
-import { Logger } from "../../../utils/logger";
+// import type { PatchedFixture } from "../../../types-v2/patchedFixture";
+// import { Logger } from "../../../utils/logger";
 import { IconBulb, IconQuestionMark } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
-const logger = new Logger("DMXControl", "green");
+// const logger = new Logger("DMXControl", "green");
 
 export const DMXControl = ({
   // eventId,

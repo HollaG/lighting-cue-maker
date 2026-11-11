@@ -1,4 +1,4 @@
-import type { GroupConfig } from "konva/lib/Group";
+// import type { GroupConfig } from "konva/lib/Group";
 import type { PatchedFixture } from "../types-v2/patchedFixture";
 import type { Euler, Vector3 } from "three";
 import type { ValueAssignment } from "../types/cues";

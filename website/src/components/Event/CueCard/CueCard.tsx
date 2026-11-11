@@ -33,7 +33,7 @@ import { notifications } from "../../../utils/notifications";
 import { ConfirmDeleteButton } from "../../ConfirmDeleteButton/ConfirmDeleteButton";
 import { CardBase } from "../../Cues/CardBase";
 import { useGetOptionSets } from "../../../query-v2/option-sets/useGetOptionSets";
-import { useGetEvent } from "../../../query-v2/events/useGetEvent";
+// import { useGetEvent } from "../../../query-v2/events/useGetEvent";
 import { useGetFixtureGroups } from "../../../query-v2/fixture-groups/useGetFixtureGroups";
 import type { FixtureGroup } from "../../../types-v2/fixtureGroups";
 import { OptionSetType, SelectableType, type OptionSet } from "../../../types-v2/optionSet";

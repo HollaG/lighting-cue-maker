@@ -1,9 +1,9 @@
 import { Stack, Flex, Alert, Code, Kbd, Textarea, Group } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
-import { ContentControl } from "../ContentControl/ContentControl";
+// import { ContentControl } from "../ContentControl/ContentControl";
 import { RichContentWrapper } from "../RichContent-v2/RichContentWrapper";
 import { useAppStore, type InputMode } from "../../store/appStore";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { /* useCallback, */ useEffect, /* useMemo, */ useRef, useState } from "react";
 import { useGetItem } from "../../query-v2/items/useGetItem";
 import { useUpsertItem } from "../../query-v2/items/useUpsertItem";
 import { sanitize } from "../../utils/sanitize";
@@ -26,8 +26,8 @@ export const Lyrics = ({ eventId, itemId }: { itemId: string; eventId: string })
 
   const setIndicatorNumber = useAppStore((s) => s.setIndicatorNumber);
 
-  const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
-  const toggleShowCueIdentifiers = useAppStore((s) => s.toggleShowCueIdentifiers);
+  // const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
+  // const toggleShowCueIdentifiers = useAppStore((s) => s.toggleShowCueIdentifiers);
 
   const contentRef = useRef<HTMLDivElement>(null);
 

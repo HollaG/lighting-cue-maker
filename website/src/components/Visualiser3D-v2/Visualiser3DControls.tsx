@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
 import {
   Accordion,
-  AngleSlider,
-  Box,
+  // AngleSlider,
+  // Box,
   Button,
   Center,
-  Collapse,
+  // Collapse,
   Divider,
   Flex,
   Group,
   Menu,
-  Popover,
+  // Popover,
   Slider,
   Stack,
   Text,
@@ -23,16 +23,16 @@ import { useAppStore } from "../../store/appStore";
 import type { UpdateFixtureReq, Fixture, FixtureType, UpsertFixtureReq } from "../../types/fixtures";
 
 import type { CameraControls } from "@react-three/drei";
-import { useDebouncedCallback, useDidUpdate } from "@mantine/hooks";
+// import { useDebouncedCallback, useDidUpdate } from "@mantine/hooks";
 
-import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
+// import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import type {
   Visualiser,
   Visualiser3DEnvironment,
   Visualiser3DObject,
   Visualiser3DObjectTypes,
 } from "../../types-v2/visualiser";
-import { useUpsertVisualiser } from "../../query-v2/visualiser/useUpsertVisualiser";
+// import { useUpsertVisualiser } from "../../query-v2/visualiser/useUpsertVisualiser";
 
 interface ObjectMenuProps {
   obj: Visualiser3DObject;
@@ -276,8 +276,8 @@ const VisualiserFixtureSection = ({
   cameraRef,
   setFixtureAccordionValue,
   // stageRef,
-  visualiser,
-  eventId,
+  // visualiser,
+  // eventId,
 }: {
   visualiser: Visualiser;
   fixtureGroup: FixtureGroupConfiguration;
@@ -292,7 +292,7 @@ const VisualiserFixtureSection = ({
   const { fixtures } = useGetFixtures({ fixtureGroupId: fixtureGroup.id });
 
   const { isPending: isCreateFixturePending, mutateAsync: upsertFixture } = useUpsertFixture();
-  const { mutateAsync: upsertVisualiser } = useUpsertVisualiser(eventId);
+  // const { mutateAsync: upsertVisualiser } = useUpsertVisualiser(eventId);
 
   // TODO: unused var
   const { isPending: _isDeletePending, mutateAsync: deleteFixture } = useDeleteFixture();
@@ -369,11 +369,11 @@ const VisualiserFixtureSection = ({
   );
   const fixtureTypeSupportsPosition = (fixtureType: FixtureType) => fixtureType === "moving_head";
 
-  const presetPositionOptions = hasPresetPositionAttribute
-    ? (fixtureGroup.attributes.find((attr) => attr.type === AttributeTypes.PRESET_POSITION)?.optionPossibleValues[
-        AttributeTypes.PRESET_POSITION
-      ] ?? [])
-    : [];
+  // const presetPositionOptions = hasPresetPositionAttribute
+    // ? (fixtureGroup.attributes.find((attr) => attr.type === AttributeTypes.PRESET_POSITION)?.optionPossibleValues[
+        // AttributeTypes.PRESET_POSITION
+      // ] ?? [])
+    // : [];
 
   // Debounce and save
   // const [fixtureAttributeMapping, setFixtureAttributeMapping] = useState<FixtureAttributeMapping>(
@@ -383,9 +383,9 @@ const VisualiserFixtureSection = ({
   // shared
   const previewFixtureId = useAppStore((state) => state.previewFixtureId);
   const setPreviewFixtureId = useAppStore((state) => state.setPreviewFixtureId);
-  const previewPositionId = useAppStore((state) => state.previewPositionId);
-  const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
-  const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
+  // const previewPositionId = useAppStore((state) => state.previewPositionId);
+  // const togglePreviewPositionId = useAppStore((state) => state.togglePreviewPositionId);
+  // const setPreviewPosition = useAppStore((state) => state.setPreviewPosition);
 
   // const getPosition = (fixtureId: string, positionOptionId: string, fixtureGroupId: string) => {
   //   return (

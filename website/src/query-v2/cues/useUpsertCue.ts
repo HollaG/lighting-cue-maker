@@ -69,7 +69,7 @@ export const useUpsertCue = (eventId: string, itemId: string) => {
       });
     },
 
-    onError: (err, patch, context) => {
+    onError: (_err, _patch, context) => {
       // rollback
       if (context?.existingCues) {
         queryClient.setQueryData<Cue[]>(queryKey, context.existingCues);

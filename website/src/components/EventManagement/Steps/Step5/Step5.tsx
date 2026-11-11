@@ -1,17 +1,17 @@
 import { Center, Container, Grid, Loader, Stack, Text, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { useGetEvent } from "../../../../query-v2/events/useGetEvent";
+// import { useGetEvent } from "../../../../query-v2/events/useGetEvent";
 import { useGetFixtureGroups } from "../../../../query-v2/fixture-groups/useGetFixtureGroups";
-import { useUpsertFixtureGroups } from "../../../../query-v2/fixture-groups/useUpsertFixtureGroups";
+// import { useUpsertFixtureGroups } from "../../../../query-v2/fixture-groups/useUpsertFixtureGroups";
 import { FixtureGroupSelector } from "./FixtureGroupSelector";
 import { OptionSetsContainer } from "./OptionSets/OptionSetsContainer";
 
 /** Presets */
-export const Step5 = ({ eventId, onDone }: { eventId: string; onDone: () => void }) => {
+export const Step5 = ({ eventId /* , onDone */ }: { eventId: string; onDone: () => void }) => {
   const { fixtureGroups, isFixtureGroupsLoading } = useGetFixtureGroups(eventId);
   // const { patchedFixtures, isPatchedFixturesLoading } = useGetPatchedFixtures(eventId);
-  const { event } = useGetEvent(eventId);
-  const { mutateAsync: upsertFixtureGroups } = useUpsertFixtureGroups(eventId);
+  // const { event } = useGetEvent(eventId);
+  // const { mutateAsync: upsertFixtureGroups } = useUpsertFixtureGroups(eventId);
 
   const isLoading = isFixtureGroupsLoading;
 

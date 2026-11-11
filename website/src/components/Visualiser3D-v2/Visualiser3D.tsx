@@ -2,11 +2,11 @@ import {
   AspectRatio,
   Box,
   Button,
-  Code,
-  Divider,
+  // Code,
+  // Divider,
   Flex,
   Group,
-  HoverCard,
+  // HoverCard,
   Kbd,
   LoadingOverlay,
   MantineProvider,
@@ -14,17 +14,17 @@ import {
   Stack,
   Text,
   Tooltip,
-  Progress,
-  Menubar,
-  Menu,
+  // Progress,
+  // Menubar,
+  // Menu,
   Slider,
-  SimpleGrid,
+  // SimpleGrid,
   Select,
 } from "@mantine/core";
 import { Canvas } from "@react-three/fiber";
 
-import type { Fixture, PositionOption } from "../../types/fixtures";
-import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
+// import type { Fixture, PositionOption } from "../../types/fixtures";
+// import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -37,20 +37,20 @@ import { Vector3 } from "three";
 import { useDebouncedCallback, useDebouncedValue, useDidUpdate } from "@mantine/hooks";
 import { useAppStore } from "../../store/appStore";
 import { GUI } from "lil-gui";
-import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, ValueAssignment } from "../../types/cues";
+// import type { AttributeAssignment, DynamicValueType, FixtureGroupsAssignment, ValueAssignment } from "../../types/cues";
 
 import {
   IconArrowBackUp,
   IconArrowForwardUp,
-  IconHelpCircle,
-  IconRotate360,
-  IconTransfer,
-  IconZoomPan,
+  // IconHelpCircle,
+  // IconRotate360,
+  // IconTransfer,
+  // IconZoomPan,
 } from "@tabler/icons-react";
-import { useUpsertFixture } from "../../query/fixtures/useUpsertFixtures";
+// import { useUpsertFixture } from "../../query/fixtures/useUpsertFixtures";
 import { useQueryClient } from "@tanstack/react-query";
-import { useVisualiser3DTracking } from "../../hooks/realtime/useVisualiser3DTracking";
-import { hasAValue } from "../../utils/cue/cueForm";
+// import { useVisualiser3DTracking } from "../../hooks/realtime/useVisualiser3DTracking";
+// import { hasAValue } from "../../utils/cue/cueForm";
 import type {
   Visualiser,
   Visualiser3DCameraView,
@@ -61,7 +61,7 @@ import type {
 import { useUpsertVisualiser } from "../../query-v2/visualiser/useUpsertVisualiser";
 import { configureVisualiser3DRenderer, createVisualiser3DRenderer } from "./visualiser3DRenderer";
 import { StagePreview3D } from "./Stage3D/StagePreview3D";
-import { Visualiser3DControls } from "./Visualiser3DControls";
+// import { Visualiser3DControls } from "./Visualiser3DControls";
 import type { PatchedFixture } from "../../types-v2/patchedFixture";
 import { CardBase } from "../Cues/CardBase";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
@@ -432,7 +432,7 @@ export const Visualiser3D = ({
     }
   };
 
-  const isFixture = (selectedObjectId && fixtures.some((f) => f.id === selectedObjectId)) || false;
+  // const isFixture = (selectedObjectId && fixtures.some((f) => f.id === selectedObjectId)) || false;
   const isAtLeastOneFixtureSelected = selectedIds.some((id) => fixtures.some((f) => f.id === id));
   const isElement = (selectedObjectId && stageElements.some((el) => el.id === selectedObjectId)) || false;
   // const previewFixtureId = useAppStore((state) => state.previewFixtureId);

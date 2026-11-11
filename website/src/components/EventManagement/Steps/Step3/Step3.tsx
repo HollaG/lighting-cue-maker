@@ -20,7 +20,7 @@ import { GroupItem } from "./GroupItem";
 export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string }) => {
   const { patchedFixtures, isPatchedFixturesLoading } = useGetPatchedFixtures(eventId);
   const { event } = useGetEvent(eventId);
-  const { fixtureGroups, isFixtureGroupsLoading } = useGetFixtureGroups(eventId);
+  const { fixtureGroups /* , isFixtureGroupsLoading */ } = useGetFixtureGroups(eventId);
   const [lastDeletedFixtureId, setLastDeletedFixtureId] = useState<string | null>(null);
   const { mutateAsync: deleteFixture, isPending: isDeleteFixturePending } = useDeletePatchedFixture(eventId);
 

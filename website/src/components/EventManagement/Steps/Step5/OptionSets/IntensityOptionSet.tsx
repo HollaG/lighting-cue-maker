@@ -41,7 +41,7 @@ export const IntensityOptionSet = ({
         },
     );
 
-    const ids = new Set(selectables.map((s) => s.id));
+    // const ids = new Set(selectables.map((s) => s.id));
     void upsertOptionSets([
       {
         ...optionSet,

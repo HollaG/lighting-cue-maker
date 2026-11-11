@@ -8,27 +8,27 @@
 // import { useDuplicateEvent } from "../../query/event/useDuplicateEvent";
 
 import {
-  Box,
+  // Box,
   Button,
   Container,
   Flex,
   Group,
-  Loader,
-  NumberInput,
-  Select,
-  Stack,
-  Text,
-  Textarea,
-  TextInput,
-  Title,
-  Tooltip,
+  // Loader,
+  // NumberInput,
+  // Select,
+  // Stack,
+  // Text,
+  // Textarea,
+  // TextInput,
+  // Title,
+  // Tooltip,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
-import { EventForm } from "../../components/EventForm/EventForm";
-import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
-import { useForm } from "@mantine/form";
-import { useGetFixtureTemplates } from "../../query-v2/fixture-templates/useGetFixtureTemplates";
+// import { EventForm } from "../../components/EventForm/EventForm";
+// import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
+// import { useForm } from "@mantine/form";
+// import { useGetFixtureTemplates } from "../../query-v2/fixture-templates/useGetFixtureTemplates";
 import { EventManagementWrapper } from "../../components/EventManagement/EventManagementWrapper";
 
 // export const CreateEventPage = () => {
