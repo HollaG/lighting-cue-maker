@@ -15,6 +15,15 @@ export interface CueSlice {
 
   isMovingCue: boolean;
   setIsMovingCue: (isMovingCue: boolean) => void;
+
+  /** Whether we open the DMX drawer for further editing */
+  isDmxDrawerOpen: boolean;
+  setIsDmxDrawerOpen: (isDmxDrawerOpen: boolean) => void;
+  toggleIsDmxDrawerOpen: () => void;
+
+  /** Which fixture is currently being viewed. Used to highlight the fixtures in the visualiser and in the DMX control panel. */
+  currentlyViewingFixtureIds: string[];
+  setCurrentlyViewingFixtureIds: (fixtureIds: string[]) => void;
 }
 
 export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set) => ({
@@ -32,4 +41,11 @@ export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set) => ({
 
   isMovingCue: false,
   setIsMovingCue: (isMovingCue) => set({ isMovingCue }),
+
+  isDmxDrawerOpen: false,
+  setIsDmxDrawerOpen: (isDmxDrawerOpen) => set({ isDmxDrawerOpen }),
+  toggleIsDmxDrawerOpen: () => set((state) => ({ isDmxDrawerOpen: !state.isDmxDrawerOpen })),
+
+  currentlyViewingFixtureIds: [],
+  setCurrentlyViewingFixtureIds: (fixtureIds) => set({ currentlyViewingFixtureIds: fixtureIds }),
 });

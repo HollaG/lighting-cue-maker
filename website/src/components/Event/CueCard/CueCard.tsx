@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Box,
   Button,
   Combobox,
@@ -38,7 +39,7 @@ import type { FixtureGroup } from "../../../types-v2/fixtureGroups";
 import { OptionSetType, SelectableType, type OptionSet } from "../../../types-v2/optionSet";
 import { useQueryClient } from "@tanstack/react-query";
 import { makeGetCuesQueryKey } from "../../../query-v2/cues/useGetCues";
-import { IconCaretDown, IconHelpCircle, IconInfoSquareRounded } from "@tabler/icons-react";
+import { IconCaretDown, IconEdit, IconHelpCircle, IconInfoSquareRounded, IconPlus } from "@tabler/icons-react";
 import { popTransition } from "../../../utils/animations";
 
 /**
@@ -132,6 +133,10 @@ export const CueCard = ({
     if (isSelected) setSelectedCueId(undefined);
   };
 
+  // --- Custom DMX ---------
+  const cueHasOverrides = Object.keys(cue.overrides).length > 0;
+  const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
+
   return (
     <div ref={cardRef} id={`cue-card-${cue.id}`} data-cursor-surface="cueCard" data-cursor-anchor={cue.id}>
       <CardBase isActive={isSelected} shadow={isSelected ? "lg" : "none"}>
@@ -210,6 +215,67 @@ export const CueCard = ({
               {fixtureGroups.map((fixtureGroup) => (
                 <CueCardFixtureGroupOptionSetPickers key={fixtureGroup.id} fixtureGroup={fixtureGroup} cue={cue} />
               ))}
+
+              {/* DMX Manual Override card */}
+              <Stack
+                gap="xs"
+                p="lg"
+                style={{
+                  borderRadius: "6px",
+                  backgroundColor: !cueHasOverrides
+                    ? "transparent"
+                    : "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
+                  border: "1px solid light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
+
+                  transition: "all 0.2s ease-in-out",
+                }}
+              >
+                <Group>
+                  <Group gap="xs" align="center">
+                    <Text fw="bold">Custom settings</Text>
+                    <Tooltip
+                      label="Configure fixtures how you'd like - not restricted to fixed selections"
+                      position="top"
+                      withArrow
+                    >
+                      <IconInfoSquareRounded
+                        width="0.75rem"
+                        height="0.75rem"
+                        style={{ color: "var(--mantine-gray-5)" }}
+                      />
+                    </Tooltip>
+                  </Group>
+                  <Flex flex={1} />
+                  <ActionIcon
+                    variant={cueHasOverrides ? "light" : "outline"}
+                    size="sm"
+                    onClick={() => setIsDmxDrawerOpen(true)}
+                  >
+                    {cueHasOverrides ? <IconEdit size={"0.75rem"} /> : <IconPlus size={"0.75rem"} />}
+                  </ActionIcon>
+                  {/* <Switch
+                    styles={{
+                      track: { cursor: "pointer" },
+                      input: { cursor: "pointer" },
+                    }}
+                    value={fixtureGroup.id}
+                    onLabel="ON"
+                    offLabel="OFF"
+                  /> */}
+                </Group>
+                <Divider />
+                {/* {optionSets.map((optionSet) => (
+                  // Render the option set corresponding to the OptionSetType
+
+                  <OptionSetWrapper key={optionSet.id} optionSet={optionSet} eventId={fixtureGroup.eventId} cue={cue} />
+                ))} */}
+
+                {!cueHasOverrides && (
+                  <Text c="dimmed" size="sm">
+                    No custom settings yet
+                  </Text>
+                )}
+              </Stack>
             </SimpleGrid>
           </Switch.Group>
           <Textarea

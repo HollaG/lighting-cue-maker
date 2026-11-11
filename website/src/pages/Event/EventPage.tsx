@@ -7,6 +7,7 @@ import {
   Drawer,
   Flex,
   FloatingIndicator,
+  getDefaultZIndex,
   Group,
   Image,
   Loader,
@@ -46,6 +47,8 @@ import { Cues } from "../../components/Event/Cues";
 import { popTransition } from "../../utils/animations";
 import { VisualiserInputProcessor } from "../../components/Visualiser3D-v2/Processing/VisualiserInputProcessor";
 import { ResolutionScaleSelect } from "../../components/Visualiser3D-v2/ResolutionScaleSelect";
+import { useResolvedDmx } from "../../hooks/useResolvedDmx";
+import { DMXControlWrapper } from "../../components/DMX/DMXControlWrapper";
 
 const logger = new Logger("EventPage.tsx");
 
@@ -58,6 +61,9 @@ export const EventPage = () => {
 
   const [openedLyrics, { open: openLyrics, close: closeLyrics, toggle: toggleLyrics }] = useDisclosure(false);
   const [openedCues, { open: openCues, close: closeCues, toggle: toggleCues }] = useDisclosure(false);
+  // for DMX drawer, the open/close state is in the app store, so that each individual CueCard can open it remotely.
+  const isDmxDrawerOpen = useAppStore((s) => s.isDmxDrawerOpen);
+  const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
 
   const toggleDrawerHandler = (toggleCb: () => void, domain: "event" | "lyrics" | "cues") => {
     // only one drawer can be open at a time, so close the others if its open
@@ -77,6 +83,7 @@ export const EventPage = () => {
   const { items, isItemsLoading } = useGetItems(eventId);
   const { visualiser, isVisualiserLoading } = useGetVisualiser(eventId);
   const { patchedFixtures } = useGetPatchedFixtures(eventId);
+  const { dmxValuesWithOverrides: dmxValuesByFixture } = useResolvedDmx(eventId, patchedFixtures);
 
   const [selectedItemId, setSelectedItemId] = useLocalStorage({
     key: `${eventId}-item-selected`,
@@ -172,6 +179,37 @@ export const EventPage = () => {
           {openedEventDetails ? "Close" : "Open"} event details
         </Button>
       </Box>
+
+      {/* DMX overrides */}
+      {/* <Drawer */}
+      <Drawer
+        opened={isDmxDrawerOpen}
+        onClose={() => setIsDmxDrawerOpen(false)}
+        keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
+        position="bottom"
+        size="30vh"
+        // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
+        withOverlay={false} // even a transparent overlay catches every click on the visualiser
+        lockScroll={false} // scroll lock would also swallow the visualiser's scroll-to-zoom
+        trapFocus={false}
+        withCloseButton={false}
+        closeOnEscape
+        closeOnClickOutside={false} // allow manipulating the 3d visualiser
+
+        zIndex={getDefaultZIndex("modal") + 1} // above the Lyrics and Cues drawers (both 200)
+        scrollAreaComponent={undefined}
+
+        styles={{ body: { height: "100%", padding: 0, paddingTop: "var(--mantine-spacing-xs)" } }} // force the drawer body to be 100% height, never overflow
+      >
+        {!dmxValuesByFixture ? (
+          <Center h="100%">
+            <Loader type="bars" />
+          </Center>
+        ) : (
+          <DMXControlWrapper itemId={selectedItemId} eventId={eventId} dmxValuesByFixtureId={dmxValuesByFixture} />
+        )}
+      </Drawer>
+
       {/* Drawer for changing items */}
       <Drawer
         opened={openedEventDetails}
@@ -414,6 +452,7 @@ export const EventPage = () => {
             visualiser={visualiser}
             eventId={eventId}
             fixtures={patchedFixtures}
+            dmxValues={dmxValuesByFixture}
           />
         ) : (
           <Center h="100%">{isVisualiserLoading ? <Loader type="bars" /> : <Text>No visualiser found</Text>}</Center>

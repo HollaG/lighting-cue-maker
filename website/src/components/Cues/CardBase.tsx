@@ -2,11 +2,13 @@ import { Card, useMantineColorScheme, type CardProps } from "@mantine/core";
 import React from "react";
 import classes from "./CardBase.module.css";
 
-export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; shadow?: CardProps["shadow"] }> = ({
-  isActive,
-  children,
-  shadow,
-}) => {
+export const CardBase: React.FC<{
+  isActive: boolean;
+  children: React.ReactNode;
+  shadow?: CardProps["shadow"];
+  /** Merged over the card's own style, so it can override e.g. `overflow` or set a height. */
+  style?: React.CSSProperties;
+}> = ({ isActive, children, shadow, style }) => {
   const { colorScheme } = useMantineColorScheme();
   let backgroundColour;
   if (colorScheme === "dark") {
@@ -27,6 +29,7 @@ export const CardBase: React.FC<{ isActive: boolean; children: React.ReactNode; 
         borderColor: isActive
           ? "light-dark(var(--cue-color--light-selected), var(--cue-color--dark-selected))"
           : undefined,
+        ...style,
       }}
     >
       {children}
