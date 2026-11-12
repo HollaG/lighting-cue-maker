@@ -4,6 +4,7 @@ import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useDeleteOptionSet } from "../../../../../query-v2/option-sets/useDeleteOptionSet";
 import { useUpsertOptionSets } from "../../../../../query-v2/option-sets/useUpsertOptionSets";
+import type { FixtureGroup } from "../../../../../types-v2/fixtureGroups";
 import { OptionSetType, type OptionSet, type UpsertOptionSet } from "../../../../../types-v2/optionSet";
 import { Logger } from "../../../../../utils/logger";
 import { ConfirmDeleteButton } from "../../../../ConfirmDeleteButton/ConfirmDeleteButton";
@@ -12,18 +13,18 @@ import { CustomTextInput } from "../../../../CustomTextInput/CustomTextInput";
 import { IntensityOptionSet } from "./IntensityOptionSet";
 import { ColourOptionSet } from "./ColourOptionSet";
 import { ValuelessOptionSet } from "./ValuelessOptionSet";
+import { PatternOptionSet } from "./PatternOptionSet";
 
 const logger = new Logger("OptionSetContainer.tsx");
 
 export const OptionSetContainer = ({
   optionSet,
-  eventId,
-  fixtureGroupId,
+  fixtureGroup,
 }: {
   optionSet: OptionSet;
-  eventId: string;
-  fixtureGroupId: string;
+  fixtureGroup: FixtureGroup;
 }) => {
+  const { eventId, id: fixtureGroupId } = fixtureGroup;
   const [isExpanded, setIsExpanded] = useState(true);
   const [name, setName] = useState(optionSet.name);
   const [description, setDescription] = useState(optionSet.description);
@@ -64,6 +65,9 @@ export const OptionSetContainer = ({
       break;
     case OptionSetType.VALUELESS:
       content = <ValuelessOptionSet optionSet={optionSet} upsertOptionSets={upsertOptionSets} />;
+      break;
+    case OptionSetType.PATTERN:
+      content = <PatternOptionSet optionSet={optionSet} fixtureGroup={fixtureGroup} upsertOptionSets={upsertOptionSets} />;
       break;
   }
   return (

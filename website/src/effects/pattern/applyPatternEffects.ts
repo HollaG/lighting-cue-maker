@@ -146,13 +146,14 @@ const blend = (mode: BlendMode, base: number, effect: number): number => {
   }
 };
 
-const cellKey = (col: number, row: number) => `${col},${row}`;
+export const cellKey = (col: number, row: number) => `${col},${row}`;
 
 /**
  * Every grid position's colour at `timeMs`, including the fade between the previous step and this one.
  * Off cells are black, so they still blend (e.g. go dark in normal and mask mode).
+ * Keyed by `cellKey(col, row)`. Also used by the LD's pattern preview. May throw if the effect throws.
  */
-const getCellColours = (
+export const getCellColours = (
   effect: PatternEffectDefinition,
   selectable: PatternSelectable,
   grid: Grid,

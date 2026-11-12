@@ -7,6 +7,7 @@ import { OptionSetSelectionType, OptionSetType, type UpsertOptionSet } from "../
 import {
   getPremadeSelectablesForOptionSetType,
   MAX_COUNTS,
+  optionSetTypeToPriority,
   optionSetTypeRequired,
   optionSetTypeToDescription,
   optionSetTypeToName,
@@ -26,7 +27,7 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
       name: optionSetTypeToName(type),
       description: optionSetTypeToDescription(type),
       sortOrder: optionSets.length,
-      priority: 0,
+      priority: optionSetTypeToPriority(type),
       selectionType: OptionSetSelectionType.SINGLE,
       type,
       selectables: getPremadeSelectablesForOptionSetType(type),
@@ -89,6 +90,13 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
           disabled={shouldDisableAdding(optionSets, OptionSetType.VALUELESS)}
           disabledReason={limitReason(OptionSetType.VALUELESS, "single select")}
         />
+        <OptionSetCreateOption
+          header="Colour Effect Pattern"
+          description="Apply dynamic effects and patterns to colour fixtures"
+          onClick={() => onAddOptionSet(OptionSetType.PATTERN)}
+          disabled={shouldDisableAdding(optionSets, OptionSetType.PATTERN)}
+          disabledReason={limitReason(OptionSetType.PATTERN, "colour effect pattern")}
+        />
         {/* <OptionSetCreateOption
           header="Multi select"
           description="Create generic selection sets that don't affect the visualiser."
@@ -102,8 +110,7 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
           <OptionSetContainer
             key={optionSet.id}
             optionSet={optionSet}
-            eventId={fixtureGroup.eventId}
-            fixtureGroupId={fixtureGroup.id}
+            fixtureGroup={fixtureGroup}
           />
         ))}
       </Stack>
