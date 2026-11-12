@@ -20,6 +20,45 @@ export type ResolverInput = {
   optionSetsByGroupId: Record<string, OptionSet[]>;
 };
 
+/**
+ * The selectables picked in this cue, in write order (higher priority later).
+ * Each one remembers its group, so callers can keep only the ones for a given fixture without re-sorting.
+ * Shared by the static resolver and the pattern effect engine.
+ */
+export const getActiveSelectables = (
+  cue: Cue,
+  fixtureGroups: FixtureGroup[],
+  optionSetsByGroupId: Record<string, OptionSet[]>,
+): { selectable: Selectable; fixtureGroupId: string }[] => {
+  const selectables: { selectable: Selectable; fixtureGroupId: string }[] = [];
+
+  // Walk the groups in their own order (sortOrder). An object's key order means nothing, so don't loop over
+  // optionSetsByGroupId directly. Copy before sorting: `sort` changes the array in place.
+  for (const fixtureGroup of [...fixtureGroups].sort((a, b) => a.sortOrder - b.sortOrder)) {
+    // Ignore if this fixture group is disabled
+    if (cue.activeFixtureGroupIds && !cue.activeFixtureGroupIds.includes(fixtureGroup.id)) {
+      continue;
+    }
+
+    const optionSets = optionSetsByGroupId[fixtureGroup.id] ?? []; // a group without option sets has no key
+
+    // Sort the option sets in each fixture group by priority, highest is later.
+    // Copy first: this array belongs to React Query's cache, and sorting it in place would change the cached data.
+    const sortedOptionSets = [...optionSets].sort((a, b) => a.priority - b.priority);
+
+    // For each option set, add the selectables that are selected.
+    for (const optionSet of sortedOptionSets) {
+      for (const selectable of optionSet.selectables) {
+        if (cue.selectableIds.includes(selectable.id)) {
+          selectables.push({ selectable, fixtureGroupId: fixtureGroup.id });
+        }
+      }
+    }
+  }
+
+  return selectables;
+};
+
 export const getDmxValues = (input: ResolverInput): DmxValuesByFixtureId => {
   const { cue, fixtures, fixtureTemplates, fixtureGroups, optionSetsByGroupId } = input;
 
@@ -50,32 +89,7 @@ export const getDmxValues = (input: ResolverInput): DmxValuesByFixtureId => {
 
   // --- Phase 1 ---------
   // Getting the list of selectables, in write order (higher priority later).
-  // Each one remembers its group, so Phase 2 can keep only the ones for a given fixture without re-sorting.
-  const selectables: { selectable: Selectable; fixtureGroupId: string }[] = [];
-
-  // Walk the groups in their own order (sortOrder). An object's key order means nothing, so don't loop over
-  // optionSetsByGroupId directly. Copy before sorting: `sort` changes the array in place.
-  for (const fixtureGroup of [...fixtureGroups].sort((a, b) => a.sortOrder - b.sortOrder)) {
-    // Ignore if this fixture group is disabled
-    if (cue.activeFixtureGroupIds && !cue.activeFixtureGroupIds.includes(fixtureGroup.id)) {
-      continue;
-    }
-
-    const optionSets = optionSetsByGroupId[fixtureGroup.id] ?? []; // a group without option sets has no key
-
-    // Sort the option sets in each fixture group by priority, highest is later.
-    // Copy first: this array belongs to React Query's cache, and sorting it in place would change the cached data.
-    const sortedOptionSets = [...optionSets].sort((a, b) => a.priority - b.priority);
-
-    // For each option set, add the selectables that are selected.
-    for (const optionSet of sortedOptionSets) {
-      for (const selectable of optionSet.selectables) {
-        if (cue.selectableIds.includes(selectable.id)) {
-          selectables.push({ selectable, fixtureGroupId: fixtureGroup.id });
-        }
-      }
-    }
-  }
+  const selectables = getActiveSelectables(cue, fixtureGroups, optionSetsByGroupId);
 
   // --- Phase 2 ---------
   // Now, we have the list of selectables, with the higher priority ones at the back
@@ -336,6 +350,14 @@ const getColourFromHex = (hex: string, availableChannels: ChannelType[]): { [key
     console.warn(`Invalid colour hex "${hex}"`);
     return {};
   }
+  return getColourFromRgb(rgb, availableChannels);
+};
+
+/** Same as getColourFromHex, from [r, g, b] (0–255). Used by pattern effects, which work in RGB. */
+export const getColourFromRgb = (
+  rgb: readonly [number, number, number],
+  availableChannels: ChannelType[],
+): { [key in ChannelType]?: number } => {
   let [r, g, b] = rgb;
 
   const has = (type: ChannelType) => availableChannels.includes(type);
@@ -372,7 +394,7 @@ const getColourFromHex = (hex: string, availableChannels: ChannelType[]): { [key
 };
 
 /** "#rrggbb", "rrggbb", "#rgb" or "rgb" → [r, g, b] (0–255), or null if it isn't a valid hex colour. */
-const parseHex = (hex: string): [number, number, number] | null => {
+export const parseHex = (hex: string): [number, number, number] | null => {
   let h = hex.trim().replace(/^#/, "");
   if (/^[0-9a-f]{3}$/i.test(h)) h = h.replace(/./g, (c) => c + c); // "f80" → "ff8800"
   if (!/^[0-9a-f]{6}$/i.test(h)) return null;

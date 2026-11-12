@@ -1,4 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import {
+  applyPatternEffects,
+  getActivePatterns,
+  getNextPatternChangeDelay,
+} from "../effects/pattern/applyPatternEffects";
+import { useEffectClock } from "./useEffectClock";
 import { useGetCue } from "../query-v2/cues/useGetCue";
 import { useGetVisualiserData } from "../query-v2/visualiser-data/useGetVisualiserData";
 import { useAppStore } from "../store/appStore";
@@ -19,7 +25,9 @@ export const useResolvedDmx = (
   eventId: string,
   fixtures: PatchedFixture[],
 ): {
+  /** Static values only: no pattern effects, no overrides. */
   dmxValues: DmxValuesByFixtureId | null;
+  /** Static values, then pattern effects (changes over time), then overrides. */
   dmxValuesWithOverrides: DmxValuesByFixtureId | null;
   isLoading: boolean;
 } => {
@@ -42,16 +50,39 @@ export const useResolvedDmx = (
     });
   }, [cue, fixtures, visualiserData]);
 
+  // --- Pattern effects: animated on top of the static values ---
+  const patterns = useMemo(
+    () =>
+      cue && visualiserData
+        ? getActivePatterns(cue, visualiserData.fixtureGroups, visualiserData.optionSetsByGroupId)
+        : [],
+    [cue, visualiserData],
+  );
+  const getNextDelay = useCallback((t: number) => getNextPatternChangeDelay(patterns, t), [patterns]);
+  // Restarts from 0 when another cue is selected.
+  const timeMs = useEffectClock(patterns.length > 0, cue?.id, getNextDelay);
+
+  const dmxValuesWithEffects = useMemo(() => {
+    if (!dmxValues || !visualiserData || patterns.length === 0) return dmxValues; // nothing animates: same object
+    return applyPatternEffects({
+      base: dmxValues,
+      patterns,
+      fixtures,
+      fixtureTemplates: visualiserData.fixtureTemplates,
+      timeMs,
+    });
+  }, [dmxValues, visualiserData, patterns, fixtures, timeMs]);
+
   const overrides = cue?.overrides;
 
-  // These are the DMX values with overrides applied.
+  // These are the DMX values with effects and then overrides applied (overrides always win).
   // Why we need both:
   //   Sometimes, we want to show the originl (non-overwritten) values
   // Actually, most of the time, we can use this value, because if no overrides, it will return the base.
   const dmxValuesWithOverrides = useMemo(() => {
-    if (!dmxValues || !visualiserData) return dmxValues; // nothing to do: keep the same object
-    return applyOverrides(dmxValues, overrides, fixtures, visualiserData.fixtureTemplates);
-  }, [dmxValues, overrides, fixtures, visualiserData]);
+    if (!dmxValuesWithEffects || !visualiserData) return dmxValuesWithEffects; // nothing to do: keep the same object
+    return applyOverrides(dmxValuesWithEffects, overrides, fixtures, visualiserData.fixtureTemplates);
+  }, [dmxValuesWithEffects, overrides, fixtures, visualiserData]);
 
   useEffect(() => {
     logger.debug("dmx values", dmxValues);
