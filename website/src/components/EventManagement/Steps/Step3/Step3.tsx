@@ -1,4 +1,16 @@
-import { Box, Button, Group, Loader, MultiSelect, NumberInput, Select, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Group,
+  Loader,
+  MultiSelect,
+  NumberInput,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 import { useState } from "react";
 import { useGetEvent } from "../../../../query-v2/events/useGetEvent";
 import { useUpdateEvent } from "../../../../query-v2/events/useUpdateEvent";
@@ -112,6 +124,8 @@ export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string
 
   // For the Grid
   const [selectedFixtureGroupId, setSelectedFixtureGroupId] = useState<string | null>(null);
+  const selectedGroup = fixtureGroups.find((g) => g.id === selectedFixtureGroupId);
+
   return (
     <form
       id={STEP_FORM_ID}
@@ -232,7 +246,19 @@ export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string
           </Stack>
 
           {/* Grid */}
-          <GridControl />
+          {selectedGroup ? (
+            <GridControl
+              key={selectedGroup.id}
+              eventId={eventId}
+              fixtureGroup={selectedGroup}
+              fixtures={patchedFixtures.filter((f) => selectedGroup.fixtureIds.includes(f.id))}
+              fixtureTemplates={fixtureTemplates.filter((t) =>
+                patchedFixtures.some((f) => f.fixtureTemplateId === t.id),
+              )}
+            />
+          ) : (
+            <Text c="dimmed">Select a group to arrange its grid</Text>
+          )}
         </SimpleGrid>
       </Stack>
     </form>

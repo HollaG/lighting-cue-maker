@@ -47,14 +47,21 @@ export const ClickableCardBase = ({
   shadow,
   onClick,
   disabled = false,
+  style,
+  ref,
 }: {
   isActive?: boolean;
   children: React.ReactNode;
   shadow?: CardProps["shadow"];
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
+  /** Inline styles win over CardBase.module.css, so this can override e.g. size or padding. */
+  style?: React.CSSProperties;
+  /** Lets wrappers like Popover.Target / Tooltip find the button. React 19 passes ref as a normal prop. */
+  ref?: React.Ref<HTMLButtonElement>;
 }) => (
   <Card
+    ref={ref}
     component="button"
     type="button"
     withBorder
@@ -65,6 +72,7 @@ export const ClickableCardBase = ({
     aria-pressed={isActive}
     data-active={isActive || undefined}
     data-disabled={disabled || undefined}
+    style={style}
   >
     {children}
   </Card>

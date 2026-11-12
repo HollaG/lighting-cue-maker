@@ -195,8 +195,9 @@ func getPatchedFixtures(c *gin.Context) {
 	var fixtures []modelsv2.PatchedFixture
 	if err := database.DB().
 		Where("event_id = ?", eventId).
-		Order("name ASC").
+		// Order added, so renaming a fixture doesn't move it in the list. id breaks ties for fixtures added together.
 		Order("created_at ASC").
+		Order("id ASC").
 		Find(&fixtures).Error; err != nil {
 		response.InternalError(c, "Failed to get patched fixtures")
 		return

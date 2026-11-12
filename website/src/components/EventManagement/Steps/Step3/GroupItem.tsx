@@ -159,8 +159,9 @@ export const GroupItem = ({
           </Button>
         </Group>
         <Stack gap="xs">
-          {fixtures.map((fixture) => (
+          {fixtures.map((fixture, index) => (
             <FixtureItem
+              index={index}
               key={fixture.id}
               fixture={fixture}
               rightSection={

@@ -1,5 +1,54 @@
 import { Button, Flex, Popover, Stack, Text, type ButtonProps } from "@mantine/core";
-import { useState, type ReactNode } from "react";
+import { Children, cloneElement, useState, type MouseEventHandler, type ReactElement, type ReactNode } from "react";
+
+/** Shared "are you sure?" state: open flag, plus a confirm handler that keeps the popover open on failure. */
+const useConfirm = (onConfirm: () => void | Promise<unknown>) => {
+  const [opened, setOpened] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsPending(true);
+    try {
+      await onConfirm();
+      setOpened(false);
+    } catch {
+      // error notif handled by api.ts; keep the popover open so they can retry or cancel
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { opened, setOpened, isPending, handleConfirm };
+};
+
+/** The popover's body: the question, then Cancel and the confirm button. */
+const ConfirmDropdown = ({
+  message,
+  confirmLabel,
+  isPending,
+  onCancel,
+  onConfirm,
+}: {
+  message: string;
+  confirmLabel: string;
+  isPending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) => (
+  <Popover.Dropdown>
+    <Stack>
+      <Text>{message}</Text>
+      <Flex justify="end" gap="sm">
+        <Button data-autofocus variant="transparent" size="xs" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button color="red" variant="light" size="xs" loading={isPending} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      </Flex>
+    </Stack>
+  </Popover.Dropdown>
+);
 
 type ConfirmDeleteButtonProps = {
   onConfirm: () => void | Promise<unknown>;
@@ -26,20 +75,7 @@ export const ConfirmDeleteButton = ({
   buttonProps,
   trigger,
 }: ConfirmDeleteButtonProps) => {
-  const [opened, setOpened] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-
-  const handleConfirm = async () => {
-    setIsPending(true);
-    try {
-      await onConfirm();
-      setOpened(false);
-    } catch {
-      // error notif handled by api.ts; keep the popover open so they can retry or cancel
-    } finally {
-      setIsPending(false);
-    }
-  };
+  const { opened, setOpened, isPending, handleConfirm } = useConfirm(onConfirm);
 
   return (
     <Popover
@@ -60,19 +96,69 @@ export const ConfirmDeleteButton = ({
           </Button>
         )}
       </Popover.Target>
-      <Popover.Dropdown>
-        <Stack>
-          <Text>{message}</Text>
-          <Flex justify="end" gap="sm">
-            <Button data-autofocus variant="transparent" size="xs" onClick={() => setOpened(false)}>
-              Cancel
-            </Button>
-            <Button color="red" variant="light" size="xs" loading={isPending} onClick={handleConfirm}>
-              {confirmLabel}
-            </Button>
-          </Flex>
-        </Stack>
-      </Popover.Dropdown>
+      <ConfirmDropdown
+        message={message}
+        confirmLabel={confirmLabel}
+        isPending={isPending}
+        onCancel={() => setOpened(false)}
+        onConfirm={handleConfirm}
+      />
+    </Popover>
+  );
+};
+
+type ConfirmDeleteProps = {
+  onConfirm: () => void | Promise<unknown>;
+  /** The question shown in the popover */
+  message?: string;
+  confirmLabel?: string;
+  /**
+   * The element that opens the popover when clicked, e.g. a ClickableCardBase. Must be a single element that
+   * accepts `ref` (Popover.Target attaches one to position the popover) and `onClick`. Its own onClick still runs.
+   */
+  children: ReactElement<{ onClick?: MouseEventHandler }>;
+};
+
+/**
+ * Same "are you sure?" popover as ConfirmDeleteButton, but the trigger is whatever element you pass as children.
+ * No wrapper element is added, so the child keeps its own layout.
+ */
+export const ConfirmDelete = ({
+  onConfirm,
+  message = "Are you sure you want to delete this?",
+  confirmLabel = "Delete",
+  children,
+}: ConfirmDeleteProps) => {
+  const { opened, setOpened, isPending, handleConfirm } = useConfirm(onConfirm);
+
+  // The popover is controlled, so Popover.Target won't add a click handler. Add one that opens it,
+  // keeping the child's own onClick.
+  const child = Children.only(children);
+  const trigger = cloneElement(child, {
+    onClick: (e) => {
+      child.props.onClick?.(e);
+      setOpened(true);
+    },
+  });
+
+  return (
+    <Popover
+      shadow="sm"
+      withArrow
+      position="top"
+      withOverlay
+      trapFocus
+      opened={opened}
+      onDismiss={() => setOpened(false)}
+    >
+      <Popover.Target>{trigger}</Popover.Target>
+      <ConfirmDropdown
+        message={message}
+        confirmLabel={confirmLabel}
+        isPending={isPending}
+        onCancel={() => setOpened(false)}
+        onConfirm={handleConfirm}
+      />
     </Popover>
   );
 };
