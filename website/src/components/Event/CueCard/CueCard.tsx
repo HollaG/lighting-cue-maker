@@ -607,6 +607,51 @@ const OptionSetPositionType = () => {
   return <></>;
 };
 
+const OptionSetPatternEffectType = ({
+  optionSet,
+  selectedSelectableIds,
+  onChange,
+  disabled,
+}: OptionSetTypeToComponentProps) => {
+  // in the Valueless option set, all selectables should be of type SelectableType.VALUELESS. Sanity filter.
+  const patternSelectables = optionSet.selectables.filter((s) => s.type === SelectableType.EFFECT_PATTERN);
+
+  const data = patternSelectables.map((s) => ({ value: s.id, label: s.name }));
+
+  // users can select from these selectables. (only 1 for now)
+  const selectedValue =
+    selectedSelectableIds.length > 0 ? patternSelectables.find((s) => s.id === selectedSelectableIds[0]) : undefined;
+
+  const onValueChange = (newSelectableId: string | undefined) => {
+    if (newSelectableId) {
+      onChange([newSelectableId]);
+    } else {
+      onChange([]);
+    }
+  };
+
+  return (
+    <Select
+      comboboxProps={{ transitionProps: popTransition }}
+      searchable
+      label={<OptionSetLabel optionSet={optionSet} />}
+      data={data}
+      placeholder={"Pick a value"}
+      size="sm"
+
+      value={selectedValue?.id ?? null}
+      onChange={(newValue) => onValueChange(newValue ?? undefined)}
+
+      clearable
+      rightSection={<IconCaretDown width="0.75rem" />}
+      clearSectionMode="clear"
+      required={optionSet.required}
+      disabled={disabled}
+      // readOnly={readOnly}
+    />
+  );
+};
+
 // Valueless refers to option sets that don't affect the DMX, so are just plain options.
 const OptionSetValuelessType = ({
   optionSet,
@@ -658,4 +703,5 @@ const OptionSetTypeToComponentMap = {
   [OptionSetType.CUSTOM]: OptionSetCustomType,
   [OptionSetType.POSITION]: OptionSetPositionType,
   [OptionSetType.VALUELESS]: OptionSetValuelessType,
+  [OptionSetType.PATTERN]: OptionSetPatternEffectType,
 };

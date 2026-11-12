@@ -12,6 +12,18 @@ export const MAX_COUNTS = {
   [OptionSetType.POSITION]: 1,
   [OptionSetType.CUSTOM]: Infinity,
   [OptionSetType.VALUELESS]: Infinity,
+  [OptionSetType.PATTERN]: 1,
+};
+
+export const optionSetTypeToPriority = (optionSetType: OptionSetType): number => {
+  switch (optionSetType) {
+    case OptionSetType.PATTERN:
+      return 20;
+    case OptionSetType.POSITION:
+      return 10;
+    default:
+      return 0;
+  }
 };
 
 export const shouldDisableAdding = (optionSets: OptionSet[], type: OptionSetType): boolean => {
@@ -35,6 +47,8 @@ export const optionSetTypeToName = (type: OptionSetType): string => {
       return "Position";
     case "Valueless":
       return "Selection";
+    case "Pattern":
+      return "Colour Effect Pattern";
     case "Custom":
       return "Custom";
     default:
@@ -51,7 +65,9 @@ export const optionSetTypeToDescription = (type: OptionSetType): string => {
     case "Position":
       return "All fixtures in the group will point at the selected position";
     case "Valueless":
-      return "";
+      return "A set of options that can be selected without affecting the visualiser.";
+    case "Pattern":
+      return "Apply dynamic effects and patterns to colour fixtures";
     case "Custom":
       return "";
     default:
@@ -86,6 +102,8 @@ export const optionSetTypeRequired = (type: OptionSetType): boolean => {
       return true;
     case "Custom":
       return false;
+    case "Pattern":
+      return false;
     case "Valueless":
       return false;
     default:
@@ -98,16 +116,16 @@ export const optionSetTypeRequired = (type: OptionSetType): boolean => {
 // Rule 2: 0..1 Colour can exist
 // Rule 3: 0..1 Position can exist
 // const isAllowedOptionSetType = (type: OptionSetType, existingOptionSets: OptionSetType[]): boolean => {
-  // switch (type) {
-    // case "Intensity":
-      // return !existingOptionSets.includes("Intensity");
-    // case "Colour":
-      // return !existingOptionSets.includes("Colour");
-    // case "Position":
-      // return !existingOptionSets.includes("Position");
-    // case "Custom":
-      // return true;
-    // default:
-      // return false; // disallow multiple by default
-  // }
+// switch (type) {
+// case "Intensity":
+// return !existingOptionSets.includes("Intensity");
+// case "Colour":
+// return !existingOptionSets.includes("Colour");
+// case "Position":
+// return !existingOptionSets.includes("Position");
+// case "Custom":
+// return true;
+// default:
+// return false; // disallow multiple by default
+// }
 // };

@@ -17,6 +17,7 @@ export const RichContentWrapper = ({ itemId, eventId }: { itemId: string; eventI
   const rawLyrics = item?.rawLyrics ?? "";
   const content = useMemo(() => generateRich(sanitize(rawLyrics)), [rawLyrics]);
 
+  console.log("RICH CONTENT WRAPPER RENDER");
   return (
     <RichContent
       itemId={itemId}

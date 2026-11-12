@@ -16,10 +16,11 @@ const (
 	OptionSetTypeIntensity OptionSetType = "Intensity"
 	OptionSetTypeColour    OptionSetType = "Colour"
 	OptionSetTypePosition  OptionSetType = "Position"
-	// Pattern and movement selectables use Custom (simple dropdown).
-	OptionSetTypeCustom OptionSetType = "Custom"
+	OptionSetTypeCustom    OptionSetType = "Custom"
 	// A plain dropdown of names. No effect on DMX.
 	OptionSetTypeValueless OptionSetType = "Valueless"
+	// Pattern effects (AppSelectableEffectPattern selectables).
+	OptionSetTypePattern OptionSetType = "Pattern"
 )
 
 // Request DTOs. Keep these in sync with website/src/query-v2/option-sets.

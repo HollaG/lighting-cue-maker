@@ -218,7 +218,8 @@ func validateOptionSet(row modelsv2.OptionSet) string {
 		return fmt.Sprintf("invalid selectionType %q", row.SelectionType)
 	}
 	switch row.Type {
-	case modelsv2.OptionSetTypeIntensity, modelsv2.OptionSetTypeColour, modelsv2.OptionSetTypePosition, modelsv2.OptionSetTypeCustom, modelsv2.OptionSetTypeValueless:
+	case modelsv2.OptionSetTypeIntensity, modelsv2.OptionSetTypeColour, modelsv2.OptionSetTypePosition,
+		modelsv2.OptionSetTypeCustom, modelsv2.OptionSetTypeValueless, modelsv2.OptionSetTypePattern:
 	default:
 		return fmt.Sprintf("invalid type %q", row.Type)
 	}

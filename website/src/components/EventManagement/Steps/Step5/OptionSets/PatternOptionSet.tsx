@@ -29,6 +29,7 @@ import type { FixtureGroup, Grid } from "../../../../../types-v2/fixtureGroups";
 import type { PatchedFixture } from "../../../../../types-v2/patchedFixture";
 import { useGetPatchedFixtures } from "../../../../../query-v2/patched-fixtures/useGetPatchedFixtures";
 import { PatternPreview } from "./PatternPreview";
+import { ConfirmDeleteButton } from "../../../../ConfirmDeleteButton/ConfirmDeleteButton";
 
 const EFFECT_OPTIONS = listPatternEffects().map((effect) => ({ value: effect.id, label: effect.name }));
 
@@ -107,6 +108,12 @@ export const PatternOptionSet = ({
     saveRows(next);
   };
 
+  const onDeleteRow = (id: string) => {
+    const next = rows.filter((row) => row.id !== id);
+    setRows(next);
+    saveRows(next);
+  };
+
   return (
     <Stack>
       {rows.map((row) => (
@@ -115,6 +122,7 @@ export const PatternOptionSet = ({
           row={row}
           onChangeRow={onChangeRow}
           onCloneRow={onCloneRow}
+          onDeleteRow={onDeleteRow}
           onBlur={() => saveRows.flush()}
           grid={fixtureGroup.grid}
           fixtures={patchedFixtures}
@@ -134,6 +142,7 @@ const PatternOptionRow = ({
   row,
   onChangeRow,
   onCloneRow,
+  onDeleteRow,
   onBlur,
   grid,
   fixtures,
@@ -141,6 +150,7 @@ const PatternOptionRow = ({
   row: PatternSelectable;
   onChangeRow: (id: string, patch: Partial<PatternSelectable>) => void;
   onCloneRow: (id: string, stepDuration: number, speedLabel: string) => void;
+  onDeleteRow: (id: string) => void;
   /** Saves straight away instead of waiting for the debounce. */
   onBlur: () => void;
   grid: Grid | null;
@@ -150,7 +160,7 @@ const PatternOptionRow = ({
 
   return (
     <Stack>
-      <Group align="end">
+      <Group align="center">
         <Box flex={1}>
           <CustomTextInput
             label="Effect name"
@@ -161,9 +171,10 @@ const PatternOptionRow = ({
             onBlur={onBlur}
           />
         </Box>
-        <Button variant="light" onClick={openPreview} leftSection={<IconPlayerPlay size={16} />}>
+        <Button variant="light" onClick={openPreview} size="xs">
           Preview
         </Button>
+        <ConfirmDeleteButton onConfirm={() => onDeleteRow(row.id)} />
       </Group>
       <PatternRowControls row={row} onChangeRow={onChangeRow} onCloneRow={onCloneRow} />
 

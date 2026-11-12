@@ -27,8 +27,13 @@ export const useResolvedDmx = (
 ): {
   /** Static values only: no pattern effects, no overrides. */
   dmxValues: DmxValuesByFixtureId | null;
-  /** Static values, then pattern effects (changes over time), then overrides. */
+  /** Static values, then pattern effects (changes over time), then overrides. For the visualiser. */
   dmxValuesWithOverrides: DmxValuesByFixtureId | null;
+  /**
+   * Static values, then overrides: no pattern effects, so it only changes when the cue or setup changes.
+   * For the DMX drawer, which must not re-render on every effect step.
+   */
+  dmxValuesForEditing: DmxValuesByFixtureId | null;
   isLoading: boolean;
 } => {
   const currentlySelectedCueId = useAppStore((state) => state.currentlySelectedCueId);
@@ -59,8 +64,15 @@ export const useResolvedDmx = (
     [cue, visualiserData],
   );
   const getNextDelay = useCallback((t: number) => getNextPatternChangeDelay(patterns, t), [patterns]);
-  // Restarts from 0 when another cue is selected.
-  const timeMs = useEffectClock(patterns.length > 0, cue?.id, getNextDelay);
+  // Restarts from 0 when another cue is selected or the patterns' timing changes, otherwise the timer already
+  // waiting (for the old step length) runs out first. Same reason as PatternPreview's resetKey.
+  const resetKey = [
+    cue?.id,
+    ...patterns.map(
+      ({ selectable: s }) => `${s.id}|${s.effect}|${s.stepDuration}|${s.fadeInDuration}|${s.fadeOutDuration}`,
+    ),
+  ].join(";");
+  const timeMs = useEffectClock(patterns.length > 0, resetKey, getNextDelay);
 
   const dmxValuesWithEffects = useMemo(() => {
     if (!dmxValues || !visualiserData || patterns.length === 0) return dmxValues; // nothing animates: same object
@@ -75,19 +87,26 @@ export const useResolvedDmx = (
 
   const overrides = cue?.overrides;
 
-  // These are the DMX values with effects and then overrides applied (overrides always win).
-  // Why we need both:
-  //   Sometimes, we want to show the originl (non-overwritten) values
-  // Actually, most of the time, we can use this value, because if no overrides, it will return the base.
+  // Static values + overrides, no effects. Depends only on the cue and setup (never on timeMs), so the DMX drawer
+  // that uses it doesn't re-render on every effect step.
+  // Why we need this and `dmxValues`: sometimes we want to show the original (non-overwritten) values.
+  const dmxValuesForEditing = useMemo(() => {
+    if (!dmxValues || !visualiserData) return dmxValues; // nothing to do: keep the same object
+    return applyOverrides(dmxValues, overrides, fixtures, visualiserData.fixtureTemplates);
+  }, [dmxValues, overrides, fixtures, visualiserData]);
+
+  // For the visualiser: effects, then overrides (overrides always win).
+  // When nothing animates, it is the same object as dmxValuesForEditing.
   const dmxValuesWithOverrides = useMemo(() => {
-    if (!dmxValuesWithEffects || !visualiserData) return dmxValuesWithEffects; // nothing to do: keep the same object
+    if (patterns.length === 0) return dmxValuesForEditing;
+    if (!dmxValuesWithEffects || !visualiserData) return dmxValuesWithEffects;
     return applyOverrides(dmxValuesWithEffects, overrides, fixtures, visualiserData.fixtureTemplates);
-  }, [dmxValuesWithEffects, overrides, fixtures, visualiserData]);
+  }, [patterns, dmxValuesForEditing, dmxValuesWithEffects, overrides, fixtures, visualiserData]);
 
   useEffect(() => {
     logger.debug("dmx values", dmxValues);
   }, [dmxValues]);
 
   const isLoading = isVisualiserDataLoading || isCueLoading;
-  return { dmxValues, dmxValuesWithOverrides, isLoading };
+  return { dmxValues, dmxValuesWithOverrides, dmxValuesForEditing, isLoading };
 };

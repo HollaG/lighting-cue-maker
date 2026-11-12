@@ -57,6 +57,9 @@ export const OptionSetType = {
   CUSTOM: "Custom",
   /** A plain dropdown of names. No effect on DMX. */
   VALUELESS: "Valueless",
+
+  /** For dynamic RGB patterns, dmx not touched when generating, using identity function to modify after */
+  PATTERN: "Pattern",
 } as const;
 export type OptionSetType = (typeof OptionSetType)[keyof typeof OptionSetType];
 
@@ -120,7 +123,7 @@ export type CustomSelectable = SelectableBase & {
 
 export type PatternSelectable = SelectableBase & {
   type: typeof SelectableType.EFFECT_PATTERN;
-  /** The algorithm. */
+  /** The algorithm. Cannot be strictly typed as it's loaded from file names. See src/effects/pattern/effects */
   effect: PatternEffect;
   colours: Colour[];
   /** Default "normal". */
@@ -236,6 +239,9 @@ export const ColourMode = {
 } as const;
 export type ColourMode = (typeof ColourMode)[keyof typeof ColourMode];
 
-// TODO(draw.io): PatternEffect and MovementEffect values are not defined yet.
+/**
+ * The `id` of an effect in src/effects/pattern/registry.ts, e.g. "columnChase".
+ * May not exist any more (effect file removed): the engine skips it, the LD UI should warn.
+ */
 export type PatternEffect = string;
 export type MovementEffect = string;
