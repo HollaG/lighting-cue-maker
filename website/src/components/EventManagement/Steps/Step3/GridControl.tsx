@@ -6,25 +6,11 @@
 //  Delete
 // 2. Prevent making the grid size smaller if there are heads outside the new size
 
-import {
-  Box,
-  Center,
-  Divider,
-  getDefaultZIndex,
-  Group,
-  Menu,
-  NumberInput,
-  Popover,
-  SimpleGrid,
-  Stack,
-  Text,
-  Title,
-} from "@mantine/core";
+import { Box, Center, Divider, getDefaultZIndex, Group, Menu, NumberInput, Stack, Text, Title } from "@mantine/core";
 import { CardBase, ClickableCardBase } from "../../../Cues/CardBase";
 import type { FixtureGroup, GridCell } from "../../../../types-v2/fixtureGroups";
 import type { PatchedFixture } from "../../../../types-v2/patchedFixture";
 import { useUpsertFixtureGroups } from "../../../../query-v2/fixture-groups/useUpsertFixtureGroups";
-import { useGetFixtureGroups } from "../../../../query-v2/fixture-groups/useGetFixtureGroups";
 import { IconPlus } from "@tabler/icons-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { Logger } from "../../../../utils/logger";
@@ -87,7 +73,8 @@ export const GridControl = ({
       },
     ]);
 
-  const [selectedCells, setSelectedCells] = useState<SimpleGridCell[]>([]);
+  // Multi-select (see TODO at the top): the selection isn't read yet.
+  const [, setSelectedCells] = useState<SimpleGridCell[]>([]);
   const addToSelection = (cell: SimpleGridCell) => {
     setSelectedCells((prev) => {
       if (prev.some((c) => c.row === cell.row && c.col === cell.col)) return prev; // already selected
@@ -97,9 +84,9 @@ export const GridControl = ({
   const removeFromSelection = (cell: SimpleGridCell) => {
     setSelectedCells((prev) => prev.filter((c) => !(c.row === cell.row && c.col === cell.col)));
   };
-  const clearSelection = () => {
-    setSelectedCells([]);
-  };
+  // const clearSelection = () => {
+  //   setSelectedCells([]);
+  // };
 
   return (
     <CardBase isActive={false}>
@@ -130,6 +117,21 @@ export const GridControl = ({
               />
             </Box>
           </Group>
+          <ConfirmDeleteButton
+            message="Confirm clearing the grid?"
+            confirmLabel="Clear"
+            onConfirm={() => {
+              upsertFixtureGroups([
+                {
+                  ...fixtureGroup,
+                  grid: {
+                    ...grid,
+                    cells: [],
+                  },
+                },
+              ]);
+            }}
+          />
         </Group>
         <Text c="dimmed" fz="sm">
           Used to apply effect patterns. Don't bother if you don't need accurate visualisations for dynamic

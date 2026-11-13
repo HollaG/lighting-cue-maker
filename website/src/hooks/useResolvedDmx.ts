@@ -10,6 +10,7 @@ import { useGetVisualiserData } from "../query-v2/visualiser-data/useGetVisualis
 import { useAppStore } from "../store/appStore";
 import type { PatchedFixture } from "../types-v2/patchedFixture";
 import { Logger } from "../utils/logger";
+import { recordPerf } from "../utils/perfProbe"; // TEMPORARY
 import { applyOverrides, getDmxValues, type DmxValuesByFixtureId } from "../utils/visualiser-v2-resolver";
 
 const logger = new Logger("useResolvedDmx", "cyan");
@@ -72,17 +73,20 @@ export const useResolvedDmx = (
       ({ selectable: s }) => `${s.id}|${s.effect}|${s.stepDuration}|${s.fadeInDuration}|${s.fadeOutDuration}`,
     ),
   ].join(";");
-  const timeMs = useEffectClock(patterns.length > 0, resetKey, getNextDelay);
+  const timeMs = useEffectClock(patterns.length > 0, resetKey, getNextDelay, "event"); // TEMPORARY perf label
 
   const dmxValuesWithEffects = useMemo(() => {
     if (!dmxValues || !visualiserData || patterns.length === 0) return dmxValues; // nothing animates: same object
-    return applyPatternEffects({
+    const startedAt = performance.now(); // TEMPORARY perf probe
+    const result = applyPatternEffects({
       base: dmxValues,
       patterns,
       fixtures,
       fixtureTemplates: visualiserData.fixtureTemplates,
       timeMs,
     });
+    recordPerf("applyPatternEffects", performance.now() - startedAt);
+    return result;
   }, [dmxValues, visualiserData, patterns, fixtures, timeMs]);
 
   const overrides = cue?.overrides;

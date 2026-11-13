@@ -18,7 +18,16 @@ const useConfirm = (onConfirm: () => void | Promise<unknown>) => {
     }
   };
 
-  return { opened, setOpened, isPending, handleConfirm };
+  /**
+   * Opens the popover, or confirms straight away when Ctrl (Cmd on Mac) is held.
+   * The event is optional so a custom trigger can still call it with nothing (it then always asks).
+   */
+  const openOrConfirm = (e?: { ctrlKey: boolean; metaKey: boolean }) => {
+    if (e && (e.ctrlKey || e.metaKey)) void handleConfirm();
+    else setOpened(true);
+  };
+
+  return { opened, setOpened, isPending, handleConfirm, openOrConfirm };
 };
 
 /** The popover's body: the question, then Cancel and the confirm button. */
@@ -59,12 +68,16 @@ type ConfirmDeleteButtonProps = {
   confirmLabel?: string;
   /** Style the default trigger button, e.g. size="xs" variant="subtle" */
   buttonProps?: ButtonProps;
-  /** Custom trigger (e.g. an ActionIcon). Receives a function that opens the popover. */
-  trigger?: (open: () => void) => ReactNode;
+  /**
+   * Custom trigger (e.g. an ActionIcon). Receives a function that opens the popover; pass it the click event
+   * so Ctrl/Cmd+click skips the question.
+   */
+  trigger?: (open: (e?: { ctrlKey: boolean; metaKey: boolean }) => void) => ReactNode;
 };
 
 /**
  * A delete button that asks "are you sure?" in a popover before calling `onConfirm`.
+ * Ctrl+click (Cmd+click on Mac) skips the question and confirms straight away.
  * Owns its own open state, so call sites don't need a useState per button.
  */
 export const ConfirmDeleteButton = ({
@@ -75,7 +88,7 @@ export const ConfirmDeleteButton = ({
   buttonProps,
   trigger,
 }: ConfirmDeleteButtonProps) => {
-  const { opened, setOpened, isPending, handleConfirm } = useConfirm(onConfirm);
+  const { opened, setOpened, isPending, handleConfirm, openOrConfirm } = useConfirm(onConfirm);
 
   return (
     <Popover
@@ -89,9 +102,9 @@ export const ConfirmDeleteButton = ({
     >
       <Popover.Target>
         {trigger ? (
-          <span>{trigger(() => setOpened(true))}</span>
+          <span>{trigger(openOrConfirm)}</span>
         ) : (
-          <Button color="red" variant="subtle" size="xs" {...buttonProps} onClick={() => setOpened(true)}>
+          <Button color="red" variant="subtle" size="xs" {...buttonProps} loading={isPending} onClick={openOrConfirm}>
             {label}
           </Button>
         )}
@@ -129,15 +142,15 @@ export const ConfirmDelete = ({
   confirmLabel = "Delete",
   children,
 }: ConfirmDeleteProps) => {
-  const { opened, setOpened, isPending, handleConfirm } = useConfirm(onConfirm);
+  const { opened, setOpened, isPending, handleConfirm, openOrConfirm } = useConfirm(onConfirm);
 
-  // The popover is controlled, so Popover.Target won't add a click handler. Add one that opens it,
-  // keeping the child's own onClick.
+  // The popover is controlled, so Popover.Target won't add a click handler. Add one that opens it
+  // (or confirms straight away on Ctrl/Cmd+click), keeping the child's own onClick.
   const child = Children.only(children);
   const trigger = cloneElement(child, {
     onClick: (e) => {
       child.props.onClick?.(e);
-      setOpened(true);
+      openOrConfirm(e);
     },
   });
 

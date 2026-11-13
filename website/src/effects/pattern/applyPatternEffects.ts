@@ -13,7 +13,7 @@ import {
   parseHex,
   type DmxValuesByFixtureId,
 } from "../../utils/visualiser-v2-resolver";
-import { BLACK, WHITE, type PatternEffectDefinition, type Rgb } from "./patternEffect";
+import { BLACK, WHITE, resolvePatternParams, type PatternEffectDefinition, type Rgb } from "./patternEffect";
 import { getPatternEffect } from "./registry";
 
 /** A pattern selectable picked in the cue, with the grid of the group it belongs to. */
@@ -76,9 +76,7 @@ export const applyPatternEffects = (input: ApplyPatternEffectsInput): DmxValuesB
   const copied = new Set<string>(); // fixtures whose array has been copied already, so base is never changed
   const fixtureById = new Map(fixtures.map((f) => [f.id, f]));
   const templateById = new Map(fixtureTemplates.map((t) => [t.id, t]));
-  const channelsByTemplateId = new Map(
-    fixtureTemplates.map((t) => [t.id, new Map(t.channels.map((c) => [c.id, c]))]),
-  );
+  const channelsByTemplateId = new Map(fixtureTemplates.map((t) => [t.id, new Map(t.channels.map((c) => [c.id, c]))]));
 
   for (const pattern of patterns) {
     const { selectable, grid } = pattern;
@@ -105,7 +103,11 @@ export const applyPatternEffects = (input: ApplyPatternEffectsInput): DmxValuesB
 
       // The head's DMX slots. No heads = one head with every channel.
       const slots =
-        mode.heads.length > 0 ? mode.heads[cell.head]?.channelIndexes : cell.head === 0 ? mode.channelIds.map((_, i) => i) : undefined;
+        mode.heads.length > 0
+          ? mode.heads[cell.head]?.channelIndexes
+          : cell.head === 0
+            ? mode.channelIds.map((_, i) => i)
+            : undefined;
       if (!slots) continue;
 
       const channelsById = channelsByTemplateId.get(template.id);
@@ -160,7 +162,8 @@ export const getCellColours = (
   timeMs: number,
 ): Map<string, Rgb> => {
   const { cols, rows } = grid;
-  const stepCount = sanitiseStepCount(effect.stepCount({ cols, rows }));
+  const params = resolvePatternParams(effect.params, selectable.params);
+  const stepCount = sanitiseStepCount(effect.stepCount({ cols, rows, params }));
   // An invalid step length means the effect stays on its first step.
   const stepMs = selectable.stepDuration > 0 ? selectable.stepDuration : Infinity;
   const stepIndex = Math.floor(timeMs / stepMs); // since the cue started, not wrapped
@@ -170,7 +173,17 @@ export const getCellColours = (
   const colours = getEffectColours(selectable, effect.colourCount);
   const colourAt = (col: number, row: number, s: number): Rgb | null =>
     sanitiseRgb(
-      effect.colourAt({ col, row, cols, rows, step: s, stepCount, colours, random: seededRandom(s, col, row) }),
+      effect.colourAt({
+        col,
+        row,
+        cols,
+        rows,
+        step: s,
+        stepCount,
+        colours,
+        random: seededRandom(s, col, row),
+        params,
+      }),
     );
 
   const fadeIn = selectable.fadeInDuration || 0;

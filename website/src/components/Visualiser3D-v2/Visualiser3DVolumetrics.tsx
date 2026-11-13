@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { recordPerf } from "../../utils/perfProbe"; // TEMPORARY
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   Box3,
@@ -44,6 +45,7 @@ export const Visualiser3DVolumetrics = ({
   useEffect(() => {
     // R3F still types state.gl as WebGLRenderer, even with an async WebGPU factory.
     const renderer = gl as unknown as WebGPURenderer;
+    recordPerf("haze rebuild", 0); // TEMPORARY perf probe: n = how many times the haze pipeline was (re)built
     const material = new VolumeNodeMaterial();
     material.steps = RAY_MARCHING_STEPS;
     material.offsetNode = bayer16(screenCoordinate);
@@ -108,7 +110,11 @@ export const Visualiser3DVolumetrics = ({
   }, [fixtures, gl, scene, camera, invalidate, environment]);
 
   // Positive priority replaces R3F's default draw, including in demand mode.
-  useFrame(() => pipelineRef.current?.render(), 1);
+  useFrame(() => {
+    const startedAt = performance.now(); // TEMPORARY perf probe: CPU time to submit the frame (not GPU time)
+    pipelineRef.current?.render();
+    recordPerf("draw", performance.now() - startedAt);
+  }, 1);
 
   return null;
 };

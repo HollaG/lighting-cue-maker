@@ -136,6 +136,11 @@ export type PatternSelectable = SelectableBase & {
   fadeInDuration: number;
   /** Default 0. */
   fadeOutDuration: number;
+  /**
+   * The LD's values for the effect's own settings (its `params`), by param id, e.g. { orientation: "radial" }.
+   * Optional: a missing or invalid value uses the effect's default. See src/effects/pattern/patternEffect.ts.
+   */
+  params?: { [paramId: string]: string | number | boolean };
 };
 
 export type MovementSelectable = SelectableBase & {

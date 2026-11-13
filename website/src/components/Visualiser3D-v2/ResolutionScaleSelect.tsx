@@ -17,7 +17,7 @@ const RESOLUTION_SCALES = [
 const useResolutionScale = () =>
   useLocalStorage<string>({
     key: "visualiser-resolution-scale",
-    defaultValue: "1",
+    defaultValue: "0.333", // 1/3: cheap enough for most machines; the user can raise it
     // Read straight away (client-only app), so the canvas doesn't mount at Full and then resize.
     getInitialValueInEffect: false,
   });

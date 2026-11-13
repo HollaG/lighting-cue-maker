@@ -2,13 +2,16 @@ import {
   Box,
   Button,
   Center,
+  Divider,
   Group,
   Input,
+  Menu,
   Modal,
   NumberInput,
   Select,
   SimpleGrid,
   Stack,
+  Switch,
   Tooltip,
 } from "@mantine/core";
 import { upperFirst, useDebouncedCallback, useDisclosure } from "@mantine/hooks";
@@ -22,9 +25,10 @@ import {
   type PatternSelectable,
   type UpsertOptionSet,
 } from "../../../../../types-v2/optionSet";
-import { listPatternEffects } from "../../../../../effects/pattern/registry";
+import { getPatternEffect, listPatternEffects } from "../../../../../effects/pattern/registry";
+import { resolvePatternParams, type PatternParam } from "../../../../../effects/pattern/patternEffect";
 import { CustomTextInput } from "../../../../CustomTextInput/CustomTextInput";
-import { IconHelpCircle, IconPlayerPlay } from "@tabler/icons-react";
+import { IconHelpCircle } from "@tabler/icons-react";
 import type { FixtureGroup, Grid } from "../../../../../types-v2/fixtureGroups";
 import type { PatchedFixture } from "../../../../../types-v2/patchedFixture";
 import { useGetPatchedFixtures } from "../../../../../query-v2/patched-fixtures/useGetPatchedFixtures";
@@ -33,12 +37,34 @@ import { ConfirmDeleteButton } from "../../../../ConfirmDeleteButton/ConfirmDele
 
 const EFFECT_OPTIONS = listPatternEffects().map((effect) => ({ value: effect.id, label: effect.name }));
 
+const BLEND_MODE_OPTIONS = Object.values(BlendMode).map((mode) => ({ value: mode, label: upperFirst(mode) }));
+// TODO: colour mode options , but we only support one mode for now.
+
 /** Step duration (ms) for each speed shortcut. Shared by the step duration presets and the clone buttons. */
 const SPEED_PRESETS = [
   { label: "Slow", stepDuration: 600 },
   { label: "Medium", stepDuration: 250 },
   { label: "Fast", stepDuration: 100 },
 ] as const;
+
+/** A new pattern row with the usual defaults. */
+const makeRow = (effect: PatternEffect, name: string): PatternSelectable => ({
+  id: crypto.randomUUID(),
+  name,
+  fixtureIds: "all",
+  type: SelectableType.EFFECT_PATTERN,
+  effect,
+  colours: [],
+
+  // NOTE: since the main use case is QLC+, we default to MASK,
+  // so that we can have stacking-style of building.
+  blendMode: BlendMode.MASK,
+  colourMode: ColourMode.RGB,
+  stepDuration: 500,
+  fadeInDuration: 0,
+  fadeOutDuration: 0,
+  params: {}, // the effect's defaults
+});
 
 // for dynamic RGB patterns
 export const PatternOptionSet = ({
@@ -87,23 +113,27 @@ export const PatternOptionSet = ({
   };
 
   const onAddRow = () => {
-    const newRow: PatternSelectable = {
-      id: crypto.randomUUID(),
-      name: upperFirst(EFFECT_OPTIONS[0].label),
-      fixtureIds: "all",
-      type: SelectableType.EFFECT_PATTERN,
-      effect: EFFECT_OPTIONS[0].value,
-      colours: [],
+    const next = [...rows, makeRow(EFFECT_OPTIONS[0].value, upperFirst(EFFECT_OPTIONS[0].label))];
+    setRows(next);
+    saveRows(next);
+  };
 
-      // NOTE: since the main use case is QLC+, we default to MASK,
-      // so that we can have stacking-style of building.
-      blendMode: BlendMode.MASK,
-      colourMode: ColourMode.RGB,
-      stepDuration: 500,
-      fadeInDuration: 0,
-      fadeOutDuration: 0,
-    };
-    const next = [...rows, newRow];
+  // Bulk add: everything ticked on first mount. Kept here (not in the menu), so ticks survive the menu closing.
+  const [bulkSpeeds, setBulkSpeeds] = useState<string[]>(SPEED_PRESETS.map((speed) => speed.label));
+  const [bulkEffects, setBulkEffects] = useState<string[]>(EFFECT_OPTIONS.map((effect) => effect.value));
+  const [bulkBlendMode, setBulkBlendMode] = useState<BlendMode>(BlendMode.MASK); // same default as makeRow
+
+  /** Adds one row per ticked speed for each ticked effect, grouped by effect: Effect 1 (Slow), (Medium), (Fast), Effect 2 … */
+  const onBulkAdd = () => {
+    const newRows = EFFECT_OPTIONS.filter((effect) => bulkEffects.includes(effect.value)).flatMap((effect) =>
+      SPEED_PRESETS.filter((speed) => bulkSpeeds.includes(speed.label)).map((speed) => ({
+        ...makeRow(effect.value, `${effect.label} (${speed.label})`),
+        stepDuration: speed.stepDuration,
+        blendMode: bulkBlendMode,
+      })),
+    );
+    if (newRows.length === 0) return;
+    const next = [...rows, ...newRows];
     setRows(next);
     saveRows(next);
   };
@@ -129,10 +159,81 @@ export const PatternOptionSet = ({
         />
       ))}
       <Center>
-        <Button variant="subtle" size="xs" onClick={onAddRow}>
-          {" "}
-          Add another effect option
-        </Button>
+        <Group>
+          <Button variant="subtle" size="xs" onClick={onAddRow}>
+            {" "}
+            Add another effect option
+          </Button>
+          <Menu alignItemsLabels="all">
+            <Menu.Target>
+              <Button type="button" variant="subtle" size="xs">
+                Quick add{" "}
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Bulk add </Menu.Label>
+
+              <Menu.Sub>
+                <Menu.Sub.Target>
+                  <Menu.Sub.Item>Bulk add effects</Menu.Sub.Item>
+                </Menu.Sub.Target>
+                <Menu.Sub.Dropdown>
+                  <Menu.Label>Mode to add</Menu.Label>
+                  <Menu.RadioGroup value={bulkBlendMode} onChange={(value) => setBulkBlendMode(value as BlendMode)}>
+                    {BLEND_MODE_OPTIONS.map((mode) => (
+                      <Menu.RadioItem key={mode.value} value={mode.value}>
+                        {mode.label}
+                      </Menu.RadioItem>
+                    ))}
+                  </Menu.RadioGroup>
+                  <Menu.Divider />
+
+                  <Menu.Label>Speeds to add</Menu.Label>
+                  <Menu.CheckboxGroup value={bulkSpeeds} onChange={setBulkSpeeds}>
+                    {SPEED_PRESETS.map((speed) => (
+                      <Menu.CheckboxItem key={speed.label} value={speed.label}>
+                        {speed.label}
+                      </Menu.CheckboxItem>
+                    ))}
+                  </Menu.CheckboxGroup>
+                  <Menu.Divider />
+
+                  <Menu.Label>Effects to add</Menu.Label>
+                  <Menu.CheckboxGroup value={bulkEffects} onChange={setBulkEffects}>
+                    {EFFECT_OPTIONS.map((effect) => (
+                      <Menu.CheckboxItem key={effect.value} value={effect.value}>
+                        {effect.label}
+                      </Menu.CheckboxItem>
+                    ))}
+                  </Menu.CheckboxGroup>
+                  <Menu.Divider />
+                  <Menu.Item
+                    onClick={onBulkAdd}
+                    color="lime"
+                    disabled={bulkSpeeds.length === 0 || bulkEffects.length === 0}
+                  >
+                    Add selected
+                  </Menu.Item>
+                </Menu.Sub.Dropdown>
+              </Menu.Sub>
+              <Menu.Divider />
+              {/* List of effects they can add */}
+              <Menu.Label>Add one effect</Menu.Label>
+              {EFFECT_OPTIONS.map((effect) => (
+                <Menu.Item
+                  key={effect.value}
+                  onClick={() => {
+                    const next = [...rows, makeRow(effect.value, upperFirst(effect.label))];
+                    setRows(next);
+                    saveRows(next);
+                  }}
+                >
+                  {effect.label}
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </Center>
     </Stack>
   );
@@ -209,7 +310,8 @@ const PatternRowControls = ({
 
     // nvm, actually, always change the name
     const effectName = EFFECT_OPTIONS.find((o) => o.value === effect)?.label ?? "";
-    onChangeRow(row.id, { effect, name: effectName });
+    // Params belong to the old effect, so start the new one on its defaults.
+    onChangeRow(row.id, { effect, name: effectName, params: {} });
   };
 
   return (
@@ -319,6 +421,79 @@ const PatternRowControls = ({
           </Input.Wrapper>
         </Box>
       </SimpleGrid>
+      <PatternParamInputs row={row} onChangeRow={onChangeRow} />
     </>
   );
+};
+
+/** One input per param the selected effect declares. Nothing if it has none. */
+const PatternParamInputs = ({
+  row,
+  onChangeRow,
+}: {
+  row: PatternSelectable;
+  onChangeRow: (id: string, patch: Partial<PatternSelectable>) => void;
+}) => {
+  const params = getPatternEffect(row.effect)?.params ?? [];
+  if (params.length === 0) return null;
+
+  // Show what the engine will use: the stored value, or the default if there is none (or it is no longer valid).
+  const values = resolvePatternParams(params, row.params);
+  const setParam = (id: string, value: string | number | boolean) =>
+    onChangeRow(row.id, { params: { ...row.params, [id]: value } });
+
+  return (
+    <>
+      <Divider label="Parameters" labelPosition="left" />
+      <SimpleGrid cols={3} spacing="xs">
+        {params.map((param) => (
+          <PatternParamInput key={param.id} param={param} value={values[param.id]} onChange={setParam} />
+        ))}
+      </SimpleGrid>
+    </>
+  );
+};
+
+const PatternParamInput = ({
+  param,
+  value,
+  onChange,
+}: {
+  param: PatternParam;
+  value: string | number | boolean | undefined;
+  onChange: (id: string, value: string | number | boolean) => void;
+}) => {
+  switch (param.type) {
+    case "list":
+      return (
+        <Select
+          label={param.label}
+          data={param.options.map((option) => ({ value: option, label: upperFirst(option) }))}
+          value={typeof value === "string" ? value : param.default}
+          onChange={(next) => (next ? onChange(param.id, next) : null)}
+          allowDeselect={false}
+        />
+      );
+    case "range":
+      return (
+        <NumberInput
+          label={param.label}
+          value={typeof value === "number" ? value : param.default}
+          min={param.min}
+          max={param.max}
+          step={param.step ?? 1}
+          clampBehavior="strict"
+          onChange={(next) => (typeof next === "number" ? onChange(param.id, next) : null)}
+        />
+      );
+    case "toggle":
+      return (
+        <Input.Wrapper label={param.label}>
+          <Switch
+            checked={typeof value === "boolean" ? value : param.default}
+            onChange={(e) => onChange(param.id, e.currentTarget.checked)}
+          />
+        </Input.Wrapper>
+      );
+  }
 };

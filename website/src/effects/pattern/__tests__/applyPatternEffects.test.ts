@@ -60,8 +60,7 @@ const chase = (overrides: Partial<PatternSelectable> = {}): ActivePattern => ({
 const base = { f1: [255, 255, 0, 0, 255, 0, 0] };
 
 const apply = (pattern: ActivePattern, timeMs: number) =>
-  applyPatternEffects({ base, patterns: [pattern], fixtures: [fixture], fixtureTemplates: [template], timeMs })
-    .f1;
+  applyPatternEffects({ base, patterns: [pattern], fixtures: [fixture], fixtureTemplates: [template], timeMs }).f1;
 
 describe("applyPatternEffects", () => {
   it("normal: lit cell gets the effect colour, off cell goes black; dimmer untouched", () => {
