@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"lighting-cue-maker/server/internal/api/v2/eventscope"
+	"lighting-cue-maker/server/internal/api/v2/timelines"
 	modelsv2 "lighting-cue-maker/server/internal/models/v2"
 	"lighting-cue-maker/server/pkg/database"
 	"lighting-cue-maker/server/pkg/response"
@@ -15,33 +15,6 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
-
-// requireItem stops the request unless :itemId is an item of the event in the URL.
-func requireItem(c *gin.Context) {
-	eventId := eventscope.EventId(c)
-	itemId := c.Param("itemId")
-
-	if _, err := uuid.Parse(itemId); err != nil {
-		response.BadRequest(c, "Invalid item id", nil)
-		c.Abort()
-		return
-	}
-
-	var count int64
-	if err := database.DB().Model(&modelsv2.Item{}).
-		Where("event_id = ? AND id = ?", eventId, itemId).
-		Count(&count).Error; err != nil {
-		response.InternalError(c, "Failed to get item")
-		c.Abort()
-		return
-	}
-	if count == 0 {
-		response.NotFound(c, "Item not found in this event")
-		c.Abort()
-		return
-	}
-	c.Next()
-}
 
 // getCues lists the item's cues. Cue order comes from Item.RawLyrics, not from
 // the database, so they come back oldest first and the client orders them.
@@ -166,7 +139,12 @@ func dedupe(ids []string) datatypes.JSONSlice[string] {
 	return out
 }
 
-// deleteCue soft-deletes the cue. Restoring it brings it back.
+// errCueNotFound rolls back deleteCue's transaction when the cue isn't in the item.
+var errCueNotFound = errors.New("cue not found")
+
+// deleteCue soft-deletes the cue and, in the same transaction, removes its
+// markers from the item's timelines. Restoring the cue brings it back, but not
+// its markers.
 func deleteCue(c *gin.Context) {
 	itemId := c.Param("itemId")
 	cueId := c.Param("cueId")
@@ -176,13 +154,22 @@ func deleteCue(c *gin.Context) {
 		return
 	}
 
-	result := database.DB().Where("item_id = ? AND id = ?", itemId, cueId).Delete(&modelsv2.Cue{})
-	if result.Error != nil {
-		response.InternalError(c, "Failed to delete cue")
+	err := database.DB().Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("item_id = ? AND id = ?", itemId, cueId).Delete(&modelsv2.Cue{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errCueNotFound
+		}
+		return timelines.RemoveCueMarkers(tx, itemId, cueId)
+	})
+	if errors.Is(err, errCueNotFound) {
+		response.NotFound(c, "Cue not found in this item")
 		return
 	}
-	if result.RowsAffected == 0 {
-		response.NotFound(c, "Cue not found in this item")
+	if err != nil {
+		response.InternalError(c, "Failed to delete cue")
 		return
 	}
 

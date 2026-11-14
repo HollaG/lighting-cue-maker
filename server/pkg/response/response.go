@@ -48,3 +48,12 @@ func InternalError(c *gin.Context, message string) {
 		Error:   message,
 	})
 }
+
+// Error sends a failure with any status, for the ones without their own helper
+// (e.g. 413, 415, 503).
+func Error(c *gin.Context, status int, message string) {
+	c.JSON(status, Response{
+		Success: false,
+		Error:   message,
+	})
+}

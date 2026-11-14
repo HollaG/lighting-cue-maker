@@ -11,13 +11,16 @@ export type Item = Timestamps & {
   comments: string;
 
   rawLyrics: string;
+
+  /** Timeline mode: cues follow the item's timeline instead of their hold times. Turning it off keeps the timeline. */
+  timelineEnabled: boolean;
 };
 
 /**
  * Lightweight list row: no lyrics, no cues.
  * Keep in sync with ItemOverview in server/internal/models/v2/item.go.
  */
-export type ItemOverview = Omit<Item, "rawLyrics" | "deletedAt">;
+export type ItemOverview = Omit<Item, "rawLyrics" | "timelineEnabled" | "deletedAt">;
 
 /** No `id` = create (`name` is required), `id` = update (a field left out keeps its value). `eventId` comes from the URL. */
 export type UpsertItem = Omit<Partial<Item>, "eventId" | "createdAt" | "updatedAt" | "deletedAt">;

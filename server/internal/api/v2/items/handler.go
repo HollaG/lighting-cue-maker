@@ -99,6 +99,9 @@ func upsertItem(c *gin.Context) {
 	if in.RawLyrics != nil {
 		row.RawLyrics = *in.RawLyrics
 	}
+	if in.TimelineEnabled != nil {
+		row.TimelineEnabled = *in.TimelineEnabled
+	}
 	if row.Name == "" {
 		response.BadRequest(c, "name is required", nil)
 		return
@@ -110,7 +113,7 @@ func upsertItem(c *gin.Context) {
 	} else {
 		// Select lists every editable column so empty strings are written too.
 		err = database.DB().Model(&row).
-			Select("Name", "Comments", "RawLyrics").
+			Select("Name", "Comments", "RawLyrics", "TimelineEnabled").
 			Updates(&row).Error
 	}
 	if err != nil {

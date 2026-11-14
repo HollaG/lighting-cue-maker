@@ -17,6 +17,7 @@ import (
 	"lighting-cue-maker/server/internal/api/v1/ping"
 	"lighting-cue-maker/server/internal/api/v1/qlc"
 	"lighting-cue-maker/server/internal/api/v1/visualiser"
+	"lighting-cue-maker/server/internal/api/v2/audiofiles"
 	cuesv2 "lighting-cue-maker/server/internal/api/v2/cues"
 	"lighting-cue-maker/server/internal/api/v2/eventscope"
 	eventsv2 "lighting-cue-maker/server/internal/api/v2/events"
@@ -25,14 +26,17 @@ import (
 	itemsv2 "lighting-cue-maker/server/internal/api/v2/items"
 	"lighting-cue-maker/server/internal/api/v2/optionsets"
 	"lighting-cue-maker/server/internal/api/v2/patchedfixtures"
+	"lighting-cue-maker/server/internal/api/v2/timelines"
 	visualiserv2 "lighting-cue-maker/server/internal/api/v2/visualiser"
 	"lighting-cue-maker/server/internal/api/v2/visualiserdata"
+	"lighting-cue-maker/server/pkg/storage"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func Setup(r *gin.Engine, cfg *config.Config) {
+// Setup mounts every route. audioStore may be nil (storage not configured).
+func Setup(r *gin.Engine, cfg *config.Config, audioStore *storage.Store) {
 	// CORS middleware — origin read from CORS_URL env var
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.CORSURL},
@@ -80,6 +84,11 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		fixturegroups.Register(event.Group("/fixture-groups"))
 		itemsv2.Register(event.Group("/items"))
 		cuesv2.Register(event.Group("/items/:itemId/cues"))
+		timelines.Register(event.Group("/items/:itemId/timeline"))
+		audiofiles.Register(event.Group("/items/:itemId/audio-files"), audioStore, audiofiles.Limits{
+			MaxBytes:      cfg.AudioMaxBytes,
+			MaxDurationMs: cfg.AudioMaxDurationMs,
+		})
 		optionsets.Register(event.Group("/fixture-groups/:fixtureGroupId/option-sets"))
 		visualiserv2.Register(event.Group("/visualiser"))
 		visualiserdata.Register(event.Group("/visualiser-data"))

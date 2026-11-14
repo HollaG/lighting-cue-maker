@@ -10,6 +10,8 @@ type UpsertItemReq struct {
 	Name      *string `json:"name,omitempty"`
 	Comments  *string `json:"comments,omitempty"`
 	RawLyrics *string `json:"rawLyrics,omitempty"`
+	// Timeline mode on/off. Turning it off keeps the timeline.
+	TimelineEnabled *bool `json:"timelineEnabled,omitempty"`
 }
 
 // UpsertItemReqBody is the body of POST /api/v2/events/{eventId}/items.
@@ -38,6 +40,10 @@ type Item struct {
 	Comments string `json:"comments" gorm:"type:text;not null;default:''"`
 	// Source of truth for cue order: cues are ordered by their markers in here.
 	RawLyrics string `json:"rawLyrics" gorm:"type:text;not null;default:''"`
+
+	// Timeline mode: cues follow the item's Timeline instead of their hold times.
+	// Set true by "Create timeline"; turning it off keeps the timeline.
+	TimelineEnabled bool `json:"timelineEnabled" gorm:"not null;default:false"`
 
 	// Associations
 	Cues []Cue `json:"cues,omitempty" gorm:"foreignKey:ItemId"`

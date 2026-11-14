@@ -51,5 +51,19 @@ services:
       db:
         condition: service_healthy
 
+  # Local Azure Blob Storage emulator, for dev only (production uses a real storage account).
+  # Start just this with: docker compose up -d azurite
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: lighting_cue_maker_azurite
+    restart: unless-stopped
+    # --skipApiVersionCheck: the Go SDK often uses a newer storage API version than Azurite knows yet.
+    command: azurite-blob --blobHost 0.0.0.0 --location /data --loose --skipApiVersionCheck
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite_data:/data
+
 volumes:
   postgres_data:
+  azurite_data:

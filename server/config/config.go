@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 )
 
 type Config struct {
@@ -15,6 +17,27 @@ type Config struct {
 
 	// Postgres
 	DatabaseURL string
+
+	// Azure Blob Storage for timeline audio. Empty connection string = audio uploads disabled.
+	AzureStorageConnectionString string
+	AzureAudioContainer          string
+	// Upload limits for one audio file.
+	AudioMaxBytes      int64
+	AudioMaxDurationMs int
+}
+
+// envInt reads a positive integer env var, or returns fallback if it's unset or invalid.
+func envInt(name string, fallback int64) int64 {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n <= 0 {
+		log.Printf("config: %s=%q is not a positive integer, using %d", name, raw, fallback)
+		return fallback
+	}
+	return n
 }
 
 func Load() *Config {
@@ -61,6 +84,11 @@ func Load() *Config {
 		tlsKeyFile = "key.pem"
 	}
 
+	audioContainer := os.Getenv("AZURE_AUDIO_CONTAINER")
+	if audioContainer == "" {
+		audioContainer = "audio"
+	}
+
 	return &Config{
 		Port:             port,
 		CORSURL:          corsURL,
@@ -68,5 +96,10 @@ func Load() *Config {
 		TLSCertFile:      tlsCertFile,
 		TLSKeyFile:       tlsKeyFile,
 		DatabaseURL:      dsn,
+
+		AzureStorageConnectionString: os.Getenv("AZURE_STORAGE_CONNECTION_STRING"),
+		AzureAudioContainer:          audioContainer,
+		AudioMaxBytes:                envInt("AUDIO_MAX_BYTES", 50*1024*1024),
+		AudioMaxDurationMs:           int(envInt("AUDIO_MAX_DURATION_MS", 30*60*1000)),
 	}
 }

@@ -73,4 +73,6 @@ export const api = {
     }),
   delete: <T, U>(path: string, data?: T) =>
     request<U>(path, { method: "DELETE", body: data !== undefined ? JSON.stringify(data) : undefined }),
+  /** multipart/form-data (e.g. file uploads). No Content-Type header: the browser adds it with the boundary. */
+  postForm: <U>(path: string, form: FormData) => request<U>(path, { method: "POST", body: form, headers: {} }),
 };

@@ -17,6 +17,9 @@ var All = []any{
 	&Item{},
 	&Cue{},
 	&AlternateCue{},
+	&Timeline{},
+	&AlternateTimeline{},
+	&AudioFile{},
 }
 
 // Migrate creates the "v2" schema and migrates the v2 tables. It is separate

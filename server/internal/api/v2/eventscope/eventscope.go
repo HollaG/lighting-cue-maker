@@ -46,3 +46,31 @@ func Require(c *gin.Context) {
 func EventId(c *gin.Context) string {
 	return c.GetString(eventIdKey)
 }
+
+// RequireItem stops the request unless :itemId is an item of the event in the
+// URL. Mount it behind Require, on routes under /items/:itemId.
+func RequireItem(c *gin.Context) {
+	eventId := EventId(c)
+	itemId := c.Param("itemId")
+
+	if _, err := uuid.Parse(itemId); err != nil {
+		response.BadRequest(c, "Invalid item id", nil)
+		c.Abort()
+		return
+	}
+
+	var count int64
+	if err := database.DB().Model(&modelsv2.Item{}).
+		Where("event_id = ? AND id = ?", eventId, itemId).
+		Count(&count).Error; err != nil {
+		response.InternalError(c, "Failed to get item")
+		c.Abort()
+		return
+	}
+	if count == 0 {
+		response.NotFound(c, "Item not found in this event")
+		c.Abort()
+		return
+	}
+	c.Next()
+}

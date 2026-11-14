@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"lighting-cue-maker/server/config"
 	"lighting-cue-maker/server/internal/models"
@@ -9,6 +11,7 @@ import (
 	"lighting-cue-maker/server/internal/realtime"
 	"lighting-cue-maker/server/internal/router"
 	"lighting-cue-maker/server/pkg/database"
+	"lighting-cue-maker/server/pkg/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -57,8 +60,10 @@ func main() {
 		log.Printf("database: seeding fixture templates: %v", err)
 	}
 
+	audioStore := connectAudioStorage(cfg)
+
 	r := gin.Default()
-	router.Setup(r, cfg)
+	router.Setup(r, cfg, audioStore)
 
 	// WebTransport server
 	realtimeServer := realtime.NewServer(
@@ -81,4 +86,22 @@ func main() {
 	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+}
+
+// connectAudioStorage connects to Azure Blob Storage (Azurite in dev) for timeline audio.
+// Not fatal: without it the server still runs, and the audio endpoints answer 503.
+func connectAudioStorage(cfg *config.Config) *storage.Store {
+	if cfg.AzureStorageConnectionString == "" {
+		log.Println("storage: AZURE_STORAGE_CONNECTION_STRING not set, audio uploads disabled")
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	store, err := storage.New(ctx, cfg.AzureStorageConnectionString, cfg.AzureAudioContainer)
+	if err != nil {
+		log.Printf("storage: %v (audio uploads disabled; in dev, is Azurite running?)", err)
+		return nil
+	}
+	log.Printf("storage: connected, container %q", cfg.AzureAudioContainer)
+	return store
 }
