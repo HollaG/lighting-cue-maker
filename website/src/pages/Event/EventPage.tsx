@@ -51,6 +51,7 @@ import { ResolutionScaleSelect } from "../../components/Visualiser3D-v2/Resoluti
 import { useResolvedDmx } from "../../hooks/useResolvedDmx";
 import { DMXControlWrapper } from "../../components/DMX/DMXControlWrapper";
 import { RichContentWrapper } from "../../components/RichContent-v2/RichContentWrapper";
+import { TimelineDrawerContainer } from "../../components/Timeline/TimelineDrawerContainer";
 
 // const logger = new Logger("EventPage.tsx");
 
@@ -61,11 +62,14 @@ export const EventPage = () => {
   const [openedEventDetails, { open: openEventDetails, close: closeEventDetails, toggle: toggleEventDetails }] =
     useDisclosure(false);
 
+  // TODO (for the Radial menu): move into the Store
   const [openedLyrics, { /* open: openLyrics, */ close: closeLyrics, toggle: toggleLyrics }] = useDisclosure(false);
   const [openedCues, { /* open: openCues, */ close: closeCues, toggle: toggleCues }] = useDisclosure(false);
   // for DMX drawer, the open/close state is in the app store, so that each individual CueCard can open it remotely.
   const isDmxDrawerOpen = useAppStore((s) => s.isDmxDrawerOpen);
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
+  const [openedTimeline, { /* open: openTimeline, */ close: closeTimeline, toggle: toggleTimeline }] =
+    useDisclosure(false);
 
   const toggleDrawerHandler = (toggleCb: () => void, domain: "event" | "lyrics" | "cues") => {
     // only one drawer can be open at a time, so close the others if its open
@@ -484,6 +488,41 @@ export const EventPage = () => {
         closeOnClickOutside={false} // allow manipulating the 3d visualiser
       >
         <Cues eventId={eventId} itemId={selectedItemId} />
+      </Drawer>
+
+      {/* Buttons for Timeline and DMX drawer */}
+      <Box style={{ position: "absolute", left: "50%", bottom: "0.5rem", transform: "translateX(-50%)", zIndex: 1000 }}>
+        <Group>
+          <Button size="xs" variant="light" onClick={() => toggleTimeline()}>
+            {openedTimeline ? "Hide" : "Show"} timeline
+          </Button>
+          <Button size="xs" variant="light" onClick={() => setIsDmxDrawerOpen(!isDmxDrawerOpen)}>
+            {isDmxDrawerOpen ? "Hide" : "Show"} DMX overrides
+          </Button>
+        </Group>
+      </Box>
+
+      {/* Timeline drawer */}
+      <Drawer
+        opened={openedTimeline}
+        onClose={() => closeTimeline()}
+        keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
+        position="bottom"
+        size="30vh"
+
+        withOverlay={false}
+        lockScroll={false} // scroll lock would also swallow the visualiser's scroll-to-zoom
+        trapFocus={false}
+        withCloseButton={false}
+        closeOnEscape
+        closeOnClickOutside={false} // allow manipulating the 3d visualiser
+
+        zIndex={getDefaultZIndex("modal") + 1} // above the Lyrics and Cues drawers (both 200)
+        scrollAreaComponent={undefined}
+
+        styles={{ body: { height: "100%", padding: 0, paddingTop: "var(--mantine-spacing-xs)", overflow: "hidden" } }} // force the drawer body to be 100% height, never overflow
+      >
+        <TimelineDrawerContainer eventId={eventId} itemId={selectedItemId} />
       </Drawer>
 
       {/* Main visualiser */}

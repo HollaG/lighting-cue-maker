@@ -30,7 +30,7 @@ export type TimelineFields = {
 };
 
 export const TimelineSectionType = {
-  /** Bars at a BPM. */
+  /** Beats at a BPM. */
   BEAT: "beat",
   /** A plain length in ms. */
   TIME: "time",
@@ -53,11 +53,16 @@ type TimelineSectionBase = {
 
 export type TimelineBeatSection = TimelineSectionBase & {
   type: typeof TimelineSectionType.BEAT;
+  /**
+   * The time signature only groups beats into bars (bar lines, labels). It doesn't affect the length, so changing it
+   * never moves a marker: 12 beats are 3 bars of 4/4 or 4 bars of 3/4.
+   */
   timeSigNum: number;
   timeSigDenom: number;
   /** Counts the denominator's note (6/8 at 120 = 120 eighth notes a minute). May be fractional. */
   bpm: number;
-  bars: number;
+  /** Length in beats (the denominator's note), whole, ≥ 1. Need not be whole bars. */
+  beats: number;
   /** how many snappable points are there per timeSigDenom. 4 = 16th notes. 1 = match the timeSigDenom
    * Special values:
    * 1: snap every beat.
@@ -119,9 +124,7 @@ export type UpsertTimeline = Partial<TimelineFields>;
 
 /**
  * How long a section lasts, in whole ms. Must match SectionLengthMs in server/internal/models/v2/timeline_validate.go:
- * a beat is 60000 / bpm ms, a bar has timeSigNum beats, and the total is rounded.
+ * a beat is 60000 / bpm ms (the time signature plays no part), and the total is rounded.
  */
 export const getSectionLengthMs = (section: TimelineSection): number =>
-  section.type === TimelineSectionType.BEAT
-    ? Math.round((section.bars * section.timeSigNum * 60000) / section.bpm)
-    : section.totalTimeMs;
+  section.type === TimelineSectionType.BEAT ? Math.round((section.beats * 60000) / section.bpm) : section.totalTimeMs;

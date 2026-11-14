@@ -10,8 +10,8 @@
  */
 import { Logger } from "./logger";
 
-/** On in dev. In a production build: run `localStorage.perfProbe = "1"` in the console, then reload. */
-const ENABLED = import.meta.env.DEV || readFlag();
+/** Off by default, in dev and production. To turn on: run `localStorage.perfProbe = "1"` in the console, then reload. */
+const ENABLED = readFlag();
 
 function readFlag(): boolean {
   try {

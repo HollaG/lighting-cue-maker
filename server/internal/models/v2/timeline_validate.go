@@ -7,16 +7,16 @@ import (
 )
 
 // SectionLengthMs is how long a section lasts, in whole ms. Beat sections: one
-// beat is 60000/bpm ms and a bar has TimeSigNum beats; the total is rounded to
+// beat is 60000/bpm ms (the time signature plays no part); the total is rounded to
 // the nearest ms (the frontend must round the same way, Math.round). Returns
 // false if the section's type-specific fields are missing.
 func SectionLengthMs(s TimelineSection) (int, bool) {
 	switch s.Type {
 	case TimelineSectionTypeBeat:
-		if s.TimeSigNum == nil || s.Bpm == nil || s.Bars == nil || *s.Bpm <= 0 {
+		if s.Bpm == nil || s.Beats == nil || *s.Bpm <= 0 {
 			return 0, false
 		}
-		return int(math.Round(float64(*s.Bars**s.TimeSigNum) * 60000 / *s.Bpm)), true
+		return int(math.Round(float64(*s.Beats) * 60000 / *s.Bpm)), true
 	case TimelineSectionTypeTime:
 		if s.TotalTimeMs == nil {
 			return 0, false
@@ -132,8 +132,11 @@ func validateSectionFields(s TimelineSection) error {
 		if s.Bpm == nil || *s.Bpm <= 0 {
 			return fmt.Errorf("beat section needs bpm > 0")
 		}
-		if s.Bars == nil || *s.Bars < 1 {
-			return fmt.Errorf("beat section needs bars ≥ 1")
+		if s.Beats == nil || *s.Beats < 1 {
+			return fmt.Errorf("beat section needs beats ≥ 1")
+		}
+		if s.SnapFidelity != nil && *s.SnapFidelity < 0 {
+			return fmt.Errorf("snapFidelity must be ≥ 0")
 		}
 	case TimelineSectionTypeTime:
 		if s.TotalTimeMs == nil || *s.TotalTimeMs <= 0 {

@@ -26,6 +26,7 @@
     "@tanstack/react-router": "^1.170.23",
     "@tanstack/react-router-devtools": "^1.167.1",
     "clsx": "^2.1.1",
+    "dnd-timeline": "^3.1.1",
     "dompurify": "^3.4.12",
     "konva": "^10.3.0",
     "lil-gui": "^0.21.0",

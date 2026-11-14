@@ -18,15 +18,22 @@ export type UpsertTimelineRes = {
  * The server validates the result (overlaps, markers inside sections, cue / audio file ids) and rejects it with a
  * message, which the api helper shows as a notification.
  *
- * - Optimistic: the cache shows the change straight away and rolls back if the save fails.
+ * Optimistic: the cache gets the patch at once. Components still see it a macrotask later (React Query notifies via
+ * setTimeout 0), so a drag-and-drop UI needs its own local state for the drop render (see TimelineWrapper).
+ *
  * - Saves of one timeline run one at a time (`scope`), so a slow earlier save can't land after a newer one.
+ * - A failed save refetches the timeline, so the screen shows what the server has.
  */
 export const useUpsertTimeline = (eventId: string, itemId: string) => {
   const queryClient = useQueryClient();
   const queryKey = makeGetTimelineQueryKey(eventId, itemId);
   const mutationKey = ["upsertTimeline", eventId, itemId];
 
-  return useMutation({
+  /** Merges the patch into the cached timeline (no-op if there's none yet: the server creates it). */
+  const applyToCache = (patch: UpsertTimeline) =>
+    queryClient.setQueryData<Timeline | null>(queryKey, (prev) => (prev ? { ...prev, ...withoutUndefined(patch) } : prev));
+
+  const mutation = useMutation({
     mutationKey,
     scope: { id: `upsertTimeline-${eventId}-${itemId}` },
     mutationFn: (timeline: UpsertTimeline) =>
@@ -35,13 +42,8 @@ export const useUpsertTimeline = (eventId: string, itemId: string) => {
     onMutate: async (patch) => {
       // A fetch in flight would bring back data without this change: cancel it.
       await queryClient.cancelQueries({ queryKey });
-
-      const previous = queryClient.getQueryData<Timeline | null>(queryKey);
-      // No timeline yet: nothing to merge into (the server creates it); the response fills the cache.
-      if (previous) {
-        queryClient.setQueryData<Timeline | null>(queryKey, { ...previous, ...withoutUndefined(patch) });
-      }
-      return { previous };
+      // Already done by saveTimeline; repeated so a plain mutate is optimistic too (merging twice is harmless).
+      applyToCache(patch);
     },
 
     onSuccess: (res) => {
@@ -50,12 +52,22 @@ export const useUpsertTimeline = (eventId: string, itemId: string) => {
       queryClient.setQueryData<Timeline | null>(queryKey, res.timeline);
     },
 
-    onError: (_err, _patch, context) => {
-      if (context && context.previous !== undefined) {
-        queryClient.setQueryData<Timeline | null>(queryKey, context.previous);
-      }
+    onError: () => {
+      // Show the server's version again (a snapshot would already contain this change, see saveTimeline).
+      void queryClient.invalidateQueries({ queryKey });
     },
   });
+
+  /**
+   * Updates the cache now (onMutate only runs after an await), then saves. Resolves with the saved timeline, or
+   * undefined if it was rejected (already reported and refetched, so callers can ignore it).
+   */
+  const saveTimeline = (patch: UpsertTimeline) => {
+    applyToCache(patch);
+    return mutation.mutateAsync(patch).catch(() => undefined);
+  };
+
+  return { ...mutation, saveTimeline };
 };
 
 /** Copy of `obj` without keys whose value is undefined. */

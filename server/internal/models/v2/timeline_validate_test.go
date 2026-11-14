@@ -7,11 +7,11 @@ import (
 
 func ptr[T any](v T) *T { return &v }
 
-// 4/4 at 120 bpm: a beat is 500 ms, a bar 2000 ms, 2 bars 4000 ms.
+// 4/4 at 120 bpm: a beat is 500 ms, 8 beats (2 bars) 4000 ms.
 func beatSection(id string, start int, markers ...TimelineMarker) TimelineSection {
 	return TimelineSection{
 		Id: id, Name: id, Type: TimelineSectionTypeBeat, SectionStartTime: start, Markers: markers,
-		TimeSigNum: ptr(4), TimeSigDenom: ptr(4), Bpm: ptr(120.0), Bars: ptr(2),
+		TimeSigNum: ptr(4), TimeSigDenom: ptr(4), Bpm: ptr(120.0), Beats: ptr(8),
 	}
 }
 
@@ -38,15 +38,21 @@ func TestSectionLengthMs(t *testing.T) {
 	if got, ok := SectionLengthMs(timeSection("a", 0, 1234)); !ok || got != 1234 {
 		t.Errorf("time section length = %v, %v; want 1234, true", got, ok)
 	}
-	// 1 bar of 4/4 at 90 bpm = 2666.67 ms → 2667.
+	// 4 beats at 90 bpm = 2666.67 ms → 2667.
 	odd := beatSection("a", 0)
-	odd.Bpm, odd.Bars = ptr(90.0), ptr(1)
+	odd.Bpm, odd.Beats = ptr(90.0), ptr(4)
 	if got, _ := SectionLengthMs(odd); got != 2667 {
 		t.Errorf("rounded beat section length = %v; want 2667", got)
 	}
 	// A section snapped to that rounded end touches it, it doesn't overlap.
 	if err := ValidateTimeline([]TimelineSection{odd, timeSection("b", 2667, 100)}, nil); err != nil {
 		t.Errorf("section at the rounded end: unexpected error: %v", err)
+	}
+	// The time signature doesn't change the length: 8 beats in 3/4 are still 4000 ms.
+	threeFour := beatSection("a", 0)
+	threeFour.TimeSigNum = ptr(3)
+	if got, _ := SectionLengthMs(threeFour); got != 4000 {
+		t.Errorf("8 beats in 3/4 = %v ms; want 4000", got)
 	}
 	if _, ok := SectionLengthMs(TimelineSection{Type: TimelineSectionTypeBeat}); ok {
 		t.Error("beat section without fields should not have a length")

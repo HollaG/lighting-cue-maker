@@ -10,7 +10,7 @@ import (
 type TimelineSectionType string
 
 const (
-	// Bars at a BPM; uses TimeSigNum, TimeSigDenom, Bpm, Bars, SnapDivisionBeats.
+	// Beats at a BPM; uses TimeSigNum, TimeSigDenom, Bpm, Beats, SnapFidelity.
 	TimelineSectionTypeBeat TimelineSectionType = "beat"
 	// A plain length in ms; uses TotalTimeMs, SnapDivisionTime.
 	TimelineSectionTypeTime TimelineSectionType = "time"
@@ -43,11 +43,16 @@ type TimelineSection struct {
 	SnapEnabled bool             `json:"snapEnabled"` // snapping of markers inside this section
 
 	// type "beat"
-	TimeSigNum        *int     `json:"timeSigNum,omitempty"`
-	TimeSigDenom      *int     `json:"timeSigDenom,omitempty"`
-	Bpm               *float64 `json:"bpm,omitempty"`
-	Bars              *int     `json:"bars,omitempty"`
-	SnapDivisionBeats *string  `json:"snapDivisionBeats,omitempty"` // enum TBD in the design
+	// The time signature only groups beats into bars (bar lines, labels); it
+	// doesn't affect the length, so changing it never moves a marker.
+	TimeSigNum   *int `json:"timeSigNum,omitempty"`
+	TimeSigDenom *int `json:"timeSigDenom,omitempty"`
+	// Counts the denominator's note (6/8 at 120 = 120 eighth notes a minute).
+	Bpm *float64 `json:"bpm,omitempty"`
+	// Length in beats (the denominator's note). Need not be whole bars.
+	Beats *int `json:"beats,omitempty"`
+	// Snap points per beat: 0 = every bar, 1 = every beat, 4 = 16ths in 4/4.
+	SnapFidelity *int `json:"snapFidelity,omitempty"`
 
 	// type "time"
 	TotalTimeMs      *int    `json:"totalTimeMs,omitempty"`
