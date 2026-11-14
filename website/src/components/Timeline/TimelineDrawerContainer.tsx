@@ -172,7 +172,7 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
       px={"md"}
     >
       <Group style={{ flexWrap: "nowrap", alignItems: "center" }}>
-        <Scroller>
+        <Scroller flex={1}>
           <Tabs.List style={{ flexWrap: "nowrap" }}>
             <Tabs.Tab value="main">Main timeline</Tabs.Tab>
             <Divider orientation="vertical" />

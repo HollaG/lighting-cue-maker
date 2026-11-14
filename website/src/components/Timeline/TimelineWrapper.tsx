@@ -11,7 +11,7 @@ import {
   useWheelStrategy,
 } from "dnd-timeline";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Box, Flex, Group, Kbd, Stack, Text } from "@mantine/core";
+import { Box, Flex, Group, Kbd, SegmentedControl, Stack, Text } from "@mantine/core";
 import {
   getSectionLengthMs,
   TimelineSectionType,
@@ -122,7 +122,10 @@ export const TimelineWrapper = ({
 
     // update our new start time
     if (rowId === TimelineRowId.AUDIO) {
-      save({ audios: timeline.audios.map((a) => (a.id === id ? { ...a, startTime: start } : a)) });
+      // For now, we always snap to second increments.
+      // TODO: we will make this more granular: such as allowing users to change the controls.
+      const snappedStart = Math.round(start / 1000) * 1000;
+      save({ audios: timeline.audios.map((a) => (a.id === id ? { ...a, startTime: snappedStart } : a)) });
     } else {
       save({ sections: timeline.sections.map((s) => (s.id === id ? { ...s, sectionStartTime: start } : s)) });
     }
@@ -175,7 +178,7 @@ export const TimelineWrapper = ({
       sidebarWidth={SIDEBAR_WIDTH} // px on the left of each row for its label
       usePanStrategy={useWheelAndMiddleDragPan}
     >
-      <Group my="xs">
+      {/* <Group my="xs">
         <Flex flex={1} />
         <Text c="dimmed" size="sm">
           Zoom: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> +<Kbd>Scroll</Kbd>
@@ -183,7 +186,26 @@ export const TimelineWrapper = ({
         <Text c="dimmed" size="sm">
           Pan: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> + <Kbd>Shift</Kbd> + <Kbd>Scroll</Kbd> or <Kbd>Middle-click</Kbd> + drag
         </Text>
-      </Group>
+      </Group> */}
+      <Box
+        style={{
+          display: "grid",
+          gridTemplateColumns: `1fr auto 1fr`,
+        }}
+        my="sm"
+      >
+        <div />
+        <SegmentedControl data={["play", "pause", "stop"]} />
+        <Group>
+          <Flex flex={1} />
+          <Text c="dimmed" size="sm">
+            Zoom: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> +<Kbd>Scroll</Kbd>
+          </Text>
+          <Text c="dimmed" size="sm">
+            Pan: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> + <Kbd>Shift</Kbd> + <Kbd>Scroll</Kbd> or <Kbd>Middle-click</Kbd> + drag
+          </Text>
+        </Group>
+      </Box>
       <TimelineRuler />
       <TimelineRows timeline={timeline} audioFiles={audioFiles} />
     </TimelineContext>
@@ -265,7 +287,13 @@ const TimelineRows = ({ timeline, audioFiles }: { timeline: Timeline; audioFiles
         ))}
       </TimelineRow>
 
-      <TimelineRow id={TimelineRowId.SECTIONS} sidebar="Timed sections (Cue markers)">
+      <TimelineRow
+        id={TimelineRowId.SECTIONS}
+        sidebar="Timed sections (Cue markers)"
+        styles={{
+          height: 128,
+        }}
+      >
         {timeline.sections.map((section) => (
           <TimelineItem
             key={section.id}
@@ -281,7 +309,17 @@ const TimelineRows = ({ timeline, audioFiles }: { timeline: Timeline; audioFiles
   );
 };
 
-const TimelineRow = ({ id, sidebar, children }: { id: TimelineRowId; sidebar: ReactNode; children: ReactNode }) => {
+const TimelineRow = ({
+  id,
+  sidebar,
+  children,
+  styles,
+}: {
+  id: TimelineRowId;
+  sidebar: ReactNode;
+  children: ReactNode;
+  styles?: React.CSSProperties;
+}) => {
   const { setNodeRef, rowWrapperStyle, rowStyle, rowSidebarStyle } = useRow({ id });
 
   return (
@@ -291,6 +329,7 @@ const TimelineRow = ({ id, sidebar, children }: { id: TimelineRowId; sidebar: Re
         minHeight: 48,
         borderBottom: "1px solid var(--mantine-color-default-border)",
         overflow: "hidden",
+        ...styles,
       }}
     >
       <div
