@@ -11,12 +11,20 @@ RectAreaLightNode.setLTC(RectAreaLightTexturesLib.init());
 // TODO: Remove this workaround once the installed R3F version fixes https://github.com/pmndrs/react-three-fiber/issues/3782.
 const rendererInitializations = new WeakMap<EventTarget, Promise<WebGPURenderer>>();
 
+/** Options that override R3F's renderer defaults. */
+type RendererOptions = {
+  /** GPU timestamp queries, for reading GPU frame time (the bench). */
+  trackTimestamp?: boolean;
+  /** MSAA on the canvas and scene pass. R3F's default is on (4 samples). */
+  antialias?: boolean;
+};
+
 /**
  * A renderer factory for R3F's `gl` prop. `trackTimestamp` turns on GPU timestamp queries (the bench page reads GPU
  * frame time with them); leave it off elsewhere, it adds a query per render pass.
  */
 export const makeVisualiser3DRenderer =
-  (options: { trackTimestamp?: boolean } = {}): CanvasProps["gl"] =>
+  (options: RendererOptions = {}): CanvasProps["gl"] =>
   (props) => {
     const existing = rendererInitializations.get(props.canvas);
     if (existing) return existing;
@@ -26,7 +34,7 @@ export const makeVisualiser3DRenderer =
 /** Reuse initialization when R3F configures the same canvas again before init finishes. */
 export const createVisualiser3DRenderer: CanvasProps["gl"] = makeVisualiser3DRenderer();
 
-const initRenderer = (props: { canvas: EventTarget }, options: { trackTimestamp?: boolean }) => {
+const initRenderer = (props: { canvas: EventTarget }, options: RendererOptions) => {
   const renderer = new WebGPURenderer({ ...(props as unknown as WebGPURendererParameters), ...options });
   const initialization = renderer.init().then(
     () => {

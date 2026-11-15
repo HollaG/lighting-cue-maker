@@ -2,6 +2,7 @@ import CheckerTexture from "../../../assets/checker.png";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CameraControls, useTexture } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
 import { Visualiser3DFixture } from "../Elements/Visualiser3DFixture";
 import { getHeadCount } from "../../../utils/visualiser-v2-heads";
@@ -24,6 +25,8 @@ import { Visualiser3DSelectionTransform } from "../Elements/Visualiser3DSelectio
 import { VisualiserStats } from "../VisualiserStats";
 import { HeadSinkContext, HeadSinkRegistry } from "../Elements/headSinks";
 import { PatternEffectRunner, type PatternEffectPlayback } from "../PatternEffectRunner";
+import { FrameGateContext, type FrameGate } from "../frameGate";
+import { FrameGateUpdater } from "../FrameGateUpdater";
 
 const logger = new Logger("StagePreview3D");
 
@@ -82,7 +85,10 @@ export const StagePreview3D = ({
 }) => {
   // Where the effect player writes: every fixture's lenses and lights.
   const headSinks = useMemo(() => new HeadSinkRegistry(), []);
+  // Frame cap: decided once per frame, read by the effect player and the draw.
+  const frameGate = useMemo((): FrameGate => ({ draw: true }), []);
   const checkerTexture = useTexture(CheckerTexture);
+  const invalidate = useThree((state) => state.invalidate);
 
   // const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
   const { mutateAsync: upsertFixtureIn3D } = useUpsertPatchedFixtures(eventId);
@@ -94,7 +100,8 @@ export const StagePreview3D = ({
     checkerTexture.colorSpace = THREE.SRGBColorSpace;
     checkerTexture.repeat.set(PLANE_SIZE / GRID_SIZE, PLANE_SIZE / GRID_SIZE);
     checkerTexture.needsUpdate = true;
-  }, [checkerTexture]);
+    invalidate();
+  }, [checkerTexture, invalidate]);
 
   const cuboids = stageElements.filter((element) => element.type === "cuboid");
   const humans = stageElements.filter((element) => element.type === "default_human");
@@ -144,97 +151,100 @@ export const StagePreview3D = ({
   };
 
   return (
-    <HeadSinkContext.Provider value={headSinks}>
-      {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
-      {/* FPS overlay: `window.stats = true` in the dev console. */}
-      <VisualiserStats />
-      <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
-      {/* The floor */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
-        <meshStandardMaterial map={checkerTexture} side={THREE.DoubleSide} />
-      </mesh>
+    <FrameGateContext.Provider value={frameGate}>
+      <HeadSinkContext.Provider value={headSinks}>
+        <FrameGateUpdater gate={frameGate} />
+        {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
+        {/* FPS overlay: `window.stats = true` in the dev console. */}
+        <VisualiserStats />
+        <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
+        {/* The floor */}
+        <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+          <meshStandardMaterial map={checkerTexture} side={THREE.DoubleSide} />
+        </mesh>
 
-      {/* Ambient light */}
-      <ambientLight intensity={environment.ambientLight} />
+        {/* Ambient light */}
+        <ambientLight intensity={environment.ambientLight} />
 
-      {/*  */}
-      {/* <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
-        <boxGeometry args={[1.2, 1.75, 1.2]} />
-        <meshStandardMaterial color="#8AC" />
-      </mesh> */}
+        {/*  */}
+        {/* <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
+          <boxGeometry args={[1.2, 1.75, 1.2]} />
+          <meshStandardMaterial color="#8AC" />
+        </mesh> */}
 
-      {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
-        <sphereGeometry args={[3, 32, 16]} />
-        <meshPhongMaterial color="#CA8" />
-      </mesh> */}
-      {/* 
-      <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
-        <Helper type={THREE.SpotLightHelper} />
-      </spotLight> */}
+        {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
+          <sphereGeometry args={[3, 32, 16]} />
+          <meshPhongMaterial color="#CA8" />
+        </mesh> */}
+        {/* 
+        <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
+          <Helper type={THREE.SpotLightHelper} />
+        </spotLight> */}
 
-      {fixtures.map((fixture) => (
-        <Visualiser3DFixture
-          key={fixture.id}
-          fixture={fixture}
-          dmxValues={dmxValuesByFixtureId?.[fixture.id]}
-          fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
-          isSelected={!!selectedObjectIds?.includes(fixture.id)}
-          onSelect={(id, additive) => onObjectSelect?.(id, additive)}
-          onMeshChange={onMeshChange}
-          castShadow={shadowCasterIds.has(fixture.id)}
-          viewOnly={isViewOnly}
+        {fixtures.map((fixture) => (
+          <Visualiser3DFixture
+            key={fixture.id}
+            fixture={fixture}
+            dmxValues={dmxValuesByFixtureId?.[fixture.id]}
+            fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
+            isSelected={!!selectedObjectIds?.includes(fixture.id)}
+            onSelect={(id, additive) => onObjectSelect?.(id, additive)}
+            onMeshChange={onMeshChange}
+            castShadow={shadowCasterIds.has(fixture.id)}
+            viewOnly={isViewOnly}
+          />
+        ))}
+
+        {!isViewOnly && (
+          <Visualiser3DSelectionTransform
+            fixtures={selectedFixtures}
+            getMesh={getMesh}
+            gui={gui}
+            onCommit={onCommitPlacements}
+          />
+        )}
+
+        {cuboids.map((cuboid) => (
+          <Visualiser3DCuboid
+            key={cuboid.id}
+            cuboid={cuboid}
+            isSelected={!!selectedObjectIds?.includes(cuboid.id)}
+            onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
+            // onChange={onChange}
+            onChange={isViewOnly ? () => {} : updateStageElement}
+            gui={gui}
+
+            // viewOnly={isViewOnly}
+          />
+        ))}
+
+        {humans.map((human) => (
+          <Visualiser3DDefaultHuman
+            key={human.id}
+            human={human}
+            isSelected={!!selectedObjectIds?.includes(human.id)}
+            onSelect={() => onObjectSelect && onObjectSelect(human.id)}
+            onChange={isViewOnly ? () => {} : updateStageElement}
+            gui={gui}
+
+            // viewOnly={isViewOnly}
+          />
+        ))}
+
+        <CameraControls
+          ref={cameraRef}
+          onControl={onCameraMove}
+          onRest={onCameraRest}
+          makeDefault
+          dollyToCursor
+          infinityDolly
+          minDistance={0.01}
+          maxDistance={Infinity}
         />
-      ))}
 
-      {!isViewOnly && (
-        <Visualiser3DSelectionTransform
-          fixtures={selectedFixtures}
-          getMesh={getMesh}
-          gui={gui}
-          onCommit={onCommitPlacements}
-        />
-      )}
-
-      {cuboids.map((cuboid) => (
-        <Visualiser3DCuboid
-          key={cuboid.id}
-          cuboid={cuboid}
-          isSelected={!!selectedObjectIds?.includes(cuboid.id)}
-          onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
-          // onChange={onChange}
-          onChange={isViewOnly ? () => {} : updateStageElement}
-          gui={gui}
-
-          // viewOnly={isViewOnly}
-        />
-      ))}
-
-      {humans.map((human) => (
-        <Visualiser3DDefaultHuman
-          key={human.id}
-          human={human}
-          isSelected={!!selectedObjectIds?.includes(human.id)}
-          onSelect={() => onObjectSelect && onObjectSelect(human.id)}
-          onChange={isViewOnly ? () => {} : updateStageElement}
-          gui={gui}
-
-          // viewOnly={isViewOnly}
-        />
-      ))}
-
-      <CameraControls
-        ref={cameraRef}
-        onControl={onCameraMove}
-        onRest={onCameraRest}
-        makeDefault
-        dollyToCursor
-        infinityDolly
-        minDistance={0.01}
-        maxDistance={Infinity}
-      />
-
-      {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
-    </HeadSinkContext.Provider>
+        {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
+      </HeadSinkContext.Provider>
+    </FrameGateContext.Provider>
   );
 };

@@ -19,6 +19,8 @@ export type BenchSceneConfig = {
   ledHeads: number;
   /** Editor gets up to 8 shadow casters (StagePreview3D's cap); viewer gets none, as today. */
   mode: "editor" | "viewer";
+  /** 4× multisampling on the solid pass (R3F's default). The haze pass never uses it. */
+  msaa: boolean;
 };
 
 export const BENCH_CAMERA: Visualiser3DCameraView = { position: [0, 7, 14], target: [0, 1, 0], fov: 70 };

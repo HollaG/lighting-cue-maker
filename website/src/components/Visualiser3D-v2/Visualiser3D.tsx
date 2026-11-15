@@ -70,6 +70,7 @@ import { useGetEvent } from "../../query-v2/events/useGetEvent";
 import { useGetFixtureGroups } from "../../query-v2/fixture-groups/useGetFixtureGroups";
 import { ResolutionScaleSelect, useVisualiserDpr } from "./ResolutionScaleSelect";
 import type { PatternEffectPlayback } from "./PatternEffectRunner";
+import { InvalidateOnGuiChange } from "./InvalidateOnGuiChange";
 
 export const Visualiser3D = ({
   visualiser,
@@ -553,6 +554,8 @@ export const Visualiser3D = ({
                     onCreated={configureVisualiser3DRenderer}
                     dpr={dpr}
                     shadows="percentage"
+                    // Draw only when something changes (camera, props, gizmo, GUI, effects).
+                    frameloop="demand"
                     camera={{
                       position: visualiser.defaultCameraView?.position || [0, 2, 5],
                       fov: 70,
@@ -586,6 +589,7 @@ export const Visualiser3D = ({
                       updateStageElement={onUpdateElement}
                       gui={gui}
                     />
+                    <InvalidateOnGuiChange gui={gui} />
                   </Canvas>
                 </Suspense>
 
@@ -850,6 +854,8 @@ export const StaticVisualiser3D = ({
           onCreated={configureVisualiser3DRenderer}
           dpr={dpr}
           shadows="percentage"
+          // Draw only when something changes (camera, props, effects).
+          frameloop="demand"
           camera={{
             position: visualiser.defaultCameraView?.position || [0, 2, 5],
             fov: 70,

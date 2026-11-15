@@ -152,11 +152,12 @@ export const BenchProbe = () => {
     atFrameStart.current = { ...counters, pipelines: gl._pipelines?.caches?.size ?? 0 };
   }, -1000);
 
-  // Runs after the haze pipeline's draw (priority 1).
+  // Runs after the haze pipeline's draw (priority 1). Frames that drew nothing (over the frame cap) are not counted.
   useFrame(() => {
     const now = performance.now();
     const cpu = now - frameStartedAt.current;
     const start = atFrameStart.current;
+    if (counters.renderPasses === start.renderPasses) return;
     const builds = counters.shaderBuilds - start.shaderBuilds;
     const pipelines = gl._pipelines?.caches?.size ?? 0;
     const gap = lastRenderedAt.current === null ? null : now - lastRenderedAt.current;

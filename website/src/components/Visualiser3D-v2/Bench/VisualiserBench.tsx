@@ -18,7 +18,7 @@ import {
   Textarea,
   Title,
 } from "@mantine/core";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { CameraControls } from "@react-three/drei";
 import classes from "../../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { StagePreview3D } from "../Stage3D/StagePreview3D";
@@ -50,14 +50,17 @@ import {
   type BenchSceneConfig,
 } from "./benchScene";
 
-const createBenchRenderer = makeVisualiser3DRenderer({ trackTimestamp: true });
+const benchRenderers = {
+  msaa: makeVisualiser3DRenderer({ trackTimestamp: true }),
+  noMsaa: makeVisualiser3DRenderer({ trackTimestamp: true, antialias: false }),
+};
 const RECORD_SECONDS = 10;
 const LIVE_WINDOW_MS = 1000;
 /** One full camera turn takes this long. */
 const ORBIT_SECONDS = 12;
 
 export const VisualiserBench = () => {
-  const [config, setConfig] = useState<BenchSceneConfig>({ spots: 8, ledHeads: 0, mode: "editor" });
+  const [config, setConfig] = useState<BenchSceneConfig>({ spots: 8, ledHeads: 0, mode: "editor", msaa: true });
   const [haze, setHaze] = useState(0.5);
   const [ambientLight, setAmbientLight] = useState(0.5);
   const [effect, setEffect] = useState<BenchEffect>("static");
@@ -99,13 +102,13 @@ export const VisualiserBench = () => {
   }, []);
 
   // A fresh canvas (and renderer) per scene, so each scene starts with no compiled shaders.
-  const sceneKey = `${config.spots}-${config.ledHeads}-${config.mode}`;
+  const sceneKey = `${config.spots}-${config.ledHeads}-${config.mode}-${config.msaa}`;
   useEffect(() => markSceneStart(), [sceneKey]);
   const shadowText =
     config.mode === "editor" ? `${Math.min(8, config.spots)} shadowed spots` : "no shadows (viewer has none today)";
   const sceneLine =
     `Scene: ${config.spots} spots, ${config.ledHeads} LED heads (${Math.ceil(config.ledHeads / HEADS_PER_BAR)} bars), ` +
-    `${config.mode} mode, ${shadowText}, haze ${haze}, ambient ${ambientLight}, effect ${effect}, camera ${orbit ? "orbiting" : "still"}`;
+    `${config.mode} mode, ${shadowText}, MSAA ${config.msaa ? "on" : "off"}, haze ${haze}, ambient ${ambientLight}, effect ${effect}, camera ${orbit ? "orbiting" : "still"}`;
 
   return (
     <Stack p="md" gap="sm" maw={1600} mx="auto">
@@ -142,6 +145,17 @@ export const VisualiserBench = () => {
             ]}
             value={config.mode}
             onChange={(value) => setConfig({ ...config, mode: value as BenchSceneConfig["mode"] })}
+          />
+        </LabelledControl>
+        <LabelledControl label="MSAA (solid pass)">
+          <SegmentedControl
+            size="xs"
+            data={[
+              { value: "on", label: "4×" },
+              { value: "off", label: "Off" },
+            ]}
+            value={config.msaa ? "on" : "off"}
+            onChange={(value) => setConfig({ ...config, msaa: value === "on" })}
           />
         </LabelledControl>
         <LabelledControl label="Effect">
@@ -185,7 +199,8 @@ export const VisualiserBench = () => {
             <Suspense fallback={<LoadingOverlay visible loaderProps={{ type: "bars" }} />}>
               <Canvas
                 key={sceneKey}
-                gl={createBenchRenderer}
+                gl={config.msaa ? benchRenderers.msaa : benchRenderers.noMsaa}
+                frameloop="demand"
                 onCreated={configureVisualiser3DRenderer}
                 dpr={dpr}
                 shadows="percentage"
@@ -244,10 +259,15 @@ const BenchOrbit = ({
   controls: React.RefObject<CameraControls | null>;
   enabled: boolean;
 }) => {
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => {
+    if (enabled) invalidate(); // start the demand loop
+  }, [enabled, invalidate]);
   useFrame((_, delta) => {
     const node = controls.current;
     if (!enabled || !node) return;
     node.rotateTo(node.azimuthAngle + (delta * 2 * Math.PI) / ORBIT_SECONDS, node.polarAngle, false);
+    invalidate();
   });
   return null;
 };
