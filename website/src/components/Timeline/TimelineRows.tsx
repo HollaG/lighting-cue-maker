@@ -61,6 +61,7 @@ export const TimelineRows = ({
             span={{ start: section.sectionStartTime, end: section.sectionStartTime + getSectionLengthMs(section) }}
             onDelete={(id) => onDelete(TimelineRowId.SECTIONS, id)}
             section={section}
+            sections={timeline.sections}
           />
         ))}
       </TimelineRow>

@@ -108,6 +108,9 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
       // Default: 4/4 120 BPM snap to each beat
       const bpm = 120;
       const beatMs = 60000 / bpm;
+      const beats = Math.max(1, Math.ceil(file.durationMs / beatMs));
+      // round up to multiple of 4
+      const roundedBeats = Math.ceil(beats / 4) * 4;
       const section: TimelineBeatSection = {
         id: crypto.randomUUID(),
         name: `${file.fileName}`,
@@ -116,7 +119,7 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
         bpm: 120, // default
 
         // Calculate how many beats fit in the clips duration, and add 1 if there's a remainder.
-        beats: Math.max(1, Math.ceil(file.durationMs / beatMs)),
+        beats: roundedBeats,
         linkToNext: true,
         markers: [],
         snapEnabled: true,

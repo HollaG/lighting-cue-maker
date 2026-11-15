@@ -18,7 +18,7 @@ import {
   Title,
   UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure, useLocalStorage } from "@mantine/hooks";
+import { useDisclosure, useLocalStorage, useWindowEvent } from "@mantine/hooks";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
 import { useGetItems } from "../../query-v2/items/useGetItems";
@@ -70,13 +70,23 @@ export const EventPage = () => {
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
   const [openedTimeline, { /* open: openTimeline, */ close: closeTimeline, toggle: toggleTimeline }] =
     useDisclosure(false);
+
+  // The timeline drawer's own Escape (closeOnEscape) is off: Mantine's modals and drawers each listen for Escape on
+  // window (capture phase), so Escape inside a modal opened from the timeline (e.g. placing a cue marker) closed both.
+  // Bubble phase runs after the modal's handler, and the modal is still in the DOM then (React hasn't re-rendered).
+  useWindowEvent("keydown", (event) => {
+    if (event.key !== "Escape" || event.isComposing || !openedTimeline) return;
+    if (document.querySelector(".mantine-Modal-content")) return; // a modal is open: Escape is for it
+    closeTimeline();
+  });
+
   const [timelineHeight, setTimelineHeight] = useLocalStorage<number>({
     key: "timeline-drawer-height",
     defaultValue: 30,
   });
   const resizeTimeline = (height: number) => setTimelineHeight(Math.min(85, Math.max(20, height)));
 
-  const toggleDrawerHandler = (toggleCb: () => void, domain: "event" | "lyrics" | "cues") => {
+  const toggleDrawerHandler = (toggleCb: () => void, domain: "event" | "lyrics" | "cues" | "timeline" | "dmx") => {
     // only one drawer can be open at a time, so close the others if its open
     if (domain === "event") {
       closeLyrics();
@@ -85,9 +95,19 @@ export const EventPage = () => {
       closeEventDetails();
     } else if (domain === "cues") {
       closeEventDetails();
+    } else if (domain === "timeline") {
+      // timeline and DMX share the bottom edge: only one of them at a time (either can sit with any other drawer)
+      setIsDmxDrawerOpen(false);
+    } else if (domain === "dmx") {
+      closeTimeline();
     }
     toggleCb();
   };
+
+  // CueCards open the DMX drawer through the store, without going through toggleDrawerHandler: close the timeline then too.
+  useEffect(() => {
+    if (isDmxDrawerOpen) closeTimeline();
+  }, [isDmxDrawerOpen, closeTimeline]);
 
   // hooks to get data
   const { event: evt, isEventLoading } = useGetEvent(eventId); // NOTE: evt is nullable, remember to check
@@ -503,10 +523,14 @@ export const EventPage = () => {
         }}
       >
         <Group>
-          <Button size="xs" variant="light" onClick={() => toggleTimeline()}>
+          <Button size="xs" variant="light" onClick={() => toggleDrawerHandler(toggleTimeline, "timeline")}>
             {openedTimeline ? "Hide" : "Show"} timeline
           </Button>
-          <Button size="xs" variant="light" onClick={() => setIsDmxDrawerOpen(!isDmxDrawerOpen)}>
+          <Button
+            size="xs"
+            variant="light"
+            onClick={() => toggleDrawerHandler(() => setIsDmxDrawerOpen(!isDmxDrawerOpen), "dmx")}
+          >
             {isDmxDrawerOpen ? "Hide" : "Show"} DMX overrides
           </Button>
         </Group>
@@ -524,7 +548,7 @@ export const EventPage = () => {
         lockScroll={false} // scroll lock would also swallow the visualiser's scroll-to-zoom
         trapFocus={false}
         withCloseButton={false}
-        closeOnEscape
+        closeOnEscape={false} // handled by the useWindowEvent above, so Escape in a modal over the timeline only closes the modal
         closeOnClickOutside={false} // allow manipulating the 3d visualiser
 
         zIndex={getDefaultZIndex("modal") + 1} // above the Lyrics and Cues drawers (both 200)

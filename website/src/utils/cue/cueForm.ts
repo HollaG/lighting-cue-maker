@@ -354,3 +354,40 @@ const isPresetPositionOption = (value: unknown): value is PresetPositionOption =
 const clonePresetPositionOption = (position: PresetPositionOption): PresetPositionOption => ({
   ...position,
 });
+
+/** A stretch of rich content, [lineIndex, wordIndex] to [lineIndex, wordIndex], both inclusive. */
+export type RichRange = { from: [number, number]; to: [number, number] };
+
+/** Whether [line, word] is within the range (inclusive), in reading order. */
+export const isInRichRange = ([l, w]: [number, number], { from, to }: RichRange) =>
+  (l > from[0] || (l === from[0] && w >= from[1])) && (l < to[0] || (l === to[0] && w <= to[1]));
+
+/** [lineIndex, wordIndex] of the token holding this cue's marker, or null. */
+export const findCueInRichContent = (content: string[][], cueId: string): [number, number] | null => {
+  for (let l = 0; l < content.length; l++)
+    for (let w = 0; w < content[l].length; w++) {
+      const raw = content[l][w].match(CUE_MATCH_REGEX)?.[1];
+      if (raw && convertUuidForDatabase(raw) === cueId) return [l, w];
+    }
+  return null;
+};
+
+/**
+ * The words between two cues: from the word after `leftCueId`'s marker (or the start) to the word before
+ * `rightCueId`'s marker (or the end). Empty (to before from) when the markers are next to each other.
+ */
+export const getRichRangeBetweenCues = (content: string[][], leftCueId?: string, rightCueId?: string): RichRange => {
+  const left = leftCueId ? findCueInRichContent(content, leftCueId) : null;
+  const right = rightCueId ? findCueInRichContent(content, rightCueId) : null;
+  const lastLine = content.length - 1;
+  return {
+    // one past the left marker (wrapping to the next line is fine: isInRichRange compares in reading order)
+    from: left ? (left[1] + 1 < content[left[0]].length ? [left[0], left[1] + 1] : [left[0] + 1, 0]) : [0, 0],
+    // one before the right marker
+    to: right
+      ? right[1] > 0
+        ? [right[0], right[1] - 1]
+        : [right[0] - 1, (content[right[0] - 1]?.length ?? 0) - 1]
+      : [lastLine, (content[lastLine]?.length ?? 0) - 1],
+  };
+};

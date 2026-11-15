@@ -7,7 +7,12 @@ import { useGetItem } from "../../query-v2/items/useGetItem";
 import { useUpsertItem } from "../../query-v2/items/useUpsertItem";
 import { useUpsertCue } from "../../query-v2/cues/useUpsertCue";
 import { RichWord } from "./RichWord";
-import { insertCueInRichContent, removeCueFromRawLyrics } from "../../utils/cue/cueForm";
+import {
+  insertCueInRichContent,
+  isInRichRange,
+  removeCueFromRawLyrics,
+  type RichRange,
+} from "../../utils/cue/cueForm";
 import { generateRaw, generateRich } from "../../utils/convertText";
 import { insertTimingMarkerInRichContent, removeTimingMarkerFromContent } from "../../utils/timingUtils";
 import type { IndicatorTimingMode } from "../../store/slices/timingSlice";
@@ -23,6 +28,10 @@ interface RichContentInternalProps {
   inputMode: InputMode | "disabled"; // for RUN mode
   indicatorNumber: number;
   inputTimingMode: IndicatorTimingMode;
+  /** Only render the words in this range. Word indices and cue numbers stay those of the full lyrics. */
+  visibleRange?: RichRange;
+  /** Off when this isn't the lyrics panel (e.g. a picker in a modal), so realtime cursors don't land here. */
+  isCursorSurface?: boolean;
 }
 
 const RichContentInternal = ({
@@ -34,6 +43,8 @@ const RichContentInternal = ({
   inputMode,
   indicatorNumber,
   inputTimingMode,
+  visibleRange,
+  isCursorSurface = true,
 }: RichContentInternalProps) => {
   const { item } = useGetItem(eventId, itemId);
   const { mutateAsync: upsertCue } = useUpsertCue(eventId, itemId);
@@ -154,12 +165,15 @@ const RichContentInternal = ({
   };
 
   return (
-    <Stack gap={0} onClick={handleContainerClick} data-cursor-surface="lyrics" data-cursor-item-id={itemId}>
+    <Stack
+      gap={0}
+      onClick={handleContainerClick}
+      {...(isCursorSurface && { "data-cursor-surface": "lyrics", "data-cursor-item-id": itemId })}
+    >
       {(() => {
         let cueCount = 0;
-        return content.map((line, index1) => (
-          <Group key={index1} gap="0px" align="end">
-            {line.map((word, index2) => {
+        return content.map((line, index1) => {
+          const words = line.map((word, index2) => {
               let cueNumber: number | undefined = 0;
               let cueId: string | undefined = undefined;
 
@@ -173,6 +187,9 @@ const RichContentInternal = ({
                   cueId = convertUuidForDatabase(word.match(/[{<]cueId=(.*?)=cueId[}>]/)?.[1] || "");
                 }
               }
+
+              // After the cue counting above, so hidden cues still count towards the numbers of the visible ones.
+              if (visibleRange && !isInRichRange([index1, index2], visibleRange)) return null;
 
               // TODO: support selection for non-cues
               const isSelected = !!cueId && currentlySelectedCueId === cueId;
@@ -189,9 +206,15 @@ const RichContentInternal = ({
                   />
                 </Flex>
               );
-            })}
-          </Group>
-        ));
+          });
+          // Skip a line with nothing visible, or it leaves an empty row.
+          if (visibleRange && words.every((w) => w === null)) return null;
+          return (
+            <Group key={index1} gap="0px" align="end">
+              {words}
+            </Group>
+          );
+        });
       })()}
     </Stack>
   );
