@@ -24,8 +24,10 @@ import { NodeMaterial, RenderTarget, RendererUtils, type WebGPURenderer } from "
 import { vec4 } from "three/tsl";
 
 /** Most lights that can cast a shadow. WebGPU guarantees 256 array layers. */
-export const SHADOW_LAYERS = 128;
-/** Width and height of each layer. 128 layers at 512² is about 134 MB of depth. */
+export const MAX_SHADOW_LAYERS = 256;
+/** The array starts with this many layers and doubles when more lights need one. */
+const INITIAL_SHADOW_LAYERS = 8;
+/** Width and height of each layer. A layer is about 1.3 MB (depth plus an unused colour byte three requires). */
 export const SHADOW_MAP_SIZE = 512;
 /** Most layers redrawn in one frame; the rest wait for the next frame (their shadows are one frame late). */
 export const MAX_SHADOW_REDRAWS_PER_FRAME = 32;
@@ -58,8 +60,26 @@ const restoreRendererAndSceneState = RendererUtils.restoreRendererAndSceneState 
 
 let rendererState: unknown;
 
+const createLayer = (): Layer => {
+  const light = new THREE.Object3D() as ShadowLight;
+  light.target = new THREE.Object3D();
+  light.angle = 0;
+  light.distance = 0;
+  // three doesn't export SpotLightShadow at runtime; a SpotLight comes with one.
+  const shadow = new SpotLight().shadow;
+  shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+  shadow.camera.near = SHADOW_NEAR;
+  // WebGPU clip space (z from 0 to 1); three's ShadowNode sets this from the scene camera.
+  shadow.camera.coordinateSystem = THREE.WebGPUCoordinateSystem;
+  shadow.camera.updateProjectionMatrix();
+  return { light, shadow, dirty: true, active: false };
+};
+
 export class ShadowLayers {
-  readonly layerCount = SHADOW_LAYERS;
+  /** Layers allocated so far. Grows with `grow`. */
+  get layerCount() {
+    return this.layers.length;
+  }
   readonly depthTexture: DepthTexture;
   /** Each layer's shadow matrix (world → shadow map), one column of 4 texels per layer. */
   readonly matrixTexture: DataTexture;
@@ -67,7 +87,7 @@ export class ShadowLayers {
   redraws = 0;
 
   private readonly renderTarget: RenderTarget;
-  private readonly matrixData = new Float32Array(SHADOW_LAYERS * 4 * 4);
+  private readonly matrixData = new Float32Array(MAX_SHADOW_LAYERS * 4 * 4);
   private readonly layers: Layer[] = [];
   private readonly material: NodeMaterial;
   private castersKey = NaN;
@@ -86,7 +106,7 @@ export class ShadowLayers {
       undefined,
       undefined,
       undefined,
-      SHADOW_LAYERS,
+      INITIAL_SHADOW_LAYERS,
     );
     this.depthTexture.name = "LightTableShadowDepth";
     // Hardware comparison with linear filtering: one tap gives a 2×2 soft edge.
@@ -96,13 +116,13 @@ export class ShadowLayers {
 
     this.renderTarget = new RenderTarget(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, {
       format: RedFormat,
-      depth: SHADOW_LAYERS,
+      depth: INITIAL_SHADOW_LAYERS,
       useArrayDepthTexture: true,
     });
     this.renderTarget.depthTexture = this.depthTexture;
     this.renderTarget.texture.name = "LightTableShadowColour";
 
-    this.matrixTexture = new DataTexture(this.matrixData, SHADOW_LAYERS, 4, RGBAFormat, FloatType);
+    this.matrixTexture = new DataTexture(this.matrixData, MAX_SHADOW_LAYERS, 4, RGBAFormat, FloatType);
     this.matrixTexture.minFilter = NearestFilter;
     this.matrixTexture.magFilter = NearestFilter;
     this.matrixTexture.generateMipmaps = false;
@@ -116,20 +136,24 @@ export class ShadowLayers {
     this.material.blending = NoBlending;
     this.material.fog = false;
 
-    for (let i = 0; i < SHADOW_LAYERS; i++) {
-      const light = new THREE.Object3D() as ShadowLight;
-      light.target = new THREE.Object3D();
-      light.angle = 0;
-      light.distance = 0;
-      // three doesn't export SpotLightShadow at runtime; a SpotLight comes with one.
-      const shadow = new SpotLight().shadow;
-      shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
-      shadow.camera.near = SHADOW_NEAR;
-      // WebGPU clip space (z from 0 to 1); three's ShadowNode sets this from the scene camera.
-      shadow.camera.coordinateSystem = THREE.WebGPUCoordinateSystem;
-      shadow.camera.updateProjectionMatrix();
-      this.layers.push({ light, shadow, dirty: true, active: false });
-    }
+    for (let i = 0; i < INITIAL_SHADOW_LAYERS; i++) this.layers.push(createLayer());
+  }
+
+  /**
+   * Doubles the number of layers (up to MAX_SHADOW_LAYERS), so memory follows the number of shadow-casting lights.
+   * The GPU textures are recreated empty, so every layer is redrawn.
+   * @returns false when already at the maximum
+   */
+  grow() {
+    if (this.layers.length >= MAX_SHADOW_LAYERS) return false;
+    const count = Math.min(this.layers.length * 2, MAX_SHADOW_LAYERS);
+    while (this.layers.length < count) this.layers.push(createLayer());
+    this.renderTarget.setSize(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, count);
+    // three only resizes a depth texture it created itself, so resize ours here.
+    this.depthTexture.image.depth = count;
+    this.depthTexture.needsUpdate = true;
+    this.invalidateAll();
+    return true;
   }
 
   /** Start of a frame: no layer is in use until its light says so through `setPose`. */
@@ -197,8 +221,9 @@ export class ShadowLayers {
     // 1. Pick this frame's layers and write their matrices.
     const picked: number[] = [];
     let waiting = 0;
-    for (let step = 0; step < SHADOW_LAYERS; step++) {
-      const index = (this.cursor + step) % SHADOW_LAYERS;
+    const layerCount = this.layers.length;
+    for (let step = 0; step < layerCount; step++) {
+      const index = (this.cursor + step) % layerCount;
       const layer = this.layers[index];
       if (!layer.dirty || !layer.active) continue;
       if (picked.length === MAX_SHADOW_REDRAWS_PER_FRAME) {
@@ -211,7 +236,7 @@ export class ShadowLayers {
       const elements = layer.shadow.matrix.elements;
       // Texel (layer, row) holds matrix column `row`.
       for (let row = 0; row < 4; row++) {
-        for (let i = 0; i < 4; i++) this.matrixData[(row * SHADOW_LAYERS + index) * 4 + i] = elements[row * 4 + i];
+        for (let i = 0; i < 4; i++) this.matrixData[(row * MAX_SHADOW_LAYERS + index) * 4 + i] = elements[row * 4 + i];
       }
     }
     if (picked.length === 0) return waiting;
@@ -220,7 +245,7 @@ export class ShadowLayers {
     this.matrixTexture.needsUpdate = true;
     renderer.initTexture(this.matrixTexture);
     // Next frame continues after the last one drawn, so a budget doesn't starve the high layers.
-    this.cursor = waiting > 0 ? (picked[picked.length - 1] + 1) % SHADOW_LAYERS : 0;
+    this.cursor = waiting > 0 ? (picked[picked.length - 1] + 1) % layerCount : 0;
 
     // 2. Draw them, with three's shadow-pass setup.
     const previousObjectFunction = renderer.getRenderObjectFunction();

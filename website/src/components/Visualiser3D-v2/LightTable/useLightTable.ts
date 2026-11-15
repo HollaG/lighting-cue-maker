@@ -3,7 +3,7 @@ import type { LightTable } from "./LightTable";
 import { LightTableLighting } from "./LightTableNode";
 
 /**
- * The canvas's light table, or null when the renderer uses ordinary three.js lights (the default).
+ * The canvas's light table, or null when the renderer was created with `lightTable: false` (the old per-light path).
  * The table belongs to the renderer: see `lightTable` in makeVisualiser3DRenderer.
  */
 export const useLightTable = (): LightTable | null => {

@@ -29,6 +29,7 @@ import { FrameGateContext, type FrameGate } from "../frameGate";
 import { FrameGateUpdater } from "../FrameGateUpdater";
 import { useLightTable } from "../LightTable/useLightTable";
 import { LightTableUpdater } from "../LightTable/LightTableUpdater";
+import { MAX_SHADOW_LAYERS } from "../LightTable/ShadowLayers";
 
 const logger = new Logger("StagePreview3D");
 
@@ -111,7 +112,7 @@ export const StagePreview3D = ({
   const cuboids = stageElements.filter((element) => element.type === "cuboid");
   const humans = stageElements.filter((element) => element.type === "default_human");
 
-  // Null unless the renderer was created with a light table (the bench's prototype mode).
+  // Null only on the old per-light path (the bench's comparison mode).
   const lightTable = useLightTable();
 
   const templatesById = useMemo(() => new Map(fixtureTemplates.map((t) => [t.id, t])), [fixtureTemplates]);
@@ -126,10 +127,10 @@ export const StagePreview3D = ({
    */
   const shadowCasterIds = useMemo(() => {
     // The viewer gets the same shadows as the editor. With three.js lights that is the first MAX_SHADOW_CASTERS spots;
-    // the light table (prototype) keeps shadows in one texture array, so every spot can cast one.
+    // the light table keeps shadows in one texture array, so every spot can cast one.
     const ids = fixtures
       .filter((f) => getHeadCount(templatesById.get(f.fixtureTemplateId), f.modeId) === 1)
-      .slice(0, lightTable ? lightTable.shadows.layerCount : MAX_SHADOW_CASTERS)
+      .slice(0, lightTable ? MAX_SHADOW_LAYERS : MAX_SHADOW_CASTERS)
       .map((f) => f.id);
     return new Set(ids);
   }, [fixtures, templatesById, lightTable]);

@@ -221,7 +221,7 @@ const HeadLights = ({
   /** Called with each head's light (by head position), and null on unmount. */
   lightRef: (headIndex: number, light: HeadLightTarget | null) => void;
 }) => {
-  // PROTOTYPE: with a light table, heads are table entries, not three.js lights.
+  // With a light table (the default), heads are table entries, not three.js lights.
   const table = useLightTable();
   if (table) {
     return (
@@ -262,7 +262,7 @@ const HeadLights = ({
 const LED_HEAD_GAIN = 1;
 
 /**
- * PROTOTYPE (optimization plan, step 4). Every head is one entry of the canvas's light table: a cone along local +Y.
+ * Every head is one entry of the canvas's light table: a cone along local +Y.
  * A single head is a spot, as before. A head of a multi-head fixture replaces its panel light with a cone of the same
  * on-axis brightness (intensity × lens area), so each pixel keeps its own colour on the floor and in the haze.
  * Nothing is mounted per head: turning heads on or off, or adding fixtures, only changes table data.

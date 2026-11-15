@@ -76,7 +76,7 @@ export const VisualiserBench = () => {
     ledHeads: 0,
     mode: "editor",
     msaa: true,
-    lighting: "three",
+    lighting: "table",
   });
   const [haze, setHaze] = useState(0.5);
   const [ambientLight, setAmbientLight] = useState(0.5);
@@ -172,8 +172,8 @@ export const VisualiserBench = () => {
           <SegmentedControl
             size="xs"
             data={[
-              { value: "three", label: "three.js lights" },
               { value: "table", label: "Light table" },
+              { value: "three", label: "three.js lights (old)" },
             ]}
             value={config.lighting}
             onChange={(value) => setConfig({ ...config, lighting: value as BenchSceneConfig["lighting"] })}

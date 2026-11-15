@@ -19,8 +19,9 @@ type RendererOptions = {
   /** MSAA on the canvas and scene pass. R3F's default is on (4 samples). */
   antialias?: boolean;
   /**
-   * PROTOTYPE (optimization plan, steps 4–5): light the scene from one light table instead of three.js lights.
-   * Scene components find the table with `useLightTable`.
+   * Light the scene from one light table (LightTable/) instead of one three.js light per head. Default true.
+   * False keeps the old per-light path, which the bench uses for comparison. Scene components find the table with
+   * `useLightTable`.
    */
   lightTable?: boolean;
 };
@@ -41,7 +42,7 @@ export const makeVisualiser3DRenderer =
 export const createVisualiser3DRenderer: CanvasProps["gl"] = makeVisualiser3DRenderer();
 
 const initRenderer = (props: { canvas: EventTarget }, options: RendererOptions) => {
-  const { lightTable, ...rendererOptions } = options;
+  const { lightTable = true, ...rendererOptions } = options;
   const renderer = new WebGPURenderer({ ...(props as unknown as WebGPURendererParameters), ...rendererOptions });
   // Before the first render: render lists keep the lights node they were created with.
   if (lightTable) renderer.lighting = new LightTableLighting();

@@ -6,7 +6,7 @@
  * - Lights that are off are left out when the table is packed, so the shader never visits them.
  * - Data is in world space, so it only changes when a light moves or changes colour, not when the camera moves.
  *
- * PROTOTYPE: only used when the renderer was created with `lightTable: true` (the bench).
+ * On by default; see `lightTable` in makeVisualiser3DRenderer.
  */
 import * as THREE from "three";
 import { DataTexture, FloatType, NearestFilter, RGBAFormat } from "three";
@@ -86,6 +86,13 @@ export class LightTable {
   add(light: TableLight) {
     this.lights.add(light);
     if (light.castShadow && light.shadowLayer < 0) {
+      if (this.freeShadowLayers.length === 0) {
+        // Out of layers: make the array bigger, and hand out the new ones lowest first.
+        const before = this.shadows.layerCount;
+        if (this.shadows.grow()) {
+          for (let layer = this.shadows.layerCount - 1; layer >= before; layer--) this.freeShadowLayers.push(layer);
+        }
+      }
       const layer = this.freeShadowLayers.pop();
       if (layer === undefined) console.warn("LightTable: no free shadow layer; this light will not cast a shadow");
       else {

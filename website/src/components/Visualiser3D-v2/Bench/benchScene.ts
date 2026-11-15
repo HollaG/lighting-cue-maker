@@ -22,8 +22,8 @@ export type BenchSceneConfig = {
   /** 4× multisampling on the solid pass (R3F's default). The haze pass never uses it. */
   msaa: boolean;
   /**
-   * "three": one three.js light per head, as the real visualiser does today.
-   * "table": the prototype light table with shared shadow storage (plan steps 4–5); every spot casts a shadow.
+   * "table": the light table with shared shadow storage, as the real visualiser uses; every spot casts a shadow.
+   * "three": the old path, one three.js light per head, for comparison.
    */
   lighting: "three" | "table";
 };
