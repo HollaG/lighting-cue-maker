@@ -107,6 +107,8 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
       if (!current) return;
       const audios = current?.audios.length ? [...current.audios] : [];
       if (!audios) return;
+
+      // add 1 second between clips
       let startTime = current.audios.length ? Math.max(...audios.map((a) => a.startTime + a.duration)) + 1000 : 0;
       const newClips: TimelineAudio[] = uploadedFiles.map((file) => {
         const clip: TimelineAudio = {
@@ -119,6 +121,9 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
         startTime += file.durationMs; // the next one starts where this one ends (touching is allowed)
         return clip;
       });
+
+      // we also want to create default sections for the new clips.
+      // and place them exactly matching the length
 
       await upsertTimeline({ audios: [...audios, ...newClips] });
     }

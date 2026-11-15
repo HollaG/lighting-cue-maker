@@ -222,12 +222,33 @@ export const TimelineWrapper = ({
     if (!audioCtx.current) audioCtx.current = new AudioContext();
   }, []);
 
+  /** Clicking on the ruler will move the playhead */
   const onRulerClick = (timeMs: number) => {
     // TODO: for now, round to 1000ms
     const rounded = Math.round(timeMs / 1000) * 1000;
+
+    // if playing, stop playing, then resume
+    if (playState === "play") {
+      onPlayStateChange("pause");
+      startPlayheadPositionRef.current = rounded;
+      onPlayStateChange("play");
+    } else {
+      startPlayheadPositionRef.current = rounded;
+    }
     startPlayheadPositionRef.current = rounded;
   };
 
+  // buffer cache
+  const bufferCache = useRef<
+    Map<
+      string,
+      {
+        buffer: AudioBuffer;
+      }
+    >
+  >(new Map());
+
+  /** on play button clicked */
   const onPlay = async () => {
     try {
       if (!audioCtx.current) return;
@@ -246,15 +267,24 @@ export const TimelineWrapper = ({
         // get an offset for the clip, if we're some distance into the clip
         const skipAmount = Math.max(0, startPlayheadPositionRef.current - clip.startTime);
 
-        // fetch the file
-        const res = await fetch(file.url);
-        const bytes = await res.arrayBuffer();
-        const buf = await audioCtx.current.decodeAudioData(bytes);
+        // fetch the file, try from cache
+        let buffer: AudioBuffer;
+
+        const existingBuf = bufferCache.current.get(file.id);
+        if (existingBuf) {
+          // 1 hour
+          buffer = existingBuf.buffer;
+        } else {
+          const res = await fetch(file.url);
+          const bytes = await res.arrayBuffer();
+          buffer = await audioCtx.current.decodeAudioData(bytes);
+          bufferCache.current.set(file.id, { buffer });
+        }
 
         // create audio source
         const src = audioCtx.current.createBufferSource();
 
-        src.buffer = buf;
+        src.buffer = buffer;
 
         src.connect(audioCtx.current.destination);
 

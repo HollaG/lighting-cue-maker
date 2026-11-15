@@ -19,7 +19,7 @@ export const TimelineRuler = ({ onClickPos }: { onClickPos: (timeMs: number) => 
         position: "relative",
         height: 28,
         marginLeft: SIDEBAR_WIDTH,
-        borderBottom: "1px solid var(--mantine-color-default-border)",
+        borderBottom: "3px solid var(--mantine-color-default-border)",
         cursor: "text",
       }}
       onClick={(e) => {
