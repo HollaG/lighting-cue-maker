@@ -2,7 +2,57 @@
 
 Written 15 November 2026. Scope: `src/components/Visualiser3D-v2`, the pattern-effect / DMX path that feeds it, and the installed three.js 0.186.0, @react-three/fiber 9.7.0 and drei 10.7.8.
 
-This is a plan from reading the code and the installed three.js source. Nothing was profiled and nothing has been changed. A second plan from the same day is in [visualiser-codex.md](visualiser-codex.md); the two broadly agree, and the differences are listed at the end.
+This started as a plan from reading the code and the installed three.js source. Steps 1 to 6 are now done on branch `optimize/visualiser-claude`; see [Status](#status-15-november-2026) below. The sections after it are the original plan, unchanged. A second plan from the same day is in [visualiser-codex.md](visualiser-codex.md); the two broadly agree, and the differences are listed at the end.
+
+## Status (15 November 2026)
+
+| Step | State | Commit |
+| --- | --- | --- |
+| 1. Measure first | Done: bench at `/dev/visualiser-bench` | `d8c715a` |
+| 2. Effects in the render loop | Done | `93d1681` |
+| 3. Render only when something changes | Done | `8e99f2c` |
+| 4. Light table | Done, and on by default in the real visualiser | `6e7350d`, `56c5ed7`, `c11d0c8` |
+| 5. Shared shadow storage | Done, with step 4 | same |
+| 6. LED draw cost (instanced lenses) | Done | `3d4d98f` |
+| 7. Warm-up | Not needed, see below | – |
+| Interim: 8 shadows in the viewer | Done, then replaced by step 5 | `fee7d1e` |
+
+### Measured
+
+All numbers are from the bench on the development machine (NVIDIA GPU, 165 Hz screen, headless Chrome, production build, 1/3 resolution scale, 444 × 250 canvas). **Nothing has been measured on integrated graphics yet**, which is the target hardware.
+
+| | Before | After |
+| --- | --- | --- |
+| Static scene, camera at rest | 165 draws/s | 0 draws/s |
+| Camera orbit | 165 draws/s | 60 draws/s (the cap) |
+| Fade: effect updates per second, scene commits per second | about 29, 29 | 60 (every drawn frame), 0 |
+| 30 spots: shadows cast | 8 | 30 |
+| 30 spots: first frame CPU, shader builds | 174 ms, 18 | about 70 ms, 10 |
+| Shadow redraws per frame while the camera moves | 8 | 0 |
+| 100 shadowed spots | black scene (texture limit) | 60 fps, GPU about 1 ms |
+| 100 spots + 64 LED heads: time to first frame | 5.7 s | 0.2 s |
+| 256 LED heads | about 1.5 minutes to load (user's run) | loads at once |
+| 1024 LED heads | shader fails to build, nothing draws | 60 fps |
+| 100 spots + 1024 LED heads: draw calls, CPU per frame | – | 179, about 2.5 ms |
+| First camera sweep after load (100 spots + 256 LED heads) | freezes on first view of each area | 0 shader builds, no frame over 6.4 ms |
+
+### Where the result differs from the plan
+
+- **Step 7 (warm-up) was dropped.** With the light table the shaders no longer depend on the lights, so nothing is built when the camera first turns. The one remaining first-use build measured (turning haze to zero) took 2.5 ms.
+- **Lights that are off are left out of the table** when it is packed each frame, so the shader never visits them. This was not in the plan and makes chases cheap.
+- **Shadow redraws are capped at 32 layers per frame.** A change that dirties more (loading 100 spots, moving a stage object) finishes over the next frames; until a layer is drawn its light is dark.
+- **Shadow memory follows the fixture count.** The array starts at 8 layers and doubles up to 256. A layer is about 1.3 MB at 512 × 512, including an unused colour byte per pixel that three's render target requires.
+- **LED heads are cones**, with the same on-axis brightness as the panel lights they replace (intensity × lens area). That brightness is about 140 times lower than a spot's, as before. `LED_HEAD_GAIN` in `Visualiser3DFixture.tsx` scales it.
+- **three.js picks up a changed data texture one draw late.** With draw-on-demand that left the last shadow layers of a load dark until the camera moved. The table and shadow-matrix textures are uploaded explicitly (`renderer.initTexture`) when they change. The cause inside three was not found.
+- **MSAA on the solid pass was left on.** The bench has a toggle to compare.
+- **The old per-light path still exists** behind `lightTable: false` on the renderer factory. Only the bench uses it, for comparison.
+
+### Still open
+
+- Measure on integrated graphics at 1/4 scale: the per-pixel light loop is the part that could be slow there. If it is, the options are smaller shadow maps, fewer haze steps, or tile light lists.
+- Not exercised in a browser by Claude: gizmo drags, lil-gui edits and undo in the editor under draw-on-demand; moving a stage object (which redraws all shadow layers). The user confirmed on the event page that effects play and stop correctly, and in the bench that a dragged fixture's light and shadow follow.
+- Pan and tilt are still not decoded. When they are, moving heads will redraw their shadow layers every frame, which is where the 32-per-frame cap will matter.
+- `tsc -b` fails on two unused variables in the timeline code (`TimelineRuler.tsx`, `timeline.ts`), unrelated to this work, so `npm run build` stops before `vite build`.
 
 ## Goals
 

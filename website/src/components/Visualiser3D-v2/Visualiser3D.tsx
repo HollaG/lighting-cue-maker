@@ -27,9 +27,7 @@ import { Canvas } from "@react-three/fiber";
 // import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 
-import { Profiler, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { onProfilerRender } from "../../utils/perfProbe"; // TEMPORARY
-import { CanvasPerfProbe } from "./CanvasPerfProbe"; // TEMPORARY
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useHotkey } from "@tanstack/react-hotkeys";
 
@@ -870,23 +868,19 @@ export const StaticVisualiser3D = ({
             if (event.button === 1) event.preventDefault();
           }}
         >
-          {/* TEMPORARY perf probe: inside the Canvas, because r3f renders the scene with its own React renderer. */}
-          <CanvasPerfProbe />
-          <Profiler id="scene" onRender={onProfilerRender}>
-            <StagePreview3D
-              isViewOnly
-              eventId={eventId}
-              environment={environment}
-              fixtures={fixtures}
-              fixtureTemplates={event.fixtureTemplates}
-              stageElements={visualiser.objects3d || []}
-              cameraRef={cameraControlRef}
-              updateStageElement={() => {}} // view only
-              gui={null} // no editing panel
-              dmxValuesByFixtureId={dmxValuesByFixtureId}
-              effectPlayback={effectPlayback}
-            />
-          </Profiler>
+          <StagePreview3D
+            isViewOnly
+            eventId={eventId}
+            environment={environment}
+            fixtures={fixtures}
+            fixtureTemplates={event.fixtureTemplates}
+            stageElements={visualiser.objects3d || []}
+            cameraRef={cameraControlRef}
+            updateStageElement={() => {}} // view only
+            gui={null} // no editing panel
+            dmxValuesByFixtureId={dmxValuesByFixtureId}
+            effectPlayback={effectPlayback}
+          />
         </Canvas>
       </Suspense>
     </Box>
