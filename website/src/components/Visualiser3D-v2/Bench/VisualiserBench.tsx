@@ -1,6 +1,7 @@
 /**
  * The visualiser bench (optimization plan, step 1): fixed test scenes plus a live readout and a recorder.
- * Open /dev/visualiser-bench. For real numbers use a production build (`npm run build && npm run preview`).
+ * Open /dev/visualiser-bench. Kept on purpose, and shipped in production builds: it needs no event and no server, so
+ * it doubles as a demo of what the visualiser can draw.
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -126,9 +127,7 @@ export const VisualiserBench = () => {
   const shadowText =
     config.lighting === "table"
       ? `light table, ${config.spots} shadowed spots`
-      : config.mode === "editor"
-        ? `three.js lights, ${Math.min(8, config.spots)} shadowed spots`
-        : `three.js lights, ${Math.min(8, config.spots)} shadowed spots`;
+      : `three.js lights, ${Math.min(8, config.spots)} shadowed spots`;
   const sceneLine =
     `Scene: ${config.spots} spots, ${config.ledHeads} LED heads (${Math.ceil(config.ledHeads / HEADS_PER_BAR)} bars), ` +
     `${config.mode} mode, ${shadowText}, MSAA ${config.msaa ? "on" : "off"}, haze ${haze}, ambient ${ambientLight}, effect ${effect}, camera ${orbit ? "orbiting" : "still"}`;
@@ -163,8 +162,8 @@ export const VisualiserBench = () => {
           <SegmentedControl
             size="xs"
             data={[
-              { value: "editor", label: "Editor (8 shadows)" },
-              { value: "viewer", label: "Viewer (8 shadows)" },
+              { value: "editor", label: "Editor" },
+              { value: "viewer", label: "Viewer" },
             ]}
             value={config.mode}
             onChange={(value) => setConfig({ ...config, mode: value as BenchSceneConfig["mode"] })}
