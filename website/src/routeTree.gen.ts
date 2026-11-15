@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DevVisualiserBenchIndexRouteImport } from './routes/dev/visualiser-bench/index'
 import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
 import { Route as EventsCreateIndexRouteImport } from './routes/events/create/index'
 import { Route as EventsEventIdEditIndexRouteImport } from './routes/events/$eventId/edit/index'
@@ -19,6 +20,11 @@ import { Route as EventsEventIdVisualsUpdateIndexRouteImport } from './routes/ev
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevVisualiserBenchIndexRoute = DevVisualiserBenchIndexRouteImport.update({
+  id: '/dev/visualiser-bench/',
+  path: '/dev/visualiser-bench/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
@@ -50,6 +56,7 @@ const EventsEventIdVisualsUpdateIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dev/visualiser-bench/': typeof DevVisualiserBenchIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/create/': typeof EventsCreateIndexRoute
   '/events/$eventId/edit/': typeof EventsEventIdEditIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev/visualiser-bench': typeof DevVisualiserBenchIndexRoute
   '/events/$eventId': typeof EventsEventIdIndexRoute
   '/events/create': typeof EventsCreateIndexRoute
   '/events/$eventId/edit': typeof EventsEventIdEditIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dev/visualiser-bench/': typeof DevVisualiserBenchIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/create/': typeof EventsCreateIndexRoute
   '/events/$eventId/edit/': typeof EventsEventIdEditIndexRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dev/visualiser-bench/'
     | '/events/$eventId/'
     | '/events/create/'
     | '/events/$eventId/edit/'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dev/visualiser-bench'
     | '/events/$eventId'
     | '/events/create'
     | '/events/$eventId/edit'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/dev/visualiser-bench/'
     | '/events/$eventId/'
     | '/events/create/'
     | '/events/$eventId/edit/'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DevVisualiserBenchIndexRoute: typeof DevVisualiserBenchIndexRoute
   EventsEventIdIndexRoute: typeof EventsEventIdIndexRoute
   EventsCreateIndexRoute: typeof EventsCreateIndexRoute
   EventsEventIdEditIndexRoute: typeof EventsEventIdEditIndexRoute
@@ -116,6 +129,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/visualiser-bench/': {
+      id: '/dev/visualiser-bench/'
+      path: '/dev/visualiser-bench'
+      fullPath: '/dev/visualiser-bench/'
+      preLoaderRoute: typeof DevVisualiserBenchIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/$eventId/': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DevVisualiserBenchIndexRoute: DevVisualiserBenchIndexRoute,
   EventsEventIdIndexRoute: EventsEventIdIndexRoute,
   EventsCreateIndexRoute: EventsCreateIndexRoute,
   EventsEventIdEditIndexRoute: EventsEventIdEditIndexRoute,

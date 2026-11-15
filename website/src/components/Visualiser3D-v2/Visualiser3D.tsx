@@ -27,9 +27,7 @@ import { Canvas } from "@react-three/fiber";
 // import { AttributeTypes, type FixtureGroupConfiguration } from "../../types/types";
 import classes from "../Visualiser/Stage/2D/StagePreview2D.module.css";
 
-import { Profiler, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { onProfilerRender } from "../../utils/perfProbe"; // TEMPORARY
-import { CanvasPerfProbe } from "./CanvasPerfProbe"; // TEMPORARY
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useHotkey } from "@tanstack/react-hotkeys";
 
@@ -69,6 +67,8 @@ import { CardBase } from "../Cues/CardBase";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
 import { useGetFixtureGroups } from "../../query-v2/fixture-groups/useGetFixtureGroups";
 import { ResolutionScaleSelect, useVisualiserDpr } from "./ResolutionScaleSelect";
+import type { PatternEffectPlayback } from "./PatternEffectRunner";
+import { InvalidateOnGuiChange } from "./InvalidateOnGuiChange";
 
 export const Visualiser3D = ({
   visualiser,
@@ -552,6 +552,8 @@ export const Visualiser3D = ({
                     onCreated={configureVisualiser3DRenderer}
                     dpr={dpr}
                     shadows="percentage"
+                    // Draw only when something changes (camera, props, gizmo, GUI, effects).
+                    frameloop="demand"
                     camera={{
                       position: visualiser.defaultCameraView?.position || [0, 2, 5],
                       fov: 70,
@@ -585,6 +587,7 @@ export const Visualiser3D = ({
                       updateStageElement={onUpdateElement}
                       gui={gui}
                     />
+                    <InvalidateOnGuiChange gui={gui} />
                   </Canvas>
                 </Suspense>
 
@@ -811,14 +814,18 @@ export const StaticVisualiser3D = ({
   eventId,
   fixtures,
   dmxValuesByFixtureId,
+  effectPlayback,
 }: {
   visualiser: Visualiser;
   eventId: string;
   fixtures: PatchedFixture[];
 
+  /** Static values with overrides. */
   dmxValuesByFixtureId?: {
     [fixtureId: string]: (number | null)[];
   };
+  /** The cue's pattern effects; played inside the canvas, so the page doesn't re-render per step. */
+  effectPlayback?: PatternEffectPlayback | null;
 }) => {
   const { event } = useGetEvent(eventId);
   // Resolution scale. The select for it lives on the page (e.g. EventPage), shared through localStorage.
@@ -845,6 +852,8 @@ export const StaticVisualiser3D = ({
           onCreated={configureVisualiser3DRenderer}
           dpr={dpr}
           shadows="percentage"
+          // Draw only when something changes (camera, props, effects).
+          frameloop="demand"
           camera={{
             position: visualiser.defaultCameraView?.position || [0, 2, 5],
             fov: 70,
@@ -859,22 +868,19 @@ export const StaticVisualiser3D = ({
             if (event.button === 1) event.preventDefault();
           }}
         >
-          {/* TEMPORARY perf probe: inside the Canvas, because r3f renders the scene with its own React renderer. */}
-          <CanvasPerfProbe />
-          <Profiler id="scene" onRender={onProfilerRender}>
-            <StagePreview3D
-              isViewOnly
-              eventId={eventId}
-              environment={environment}
-              fixtures={fixtures}
-              fixtureTemplates={event.fixtureTemplates}
-              stageElements={visualiser.objects3d || []}
-              cameraRef={cameraControlRef}
-              updateStageElement={() => {}} // view only
-              gui={null} // no editing panel
-              dmxValuesByFixtureId={dmxValuesByFixtureId}
-            />
-          </Profiler>
+          <StagePreview3D
+            isViewOnly
+            eventId={eventId}
+            environment={environment}
+            fixtures={fixtures}
+            fixtureTemplates={event.fixtureTemplates}
+            stageElements={visualiser.objects3d || []}
+            cameraRef={cameraControlRef}
+            updateStageElement={() => {}} // view only
+            gui={null} // no editing panel
+            dmxValuesByFixtureId={dmxValuesByFixtureId}
+            effectPlayback={effectPlayback}
+          />
         </Canvas>
       </Suspense>
     </Box>

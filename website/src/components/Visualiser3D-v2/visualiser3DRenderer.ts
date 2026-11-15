@@ -1,6 +1,7 @@
 import type { CanvasProps, RootState } from "@react-three/fiber";
 import { NeutralToneMapping, RectAreaLightNode, WebGPURenderer, type WebGPURendererParameters } from "three/webgpu";
 import { RectAreaLightTexturesLib } from "three/addons/lights/RectAreaLightTexturesLib.js";
+import { LightTableLighting } from "./LightTable/LightTableNode";
 
 export const VOLUMETRIC_LIGHTING_LAYER = 10;
 export const VOLUMETRIC_LIGHT_MASK = 1 | (1 << VOLUMETRIC_LIGHTING_LAYER);
@@ -11,12 +12,40 @@ RectAreaLightNode.setLTC(RectAreaLightTexturesLib.init());
 // TODO: Remove this workaround once the installed R3F version fixes https://github.com/pmndrs/react-three-fiber/issues/3782.
 const rendererInitializations = new WeakMap<EventTarget, Promise<WebGPURenderer>>();
 
-/** Reuse initialization when R3F configures the same canvas again before init finishes. */
-export const createVisualiser3DRenderer: CanvasProps["gl"] = (props) => {
-  const existing = rendererInitializations.get(props.canvas);
-  if (existing) return existing;
+/** Options that override R3F's renderer defaults. */
+type RendererOptions = {
+  /** GPU timestamp queries, for reading GPU frame time (the bench). */
+  trackTimestamp?: boolean;
+  /** MSAA on the canvas and scene pass. R3F's default is on (4 samples). */
+  antialias?: boolean;
+  /**
+   * Light the scene from one light table (LightTable/) instead of one three.js light per head. Default true.
+   * False keeps the old per-light path, which the bench uses for comparison. Scene components find the table with
+   * `useLightTable`.
+   */
+  lightTable?: boolean;
+};
 
-  const renderer = new WebGPURenderer(props as WebGPURendererParameters);
+/**
+ * A renderer factory for R3F's `gl` prop. `trackTimestamp` turns on GPU timestamp queries (the bench page reads GPU
+ * frame time with them); leave it off elsewhere, it adds a query per render pass.
+ */
+export const makeVisualiser3DRenderer =
+  (options: RendererOptions = {}): CanvasProps["gl"] =>
+  (props) => {
+    const existing = rendererInitializations.get(props.canvas);
+    if (existing) return existing;
+    return initRenderer(props, options);
+  };
+
+/** Reuse initialization when R3F configures the same canvas again before init finishes. */
+export const createVisualiser3DRenderer: CanvasProps["gl"] = makeVisualiser3DRenderer();
+
+const initRenderer = (props: { canvas: EventTarget }, options: RendererOptions) => {
+  const { lightTable = true, ...rendererOptions } = options;
+  const renderer = new WebGPURenderer({ ...(props as unknown as WebGPURendererParameters), ...rendererOptions });
+  // Before the first render: render lists keep the lights node they were created with.
+  if (lightTable) renderer.lighting = new LightTableLighting();
   const initialization = renderer.init().then(
     () => {
       // A lost GPU device stops rendering with nothing in the console unless we log it.

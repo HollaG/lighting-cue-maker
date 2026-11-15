@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useMantineTheme } from "@mantine/core";
 import * as THREE from "three";
 import type { PatchedFixture } from "../../../types-v2/patchedFixture";
@@ -6,7 +6,12 @@ import type { FixtureTemplate } from "../../../types-v2/fixtureTemplates";
 import { getFixture3DPosition, getFixture3DRotation } from "../../../utils/visualiser-v2";
 import { getBeamAngle, getFixtureBody, getHeadLayouts, type HeadLayout } from "../../../utils/visualiser-v2-heads";
 import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
-import { decodeHeadStates } from "../../../utils/visualiser-v2-decoder";
+import { decodeHeadStates, getHeadDecoder } from "../../../utils/visualiser-v2-decoder";
+import { HeadSinkContext, LENS_OFF_COLOUR, writeHead, type HeadLensTarget, type HeadLightTarget } from "./headSinks";
+import { LensInstancesContext, createLens } from "./LensInstances";
+import { useThree } from "@react-three/fiber";
+import { createTableLight, type LightTable } from "../LightTable/LightTable";
+import { useLightTable } from "../LightTable/useLightTable";
 
 /** What one head shows right now. Later this comes from the decoder (DMX → per-head state). */
 export type HeadState = {
@@ -19,6 +24,8 @@ export type HeadState = {
 const OFF: HeadState = { colour: "#ffffff", intensity: 0 };
 const SELECTED: HeadState = { colour: "#ffffff", intensity: 100 };
 const OUTLINE = 0.004;
+const restoreColour = new THREE.Color();
+const lensColour = new THREE.Color();
 
 /**
  * Any fixture: a body, one lens per head, and the head lights.
@@ -78,6 +85,32 @@ export const Visualiser3DFixture = ({
     isSelected && !viewOnly ? SELECTED : (headStates?.[i] ?? decodedStates?.[i] ?? OFF),
   );
 
+  // --- Pattern effects: the canvas's effect player writes lens and light values directly, every frame ---
+  const registry = useContext(HeadSinkContext);
+  const decoder = useMemo(() => getHeadDecoder(fixtureTemplate, fixture.modeId), [fixtureTemplate, fixture.modeId]);
+  const lensRefs = useRef<(HeadLensTarget | null)[]>([]);
+  const lightRefs = useRef<(HeadLightTarget | null)[]>([]);
+  // What the props say, for `restore`. Updated before the player's cleanup (a passive effect) can read it.
+  const latestStates = useRef(states);
+  useLayoutEffect(() => {
+    latestStates.current = states;
+  });
+  // A selected fixture in the editor shows white, and explicit headStates win: neither follows the DMX.
+  const followsDmx = !headStates && !(isSelected && !viewOnly);
+  useEffect(() => {
+    if (!registry || !decoder || !followsDmx) return;
+    return registry.register(fixture.id, {
+      decoder,
+      colours: decoder.createOutput(),
+      lenses: lensRefs.current,
+      lights: lightRefs.current,
+      restore: () =>
+        latestStates.current.forEach((state, i) =>
+          writeHead(lensRefs.current[i], lightRefs.current[i], restoreColour.set(state.colour), state.intensity),
+        ),
+    });
+  }, [registry, decoder, followsDmx, fixture.id]);
+
   return (
     <mesh
       // Called with the mesh on mount and with null on unmount.
@@ -110,32 +143,81 @@ export const Visualiser3DFixture = ({
         </mesh>
       )}
 
-      {heads.map((head, i) => (
-        <HeadLens key={head.index} head={head} state={states[i]} round={body.shape === "cylinder"} />
-      ))}
+      <FixtureLenses
+        heads={heads}
+        states={states}
+        round={body.shape === "cylinder"}
+        lensRef={(i, lens) => {
+          lensRefs.current[i] = lens;
+        }}
+      />
 
-      <HeadLights heads={heads} states={states} beamAngle={beamAngle} castShadow={castShadow} />
+      <HeadLights
+        heads={heads}
+        states={states}
+        beamAngle={beamAngle}
+        castShadow={castShadow}
+        lightRef={(i, light) => {
+          lightRefs.current[i] = light;
+        }}
+      />
     </mesh>
   );
 };
 
-/** The visible lens: glows in the head's colour, so pixels read even without haze or lights. */
-const HeadLens = ({ head, state, round }: { head: HeadLayout; state: HeadState; round: boolean }) => {
-  const colour = useMemo(
-    () => new THREE.Color("#111111").lerp(new THREE.Color(state.colour), state.intensity / 100),
-    [state.colour, state.intensity],
-  );
-  return (
-    <mesh
-      position={[head.position[0], head.position[1] + 0.0005, head.position[2]]}
-      // Planes and circles face +Z; turn them to face +Y (the beam direction).
-      rotation={[-Math.PI / 2, 0, 0]}
-      raycast={() => {}}
-    >
-      {round ? <circleGeometry args={[head.size[0] / 2, 32]} /> : <planeGeometry args={head.size} />}
-      <meshBasicMaterial color={colour} toneMapped={false} />
-    </mesh>
-  );
+/**
+ * The visible lenses: each glows in its head's colour, so pixels read even without haze or lights.
+ * Nothing is mounted per head: lenses are instances of the canvas's two lens meshes (see LensInstances.ts).
+ */
+const FixtureLenses = ({
+  heads,
+  states,
+  round,
+  lensRef,
+}: {
+  heads: HeadLayout[];
+  states: HeadState[];
+  round: boolean;
+  /** Called with each head's lens (by head position), and null on unmount. */
+  lensRef: (headIndex: number, lens: HeadLensTarget | null) => void;
+}) => {
+  const instances = useContext(LensInstancesContext);
+  const invalidate = useThree((state) => state.invalidate);
+  // The fixture's mesh: the lenses sit at the heads' positions in its space.
+  const anchor = useRef<THREE.Object3D>(null);
+
+  const lenses = useMemo(() => heads.map((head) => createLens(head.position, head.size, round)), [heads, round]);
+
+  useEffect(() => {
+    if (!instances) return;
+    lenses.forEach((lens, i) => {
+      lens.parent = anchor.current;
+      instances.add(lens);
+      lensRef(i, lens);
+    });
+    invalidate();
+    return () => {
+      lenses.forEach((lens, i) => {
+        instances.remove(lens);
+        lensRef(i, null);
+      });
+      invalidate();
+    };
+    // lensRef is a new function every render; it only stores the lens.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [lenses, instances, invalidate]);
+
+  // The props' static state. Only written when it changes, so it doesn't undo the effect player.
+  const statesKey = states.map((state) => `${state.colour}${state.intensity}`).join();
+  useEffect(() => {
+    lenses.forEach((lens, i) => {
+      lens.color.copy(LENS_OFF_COLOUR).lerp(lensColour.set(states[i].colour), states[i].intensity / 100);
+    });
+    invalidate();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [lenses, statesKey, invalidate]);
+
+  return <object3D ref={anchor} />;
 };
 
 /**
@@ -155,14 +237,39 @@ const HeadLights = ({
   states,
   beamAngle,
   castShadow,
+  lightRef,
 }: {
   heads: HeadLayout[];
   states: HeadState[];
   beamAngle: number;
   castShadow: boolean;
+  /** Called with each head's light (by head position), and null on unmount. */
+  lightRef: (headIndex: number, light: HeadLightTarget | null) => void;
 }) => {
+  // With a light table (the default), heads are table entries, not three.js lights.
+  const table = useLightTable();
+  if (table) {
+    return (
+      <TableHeadLights
+        table={table}
+        heads={heads}
+        states={states}
+        beamAngle={beamAngle}
+        castShadow={castShadow}
+        lightRef={lightRef}
+      />
+    );
+  }
   if (heads.length === 1) {
-    return <SpotHeadLight head={heads[0]} state={states[0]} beamAngle={beamAngle} castShadow={castShadow} />;
+    return (
+      <SpotHeadLight
+        head={heads[0]}
+        state={states[0]}
+        beamAngle={beamAngle}
+        castShadow={castShadow}
+        lightRef={(light) => lightRef(0, light)}
+      />
+    );
   }
   return (
     // Temporarily change to use ONE RectAreaLight for ALL heads, to save on GPU costs.
@@ -170,10 +277,84 @@ const HeadLights = ({
     <>
       {heads.map((head, i) => (
         // An off head adds nothing; skip it instead of paying for it in every pixel.
-        <PanelHeadLight key={head.index} head={head} state={states[i]} />
+        <PanelHeadLight key={head.index} head={head} state={states[i]} lightRef={(light) => lightRef(i, light)} />
       ))}
     </>
   );
+};
+
+/** How much brighter than its lens area an LED head's cone is. 1 = the same on-axis brightness as its old panel light. */
+const LED_HEAD_GAIN = 1;
+
+/**
+ * Every head is one entry of the canvas's light table: a cone along local +Y.
+ * A single head is a spot, as before. A head of a multi-head fixture replaces its panel light with a cone of the same
+ * on-axis brightness (intensity × lens area), so each pixel keeps its own colour on the floor and in the haze.
+ * Nothing is mounted per head: turning heads on or off, or adding fixtures, only changes table data.
+ */
+const TableHeadLights = ({
+  table,
+  heads,
+  states,
+  beamAngle,
+  castShadow,
+  lightRef,
+}: {
+  table: LightTable;
+  heads: HeadLayout[];
+  states: HeadState[];
+  beamAngle: number;
+  castShadow: boolean;
+  lightRef: (headIndex: number, light: HeadLightTarget | null) => void;
+}) => {
+  const invalidate = useThree((state) => state.invalidate);
+  // The fixture's mesh: the lights sit at the heads' positions in its space.
+  const anchor = useRef<THREE.Object3D>(null);
+
+  const lights = useMemo(
+    () =>
+      heads.map((head) =>
+        createTableLight({
+          localPosition: new THREE.Vector3(...head.position),
+          angle: THREE.MathUtils.degToRad(beamAngle / 2),
+          // Only single-head fixtures cast shadows, as before.
+          castShadow: castShadow && heads.length === 1,
+          intensityScale: heads.length === 1 ? 1 : head.size[0] * head.size[1] * LED_HEAD_GAIN,
+        }),
+      ),
+    [heads, beamAngle, castShadow],
+  );
+
+  useEffect(() => {
+    lights.forEach((light, i) => {
+      light.parent = anchor.current;
+      table.add(light);
+      lightRef(i, light);
+    });
+    invalidate();
+    return () => {
+      lights.forEach((light, i) => {
+        table.remove(light);
+        lightRef(i, null);
+      });
+      invalidate();
+    };
+    // lightRef is a new function every render; it only stores the light.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [lights, table, invalidate]);
+
+  // The props' static state. Like R3F props, only written when it changes, so it doesn't undo the effect player.
+  const statesKey = states.map((state) => `${state.colour}${state.intensity}`).join();
+  useEffect(() => {
+    lights.forEach((light, i) => {
+      light.color.set(states[i].colour);
+      light.intensity = states[i].intensity;
+    });
+    invalidate();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [lights, statesKey, invalidate]);
+
+  return <object3D ref={anchor} />;
 };
 
 const SpotHeadLight = ({
@@ -181,16 +362,19 @@ const SpotHeadLight = ({
   state,
   beamAngle,
   castShadow,
+  lightRef,
 }: {
   head: HeadLayout;
   state: HeadState;
   beamAngle: number;
   castShadow: boolean;
+  lightRef: (light: HeadLightTarget | null) => void;
 }) => {
   const target = useMemo(() => new THREE.Object3D(), []);
   return (
     <>
       <spotLight
+        ref={lightRef}
         layers-mask={VOLUMETRIC_LIGHT_MASK}
         // Include solid objects when shadows are rendered from the haze layer.
         shadow-camera-layers-mask={VOLUMETRIC_LIGHT_MASK}
@@ -208,8 +392,17 @@ const SpotHeadLight = ({
   );
 };
 
-const PanelHeadLight = ({ head, state }: { head: HeadLayout; state: HeadState }) => (
+const PanelHeadLight = ({
+  head,
+  state,
+  lightRef,
+}: {
+  head: HeadLayout;
+  state: HeadState;
+  lightRef: (light: HeadLightTarget | null) => void;
+}) => (
   <rectAreaLight
+    ref={lightRef}
     layers-mask={VOLUMETRIC_LIGHT_MASK}
     position={[head.position[0], head.position[1] + 0.001, head.position[2]]}
     // RectAreaLight emits along its local -Z; +90° around X turns that to +Y. Its height then runs along local Z.

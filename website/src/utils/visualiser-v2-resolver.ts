@@ -273,6 +273,30 @@ export const applyOverrides = (
   if (!overrides || Object.keys(overrides).length === 0) return base; // nothing to do: keep the same object
 
   const result: DmxValuesByFixtureId = { ...base }; // copy so we don't affect the original object, we need two separate objects
+  for (const [fixtureId, patches] of compileOverrides(overrides, fixtures, fixtureTemplates)) {
+    const values = base[fixtureId];
+    if (!values) continue;
+    const next = [...values]; // copy
+    applySlotPatches(next, patches);
+    result[fixtureId] = next;
+  }
+
+  return result;
+};
+
+/** One override, resolved to its DMX slot. */
+export type SlotPatch = { slot: number; value: number };
+
+/**
+ * The cue's overrides as slot → value per fixture, resolved once so they can be applied every frame (the pattern
+ * player applies them last, after the effects). Unknown fixtures, templates, modes and channels are skipped.
+ */
+export const compileOverrides = (
+  overrides: Cue["overrides"] | null | undefined,
+  fixtures: PatchedFixture[],
+  fixtureTemplates: FixtureTemplate[],
+): Map<string, SlotPatch[]> => {
+  const result = new Map<string, SlotPatch[]>();
   for (const [fixtureId, channelOverrides] of Object.entries(overrides ?? {})) {
     // channelOverrides is a map of channelId -> value, find the fixture, its mode, and the slot (channel index).
     const fixture = fixtures.find((f) => f.id === fixtureId);
@@ -293,20 +317,21 @@ export const applyOverrides = (
 
     if (!channelOverrides || typeof channelOverrides !== "object") continue; // channelOverrides is null e.g. { "fixture-123": null}
 
-    const values = base[fixtureId];
-    if (!values) continue;
-    const next = [...values]; // copy
-
+    const patches: SlotPatch[] = [];
     for (const [channelId, value] of Object.entries(channelOverrides)) {
       if (typeof value !== "number" || !Number.isFinite(value)) continue; // sanity
       const slot = fixtureMode.channelIds.findIndex((id) => id === channelId);
       if (slot === -1) continue;
-      next[slot] = Math.min(255, Math.max(0, Math.round(value)));
+      patches.push({ slot, value: Math.min(255, Math.max(0, Math.round(value))) });
     }
-    result[fixtureId] = next;
+    result.set(fixtureId, patches);
   }
-
   return result;
+};
+
+/** Writes compiled overrides into one fixture's values, in place. */
+export const applySlotPatches = (values: (number | null)[], patches: SlotPatch[]) => {
+  for (const { slot, value } of patches) values[slot] = value;
 };
 
 const ColorMixToChannelType = {
@@ -358,39 +383,61 @@ export const getColourFromRgb = (
   rgb: readonly [number, number, number],
   availableChannels: ChannelType[],
 ): { [key in ChannelType]?: number } => {
-  let [r, g, b] = rgb;
-
-  const has = (type: ChannelType) => availableChannels.includes(type);
-  const hasRgb = has(ChannelType.RED) && has(ChannelType.GREEN) && has(ChannelType.BLUE);
-
+  const white = getWhiteShare(rgb, availableChannels);
   const result: { [key in ChannelType]?: number } = {};
-
-  // RGBW: move the shared white part onto the white channel.
-  if (has(ChannelType.WHITE)) {
-    const white = hasRgb ? Math.min(r, g, b) : 0;
-    result[ChannelType.WHITE] = white;
-    r -= white;
-    g -= white;
-    b -= white;
+  for (const type of availableChannels) {
+    const value = getColourChannelValue(type, rgb, white);
+    if (value !== undefined) result[type] = value;
   }
-
-  // Set each RGB channel the head has, even if it only has some of them.
-  if (has(ChannelType.RED)) result[ChannelType.RED] = r;
-  if (has(ChannelType.GREEN)) result[ChannelType.GREEN] = g;
-  if (has(ChannelType.BLUE)) result[ChannelType.BLUE] = b;
-
-  // CMY uses the original hex, not the values after white extraction.
-  const [origR, origG, origB] = rgb;
-  if (has(ChannelType.CYAN)) result[ChannelType.CYAN] = 255 - origR;
-  if (has(ChannelType.MAGENTA)) result[ChannelType.MAGENTA] = 255 - origG;
-  if (has(ChannelType.YELLOW)) result[ChannelType.YELLOW] = 255 - origB;
-
-  // Specials: the hex says nothing about them.
-  for (const type of [ChannelType.AMBER, ChannelType.UV, ChannelType.LIME, ChannelType.INDIGO]) {
-    if (has(type)) result[type] = 0;
-  }
-
   return result;
+};
+
+/**
+ * How much of `rgb` an RGBW head moves onto its white channel: the lowest of r, g, b, when the head has white and
+ * all of red, green and blue. 0 otherwise. Pass the result to getColourChannelValue.
+ */
+export const getWhiteShare = (rgb: readonly [number, number, number], availableChannels: ChannelType[]): number => {
+  const has = (type: ChannelType) => availableChannels.includes(type);
+  if (!has(ChannelType.WHITE)) return 0;
+  const hasRgb = has(ChannelType.RED) && has(ChannelType.GREEN) && has(ChannelType.BLUE);
+  return hasRgb ? Math.min(rgb[0], rgb[1], rgb[2]) : 0;
+};
+
+/**
+ * One colour channel's DMX value for `rgb`, or undefined if `type` isn't a colour channel. The rules are on
+ * getColourFromHex. Split out so the pattern player can run it per slot each frame without building objects.
+ */
+export const getColourChannelValue = (
+  type: ChannelType | undefined,
+  rgb: readonly [number, number, number],
+  white: number,
+): number | undefined => {
+  switch (type) {
+    // RGB(W): the white part has moved to the white channel.
+    case ChannelType.RED:
+      return rgb[0] - white;
+    case ChannelType.GREEN:
+      return rgb[1] - white;
+    case ChannelType.BLUE:
+      return rgb[2] - white;
+    case ChannelType.WHITE:
+      return white;
+    // CMY uses the original colour, not the values after white extraction.
+    case ChannelType.CYAN:
+      return 255 - rgb[0];
+    case ChannelType.MAGENTA:
+      return 255 - rgb[1];
+    case ChannelType.YELLOW:
+      return 255 - rgb[2];
+    // Specials: the colour says nothing about them.
+    case ChannelType.AMBER:
+    case ChannelType.UV:
+    case ChannelType.LIME:
+    case ChannelType.INDIGO:
+      return 0;
+    default:
+      return undefined;
+  }
 };
 
 /** "#rrggbb", "rrggbb", "#rgb" or "rgb" → [r, g, b] (0–255), or null if it isn't a valid hex colour. */

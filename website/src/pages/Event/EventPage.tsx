@@ -94,12 +94,9 @@ export const EventPage = () => {
   const { items, isItemsLoading } = useGetItems(eventId);
   const { visualiser, isVisualiserLoading } = useGetVisualiser(eventId);
   const { patchedFixtures } = useGetPatchedFixtures(eventId);
-  // dmxValuesByFixture animates (effects) and goes to the visualiser; dmxValuesForEditing doesn't and goes to the DMX drawer.
-  const {
-    dmxValuesWithOverrides: dmxValuesByFixture,
-    dmxValuesForEditing,
-    isLoading,
-  } = useResolvedDmx(eventId, patchedFixtures);
+  // Static values (with overrides) go to the DMX drawer and the visualiser. Pattern effects come compiled
+  // (effectPlayback) and play inside the visualiser's canvas, so this page doesn't re-render per effect step.
+  const { dmxValuesWithOverrides, effectPlayback, isLoading } = useResolvedDmx(eventId, patchedFixtures);
 
   // Remember this event for "Past events" on the home page. Waits for the name, so the list never shows a blank entry;
   // a rename updates the stored name the next time the event loads.
@@ -229,14 +226,14 @@ export const EventPage = () => {
           <Center h="100%">
             <Loader type="bars" />
           </Center>
-        ) : !dmxValuesForEditing ? (
+        ) : !dmxValuesWithOverrides ? (
           <Center h="100%">
             <Text c="dimmed" size="sm">
               Select a cue to control the fixtures
             </Text>
           </Center>
         ) : (
-          <DMXControlWrapper itemId={selectedItemId} eventId={eventId} dmxValuesByFixtureId={dmxValuesForEditing} />
+          <DMXControlWrapper itemId={selectedItemId} eventId={eventId} dmxValuesByFixtureId={dmxValuesWithOverrides} />
         )}
       </Drawer>
 
@@ -587,7 +584,8 @@ export const EventPage = () => {
             visualiser={visualiser}
             eventId={eventId}
             fixtures={patchedFixtures}
-            dmxValues={dmxValuesByFixture}
+            dmxValues={dmxValuesWithOverrides}
+            effectPlayback={effectPlayback}
           />
         ) : (
           <Center h="100%">{isVisualiserLoading ? <Loader type="bars" /> : <Text>No visualiser found</Text>}</Center>

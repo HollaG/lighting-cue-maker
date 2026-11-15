@@ -1,14 +1,8 @@
 import { Alert, Box, Tooltip } from "@mantine/core";
-import { useCallback, useMemo } from "react";
-import {
-  cellKey,
-  getCellColours,
-  getNextPatternChangeDelay,
-  type ActivePattern,
-} from "../../../../../effects/pattern/applyPatternEffects";
-import type { Rgb } from "../../../../../effects/pattern/patternEffect";
+import { useEffect, useMemo, useRef } from "react";
+import { cellKey, createPatternTrack, type PatternTrack } from "../../../../../effects/pattern/patternPlayer";
 import { getPatternEffect } from "../../../../../effects/pattern/registry";
-import { useEffectClock } from "../../../../../hooks/useEffectClock";
+import { runEffectFrames } from "../../../../../effects/effectFrames";
 import type { Grid, GridCell } from "../../../../../types-v2/fixtureGroups";
 import type { PatternSelectable } from "../../../../../types-v2/optionSet";
 import type { PatchedFixture } from "../../../../../types-v2/patchedFixture";
@@ -31,24 +25,56 @@ export const PatternPreview = ({
   fixtures: PatchedFixture[];
 }) => {
   const hasCells = !!grid && grid.cells.length > 0;
-
-  const patterns = useMemo<ActivePattern[]>(() => [{ selectable, grid }], [selectable, grid]);
-  const getNextDelay = useCallback((t: number) => getNextPatternChangeDelay(patterns, t), [patterns]);
-  // Restart when the timing changes, otherwise the timer already waiting (for the old step length) runs out first.
-  const resetKey = `${selectable.effect}|${selectable.stepDuration}|${selectable.fadeInDuration}|${selectable.fadeOutDuration}`;
-  const timeMs = useEffectClock(hasCells, resetKey, getNextDelay);
-
   const effect = getPatternEffect(selectable.effect);
 
-  const colours = useMemo(() => {
+  // The same compiled pattern the visualiser plays. Null if the effect throws while compiling.
+  const track = useMemo((): PatternTrack | null => {
     if (!effect || !grid || !hasCells) return null;
     try {
-      return getCellColours(effect, selectable, grid, timeMs);
+      return createPatternTrack(effect, selectable, grid);
     } catch (error) {
       console.warn(`Pattern effect "${effect.id}" threw in the preview`, error);
       return null;
     }
-  }, [effect, selectable, grid, hasCells, timeMs]);
+  }, [effect, selectable, grid, hasCells]);
+
+  // Cells the pattern colours, by cellKey. Painted directly each frame, not through React state.
+  const cellElements = useRef(new Map<string, HTMLElement>());
+  // Restart from 0 when the timing changes; other edits (colours, params) keep the preview running.
+  const resetKey = `${selectable.effect}|${selectable.stepDuration}|${selectable.fadeInDuration}|${selectable.fadeOutDuration}`;
+  const clock = useRef<{ resetKey: string; startedAt: number } | null>(null);
+
+  useEffect(() => {
+    if (!track) return;
+    if (clock.current?.resetKey !== resetKey) clock.current = { resetKey, startedAt: performance.now() };
+
+    const paint = (failed: boolean) => {
+      for (const [key, element] of cellElements.current) {
+        const i = track.indexByKey.get(key);
+        element.style.background =
+          failed || i === undefined
+            ? "black"
+            : `rgb(${track.rgb[i * 3]}, ${track.rgb[i * 3 + 1]}, ${track.rgb[i * 3 + 2]})`;
+      }
+    };
+
+    let painted = false;
+    let warned = false;
+    return runEffectFrames(
+      track.nextChangeDelay,
+      (timeMs) => {
+        try {
+          if (track.evaluate(timeMs) || !painted) paint(false);
+        } catch (error) {
+          if (!warned) console.warn(`Pattern effect "${selectable.effect}" threw in the preview`, error);
+          warned = true;
+          paint(true);
+        }
+        painted = true;
+      },
+      clock.current.startedAt,
+    );
+  }, [track, resetKey, selectable.effect]);
 
   const cellByPosition = useMemo(() => new Map((grid?.cells ?? []).map((c) => [cellKey(c.col, c.row), c])), [grid]);
   const fixtureNameById = useMemo(() => new Map(fixtures.map((f) => [f.id, f.name])), [fixtures]);
@@ -97,14 +123,19 @@ export const PatternPreview = ({
             );
           }
 
-          const colour = isAffected(cell) ? colours?.get(cellKey(col, row)) : undefined;
+          const key = cellKey(col, row);
+          const affected = isAffected(cell);
           const fixtureName = fixtureNameById.get(cell.fixtureId) ?? "Unknown fixture";
           return (
             <Tooltip key={index} label={`${fixtureName} · head ${cell.head + 1}`} openDelay={300}>
               <Box
+                ref={(element: HTMLDivElement | null) => {
+                  if (element && affected) cellElements.current.set(key, element);
+                  else cellElements.current.delete(key);
+                }}
                 style={{
                   aspectRatio: "1",
-                  background: colour ? toCss(colour) : "black",
+                  background: "black",
                   border: "1px solid var(--mantine-color-dark-4)",
                 }}
               />
@@ -115,5 +146,3 @@ export const PatternPreview = ({
     </Box>
   );
 };
-
-const toCss = ([r, g, b]: Rgb) => `rgb(${r}, ${g}, ${b})`;

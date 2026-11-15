@@ -2,6 +2,7 @@ import CheckerTexture from "../../../assets/checker.png";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CameraControls, useTexture } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import type { Visualiser3DEnvironment, Visualiser3DObject } from "../../../types/visualiser3d";
 import { Visualiser3DFixture } from "../Elements/Visualiser3DFixture";
 import { getHeadCount } from "../../../utils/visualiser-v2-heads";
@@ -22,6 +23,15 @@ import { Logger } from "../../../utils/logger";
 import type { Placement } from "../../../utils/visualiser-v2-selection";
 import { Visualiser3DSelectionTransform } from "../Elements/Visualiser3DSelectionTransform";
 import { VisualiserStats } from "../VisualiserStats";
+import { HeadSinkContext, HeadSinkRegistry } from "../Elements/headSinks";
+import { PatternEffectRunner, type PatternEffectPlayback } from "../PatternEffectRunner";
+import { FrameGateContext, type FrameGate } from "../frameGate";
+import { FrameGateUpdater } from "../FrameGateUpdater";
+import { useLightTable } from "../LightTable/useLightTable";
+import { LightTableUpdater } from "../LightTable/LightTableUpdater";
+import { MAX_SHADOW_LAYERS } from "../LightTable/ShadowLayers";
+import { LensInstances, LensInstancesContext } from "../Elements/LensInstances";
+import { LensLayer } from "../Elements/LensLayer";
 
 const logger = new Logger("StagePreview3D");
 
@@ -50,6 +60,8 @@ export const StagePreview3D = ({
 
   isViewOnly = false,
   dmxValuesByFixtureId,
+  effectPlayback,
+  saveFixturePlacements = true,
 }: {
   eventId: string;
 
@@ -72,9 +84,21 @@ export const StagePreview3D = ({
 
   fixtures: PatchedFixture[];
 
+  /** Static values (with overrides). Fixtures that pattern effects animate are written by `effectPlayback` instead. */
   dmxValuesByFixtureId?: Record<string, (number | null)[]>;
+  /** The cue's pattern effects, played every frame inside the canvas. */
+  effectPlayback?: PatternEffectPlayback | null;
+  /** False = moving a fixture is not saved to the server (the bench has no real event). */
+  saveFixturePlacements?: boolean;
 }) => {
+  // Where the effect player writes: every fixture's lenses and lights.
+  const headSinks = useMemo(() => new HeadSinkRegistry(), []);
+  // Every fixture lens, drawn as two instanced meshes.
+  const lensInstances = useMemo(() => new LensInstances(), []);
+  // Frame cap: decided once per frame, read by the effect player and the draw.
+  const frameGate = useMemo((): FrameGate => ({ draw: true }), []);
   const checkerTexture = useTexture(CheckerTexture);
+  const invalidate = useThree((state) => state.invalidate);
 
   // const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
   const { mutateAsync: upsertFixtureIn3D } = useUpsertPatchedFixtures(eventId);
@@ -86,10 +110,14 @@ export const StagePreview3D = ({
     checkerTexture.colorSpace = THREE.SRGBColorSpace;
     checkerTexture.repeat.set(PLANE_SIZE / GRID_SIZE, PLANE_SIZE / GRID_SIZE);
     checkerTexture.needsUpdate = true;
-  }, [checkerTexture]);
+    invalidate();
+  }, [checkerTexture, invalidate]);
 
   const cuboids = stageElements.filter((element) => element.type === "cuboid");
   const humans = stageElements.filter((element) => element.type === "default_human");
+
+  // Null only on the old per-light path (the bench's comparison mode).
+  const lightTable = useLightTable();
 
   const templatesById = useMemo(() => new Map(fixtureTemplates.map((t) => [t.id, t])), [fixtureTemplates]);
 
@@ -102,13 +130,14 @@ export const StagePreview3D = ({
    * Now the set only changes when fixtures are added or removed (which also recompiles shaders once).
    */
   const shadowCasterIds = useMemo(() => {
-    if (isViewOnly) return new Set<string>();
+    // The viewer gets the same shadows as the editor. With three.js lights that is the first MAX_SHADOW_CASTERS spots;
+    // the light table keeps shadows in one texture array, so every spot can cast one.
     const ids = fixtures
       .filter((f) => getHeadCount(templatesById.get(f.fixtureTemplateId), f.modeId) === 1)
-      .slice(0, MAX_SHADOW_CASTERS)
+      .slice(0, lightTable ? MAX_SHADOW_LAYERS : MAX_SHADOW_CASTERS)
       .map((f) => f.id);
     return new Set(ids);
-  }, [fixtures, templatesById, isViewOnly]);
+  }, [fixtures, templatesById, lightTable]);
 
   // Fixture meshes by id, so one gizmo can move the whole selection.
   const meshes = useRef(new Map<string, THREE.Object3D>());
@@ -125,6 +154,7 @@ export const StagePreview3D = ({
 
   /** One request for the whole selection. The backend replaces every field, so send the full fixture. */
   const onCommitPlacements = (placements: Placement[]) => {
+    if (!saveFixturePlacements) return;
     const updates = placements.flatMap((placement) => {
       const fixture = fixtures.find((f) => f.id === placement.id);
       if (!fixture) return [];
@@ -136,96 +166,104 @@ export const StagePreview3D = ({
   };
 
   return (
-    <>
-      {/* FPS overlay: `window.stats = true` in the dev console. */}
-      <VisualiserStats />
-      <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
-      {/* The floor */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
-        <meshStandardMaterial map={checkerTexture} side={THREE.DoubleSide} />
-      </mesh>
+    <FrameGateContext.Provider value={frameGate}>
+      <HeadSinkContext.Provider value={headSinks}>
+        <LensInstancesContext.Provider value={lensInstances}>
+          <FrameGateUpdater gate={frameGate} />
+          <LensLayer lenses={lensInstances} />
+          {lightTable && <LightTableUpdater table={lightTable} />}
+          {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
+          {/* FPS overlay: `window.stats = true` in the dev console. */}
+          <VisualiserStats />
+          <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
+          {/* The floor */}
+          <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+            <meshStandardMaterial map={checkerTexture} side={THREE.DoubleSide} />
+          </mesh>
 
-      {/* Ambient light */}
-      <ambientLight intensity={environment.ambientLight} />
+          {/* Ambient light */}
+          <ambientLight intensity={environment.ambientLight} />
 
-      {/*  */}
-      {/* <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
-        <boxGeometry args={[1.2, 1.75, 1.2]} />
-        <meshStandardMaterial color="#8AC" />
-      </mesh> */}
+          {/*  */}
+          {/* <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
+            <boxGeometry args={[1.2, 1.75, 1.2]} />
+            <meshStandardMaterial color="#8AC" />
+          </mesh> */}
 
-      {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
-        <sphereGeometry args={[3, 32, 16]} />
-        <meshPhongMaterial color="#CA8" />
-      </mesh> */}
-      {/* 
-      <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
-        <Helper type={THREE.SpotLightHelper} />
-      </spotLight> */}
+          {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
+            <sphereGeometry args={[3, 32, 16]} />
+            <meshPhongMaterial color="#CA8" />
+          </mesh> */}
+          {/* 
+          <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
+            <Helper type={THREE.SpotLightHelper} />
+          </spotLight> */}
 
-      {fixtures.map((fixture) => (
-        <Visualiser3DFixture
-          key={fixture.id}
-          fixture={fixture}
-          dmxValues={dmxValuesByFixtureId?.[fixture.id]}
-          fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
-          isSelected={!!selectedObjectIds?.includes(fixture.id)}
-          onSelect={(id, additive) => onObjectSelect?.(id, additive)}
-          onMeshChange={onMeshChange}
-          castShadow={shadowCasterIds.has(fixture.id)}
-          viewOnly={isViewOnly}
-        />
-      ))}
+          {fixtures.map((fixture) => (
+            <Visualiser3DFixture
+              key={fixture.id}
+              fixture={fixture}
+              dmxValues={dmxValuesByFixtureId?.[fixture.id]}
+              fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
+              isSelected={!!selectedObjectIds?.includes(fixture.id)}
+              onSelect={(id, additive) => onObjectSelect?.(id, additive)}
+              onMeshChange={onMeshChange}
+              castShadow={shadowCasterIds.has(fixture.id)}
+              viewOnly={isViewOnly}
+            />
+          ))}
 
-      {!isViewOnly && (
-        <Visualiser3DSelectionTransform
-          fixtures={selectedFixtures}
-          getMesh={getMesh}
-          gui={gui}
-          onCommit={onCommitPlacements}
-        />
-      )}
+          {!isViewOnly && (
+            <Visualiser3DSelectionTransform
+              fixtures={selectedFixtures}
+              getMesh={getMesh}
+              gui={gui}
+              onCommit={onCommitPlacements}
+            />
+          )}
 
-      {cuboids.map((cuboid) => (
-        <Visualiser3DCuboid
-          key={cuboid.id}
-          cuboid={cuboid}
-          isSelected={!!selectedObjectIds?.includes(cuboid.id)}
-          onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
-          // onChange={onChange}
-          onChange={isViewOnly ? () => {} : updateStageElement}
-          gui={gui}
+          {cuboids.map((cuboid) => (
+            <Visualiser3DCuboid
+              key={cuboid.id}
+              cuboid={cuboid}
+              isSelected={!!selectedObjectIds?.includes(cuboid.id)}
+              onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
+              // onChange={onChange}
+              onChange={isViewOnly ? () => {} : updateStageElement}
+              gui={gui}
 
-          // viewOnly={isViewOnly}
-        />
-      ))}
+              // viewOnly={isViewOnly}
+            />
+          ))}
 
-      {humans.map((human) => (
-        <Visualiser3DDefaultHuman
-          key={human.id}
-          human={human}
-          isSelected={!!selectedObjectIds?.includes(human.id)}
-          onSelect={() => onObjectSelect && onObjectSelect(human.id)}
-          onChange={isViewOnly ? () => {} : updateStageElement}
-          gui={gui}
+          {humans.map((human) => (
+            <Visualiser3DDefaultHuman
+              key={human.id}
+              human={human}
+              isSelected={!!selectedObjectIds?.includes(human.id)}
+              onSelect={() => onObjectSelect && onObjectSelect(human.id)}
+              onChange={isViewOnly ? () => {} : updateStageElement}
+              gui={gui}
 
-          // viewOnly={isViewOnly}
-        />
-      ))}
+              // viewOnly={isViewOnly}
+            />
+          ))}
 
-      <CameraControls
-        ref={cameraRef}
-        onControl={onCameraMove}
-        onRest={onCameraRest}
-        makeDefault
-        dollyToCursor
-        infinityDolly
-        minDistance={0.01}
-        maxDistance={Infinity}
-      />
+          <CameraControls
+            ref={cameraRef}
+            onControl={onCameraMove}
+            onRest={onCameraRest}
+            makeDefault
+            dollyToCursor
+            infinityDolly
+            minDistance={0.01}
+            maxDistance={Infinity}
+          />
 
-      {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
-    </>
+          {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
+        </LensInstancesContext.Provider>
+      </HeadSinkContext.Provider>
+    </FrameGateContext.Provider>
   );
 };
