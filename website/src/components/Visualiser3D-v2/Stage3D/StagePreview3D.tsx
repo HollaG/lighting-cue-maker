@@ -30,6 +30,8 @@ import { FrameGateUpdater } from "../FrameGateUpdater";
 import { useLightTable } from "../LightTable/useLightTable";
 import { LightTableUpdater } from "../LightTable/LightTableUpdater";
 import { MAX_SHADOW_LAYERS } from "../LightTable/ShadowLayers";
+import { LensInstances, LensInstancesContext } from "../Elements/LensInstances";
+import { LensLayer } from "../Elements/LensLayer";
 
 const logger = new Logger("StagePreview3D");
 
@@ -91,6 +93,8 @@ export const StagePreview3D = ({
 }) => {
   // Where the effect player writes: every fixture's lenses and lights.
   const headSinks = useMemo(() => new HeadSinkRegistry(), []);
+  // Every fixture lens, drawn as two instanced meshes.
+  const lensInstances = useMemo(() => new LensInstances(), []);
   // Frame cap: decided once per frame, read by the effect player and the draw.
   const frameGate = useMemo((): FrameGate => ({ draw: true }), []);
   const checkerTexture = useTexture(CheckerTexture);
@@ -164,98 +168,101 @@ export const StagePreview3D = ({
   return (
     <FrameGateContext.Provider value={frameGate}>
       <HeadSinkContext.Provider value={headSinks}>
-        <FrameGateUpdater gate={frameGate} />
-        {lightTable && <LightTableUpdater table={lightTable} />}
-        {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
-        {/* FPS overlay: `window.stats = true` in the dev console. */}
-        <VisualiserStats />
-        <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
-        {/* The floor */}
-        <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
-          <meshStandardMaterial map={checkerTexture} side={THREE.DoubleSide} />
-        </mesh>
+        <LensInstancesContext.Provider value={lensInstances}>
+          <FrameGateUpdater gate={frameGate} />
+          <LensLayer lenses={lensInstances} />
+          {lightTable && <LightTableUpdater table={lightTable} />}
+          {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
+          {/* FPS overlay: `window.stats = true` in the dev console. */}
+          <VisualiserStats />
+          <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
+          {/* The floor */}
+          <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+            <meshStandardMaterial map={checkerTexture} side={THREE.DoubleSide} />
+          </mesh>
 
-        {/* Ambient light */}
-        <ambientLight intensity={environment.ambientLight} />
+          {/* Ambient light */}
+          <ambientLight intensity={environment.ambientLight} />
 
-        {/*  */}
-        {/* <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
-          <boxGeometry args={[1.2, 1.75, 1.2]} />
-          <meshStandardMaterial color="#8AC" />
-        </mesh> */}
+          {/*  */}
+          {/* <mesh castShadow receiveShadow position={[1.2, 1.2, 1.2]}>
+            <boxGeometry args={[1.2, 1.75, 1.2]} />
+            <meshStandardMaterial color="#8AC" />
+          </mesh> */}
 
-        {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
-          <sphereGeometry args={[3, 32, 16]} />
-          <meshPhongMaterial color="#CA8" />
-        </mesh> */}
-        {/* 
-        <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
-          <Helper type={THREE.SpotLightHelper} />
-        </spotLight> */}
+          {/* <mesh castShadow receiveShadow position={[-4, 5, 0]}>
+            <sphereGeometry args={[3, 32, 16]} />
+            <meshPhongMaterial color="#CA8" />
+          </mesh> */}
+          {/* 
+          <spotLight castShadow position={[0, 8, 0]} intensity={150} penumbra={1} angle={Math.PI / 12}>
+            <Helper type={THREE.SpotLightHelper} />
+          </spotLight> */}
 
-        {fixtures.map((fixture) => (
-          <Visualiser3DFixture
-            key={fixture.id}
-            fixture={fixture}
-            dmxValues={dmxValuesByFixtureId?.[fixture.id]}
-            fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
-            isSelected={!!selectedObjectIds?.includes(fixture.id)}
-            onSelect={(id, additive) => onObjectSelect?.(id, additive)}
-            onMeshChange={onMeshChange}
-            castShadow={shadowCasterIds.has(fixture.id)}
-            viewOnly={isViewOnly}
+          {fixtures.map((fixture) => (
+            <Visualiser3DFixture
+              key={fixture.id}
+              fixture={fixture}
+              dmxValues={dmxValuesByFixtureId?.[fixture.id]}
+              fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
+              isSelected={!!selectedObjectIds?.includes(fixture.id)}
+              onSelect={(id, additive) => onObjectSelect?.(id, additive)}
+              onMeshChange={onMeshChange}
+              castShadow={shadowCasterIds.has(fixture.id)}
+              viewOnly={isViewOnly}
+            />
+          ))}
+
+          {!isViewOnly && (
+            <Visualiser3DSelectionTransform
+              fixtures={selectedFixtures}
+              getMesh={getMesh}
+              gui={gui}
+              onCommit={onCommitPlacements}
+            />
+          )}
+
+          {cuboids.map((cuboid) => (
+            <Visualiser3DCuboid
+              key={cuboid.id}
+              cuboid={cuboid}
+              isSelected={!!selectedObjectIds?.includes(cuboid.id)}
+              onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
+              // onChange={onChange}
+              onChange={isViewOnly ? () => {} : updateStageElement}
+              gui={gui}
+
+              // viewOnly={isViewOnly}
+            />
+          ))}
+
+          {humans.map((human) => (
+            <Visualiser3DDefaultHuman
+              key={human.id}
+              human={human}
+              isSelected={!!selectedObjectIds?.includes(human.id)}
+              onSelect={() => onObjectSelect && onObjectSelect(human.id)}
+              onChange={isViewOnly ? () => {} : updateStageElement}
+              gui={gui}
+
+              // viewOnly={isViewOnly}
+            />
+          ))}
+
+          <CameraControls
+            ref={cameraRef}
+            onControl={onCameraMove}
+            onRest={onCameraRest}
+            makeDefault
+            dollyToCursor
+            infinityDolly
+            minDistance={0.01}
+            maxDistance={Infinity}
           />
-        ))}
 
-        {!isViewOnly && (
-          <Visualiser3DSelectionTransform
-            fixtures={selectedFixtures}
-            getMesh={getMesh}
-            gui={gui}
-            onCommit={onCommitPlacements}
-          />
-        )}
-
-        {cuboids.map((cuboid) => (
-          <Visualiser3DCuboid
-            key={cuboid.id}
-            cuboid={cuboid}
-            isSelected={!!selectedObjectIds?.includes(cuboid.id)}
-            onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
-            // onChange={onChange}
-            onChange={isViewOnly ? () => {} : updateStageElement}
-            gui={gui}
-
-            // viewOnly={isViewOnly}
-          />
-        ))}
-
-        {humans.map((human) => (
-          <Visualiser3DDefaultHuman
-            key={human.id}
-            human={human}
-            isSelected={!!selectedObjectIds?.includes(human.id)}
-            onSelect={() => onObjectSelect && onObjectSelect(human.id)}
-            onChange={isViewOnly ? () => {} : updateStageElement}
-            gui={gui}
-
-            // viewOnly={isViewOnly}
-          />
-        ))}
-
-        <CameraControls
-          ref={cameraRef}
-          onControl={onCameraMove}
-          onRest={onCameraRest}
-          makeDefault
-          dollyToCursor
-          infinityDolly
-          minDistance={0.01}
-          maxDistance={Infinity}
-        />
-
-        {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
+          {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
+        </LensInstancesContext.Provider>
       </HeadSinkContext.Provider>
     </FrameGateContext.Provider>
   );

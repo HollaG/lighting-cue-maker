@@ -7,7 +7,8 @@ import { getFixture3DPosition, getFixture3DRotation } from "../../../utils/visua
 import { getBeamAngle, getFixtureBody, getHeadLayouts, type HeadLayout } from "../../../utils/visualiser-v2-heads";
 import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
 import { decodeHeadStates, getHeadDecoder } from "../../../utils/visualiser-v2-decoder";
-import { HeadSinkContext, writeHead, type HeadLightTarget } from "./headSinks";
+import { HeadSinkContext, LENS_OFF_COLOUR, writeHead, type HeadLensTarget, type HeadLightTarget } from "./headSinks";
+import { LensInstancesContext, createLens } from "./LensInstances";
 import { useThree } from "@react-three/fiber";
 import { createTableLight, type LightTable } from "../LightTable/LightTable";
 import { useLightTable } from "../LightTable/useLightTable";
@@ -24,6 +25,7 @@ const OFF: HeadState = { colour: "#ffffff", intensity: 0 };
 const SELECTED: HeadState = { colour: "#ffffff", intensity: 100 };
 const OUTLINE = 0.004;
 const restoreColour = new THREE.Color();
+const lensColour = new THREE.Color();
 
 /**
  * Any fixture: a body, one lens per head, and the head lights.
@@ -86,7 +88,7 @@ export const Visualiser3DFixture = ({
   // --- Pattern effects: the canvas's effect player writes lens and light values directly, every frame ---
   const registry = useContext(HeadSinkContext);
   const decoder = useMemo(() => getHeadDecoder(fixtureTemplate, fixture.modeId), [fixtureTemplate, fixture.modeId]);
-  const lensRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const lensRefs = useRef<(HeadLensTarget | null)[]>([]);
   const lightRefs = useRef<(HeadLightTarget | null)[]>([]);
   // What the props say, for `restore`. Updated before the player's cleanup (a passive effect) can read it.
   const latestStates = useRef(states);
@@ -141,17 +143,14 @@ export const Visualiser3DFixture = ({
         </mesh>
       )}
 
-      {heads.map((head, i) => (
-        <HeadLens
-          key={head.index}
-          head={head}
-          state={states[i]}
-          round={body.shape === "cylinder"}
-          materialRef={(material) => {
-            lensRefs.current[i] = material;
-          }}
-        />
-      ))}
+      <FixtureLenses
+        heads={heads}
+        states={states}
+        round={body.shape === "cylinder"}
+        lensRef={(i, lens) => {
+          lensRefs.current[i] = lens;
+        }}
+      />
 
       <HeadLights
         heads={heads}
@@ -166,33 +165,59 @@ export const Visualiser3DFixture = ({
   );
 };
 
-/** The visible lens: glows in the head's colour, so pixels read even without haze or lights. */
-const HeadLens = ({
-  head,
-  state,
+/**
+ * The visible lenses: each glows in its head's colour, so pixels read even without haze or lights.
+ * Nothing is mounted per head: lenses are instances of the canvas's two lens meshes (see LensInstances.ts).
+ */
+const FixtureLenses = ({
+  heads,
+  states,
   round,
-  materialRef,
+  lensRef,
 }: {
-  head: HeadLayout;
-  state: HeadState;
+  heads: HeadLayout[];
+  states: HeadState[];
   round: boolean;
-  materialRef: (material: THREE.MeshBasicMaterial | null) => void;
+  /** Called with each head's lens (by head position), and null on unmount. */
+  lensRef: (headIndex: number, lens: HeadLensTarget | null) => void;
 }) => {
-  const colour = useMemo(
-    () => new THREE.Color("#111111").lerp(new THREE.Color(state.colour), state.intensity / 100),
-    [state.colour, state.intensity],
-  );
-  return (
-    <mesh
-      position={[head.position[0], head.position[1] + 0.0005, head.position[2]]}
-      // Planes and circles face +Z; turn them to face +Y (the beam direction).
-      rotation={[-Math.PI / 2, 0, 0]}
-      raycast={() => {}}
-    >
-      {round ? <circleGeometry args={[head.size[0] / 2, 32]} /> : <planeGeometry args={head.size} />}
-      <meshBasicMaterial ref={materialRef} color={colour} toneMapped={false} />
-    </mesh>
-  );
+  const instances = useContext(LensInstancesContext);
+  const invalidate = useThree((state) => state.invalidate);
+  // The fixture's mesh: the lenses sit at the heads' positions in its space.
+  const anchor = useRef<THREE.Object3D>(null);
+
+  const lenses = useMemo(() => heads.map((head) => createLens(head.position, head.size, round)), [heads, round]);
+
+  useEffect(() => {
+    if (!instances) return;
+    lenses.forEach((lens, i) => {
+      lens.parent = anchor.current;
+      instances.add(lens);
+      lensRef(i, lens);
+    });
+    invalidate();
+    return () => {
+      lenses.forEach((lens, i) => {
+        instances.remove(lens);
+        lensRef(i, null);
+      });
+      invalidate();
+    };
+    // lensRef is a new function every render; it only stores the lens.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [lenses, instances, invalidate]);
+
+  // The props' static state. Only written when it changes, so it doesn't undo the effect player.
+  const statesKey = states.map((state) => `${state.colour}${state.intensity}`).join();
+  useEffect(() => {
+    lenses.forEach((lens, i) => {
+      lens.color.copy(LENS_OFF_COLOUR).lerp(lensColour.set(states[i].colour), states[i].intensity / 100);
+    });
+    invalidate();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [lenses, statesKey, invalidate]);
+
+  return <object3D ref={anchor} />;
 };
 
 /**
