@@ -70,6 +70,11 @@ export const EventPage = () => {
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
   const [openedTimeline, { /* open: openTimeline, */ close: closeTimeline, toggle: toggleTimeline }] =
     useDisclosure(false);
+  const [timelineHeight, setTimelineHeight] = useLocalStorage<number>({
+    key: "timeline-drawer-height",
+    defaultValue: 30,
+  });
+  const resizeTimeline = (height: number) => setTimelineHeight(Math.min(85, Math.max(20, height)));
 
   const toggleDrawerHandler = (toggleCb: () => void, domain: "event" | "lyrics" | "cues") => {
     // only one drawer can be open at a time, so close the others if its open
@@ -491,7 +496,15 @@ export const EventPage = () => {
       </Drawer>
 
       {/* Buttons for Timeline and DMX drawer */}
-      <Box style={{ position: "absolute", left: "50%", bottom: "0.5rem", transform: "translateX(-50%)", zIndex: 1000 }}>
+      <Box
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: "0.5rem",
+          transform: "translateX(-50%)",
+          zIndex: getDefaultZIndex("modal") - 1,
+        }}
+      >
         <Group>
           <Button size="xs" variant="light" onClick={() => toggleTimeline()}>
             {openedTimeline ? "Hide" : "Show"} timeline
@@ -508,7 +521,7 @@ export const EventPage = () => {
         onClose={() => closeTimeline()}
         keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
         position="bottom"
-        size="30vh"
+        size={`${timelineHeight}vh`}
 
         withOverlay={false}
         lockScroll={false} // scroll lock would also swallow the visualiser's scroll-to-zoom
@@ -520,8 +533,49 @@ export const EventPage = () => {
         zIndex={getDefaultZIndex("modal") + 1} // above the Lyrics and Cues drawers (both 200)
         scrollAreaComponent={undefined}
 
-        styles={{ body: { height: "100%", padding: 0, paddingTop: "var(--mantine-spacing-xs)", overflow: "hidden" } }} // force the drawer body to be 100% height, never overflow
+        styles={{
+          body: {
+            height: "100%",
+            padding: 0,
+            paddingTop: 12,
+            overflow: "hidden",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+          },
+        }} // reserve space for the resize handle
       >
+        <Box
+          className={classes.timelineResizeHandle}
+          role="separator"
+          aria-label="Timeline height"
+          aria-orientation="horizontal"
+          aria-valuemin={20}
+          aria-valuemax={85}
+          aria-valuenow={Math.round(timelineHeight)}
+          tabIndex={0}
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            event.currentTarget.focus();
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+            // A bottom drawer grows as its top edge moves up; store a viewport percentage.
+            resizeTimeline(((window.innerHeight - event.clientY) / window.innerHeight) * 100);
+          }}
+          onPointerUp={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+            event.preventDefault();
+            resizeTimeline(timelineHeight + (event.key === "ArrowUp" ? 2 : -2));
+          }}
+        />
         <TimelineDrawerContainer eventId={eventId} itemId={selectedItemId} />
       </Drawer>
 

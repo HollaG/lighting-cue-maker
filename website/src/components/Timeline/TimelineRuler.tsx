@@ -16,7 +16,11 @@ export const TimelineRuler = ({ onClickPos }: { onClickPos: (timeMs: number) => 
   return (
     <div
       style={{
-        position: "relative",
+        position: "sticky",
+        top: 0,
+        zIndex: 3,
+        background: "var(--mantine-color-body)",
+
         height: 28,
         marginLeft: SIDEBAR_WIDTH,
         borderBottom: "3px solid var(--mantine-color-default-border)",

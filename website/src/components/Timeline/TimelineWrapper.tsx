@@ -1,12 +1,5 @@
-import {
-  TimelineContext,
-  type DragEndEvent,
-  type Range,
-  type ResizeEndEvent,
-  type UsePanStrategy,
-  useWheelStrategy,
-} from "dnd-timeline";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { TimelineContext, type DragEndEvent, type Range, type ResizeEndEvent, type UsePanStrategy } from "dnd-timeline";
+import { useCallback, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Box, Flex, Group, Kbd, SegmentedControl, Text } from "@mantine/core";
 import type { Timeline, UpsertTimeline } from "../../types-v2/timeline";
 import type { AudioFileWithUrl } from "../../types-v2/audioFile";
@@ -16,7 +9,6 @@ import { TimelineRuler } from "./TimelineRuler";
 import { getRowId, resizeSection, SIDEBAR_WIDTH, TimelineRowId, trimClip } from "../../utils/timeline";
 import { TimelinePlayhead } from "./TimelinePlayhead";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useOs } from "@mantine/hooks";
 
 const logger = new Logger("TimelineWrapper", "orange");
 
@@ -36,23 +28,42 @@ type Transport = {
  * checks overlaps and the rest; a rejected save shows a notification and the refetched timeline replaces the edit.
  */
 export const TimelineWrapper = ({
+  eventId,
+  itemId,
   timeline: timelineProp,
   audioFiles,
   onSave,
+  range,
+  onRangeChange,
 }: {
+  eventId: string;
+  itemId: string;
   timeline: Timeline;
   audioFiles: AudioFileWithUrl[];
   onSave: (patch: UpsertTimeline) => void;
+
+  range: Range;
+  onRangeChange: Dispatch<SetStateAction<Range>>;
 }) => {
-  // the zoom/pan modifier label: ⌘ on Apple, Ctrl elsewhere (dnd-timeline accepts either key on any OS).
-  // getValueInEffect: false = read it on the first render; we have no SSR, so no "undetermined" flash.
-  const os = useOs({ getValueInEffect: false });
-  const modKey = os === "macos" || os === "ios" ? "⌘" : "Ctrl";
+  // zoom modifier label: Shift on every OS (see the wheel handler in useWheelAndMiddleDragPan)
+  const modKey = "Shift";
 
   // we keep the update here, because if we use tanstack state (wait for GET), it lags behind, so the old state is shown as a flash
   const [optimistic, setOptimistic] = useState<{ base: Timeline; patch: UpsertTimeline } | null>(null);
   const pendingPatch = optimistic?.base === timelineProp ? optimistic.patch : undefined;
   const timeline: Timeline = pendingPatch ? { ...timelineProp, ...pendingPatch } : timelineProp;
+
+  // "selected" clips
+  const [currentlySelectedAudios, setCurrentlySelectedAudios] = useState<Set<string>>(new Set());
+  const [currentlySelectedSections, setCurrentlySelectedSections] = useState<Set<string>>(new Set());
+
+  const onSelect = (type: TimelineRowId, ids: Set<string>) => {
+    if (type === TimelineRowId.AUDIO) {
+      setCurrentlySelectedAudios(ids);
+    } else if (type === TimelineRowId.SECTIONS) {
+      setCurrentlySelectedSections(ids);
+    }
+  };
 
   // when the spacebar is pressed, toggle play/pause.
   useHotkey("Space", () => {
@@ -69,14 +80,11 @@ export const TimelineWrapper = ({
     onSave(patch);
   };
 
-  // The visible window, in ms. Wheel zooming/panning changes this.
-  const [range, setRange] = useState<Range>({ start: 0, end: 60_000 });
-
   // we need to prevent going below start: 0
   // note to self: the callbacks from dnd are updater fns (equivalent to setState(prev => next)) and NOT setState(next)
   const setRangeClamped = (updater: (prev: Range) => Range) => {
     // const newRange = updater(range);
-    setRange((prev) => {
+    onRangeChange((prev) => {
       const newRange = updater(prev);
 
       // make sure the zoom is not too high (let's limit to 1 second)
@@ -132,7 +140,11 @@ export const TimelineWrapper = ({
       const snappedStart = Math.round(start / 1000) * 1000;
       save({ audios: timeline.audios.map((a) => (a.id === id ? { ...a, startTime: snappedStart } : a)) });
     } else {
-      save({ sections: timeline.sections.map((s) => (s.id === id ? { ...s, sectionStartTime: start } : s)) });
+      // for now, sections also snap the same as audio clips.
+      // the more complicated logic comes from INSIDE a section.
+      const snappedStart = Math.round(start / 1000) * 1000;
+
+      save({ sections: timeline.sections.map((s) => (s.id === id ? { ...s, sectionStartTime: snappedStart } : s)) });
     }
   };
 
@@ -238,7 +250,7 @@ export const TimelineWrapper = ({
     startPlayheadPositionRef.current = rounded;
   };
 
-  // buffer cache
+  // buffer cache so we dn't refetch every audio clip everytime
   const bufferCache = useRef<
     Map<
       string,
@@ -317,6 +329,18 @@ export const TimelineWrapper = ({
     return t.anchorMs + (ctx.currentTime - t.anchorCtxTime) * 1000;
   }, []);
 
+  const onDelete = (type: TimelineRowId, id: string) => {
+    if (type === TimelineRowId.SECTIONS) {
+      // onDeleteSection(id);
+      const newSections = timeline.sections.filter((s) => s.id !== id);
+      save({ sections: newSections });
+    } else if (type === TimelineRowId.AUDIO) {
+      logger.info("Deleting audio clip", { id });
+      const newAudios = timeline.audios.filter((a) => a.id !== id);
+      void save({ audios: newAudios });
+    }
+  };
+
   return (
     <TimelineContext
       range={range}
@@ -352,35 +376,54 @@ export const TimelineWrapper = ({
         </Group>
       </Box>
 
-      {/* Use a relative wrapper to allow for absolute posiitoning of child elements (mainly the playhead) */}
-      <Box
-        style={{
-          position: "relative",
-        }}
-      >
-        <TimelineRuler onClickPos={onRulerClick} />
-        <TimelinePlayhead getPositionMs={getPositionMs} />
-        <TimelineRows timeline={timeline} audioFiles={audioFiles} />
+      {/* Scrolls vertically when the rows are taller than the drawer */}
+      <Box style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
+        {/* Use a relative wrapper to allow for absolute posiitoning of child elements (mainly the playhead) */}
+        <Box style={{ position: "relative" }}>
+          <TimelineRuler onClickPos={onRulerClick} />
+          <TimelinePlayhead getPositionMs={getPositionMs} />
+          <TimelineRows eventId={eventId} itemId={itemId} timeline={timeline} audioFiles={audioFiles} onSelect={onSelect} onDelete={onDelete} />
+        </Box>
       </Box>
     </TimelineContext>
   );
 };
 
 /**
- * Pan strategy: the library's default wheel zoom/pan, plus middle-click drag to pan.
+ * Pan strategy: Shift + wheel to zoom, plus middle-click drag to pan.
  *
  * Passed to TimelineContext as `usePanStrategy`, which calls it like a hook on every render, so hooks inside are fine.
  * onPanEnd({ deltaX }) shifts the range by deltaX px (no clientX = no zoom), and our onRangeChanged still clamps it.
  * Items aren't affected: dnd-kit only starts an item drag on the primary (left) button.
  */
 const useWheelAndMiddleDragPan: UsePanStrategy = (timelineBag, onPanEnd) => {
-  useWheelStrategy(timelineBag, onPanEnd);
-
   // Both in refs: onPanEnd is a new function whenever the range changes (i.e. on every pan step). If the effect
   // depended on it, it would re-run mid-drag and a local `lastX` would reset to null, so the pan would stop after 1 px.
   const lastXRef = useRef<number | null>(null);
   const onPanEndRef = useRef(onPanEnd);
   onPanEndRef.current = onPanEnd;
+
+  // Shift + wheel = zoom around the cursor. Replaces the library's useWheelStrategy, which only zooms on Ctrl/Meta.
+  // Browsers turn a Shift + vertical wheel into a horizontal scroll (deltaY 0, deltaX set), so read either axis.
+  // In onPanEnd, deltaY + clientX means "zoom around clientX"; positive = zoom out.
+  useLayoutEffect(() => {
+    const element = timelineBag.timelineRef.current;
+    if (!element) return;
+
+    const onWheel = (event: WheelEvent) => {
+      if (!event.shiftKey) return;
+      event.preventDefault(); // stop the page/drawer scrolling sideways
+      onPanEndRef.current({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        deltaX: 0,
+        deltaY: event.deltaY || event.deltaX,
+      });
+    };
+
+    element.addEventListener("wheel", onWheel, { passive: false }); // passive: false so preventDefault works
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [timelineBag.timelineRef]);
 
   useLayoutEffect(() => {
     const element = timelineBag.timelineRef.current;

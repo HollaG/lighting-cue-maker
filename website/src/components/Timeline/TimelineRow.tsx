@@ -1,7 +1,11 @@
 import { useItem, useRow, type Span } from "dnd-timeline";
-import type { ReactNode } from "react";
-import { Text } from "@mantine/core";
-import type { ItemData, TimelineRowId } from "../../utils/timeline";
+import { useRef, type ReactNode } from "react";
+import { Box, Menu, Text } from "@mantine/core";
+import { type ItemData, TimelineRowId } from "../../utils/timeline";
+import { ConfirmDelete } from "../ConfirmDeleteButton/ConfirmDeleteButton";
+import { useLocalStorage } from "@mantine/hooks";
+
+import classes from "./Timeline.module.css";
 
 export const TimelineRow = ({
   id,
@@ -16,14 +20,23 @@ export const TimelineRow = ({
 }) => {
   const { setNodeRef, rowWrapperStyle, rowStyle, rowSidebarStyle } = useRow({ id });
 
+  const [rowHeight, setRowHeight] = useLocalStorage({
+    key: `timeline-row-${id}-height`,
+    defaultValue: id === TimelineRowId.SECTIONS ? 128 : 48,
+    getInitialValueInEffect: false, // don't use defaultValue
+  });
+  const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  const clamp = (h: number) => Math.min(400, Math.max(48, h));
+
   return (
     <div
       style={{
         ...rowWrapperStyle,
-        minHeight: 48,
+        ...styles,
         borderBottom: "1px solid var(--mantine-color-default-border)",
         overflow: "hidden",
-        ...styles,
+        height: rowHeight,
+        position: "relative",
       }}
     >
       <div
@@ -43,44 +56,37 @@ export const TimelineRow = ({
       <div ref={setNodeRef} style={rowStyle}>
         {children}
       </div>
-    </div>
-  );
-};
 
-export const TimelineItem = ({
-  id,
-  rowId,
-  span,
-  children,
-}: {
-  id: string;
-  rowId: TimelineRowId;
-  span: Span;
-  children: ReactNode;
-}) => {
-  const data: ItemData = { rowId };
-  const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({ id, span, data });
-
-  return (
-    <div ref={setNodeRef} style={itemStyle} {...listeners} {...attributes}>
+      {/* the resize handle */}
       <div
-        style={{
-          ...itemContentStyle,
-          height: "100%",
-          overflow: "hidden",
-          borderRadius: "var(--mantine-radius-sm)",
-          background: "var(--mantine-primary-color-light)",
-          color: "var(--mantine-primary-color-light-color)",
-          paddingInline: 6,
-          display: "flex",
-          alignItems: "center",
-          zIndex: 99,
+        className={classes.rowResizeHandle} // absolute, bottom: 0, height: 6px, cursor: ns-resize, touch-action: none
+        role="separator"
+        aria-orientation="horizontal"
+        tabIndex={0}
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          e.preventDefault();
+          e.stopPropagation(); // keep the timeline's pan and dnd-kit out of it
+          e.currentTarget.setPointerCapture(e.pointerId);
+          dragRef.current = { startY: e.clientY, startHeight: rowHeight };
         }}
-      >
-        <Text size="xs" truncate>
-          {children}
-        </Text>
-      </div>
+        onPointerMove={(e) => {
+          if (!dragRef.current) return;
+          setRowHeight(clamp(dragRef.current.startHeight + e.clientY - dragRef.current.startY));
+        }}
+        onPointerUp={(e) => {
+          dragRef.current = null;
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+          e.preventDefault();
+          setRowHeight((h) => clamp(h + (e.key === "ArrowDown" ? 8 : -8)));
+        }}
+        onLostPointerCapture={() => {
+          dragRef.current = null;
+        }}
+      />
     </div>
   );
 };

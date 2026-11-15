@@ -1,0 +1,34 @@
+.rowResizeHandle {
+  position: absolute;
+  /* the row wrapper needs position: relative */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  /* the area you can grab; the visible line is drawn below */
+  cursor: ns-resize;
+  touch-action: none;
+  /* stops touch scrolling from taking over the drag */
+  user-select: none;
+  /* no text selection while dragging */
+  z-index: 2;
+  /* above the row's items, so it can be grabbed where an item sits */
+
+  /* the visible line: hidden until you hover or focus the handle */
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+    transition: background 100ms;
+  }
+
+  &:hover::after,
+  &:focus-visible::after,
+  &:active::after {
+    background: var(--mantine-primary-color-filled);
+  }
+}
