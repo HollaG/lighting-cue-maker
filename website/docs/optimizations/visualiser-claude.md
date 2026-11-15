@@ -13,6 +13,15 @@ This is a plan from reading the code and the installed three.js source. Nothing 
 5. Minimize GPU usage.
 6. Reduce render work when nothing changes.
 
+## Decisions (15 November 2026)
+
+- **Target hardware:** integrated graphics. On integrated graphics the 60 fps target is at **1/4 resolution scale**, not 1/2. The 1/2-scale target applies to stronger GPUs.
+- **Measuring:** Claude builds the step 1 test scenes and an on-screen readout (frame gaps, shader builds, shadow redraws). The user runs them on the target machine and reports the numbers before and after each step.
+- **Order:** steps 1–3 first. Then prototype steps 4–5 on a small test scene before changing the real fixtures.
+- **Interim shadows:** give the viewer the same 8-shadow cap as the editor now (today the viewer has none).
+- **Pattern preview:** the Step 5 `PatternPreview` must move to the new effect player too. No second copy of the effect clock or timing code.
+- **Where:** branch `optimize/visualiser-claude`, worktree `I:\Coding\lighting-cue-maker-visualiser-optimization-claude`.
+
 ## What causes each reported symptom
 
 | Symptom | Cause | Confidence |
