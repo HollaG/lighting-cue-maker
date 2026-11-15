@@ -29,7 +29,10 @@ import {
   type TimelineSection,
 } from "../../types-v2/timeline";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
-import { useUpsertTimelineSectionItem } from "../../query-v2/timeline/useUpsertTimelineSectionItem";
+import {
+  useUpsertTimelineSectionItem,
+  type TimelineSectionPatch,
+} from "../../query-v2/timeline/useUpsertTimelineSectionItem";
 import { Logger } from "../../utils/logger";
 import { useAppStore } from "../../store/appStore";
 import { useGetItem } from "../../query-v2/items/useGetItem";
@@ -87,7 +90,8 @@ export const TimelineSectionItem = ({
   const { upsertSection } = useUpsertTimelineSectionItem(eventId, itemId);
 
   const onValueChange = async (field: keyof TimelineSection, value: any) => {
-    await upsertSection({ ...section, [field]: value });
+    // Only this field: spreading `section` would send the copy from this render and undo edits made since.
+    await upsertSection({ id: section.id, [field]: value } as TimelineSectionPatch);
   };
 
   return (
@@ -322,6 +326,8 @@ const TimelineBeatSectionItem = ({
   const snapPx = section.snapEnabled ? (section.snapFidelity === 0 ? barPx : beatPx / section.snapFidelity) : 1;
   /** Snapped mouse position, in px from the section's real start. */
   const hoveredMarkerPos = Math.round(sectionX / snapPx) * snapPx;
+  /** The snapped mouse position as a marker time: ms from the section start (not the song start), whole ms, inside the section. */
+  const hoveredTimeMs = Math.min(getSectionLengthMs(section), Math.max(0, Math.round(pixelsToValue(hoveredMarkerPos))));
 
   // useMouse keeps its last x/y after the mouse leaves, so track hovering separately.
   const [hovered, setHovered] = useState(false);
@@ -357,10 +363,14 @@ const TimelineBeatSectionItem = ({
 
   // modal control
   const [isModalOpen, { open: openModal, close: closeModal }] = useDisclosure(false);
-  const onClick = () => {
-    // Markers are ms from the section start (not the song start), whole ms, inside the section.
-    const timeMs = Math.min(getSectionLengthMs(section), Math.max(0, Math.round(pixelsToValue(hoveredMarkerPos))));
-    logger.debug(`TimelineSectionItem clicked at x=${hoveredMarkerPos}, timeMs=${timeMs}`);
+  /**
+   * The time clicked, kept for the modal: by the time "Add" is pressed the mouse has moved over the modal, so the
+   * hovered position no longer points at the click.
+   */
+  const [pendingTimeMs, setPendingTimeMs] = useState<number>();
+
+  const onClick = (timeMs: number) => {
+    logger.debug(`TimelineSectionItem clicked at timeMs=${timeMs}`);
 
     // first check if this section already has a cue there
     if (section.markers.some((m) => m.time === timeMs)) {
@@ -395,7 +405,7 @@ const TimelineBeatSectionItem = ({
     let rightCue: TimelineMarker | null = null;
 
     for (const s of sortedSections) {
-      for (const m of s.markers) {
+      for (const m of [...s.markers].sort((a, b) => a.time - b.time)) {
         const markerTime = s.sectionStartTime + m.time;
         if (markerTime < section.sectionStartTime + timeMs) {
           leftCue = m;
@@ -417,18 +427,22 @@ const TimelineBeatSectionItem = ({
     setAvailableCues(availableCues);
     setSelectedCueToAddId(availableCues[0]);
     setVisibleRange(getRichRangeBetweenCues(content, leftCue?.cueId, rightCue?.cueId));
+    setPendingTimeMs(timeMs);
     openModal();
   };
 
   const onAddCue = async () => {
+    if (!selectedCueToAddId || pendingTimeMs === undefined) return;
     const timelineMarker: TimelineMarker = {
       id: crypto.randomUUID(),
-      cueId: selectedCueToAddId!,
-      time: Math.min(getSectionLengthMs(section), Math.max(0, Math.round(pixelsToValue(hoveredMarkerPos)))),
+      cueId: selectedCueToAddId,
+      time: pendingTimeMs,
       type: TimelineMarkerType.CUE,
     };
     logger.debug(`TimelineSectionItem adding cue: ${JSON.stringify(timelineMarker)}`);
-    await upsertSection({ ...section, markers: [...section.markers, timelineMarker] });
+    // Only `markers` is sent, so other fields edited meanwhile aren't overwritten. Kept sorted by time.
+    const markers = [...section.markers, timelineMarker].sort((a, b) => a.time - b.time);
+    await upsertSection({ id: section.id, markers });
     closeModal();
   };
 
@@ -447,6 +461,7 @@ const TimelineBeatSectionItem = ({
 
       nodes.push(
         <Box
+          key={m.id}
           style={{
             position: "absolute",
             left: markerX - 2 - hiddenPx, // center the 8px wide box
@@ -555,7 +570,7 @@ const TimelineBeatSectionItem = ({
           <Button color="gray" onClick={() => closeModal()}>
             Cancel adding
           </Button>
-          <Button disabled={selectedCueToAddId === ""} variant="light" loading={isSectionSaving} onClick={onAddCue}>
+          <Button disabled={!selectedCueToAddId || pendingTimeMs === undefined} variant="light" loading={isSectionSaving} onClick={onAddCue}>
             Add selected cue
           </Button>
         </Group>
@@ -574,7 +589,8 @@ const TimelineBeatSectionItem = ({
             backgroundPosition: `${-hiddenPx}px 0`, // tile from the section start, not the viewport edge
           }}
           ref={ref}
-          onClick={onClick}
+          onClick={() => onClick(hoveredTimeMs)}
+
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
@@ -612,7 +628,7 @@ const TimelineBeatSectionItem = ({
           ref={ref}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          onClick={onClick}
+          onClick={() => onClick(hoveredTimeMs)}
         >
           {/* The snap lines, ONLY for the hovered beat: one beat wide, a line every snapPx (sub-beats). */}
           {showSubBeatLines && (
