@@ -24,12 +24,15 @@ import classes from "../../Visualiser/Stage/2D/StagePreview2D.module.css";
 import { StagePreview3D } from "../Stage3D/StagePreview3D";
 import { configureVisualiser3DRenderer, makeVisualiser3DRenderer } from "../visualiser3DRenderer";
 import { ResolutionScaleSelect, useVisualiserDpr } from "../ResolutionScaleSelect";
+import type { PatternEffectPlayback } from "../PatternEffectRunner";
+import { compilePatternPlayer } from "../../../effects/pattern/patternPlayer";
 import {
   BenchCommitCounter,
   BenchProbe,
   describeCollector,
   describeSceneLoad,
   markSceneStart,
+  recordEffectUpdate,
   startCollector,
   stopCollector,
 } from "./benchProbe";
@@ -37,13 +40,12 @@ import {
   BENCH_CAMERA,
   BENCH_OBJECTS,
   BENCH_TEMPLATES,
-  CHASE_STEP_MS,
-  FADE_TICK_MS,
   HEADS_PER_BAR,
   LED_HEAD_COUNTS,
   SPOT_COUNTS,
   getBenchDmx,
   getBenchFixtures,
+  getBenchPatterns,
   type BenchEffect,
   type BenchSceneConfig,
 } from "./benchScene";
@@ -66,9 +68,26 @@ export const VisualiserBench = () => {
   const fixtures = useMemo(() => getBenchFixtures(config), [config]);
   const environment = useMemo(() => ({ haze, ambientLight }), [haze, ambientLight]);
 
-  // Effects run the way the event page runs them today: a timer, React state, a new DMX object per tick.
-  const timeMs = useBenchEffectClock(effect);
-  const dmxValuesByFixtureId = useMemo(() => getBenchDmx(fixtures, effect, timeMs), [fixtures, effect, timeMs]);
+  // Effects run the way the event page runs them: compiled once, played inside the canvas.
+  const dmxValuesByFixtureId = useMemo(() => getBenchDmx(fixtures), [fixtures]);
+  const effectPlayback = useMemo((): PatternEffectPlayback | null => {
+    const patterns = getBenchPatterns(fixtures, effect);
+    if (patterns.length === 0) return null;
+    const player = compilePatternPlayer({
+      base: dmxValuesByFixtureId,
+      patterns,
+      fixtures,
+      fixtureTemplates: BENCH_TEMPLATES,
+    });
+    // Count the frames that produced new values, for the report.
+    const evaluate = player.evaluate;
+    player.evaluate = (timeMs) => {
+      const changed = evaluate(timeMs);
+      if (changed) recordEffectUpdate();
+      return changed;
+    };
+    return { player, startedAt: performance.now() };
+  }, [fixtures, effect, dmxValuesByFixtureId]);
 
   const controls = useRef<CameraControls | null>(null);
   const cameraRef = useCallback((node: CameraControls | null) => {
@@ -188,6 +207,7 @@ export const VisualiserBench = () => {
                     updateStageElement={() => {}}
                     gui={null}
                     dmxValuesByFixtureId={dmxValuesByFixtureId}
+                    effectPlayback={effectPlayback}
                   />
               </Canvas>
             </Suspense>
@@ -215,24 +235,6 @@ const LabelledControl = ({ label, children }: { label: string; children: React.R
     {children}
   </Stack>
 );
-
-/** Same shape as useEffectClock: setTimeout → React state, at the pattern clock's rate. Replaced in step 2. */
-const useBenchEffectClock = (effect: BenchEffect) => {
-  const [timeMs, setTimeMs] = useState(0);
-  useEffect(() => {
-    if (effect === "static") return;
-    const start = performance.now();
-    const interval = effect === "fade" ? FADE_TICK_MS : CHASE_STEP_MS;
-    let timer: number;
-    const tick = () => {
-      setTimeMs(performance.now() - start);
-      timer = window.setTimeout(tick, interval);
-    };
-    timer = window.setTimeout(tick, 0);
-    return () => window.clearTimeout(timer);
-  }, [effect]);
-  return effect === "static" ? 0 : timeMs;
-};
 
 /** Turns the camera around its target at a fixed rate, so camera runs repeat exactly. */
 const BenchOrbit = ({

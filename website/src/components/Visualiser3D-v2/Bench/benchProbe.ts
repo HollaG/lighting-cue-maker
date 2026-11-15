@@ -43,8 +43,10 @@ export class Collector {
   shadowRedraws = 0;
   shaderBuilds = 0;
   pipelinesCreated = 0;
-  /** React commits of the scene tree (the old effect path re-renders it per effect tick). */
+  /** React commits of the scene tree carrying new DMX (the old effect path did one per effect tick). */
   sceneCommits = 0;
+  /** Frames in which the pattern player produced new values. */
+  effectUpdates = 0;
   /** Worst CPU frame time among frames that built shaders. */
   worstCpuFrameWithBuilds = 0;
   framesWithBuilds = 0;
@@ -83,6 +85,9 @@ export const BenchCommitCounter = ({ value }: { value: unknown }) => {
   }, [value]);
   return null;
 };
+
+/** Call when the pattern player produced new values. */
+export const recordEffectUpdate = () => collectors.forEach((c) => c.effectUpdates++);
 
 /** Running totals since the probe mounted; frame callbacks diff them. */
 const counters = { shaderBuilds: 0, shadowRedraws: 0, renderPasses: 0 };
@@ -232,7 +237,7 @@ export const describeCollector = (c: Collector): string[] => {
     `GPU frame ms: ${c.gpuFrameMs.length > 0 ? distribution(c.gpuFrameMs) : "n/a (no timestamp queries)"}`,
     `Per frame: ${ms(average(c.drawCalls))} draw calls, ${ms(average(c.renderPasses))} render passes, ${ms(c.renderedFrames ? c.shadowRedraws / c.renderedFrames : NaN)} shadow redraws`,
     `Shader builds: ${c.shaderBuilds} in ${c.framesWithBuilds} frames (worst CPU frame with builds ${ms(c.worstCpuFrameWithBuilds)} ms), pipelines created ${c.pipelinesCreated}`,
-    `Scene commits: ${c.sceneCommits} (${(c.sceneCommits / seconds).toFixed(1)}/s)`,
+    `Effect updates: ${c.effectUpdates} (${(c.effectUpdates / seconds).toFixed(1)}/s), scene commits: ${c.sceneCommits} (${(c.sceneCommits / seconds).toFixed(1)}/s)`,
     `At end: canvas ${c.canvasSize[0]}×${c.canvasSize[1]}, textures ${c.textures}, geometries ${c.geometries}, pipelines ${c.pipelines}${heap ? `, JS heap ${(heap / 1024 / 1024).toFixed(0)} MB` : ""}`,
   ];
 };

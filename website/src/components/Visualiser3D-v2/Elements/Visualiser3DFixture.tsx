@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useMantineTheme } from "@mantine/core";
 import * as THREE from "three";
 import type { PatchedFixture } from "../../../types-v2/patchedFixture";
@@ -6,7 +6,8 @@ import type { FixtureTemplate } from "../../../types-v2/fixtureTemplates";
 import { getFixture3DPosition, getFixture3DRotation } from "../../../utils/visualiser-v2";
 import { getBeamAngle, getFixtureBody, getHeadLayouts, type HeadLayout } from "../../../utils/visualiser-v2-heads";
 import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
-import { decodeHeadStates } from "../../../utils/visualiser-v2-decoder";
+import { decodeHeadStates, getHeadDecoder } from "../../../utils/visualiser-v2-decoder";
+import { HeadSinkContext, writeHead } from "./headSinks";
 
 /** What one head shows right now. Later this comes from the decoder (DMX → per-head state). */
 export type HeadState = {
@@ -19,6 +20,7 @@ export type HeadState = {
 const OFF: HeadState = { colour: "#ffffff", intensity: 0 };
 const SELECTED: HeadState = { colour: "#ffffff", intensity: 100 };
 const OUTLINE = 0.004;
+const restoreColour = new THREE.Color();
 
 /**
  * Any fixture: a body, one lens per head, and the head lights.
@@ -78,6 +80,32 @@ export const Visualiser3DFixture = ({
     isSelected && !viewOnly ? SELECTED : (headStates?.[i] ?? decodedStates?.[i] ?? OFF),
   );
 
+  // --- Pattern effects: the canvas's effect player writes lens and light values directly, every frame ---
+  const registry = useContext(HeadSinkContext);
+  const decoder = useMemo(() => getHeadDecoder(fixtureTemplate, fixture.modeId), [fixtureTemplate, fixture.modeId]);
+  const lensRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const lightRefs = useRef<(THREE.Light | null)[]>([]);
+  // What the props say, for `restore`. Updated before the player's cleanup (a passive effect) can read it.
+  const latestStates = useRef(states);
+  useLayoutEffect(() => {
+    latestStates.current = states;
+  });
+  // A selected fixture in the editor shows white, and explicit headStates win: neither follows the DMX.
+  const followsDmx = !headStates && !(isSelected && !viewOnly);
+  useEffect(() => {
+    if (!registry || !decoder || !followsDmx) return;
+    return registry.register(fixture.id, {
+      decoder,
+      colours: decoder.createOutput(),
+      lenses: lensRefs.current,
+      lights: lightRefs.current,
+      restore: () =>
+        latestStates.current.forEach((state, i) =>
+          writeHead(lensRefs.current[i], lightRefs.current[i], restoreColour.set(state.colour), state.intensity),
+        ),
+    });
+  }, [registry, decoder, followsDmx, fixture.id]);
+
   return (
     <mesh
       // Called with the mesh on mount and with null on unmount.
@@ -111,16 +139,42 @@ export const Visualiser3DFixture = ({
       )}
 
       {heads.map((head, i) => (
-        <HeadLens key={head.index} head={head} state={states[i]} round={body.shape === "cylinder"} />
+        <HeadLens
+          key={head.index}
+          head={head}
+          state={states[i]}
+          round={body.shape === "cylinder"}
+          materialRef={(material) => {
+            lensRefs.current[i] = material;
+          }}
+        />
       ))}
 
-      <HeadLights heads={heads} states={states} beamAngle={beamAngle} castShadow={castShadow} />
+      <HeadLights
+        heads={heads}
+        states={states}
+        beamAngle={beamAngle}
+        castShadow={castShadow}
+        lightRef={(i, light) => {
+          lightRefs.current[i] = light;
+        }}
+      />
     </mesh>
   );
 };
 
 /** The visible lens: glows in the head's colour, so pixels read even without haze or lights. */
-const HeadLens = ({ head, state, round }: { head: HeadLayout; state: HeadState; round: boolean }) => {
+const HeadLens = ({
+  head,
+  state,
+  round,
+  materialRef,
+}: {
+  head: HeadLayout;
+  state: HeadState;
+  round: boolean;
+  materialRef: (material: THREE.MeshBasicMaterial | null) => void;
+}) => {
   const colour = useMemo(
     () => new THREE.Color("#111111").lerp(new THREE.Color(state.colour), state.intensity / 100),
     [state.colour, state.intensity],
@@ -133,7 +187,7 @@ const HeadLens = ({ head, state, round }: { head: HeadLayout; state: HeadState; 
       raycast={() => {}}
     >
       {round ? <circleGeometry args={[head.size[0] / 2, 32]} /> : <planeGeometry args={head.size} />}
-      <meshBasicMaterial color={colour} toneMapped={false} />
+      <meshBasicMaterial ref={materialRef} color={colour} toneMapped={false} />
     </mesh>
   );
 };
@@ -155,14 +209,25 @@ const HeadLights = ({
   states,
   beamAngle,
   castShadow,
+  lightRef,
 }: {
   heads: HeadLayout[];
   states: HeadState[];
   beamAngle: number;
   castShadow: boolean;
+  /** Called with each head's light (by head position), and null on unmount. */
+  lightRef: (headIndex: number, light: THREE.Light | null) => void;
 }) => {
   if (heads.length === 1) {
-    return <SpotHeadLight head={heads[0]} state={states[0]} beamAngle={beamAngle} castShadow={castShadow} />;
+    return (
+      <SpotHeadLight
+        head={heads[0]}
+        state={states[0]}
+        beamAngle={beamAngle}
+        castShadow={castShadow}
+        lightRef={(light) => lightRef(0, light)}
+      />
+    );
   }
   return (
     // Temporarily change to use ONE RectAreaLight for ALL heads, to save on GPU costs.
@@ -170,7 +235,7 @@ const HeadLights = ({
     <>
       {heads.map((head, i) => (
         // An off head adds nothing; skip it instead of paying for it in every pixel.
-        <PanelHeadLight key={head.index} head={head} state={states[i]} />
+        <PanelHeadLight key={head.index} head={head} state={states[i]} lightRef={(light) => lightRef(i, light)} />
       ))}
     </>
   );
@@ -181,16 +246,19 @@ const SpotHeadLight = ({
   state,
   beamAngle,
   castShadow,
+  lightRef,
 }: {
   head: HeadLayout;
   state: HeadState;
   beamAngle: number;
   castShadow: boolean;
+  lightRef: (light: THREE.Light | null) => void;
 }) => {
   const target = useMemo(() => new THREE.Object3D(), []);
   return (
     <>
       <spotLight
+        ref={lightRef}
         layers-mask={VOLUMETRIC_LIGHT_MASK}
         // Include solid objects when shadows are rendered from the haze layer.
         shadow-camera-layers-mask={VOLUMETRIC_LIGHT_MASK}
@@ -208,8 +276,17 @@ const SpotHeadLight = ({
   );
 };
 
-const PanelHeadLight = ({ head, state }: { head: HeadLayout; state: HeadState }) => (
+const PanelHeadLight = ({
+  head,
+  state,
+  lightRef,
+}: {
+  head: HeadLayout;
+  state: HeadState;
+  lightRef: (light: THREE.Light | null) => void;
+}) => (
   <rectAreaLight
+    ref={lightRef}
     layers-mask={VOLUMETRIC_LIGHT_MASK}
     position={[head.position[0], head.position[1] + 0.001, head.position[2]]}
     // RectAreaLight emits along its local -Z; +90° around X turns that to +Y. Its height then runs along local Z.

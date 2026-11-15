@@ -22,6 +22,8 @@ import { Logger } from "../../../utils/logger";
 import type { Placement } from "../../../utils/visualiser-v2-selection";
 import { Visualiser3DSelectionTransform } from "../Elements/Visualiser3DSelectionTransform";
 import { VisualiserStats } from "../VisualiserStats";
+import { HeadSinkContext, HeadSinkRegistry } from "../Elements/headSinks";
+import { PatternEffectRunner, type PatternEffectPlayback } from "../PatternEffectRunner";
 
 const logger = new Logger("StagePreview3D");
 
@@ -50,6 +52,7 @@ export const StagePreview3D = ({
 
   isViewOnly = false,
   dmxValuesByFixtureId,
+  effectPlayback,
 }: {
   eventId: string;
 
@@ -72,8 +75,13 @@ export const StagePreview3D = ({
 
   fixtures: PatchedFixture[];
 
+  /** Static values (with overrides). Fixtures that pattern effects animate are written by `effectPlayback` instead. */
   dmxValuesByFixtureId?: Record<string, (number | null)[]>;
+  /** The cue's pattern effects, played every frame inside the canvas. */
+  effectPlayback?: PatternEffectPlayback | null;
 }) => {
+  // Where the effect player writes: every fixture's lenses and lights.
+  const headSinks = useMemo(() => new HeadSinkRegistry(), []);
   const checkerTexture = useTexture(CheckerTexture);
 
   // const { mutateAsync: upsertVisualiser } = useUpsertVisualiser();
@@ -136,7 +144,8 @@ export const StagePreview3D = ({
   };
 
   return (
-    <>
+    <HeadSinkContext.Provider value={headSinks}>
+      {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
       {/* FPS overlay: `window.stats = true` in the dev console. */}
       <VisualiserStats />
       <Visualiser3DVolumetrics fixtures={[]} environment={environment} />
@@ -226,6 +235,6 @@ export const StagePreview3D = ({
       />
 
       {/* <OrbitControls makeDefault target={[0, 1, 0]} zoomToCursor minDistance={0.01} maxDistance={Infinity} /> */}
-    </>
+    </HeadSinkContext.Provider>
   );
 };

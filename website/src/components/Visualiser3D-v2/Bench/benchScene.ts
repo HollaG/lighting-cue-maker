@@ -5,6 +5,9 @@
 import { ChannelRole, ChannelType, type Channel, type FixtureTemplate } from "../../../types-v2/fixtureTemplates";
 import type { PatchedFixture } from "../../../types-v2/patchedFixture";
 import type { Visualiser3DCameraView, Visualiser3DObject } from "../../../types-v2/visualiser";
+import type { Grid } from "../../../types-v2/fixtureGroups";
+import { BlendMode, SelectableType, type PatternSelectable } from "../../../types-v2/optionSet";
+import type { ActivePattern } from "../../../effects/pattern/patternPlayer";
 
 export const SPOT_COUNTS = [0, 8, 30, 60, 100] as const;
 export const LED_HEAD_COUNTS = [0, 64, 256, 1024] as const;
@@ -185,13 +188,15 @@ export const BENCH_OBJECTS: Visualiser3DObject[] = [
   },
 ];
 
-// --- DMX ---
+// --- DMX and effects ---
 
 export type BenchEffect = "static" | "chase" | "fade";
 
-/** Step length of the chase, and how often the fade updates (the current pattern clock's 30 Hz). */
-export const CHASE_STEP_MS = 500;
-export const FADE_TICK_MS = 1000 / 30;
+/** Chase: hard steps. Fade: steps that fade for their whole length, so a fade is running every frame. */
+const EFFECT_TIMING = {
+  chase: { stepDuration: 500, fadeInDuration: 0, fadeOutDuration: 0 },
+  fade: { stepDuration: 400, fadeInDuration: 400, fadeOutDuration: 400 },
+} as const;
 
 const PALETTE: [number, number, number][] = [
   [255, 40, 40],
@@ -202,37 +207,54 @@ const PALETTE: [number, number, number][] = [
   [255, 255, 255],
 ];
 
-const hueToRgb = (hue: number): [number, number, number] => {
-  const h = ((hue % 1) + 1) % 1;
-  const f = (n: number) => {
-    const k = (n + h * 6) % 6;
-    return Math.round(255 * (1 - Math.max(0, Math.min(k, 4 - k, 1))));
-  };
-  return [f(5), f(3), f(1)];
-};
-
-/** DMX values per fixture at `timeMs`. `static` is a fixed colour per fixture. */
-export const getBenchDmx = (
-  fixtures: PatchedFixture[],
-  effect: BenchEffect,
-  timeMs: number,
-): Record<string, (number | null)[]> => {
-  const step = Math.floor(timeMs / CHASE_STEP_MS);
-  const colourAt = (cell: number, cellCount: number): [number, number, number] => {
-    if (effect === "fade") return hueToRgb(timeMs / 4000 + cell / cellCount);
-    const offset = effect === "chase" ? step : 0;
-    return PALETTE[(cell + offset) % PALETTE.length];
-  };
-
+/** Static DMX: a fixed colour per head, full intensity. The patterns run on top of this. */
+export const getBenchDmx = (fixtures: PatchedFixture[]): Record<string, (number | null)[]> => {
   const result: Record<string, (number | null)[]> = {};
   fixtures.forEach((f, i) => {
-    if (f.fixtureTemplateId === SPOT_TEMPLATE.id) {
-      result[f.id] = [255, ...colourAt(i, fixtures.length)];
-    } else {
-      result[f.id] = Array.from({ length: HEADS_PER_BAR }, (_, head) =>
-        colourAt(i * HEADS_PER_BAR + head, HEADS_PER_BAR * 4),
-      ).flat();
-    }
+    result[f.id] =
+      f.fixtureTemplateId === SPOT_TEMPLATE.id
+        ? [255, ...PALETTE[i % PALETTE.length]]
+        : Array.from({ length: HEADS_PER_BAR }, (_, head) => PALETTE[(i + head) % PALETTE.length]).flat();
   });
   return result;
+};
+
+/** One column-chase pattern over the spots' grid and one over the bars' grid (a row per bar). */
+export const getBenchPatterns = (fixtures: PatchedFixture[], effect: BenchEffect): ActivePattern[] => {
+  if (effect === "static") return [];
+  const spots = fixtures.filter((f) => f.fixtureTemplateId === SPOT_TEMPLATE.id);
+  const bars = fixtures.filter((f) => f.fixtureTemplateId === BAR_TEMPLATE.id);
+
+  const spotColumns = Math.max(1, Math.ceil(Math.sqrt(spots.length)));
+  const spotGrid: Grid = {
+    cols: spotColumns,
+    rows: Math.max(1, Math.ceil(spots.length / spotColumns)),
+    cells: spots.map((f, i) => ({ fixtureId: f.id, head: 0, col: i % spotColumns, row: Math.floor(i / spotColumns) })),
+  };
+  const barGrid: Grid = {
+    cols: HEADS_PER_BAR,
+    rows: Math.max(1, bars.length),
+    cells: bars.flatMap((f, row) =>
+      Array.from({ length: HEADS_PER_BAR }, (_, head) => ({ fixtureId: f.id, head, col: head, row })),
+    ),
+  };
+
+  const pattern = (id: string, grid: Grid, hex: string): ActivePattern => ({
+    grid,
+    selectable: {
+      id,
+      name: id,
+      type: SelectableType.EFFECT_PATTERN,
+      fixtureIds: "all",
+      effect: "columnChase",
+      colours: [{ name: id, hex }],
+      blendMode: BlendMode.NORMAL,
+      colourMode: "rgb",
+      ...EFFECT_TIMING[effect],
+    } as PatternSelectable,
+  });
+  return [
+    ...(spots.length > 0 ? [pattern("bench-spots", spotGrid, "#40a0ff")] : []),
+    ...(bars.length > 0 ? [pattern("bench-bars", barGrid, "#ff40d0")] : []),
+  ];
 };

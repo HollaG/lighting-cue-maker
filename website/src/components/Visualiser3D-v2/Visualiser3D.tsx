@@ -69,6 +69,7 @@ import { CardBase } from "../Cues/CardBase";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
 import { useGetFixtureGroups } from "../../query-v2/fixture-groups/useGetFixtureGroups";
 import { ResolutionScaleSelect, useVisualiserDpr } from "./ResolutionScaleSelect";
+import type { PatternEffectPlayback } from "./PatternEffectRunner";
 
 export const Visualiser3D = ({
   visualiser,
@@ -811,14 +812,18 @@ export const StaticVisualiser3D = ({
   eventId,
   fixtures,
   dmxValuesByFixtureId,
+  effectPlayback,
 }: {
   visualiser: Visualiser;
   eventId: string;
   fixtures: PatchedFixture[];
 
+  /** Static values with overrides. */
   dmxValuesByFixtureId?: {
     [fixtureId: string]: (number | null)[];
   };
+  /** The cue's pattern effects; played inside the canvas, so the page doesn't re-render per step. */
+  effectPlayback?: PatternEffectPlayback | null;
 }) => {
   const { event } = useGetEvent(eventId);
   // Resolution scale. The select for it lives on the page (e.g. EventPage), shared through localStorage.
@@ -873,6 +878,7 @@ export const StaticVisualiser3D = ({
               updateStageElement={() => {}} // view only
               gui={null} // no editing panel
               dmxValuesByFixtureId={dmxValuesByFixtureId}
+              effectPlayback={effectPlayback}
             />
           </Profiler>
         </Canvas>

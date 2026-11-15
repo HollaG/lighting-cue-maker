@@ -47,13 +47,47 @@ export const decodeHeadStates = (
   fixtureTemplate: FixtureTemplate | undefined,
   modeId: string,
 ): HeadState[] => {
-  const mode = fixtureTemplate?.modes.find((m) => m.id === modeId);
-  if (!fixtureTemplate || !mode) return [];
+  const decoder = getHeadDecoder(fixtureTemplate, modeId);
+  if (!decoder) return [];
+  const colours = decoder.createOutput();
+  decoder.decode(dmxValues, colours);
+  return colours.map(({ r, g, b, intensity }) => ({ colour: toHex(r, g, b), intensity }));
+};
+
+/** What one head shows, as numbers: the colour at full brightness (0–255 each, rounded) and intensity 0–100. */
+export type HeadColour = { r: number; g: number; b: number; intensity: number };
+
+/**
+ * decodeHeadStates split in two: the channel lookups are done once per template + mode (cached), and `decode` only
+ * reads values, writing into `out` without building strings. For decoding every frame.
+ */
+export type HeadDecoder = {
+  headCount: number;
+  /** One HeadColour per head, to pass to `decode`. */
+  createOutput: () => HeadColour[];
+  decode: (dmxValues: (number | null)[], out: HeadColour[]) => void;
+};
+
+const decoderCache = new WeakMap<FixtureTemplate, Map<string, HeadDecoder | null>>();
+
+/** Null if the template or mode is missing. */
+export const getHeadDecoder = (fixtureTemplate: FixtureTemplate | undefined, modeId: string): HeadDecoder | null => {
+  if (!fixtureTemplate) return null;
+  let byMode = decoderCache.get(fixtureTemplate);
+  if (!byMode) {
+    byMode = new Map();
+    decoderCache.set(fixtureTemplate, byMode);
+  }
+  if (!byMode.has(modeId)) byMode.set(modeId, compileHeadDecoder(fixtureTemplate, modeId));
+  return byMode.get(modeId)!;
+};
+
+const compileHeadDecoder = (fixtureTemplate: FixtureTemplate, modeId: string): HeadDecoder | null => {
+  const mode = fixtureTemplate.modes.find((m) => m.id === modeId);
+  if (!mode) return null;
 
   const channelsById = new Map(fixtureTemplate.channels.map((c) => [c.id, c]));
   const channelAt = (slot: number) => channelsById.get(mode.channelIds[slot]);
-  // null = unset: the fixture sits at the channel's default.
-  const valueAt = (slot: number) => dmxValues[slot] ?? channelAt(slot)?.defaultValue ?? 0;
   const isMasterDimmer = (slot: number) => channelAt(slot)?.type === ChannelType.MASTER_DIMMER;
 
   // Slots per head. No heads = one head with every channel (QLC+ behaviour, same as getHeadLayouts).
@@ -61,51 +95,60 @@ export const decodeHeadStates = (
   const headSlots = mode.heads.length > 0 ? mode.heads.map((h) => h.channelIndexes) : [allSlots];
   const inAHead = new Set(headSlots.flat());
 
-  const main = decodeAttributes(
+  const main = compileLevel(
     allSlots.filter((s) => !inAHead.has(s) || isMasterDimmer(s)),
     channelAt,
-    valueAt,
   );
-
-  return headSlots.map((slots) => {
-    const head = decodeAttributes(
+  const heads = headSlots.map((slots) =>
+    compileLevel(
       slots.filter((s) => !isMasterDimmer(s)),
       channelAt,
-      valueAt,
-    );
-    return toHeadState(combine(main, head));
-  });
+    ),
+  );
+
+  return {
+    headCount: heads.length,
+    createOutput: () => heads.map(() => ({ r: 0, g: 0, b: 0, intensity: 0 })),
+    decode: (dmxValues, out) => {
+      const mainAttributes = decodeLevel(main, dmxValues);
+      heads.forEach((head, i) => writeHeadColour(combine(mainAttributes, decodeLevel(head, dmxValues)), out[i]));
+    },
+  };
 };
 
+/** One level's channels: the first coarse channel of each type, with what reading it needs. */
+type CompiledLevel = { slot: number; type: ChannelType; reversed: boolean; defaultValue: number }[];
+
 /**
- * Given a set of channel indexes (example: channel 2 3 4), figure out
- * the Visualiser-specific characteristics.
- *
- * Needed to convert DMX to a format the Visualiser understands.
- *
- * Called 1 + # heads times: one for the main level, then one for each head.
- *
- * @param slots
- * @param channelAt
- * @param valueAt
- * @returns
+ * Given a set of channel indexes (example: channel 2 3 4), which channels say something about the beam.
+ * Done 1 + # heads times per template + mode: one for the main level, then one for each head.
  */
-const decodeAttributes = (
-  slots: number[],
-  channelAt: (slot: number) => Channel | undefined,
-  valueAt: (slot: number) => number,
-): BeamAttributes => {
+const compileLevel = (slots: number[], channelAt: (slot: number) => Channel | undefined): CompiledLevel => {
   // First coarse channel of each type wins (several of the same type in one level is rare).
-  const values = new Map<ChannelType, number>();
+  const seen = new Set<ChannelType>();
+  const level: CompiledLevel = [];
   for (const slot of slots) {
     const channel = channelAt(slot);
-
     // ignore fine channels
-    if (!channel || channel.role === ChannelRole.FINE || values.has(channel.type)) continue;
-    const raw = valueAt(slot);
-    values.set(channel.type, channel.reversed ? 255 - raw : raw);
+    if (!channel || channel.role === ChannelRole.FINE || seen.has(channel.type)) continue;
+    seen.add(channel.type);
+    level.push({ slot, type: channel.type, reversed: !!channel.reversed, defaultValue: channel.defaultValue ?? 0 });
   }
+  return level;
+};
 
+const decodeLevel = (level: CompiledLevel, dmxValues: (number | null)[]): BeamAttributes => {
+  const values = new Map<ChannelType, number>();
+  for (const { slot, type, reversed, defaultValue } of level) {
+    // null = unset: the fixture sits at the channel's default.
+    const raw = dmxValues[slot] ?? defaultValue;
+    values.set(type, reversed ? 255 - raw : raw);
+  }
+  return decodeAttributes(values);
+};
+
+/** The beam attributes from one level's channel values (first coarse channel of each type). */
+const decodeAttributes = (values: Map<ChannelType, number>): BeamAttributes => {
   const result: BeamAttributes = {};
 
   // Dimmer: master or head, whichever this level has. `slots` already decides which one belongs here.
@@ -175,19 +218,17 @@ const combine = (main: BeamAttributes, head: BeamAttributes): BeamAttributes => 
  * a dimmerless head at half red (128, 0, 0) becomes #ff0000 at 50%, not a dark red at 100%.
  * No colour channels at all (a plain dimmer) = white.
  */
-const toHeadState = ({ rgb = [255, 255, 255], dimmer = 1 }: BeamAttributes): HeadState => {
-  const peak = Math.max(...rgb);
-  if (peak <= 0) return { colour: "#000000", intensity: 0 };
-
-  const colour =
-    "#" +
-    rgb
-      .map((v) =>
-        Math.round((v / peak) * 255)
-          .toString(16)
-          .padStart(2, "0"),
-      )
-      .join("");
-  const intensity = Math.round(dimmer * (peak / 255) * 100);
-  return { colour, intensity };
+const writeHeadColour = ({ rgb = [255, 255, 255], dimmer = 1 }: BeamAttributes, out: HeadColour) => {
+  const peak = Math.max(rgb[0], rgb[1], rgb[2]);
+  if (peak <= 0) {
+    out.r = out.g = out.b = out.intensity = 0;
+    return;
+  }
+  out.r = Math.round((rgb[0] / peak) * 255);
+  out.g = Math.round((rgb[1] / peak) * 255);
+  out.b = Math.round((rgb[2] / peak) * 255);
+  out.intensity = Math.round(dimmer * (peak / 255) * 100);
 };
+
+const toHex = (r: number, g: number, b: number) =>
+  "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
