@@ -15,7 +15,7 @@ This started as a plan from reading the code and the installed three.js source. 
 | 5. Shared shadow storage | Done, with step 4 | same |
 | 6. LED draw cost (instanced lenses) | Done | `3d4d98f` |
 | 7. Warm-up | Not needed, see below | – |
-| Interim: 8 shadows in the viewer | Done, then replaced by step 5 | `fee7d1e` |
+| Interim: 8 shadows in the viewer | Done, then replaced by step 5 | `7d1e19f` |
 
 ### Measured
 
