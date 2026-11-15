@@ -58,6 +58,7 @@ export const StagePreview3D = ({
   isViewOnly = false,
   dmxValuesByFixtureId,
   effectPlayback,
+  saveFixturePlacements = true,
 }: {
   eventId: string;
 
@@ -84,6 +85,8 @@ export const StagePreview3D = ({
   dmxValuesByFixtureId?: Record<string, (number | null)[]>;
   /** The cue's pattern effects, played every frame inside the canvas. */
   effectPlayback?: PatternEffectPlayback | null;
+  /** False = moving a fixture is not saved to the server (the bench has no real event). */
+  saveFixturePlacements?: boolean;
 }) => {
   // Where the effect player writes: every fixture's lenses and lights.
   const headSinks = useMemo(() => new HeadSinkRegistry(), []);
@@ -146,6 +149,7 @@ export const StagePreview3D = ({
 
   /** One request for the whole selection. The backend replaces every field, so send the full fixture. */
   const onCommitPlacements = (placements: Placement[]) => {
+    if (!saveFixturePlacements) return;
     const updates = placements.flatMap((placement) => {
       const fixture = fixtures.find((f) => f.id === placement.id);
       if (!fixture) return [];

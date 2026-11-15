@@ -71,7 +71,7 @@ export class ShadowLayers {
   private readonly layers: Layer[] = [];
   private readonly material: NodeMaterial;
   private castersKey = NaN;
-  /** Where the round-robin over dirty layers continues, so a budget doesn't starve high layers. */
+  /** Where the search for dirty layers starts next frame. */
   private cursor = 0;
 
   constructor() {
@@ -194,61 +194,62 @@ export class ShadowLayers {
    * @returns how many are still waiting; ask for another frame if this is not 0.
    */
   render(renderer: WebGPURenderer, scene: THREE.Scene) {
-    let budget = MAX_SHADOW_REDRAWS_PER_FRAME;
+    // 1. Pick this frame's layers and write their matrices.
+    const picked: number[] = [];
     let waiting = 0;
-    let stateSaved = false;
-    const previousObjectFunction = renderer.getRenderObjectFunction();
-    const sceneName = scene.name;
-
     for (let step = 0; step < SHADOW_LAYERS; step++) {
       const index = (this.cursor + step) % SHADOW_LAYERS;
       const layer = this.layers[index];
       if (!layer.dirty || !layer.active) continue;
-      if (budget === 0) {
-        if (waiting === 0) this.cursor = index; // continue from the first one left out
+      if (picked.length === MAX_SHADOW_REDRAWS_PER_FRAME) {
         waiting++;
         continue;
       }
-      budget--;
+      picked.push(index);
 
-      if (!stateSaved) {
-        stateSaved = true;
-        rendererState = resetRendererAndSceneState(renderer, scene, rendererState);
-        scene.overrideMaterial = this.material;
-        renderer.setClearColor(0x000000, 0);
-        // Only objects that cast shadows; three's shadow pass does the same.
-        renderer.setRenderObjectFunction(
-          (object, objectScene, camera, geometry, material, group, lightsNode, clippingContext, passId) => {
-            if (object.castShadow) {
-              renderer.renderObject(object, objectScene, camera, geometry, material, group, lightsNode, clippingContext, passId);
-            }
-          },
-        );
-      }
-
-      const { shadow, light } = layer;
-      shadow.updateMatrices(light as unknown as THREE.Light);
-      const elements = shadow.matrix.elements;
+      layer.shadow.updateMatrices(layer.light as unknown as THREE.Light);
+      const elements = layer.shadow.matrix.elements;
       // Texel (layer, row) holds matrix column `row`.
       for (let row = 0; row < 4; row++) {
         for (let i = 0; i < 4; i++) this.matrixData[(row * SHADOW_LAYERS + index) * 4 + i] = elements[row * 4 + i];
       }
+    }
+    if (picked.length === 0) return waiting;
+    // Upload now. Left to three (needsUpdate alone), this frame's draw still used the old matrices: the last layers
+    // of a load stayed dark until something else caused another frame.
+    this.matrixTexture.needsUpdate = true;
+    renderer.initTexture(this.matrixTexture);
+    // Next frame continues after the last one drawn, so a budget doesn't starve the high layers.
+    this.cursor = waiting > 0 ? (picked[picked.length - 1] + 1) % SHADOW_LAYERS : 0;
 
+    // 2. Draw them, with three's shadow-pass setup.
+    const previousObjectFunction = renderer.getRenderObjectFunction();
+    const sceneName = scene.name;
+    rendererState = resetRendererAndSceneState(renderer, scene, rendererState);
+    scene.overrideMaterial = this.material;
+    renderer.setClearColor(0x000000, 0);
+    // Only objects that cast shadows; three's shadow pass does the same.
+    renderer.setRenderObjectFunction(
+      (object, objectScene, camera, geometry, material, group, lightsNode, clippingContext, passId) => {
+        if (object.castShadow) {
+          renderer.renderObject(object, objectScene, camera, geometry, material, group, lightsNode, clippingContext, passId);
+        }
+      },
+    );
+
+    for (const index of picked) {
+      const layer = this.layers[index];
       // The bench counts renders of scenes named "Shadow Map…" as shadow redraws, like three's own shadow pass.
       scene.name = `Shadow Map [ light table layer ${index} ]`;
       renderer.setRenderTarget(this.renderTarget, index);
-      renderer.render(scene, shadow.camera);
+      renderer.render(scene, layer.shadow.camera);
       layer.dirty = false;
       this.redraws++;
     }
 
-    if (stateSaved) {
-      scene.name = sceneName;
-      renderer.setRenderObjectFunction(previousObjectFunction as never);
-      restoreRendererAndSceneState(renderer, scene, rendererState);
-      this.matrixTexture.needsUpdate = true;
-    }
-    if (waiting === 0) this.cursor = 0;
+    scene.name = sceneName;
+    renderer.setRenderObjectFunction(previousObjectFunction as never);
+    restoreRendererAndSceneState(renderer, scene, rendererState);
     return waiting;
   }
 

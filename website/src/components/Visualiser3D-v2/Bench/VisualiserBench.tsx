@@ -255,6 +255,7 @@ export const VisualiserBench = () => {
                     gui={null}
                     dmxValuesByFixtureId={dmxValuesByFixtureId}
                     effectPlayback={effectPlayback}
+                    saveFixturePlacements={false}
                   />
               </Canvas>
             </Suspense>
