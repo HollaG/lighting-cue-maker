@@ -16,6 +16,7 @@ import {
   ivec2,
   mat4,
   positionWorld,
+  renderGroup,
   smoothstep,
   texture,
   textureLoad,
@@ -50,7 +51,8 @@ export class LightTableNode extends LightingNode {
   }
 
   readonly table: LightTable;
-  readonly shadowBias = uniform(SHADOW_BIAS);
+  // Shared render group, like the table's count: see LightTable.countNode.
+  readonly shadowBias = uniform(SHADOW_BIAS).setGroup(renderGroup);
 
   constructor(table: LightTable) {
     super();

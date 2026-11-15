@@ -91,6 +91,8 @@ export class ShadowLayers {
   private readonly layers: Layer[] = [];
   private readonly material: NodeMaterial;
   private castersKey = NaN;
+  /** The GPU textures don't exist yet at the current size; see `prepare`. */
+  private needsInit = true;
   /** Where the search for dirty layers starts next frame. */
   private cursor = 0;
 
@@ -152,8 +154,22 @@ export class ShadowLayers {
     // three only resizes a depth texture it created itself, so resize ours here.
     this.depthTexture.image.depth = count;
     this.depthTexture.needsUpdate = true;
+    this.needsInit = true;
     this.invalidateAll();
     return true;
+  }
+
+  /**
+   * Creates the GPU textures if they don't exist at the current size. Call every frame before anything is drawn.
+   *
+   * Materials bind the depth array the first time they draw, even with every light off. If the render target is only
+   * initialised later, at the first shadow redraw, three destroys and recreates the texture and the materials keep the
+   * destroyed one: every solid draw then fails ("Destroyed texture used in a submit") and the scene freezes.
+   */
+  prepare(renderer: WebGPURenderer) {
+    if (!this.needsInit) return;
+    this.needsInit = false;
+    renderer.initRenderTarget(this.renderTarget);
   }
 
   /** Start of a frame: no layer is in use until its light says so through `setPose`. */
@@ -241,7 +257,7 @@ export class ShadowLayers {
     }
     if (picked.length === 0) return waiting;
     // Upload now. Left to three (needsUpdate alone), this frame's draw still used the old matrices: the last layers
-    // of a load stayed dark until something else caused another frame.
+    // of a load stayed dark until something else caused another frame. The cause inside three was not found.
     this.matrixTexture.needsUpdate = true;
     renderer.initTexture(this.matrixTexture);
     // Next frame continues after the last one drawn, so a budget doesn't starve the high layers.

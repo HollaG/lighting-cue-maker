@@ -10,7 +10,7 @@
  */
 import * as THREE from "three";
 import { DataTexture, FloatType, NearestFilter, RGBAFormat } from "three";
-import { uniform } from "three/tsl";
+import { renderGroup, uniform } from "three/tsl";
 import { ShadowLayers } from "./ShadowLayers";
 
 /** Most lights the table can hold lit at once. One texel column each. */
@@ -63,8 +63,15 @@ const direction = new THREE.Vector3();
 export class LightTable {
   readonly data = new Float32Array(LIGHT_CAPACITY * LIGHT_ROWS * 4);
   readonly texture: DataTexture;
-  /** How many columns of the texture hold a lit light this frame. */
-  readonly countNode = uniform(0, "int");
+  /**
+   * How many columns of the texture hold a lit light this frame.
+   *
+   * In the shared render group on purpose. In the default per-object group, three gives every object its own copy of
+   * the value but one shared "last written" cache, so only the first object drawn after a change uploads it: every
+   * other object kept the count it was created with (0 when a page loads with no cue: the haze was lit, the floor
+   * and objects were not).
+   */
+  readonly countNode = uniform(0, "int").setGroup(renderGroup);
   readonly shadows = new ShadowLayers();
 
   private readonly lights = new Set<TableLight>();

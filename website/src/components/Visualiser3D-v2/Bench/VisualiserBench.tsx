@@ -82,6 +82,8 @@ export const VisualiserBench = () => {
   const [ambientLight, setAmbientLight] = useState(0.5);
   const [effect, setEffect] = useState<BenchEffect>("static");
   const [orbit, setOrbit] = useState(false);
+  // Off = no cue data, like the event page before a cue is previewed. Turning it on is the "preview cue" moment.
+  const [lightsOn, setLightsOn] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const dpr = useVisualiserDpr();
 
@@ -213,6 +215,7 @@ export const VisualiserBench = () => {
           checked={orbit}
           onChange={(event) => setOrbit(event.currentTarget.checked)}
         />
+        <Switch label="Lights on" checked={lightsOn} onChange={(event) => setLightsOn(event.currentTarget.checked)} />
         <Button size="xs" variant="default" onClick={() => cameraRef(controls.current)}>
           Reset camera
         </Button>
@@ -253,8 +256,8 @@ export const VisualiserBench = () => {
                     cameraRef={cameraRef}
                     updateStageElement={() => {}}
                     gui={null}
-                    dmxValuesByFixtureId={dmxValuesByFixtureId}
-                    effectPlayback={effectPlayback}
+                    dmxValuesByFixtureId={lightsOn ? dmxValuesByFixtureId : undefined}
+                    effectPlayback={lightsOn ? effectPlayback : null}
                     saveFixturePlacements={false}
                   />
               </Canvas>
