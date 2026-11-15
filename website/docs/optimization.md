@@ -89,30 +89,134 @@ The old functions (`applyPatternEffects` and friends) remain as thin wrappers ar
 
 ## 4. Many lights froze, blacked out or crashed the scene
 
-**What went wrong.** Every fixture head was a separate three.js light. That had three consequences.
+This is the largest change, so it is explained in more detail than the others.
 
-- **Freezes.** three.js generates a block of shader code per light, and builds a mesh's shader the first time the mesh comes into view. With many lights each build was slow, so the scene froze when the camera first turned towards a new area. Adding, removing or toggling a light changed the shader, so everything was rebuilt.
-- **Black scene.** Each shadow-casting light was its own texture in every lit shader, and WebGPU allows 16 textures per shader. That is why the editor was capped at 8 shadows and the viewer had none. 30 shadowed lights turned the scene black.
-- **Crash.** At 1024 LED heads the generated shader was too large to build at all. At 256 it took about a minute and a half to load.
+### Background: how three.js normally handles lights
 
-**How it was fixed: the light table.**
+Two facts about three.js explain all three symptoms.
 
-- Every head light is now a few rows of numbers in one data texture: position and reach, direction and cone, colour × intensity, and a shadow layer number. [LightTable.ts](../src/components/Visualiser3D-v2/LightTable/LightTable.ts).
-- One loop in the shader reads the table: [LightTableNode.ts](../src/components/Visualiser3D-v2/LightTable/LightTableNode.ts). The same loop lights the solid surfaces and the haze.
-- For each pixel and light, the loop first checks reach, then the cone. Only a light that passes both is shaded. Most lights fail for most pixels, and each check is cheap.
-- Lights that are off are left out when the table is packed, so the shader never visits them. This makes chases cheap.
-- Adding, removing or switching a light now changes data, never shader code. Nothing is rebuilt when lights change or when the camera turns.
-- The table is installed as the renderer's lighting (`renderer.lighting`), so no material had to change. It is on by default in [visualiser3DRenderer.ts](../src/components/Visualiser3D-v2/visualiser3DRenderer.ts).
+**A shader is written per light list.** A shader is the small program the GPU runs for every pixel of a surface. three.js writes that program itself, from the material and from the lights in the scene. For every light it adds a block of code: "work out light 1", "work out light 2", and so on. So the program's text depends on which lights exist, and it is as long as the light list.
 
-**How it was fixed: shared shadows.**
+Turning that text into something the GPU can run (compiling it) takes from a few milliseconds to several seconds, depending on its length. three.js does it the first time a mesh is drawn, and the page waits while it happens.
 
-- All shadows live in one depth texture array, one layer per shadow-casting spot: [ShadowLayers.ts](../src/components/Visualiser3D-v2/LightTable/ShadowLayers.ts). One array counts as one texture, so the 16-texture limit no longer applies.
-- Every single-head fixture now casts a shadow, in the editor and in the viewer.
-- A layer is redrawn only when its light moves or its cone changes. All layers are redrawn when a stage object moves, appears or disappears. Camera movement and colour changes redraw nothing.
-- At most 32 layers are redrawn per frame. A larger change (loading 100 spots) finishes over the next few frames.
-- The array starts at 8 layers and doubles as fixtures are added, up to 256. A layer is 512 × 512, about 1.3 MB.
+**A shadow is a picture taken from the light.** To know whether a point is in shadow, three.js first draws the scene from the light's position and keeps only the depth: how far the nearest surface is in each direction. That picture is the light's *shadow map*. Later, when a pixel on the floor is shaded, its distance to the light is compared with the depth stored for that direction. If the pixel is farther away than the stored depth, something is in between, and the pixel is in shadow.
 
-**Measured.**
+Every shadow-casting light needs its own shadow map, and in three.js each map is a separate texture handed to every lit shader.
+
+### What went wrong
+
+- **Freezes.** A mesh's shader is compiled when the mesh first comes into view, and with many lights each compile was slow. So the scene froze each time the camera first turned towards a new area. Adding, removing or toggling a light changed the light list, so every shader was thrown away and compiled again.
+- **Black scene.** WebGPU allows a shader to read 16 textures. With one shadow map per light, that limit is reached quickly. This is why the editor was capped at 8 shadows and the viewer had none; 30 shadowed lights turned the scene black. Smaller shadow maps would not have helped, because the limit is on the number of textures, not their size.
+- **Crash.** At 1024 LED heads the shader text was too large to compile at all, and nothing was drawn. At 256 heads it took about a minute and a half.
+
+All three come from the same design: the *number of lights* was built into the *shader code*.
+
+### The idea
+
+Take the lights out of the shader code and put them in data.
+
+The shader contains one loop that says "for each light in the table, work out its contribution". The table is a block of numbers the shader reads. Ten lights or a thousand, the shader text is the same, so it is compiled once and never again.
+
+### The light table
+
+Code: [LightTable.ts](../src/components/Visualiser3D-v2/LightTable/LightTable.ts).
+
+The table is a texture used as a spreadsheet instead of a picture. It is 2048 cells wide and 4 cells high, and every cell holds four numbers. One column is one light:
+
+| Row | The four numbers |
+| --- | --- |
+| 0 | Position (x, y, z) and reach in metres |
+| 1 | Direction of the beam (x, y, z) and how wide the cone is |
+| 2 | Colour × intensity (red, green, blue) and where the soft edge starts |
+| 3 | Which shadow layer the light uses, or −1 for no shadow |
+
+Details that matter:
+
+- **Each fixture head owns a small `TableLight` object** with the same fields a three.js light has (`color`, `intensity`). The fixture and the effect player write to it exactly as they used to write to a `SpotLight`.
+- **The table is packed once per drawn frame.** The packer walks over all `TableLight` objects and writes the lit ones into columns 0, 1, 2 and so on. A separate number, the *count*, tells the shader how many columns are filled.
+- **Lights that are off are not written.** A light with zero intensity or a black colour takes no column, so the shader never looks at it. In a chase where 4 of 64 heads are lit, the shader loops over 4 lights, not 64.
+- **Positions are in world space**, not relative to the camera. So the numbers change only when a light moves or changes colour. Moving the camera changes nothing in the table.
+- **The texture is sent to the GPU only when a number changed.** A still scene uploads nothing.
+
+### The loop in the shader
+
+Code: [LightTableNode.ts](../src/components/Visualiser3D-v2/LightTable/LightTableNode.ts).
+
+For every pixel, the shader runs this:
+
+```
+for each filled column of the table:
+    read row 0 (position, reach)
+    if the pixel is farther away than the reach: skip this light
+
+    read row 1 (direction, cone)
+    if the pixel is outside the cone: skip this light
+
+    read row 2 (colour)
+    dim the colour towards the cone's edge and with distance
+
+    read row 3 (shadow layer)
+    if the light has a shadow layer:
+        look up the shadow, and dim the colour if the pixel is in shadow
+
+    give the colour and direction to the material's normal lighting maths
+```
+
+The two "skip" lines are what make it fast. A stage spot lights a small circle on the floor. For any one pixel, nearly every light fails the reach test or the cone test, and each test is a couple of multiplications. Only the few lights that really reach the pixel get the expensive part: the shadow lookup and the material's lighting maths.
+
+The last line hands over to three.js's own material code. The floor, the cuboids and the humans are still ordinary `MeshStandardMaterial`s and look the same as before; only the source of the light changed.
+
+### How it is plugged in
+
+three.js lets a renderer replace its whole lighting system through `renderer.lighting`. The visualiser's renderer sets it to `LightTableLighting`, which gives every material two things: the scene's ordinary lights (only the ambient light is left) and the table loop. No material had to be changed. This is on by default in [visualiser3DRenderer.ts](../src/components/Visualiser3D-v2/visualiser3DRenderer.ts).
+
+**The haze uses the same loop.** The haze is drawn by walking along a ray from the camera through each pixel and asking, at each step, "how much light is at this point in the air?". three.js's haze code asks the scene's lighting, which is now the table loop. So beams are visible in the haze, and objects cut shadows through the beams, with no extra code. The cost is that the loop runs once per step of the ray, not once per pixel, which is why the haze is drawn at a lower resolution.
+
+### Shadows: one stack instead of many textures
+
+Code: [ShadowLayers.ts](../src/components/Visualiser3D-v2/LightTable/ShadowLayers.ts).
+
+A *texture array* is a stack of same-sized images that the GPU counts as a single texture. All shadow maps now live in one such stack, one layer per shadow-casting spot. The shader reads one texture however many spots there are, so the 16-texture limit no longer applies.
+
+- **Each spot keeps the same layer** for as long as its fixture exists. Row 3 of the light table holds the layer number.
+- **A second small table holds one matrix per layer.** The matrix is what converts a point in the scene into "which pixel of this light's shadow map, and how far from the light". The shader reads it, converts the pixel's position, and asks the GPU to compare against the stored depth.
+- **Every single-head fixture casts a shadow now**, in the editor and in the viewer. LED heads still cast none, as before.
+
+**When a layer is redrawn.** Drawing a shadow map means drawing the scene again from that light, so it is the most expensive thing a light can ask for. A layer is redrawn only when its picture would be different:
+
+| What happened | What is redrawn |
+| --- | --- |
+| The camera moved | Nothing |
+| A light changed colour or intensity | Nothing |
+| A light moved, or its cone changed | That light's layer |
+| A stage object moved, appeared, disappeared or changed shape | Every layer |
+| A light is off | Nothing: its layer waits until the light comes on |
+
+"Every layer" for a moved object is more than strictly needed, since an object only affects the lights that reach it. It is simple and safe, and objects only move while editing.
+
+**Limits and memory.**
+
+- At most 32 layers are redrawn in one frame, so a big change cannot stall a frame. Loading 100 spots takes four frames to finish; a light whose layer is still waiting is drawn a frame or two late.
+- The stack starts with 8 layers and doubles when it is full, up to 256. A layer is 512 × 512 pixels, about 1.3 MB, so 100 spots use about 170 MB at the 128-layer size. Growing the stack makes a new, empty one, so every layer is redrawn once.
+
+### What happens on each drawn frame
+
+In order, before the scene itself is drawn ([LightTableUpdater.tsx](../src/components/Visualiser3D-v2/LightTable/LightTableUpdater.tsx)):
+
+1. The effect player writes this frame's colours into the `TableLight` objects.
+2. The positions of everything in the scene are brought up to date.
+3. The light table is packed, and uploaded if any number changed.
+4. The shadow-casting objects are checked for movement.
+5. The layers that need it are redrawn, up to 32.
+6. The scene is drawn, then the haze.
+
+### What it costs
+
+- **Every pixel still loops over every lit light.** The tests are cheap, but with a thousand lights lit it is a thousand tests per pixel, and more in the haze. On the development machine this is 1.3 ms. On integrated graphics it is the part most likely to be slow. The known next step is to split the screen into regions and give each region a short list of the lights that reach it.
+- **The table only knows cone lights.** A new kind of light (a point light, a true area light) would need new rows and new code in the loop.
+- **Fixed sizes.** 2048 lights lit at once and 256 shadows. Beyond that, extra lights are dark and a warning is logged.
+
+### Measured
 
 | | Before | After |
 | --- | --- | --- |
@@ -123,18 +227,46 @@ The old functions (`applyPatternEffects` and friends) remain as thin wrappers ar
 | Shadow redraws per frame while the camera moves | 8 | 0 |
 | First camera sweep after load | freezes on each new area | 0 shader builds, no frame over 6.4 ms |
 
-Because nothing is built when the camera turns any more, the planned warm-up step was not needed and was dropped.
+Because nothing is compiled when the camera turns any more, the planned warm-up step was not needed and was dropped.
 
 ## 5. LED bars were expensive
 
-**What went wrong.** Each LED head was its own lens mesh with its own material (one draw call per head) and its own `RectAreaLight`, one of the most expensive light types per pixel. Heads that were off still stayed mounted as lights.
+An LED bar has many heads: the bench's bars have 16 each, and 64 bars is 1024 heads. Each head has two parts that cost something: the *lens* you see on the fixture, and the *light* it throws on the stage.
 
-**How it was fixed.**
+### What went wrong
 
-- Each head is a cone in the light table, like a small spot. It keeps its own colour on the floor and in the haze, so chases still read correctly.
-- All lenses in a canvas are drawn as two instanced meshes, one for round lenses and one for square ones: [LensInstances.ts](../src/components/Visualiser3D-v2/Elements/LensInstances.ts). A 1024-head scene went from 1024 lens draw calls to one.
+- **The light.** Each head was a `RectAreaLight`, a light shaped like a glowing rectangle. It is the most expensive light type three.js has: for every pixel it does several texture lookups and a long calculation to work out how much of the rectangle the pixel can see. It was also one more block of shader code per head, which is the problem from section 4.
+- **The lens.** Each head's lens was its own mesh with its own material. The GPU is told about each mesh separately (one *draw call* each), and each call has a fixed cost on the CPU however small the mesh is. 1024 heads meant 1024 draw calls for some small rectangles.
+- **Heads that were off still cost the same.** They stayed in the scene as lights with zero intensity, so the shader still worked through them.
 
-**A look change to know about.** LED heads used to be area lights and are now cones. The on-axis brightness matches (intensity × lens area), but the shape of the light on the floor is slightly different. `LED_HEAD_GAIN` in [Visualiser3DFixture.tsx](../src/components/Visualiser3D-v2/Elements/Visualiser3DFixture.tsx) scales the brightness.
+### The light: a cone in the table
+
+Each head is now one column of the light table from section 4: a cone pointing out of the lens, with the fixture's beam angle.
+
+- **Every head keeps its own colour** on the floor and in the haze. A chase along a bar still shows as separate moving pools of light. (An earlier idea, one averaged light per bar, would have lost that.)
+- **Brightness matches the old light.** An area light's brightness depends on its size, so a head's intensity is multiplied by its lens area. `LED_HEAD_GAIN` in [Visualiser3DFixture.tsx](../src/components/Visualiser3D-v2/Elements/Visualiser3DFixture.tsx) scales it further if the heads look too dim.
+- **Heads that are off cost nothing**, because off lights are not packed into the table.
+- **No shadows**, as before. Only single-head fixtures cast them.
+
+**A look change to know about.** A glowing rectangle and a cone do not light the floor in quite the same shape: the rectangle gave a soft wash, the cone gives a pool with an edge. Straight below the head the brightness is the same.
+
+### The lens: instancing
+
+Code: [LensInstances.ts](../src/components/Visualiser3D-v2/Elements/LensInstances.ts).
+
+*Instancing* is a way to tell the GPU "draw this same shape N times" in one draw call. Along with the shape, the GPU is given a list with one entry per copy: where to put it and what colour to make it.
+
+- **There are two instanced meshes per canvas**: one for round lenses (spots) and one for square lenses (LED heads). Every lens of every fixture is an entry in one of the two lists.
+- **Each fixture registers a small `Lens` object per head**, holding its colour and its place on the fixture. The effect player writes the colour exactly as it used to write to a lens material.
+- **Once per drawn frame the lists are refreshed.** Each lens's place in the scene and its colour are copied into the lists, and a list is sent to the GPU only if something in it changed. A lens follows its fixture when the fixture is dragged.
+- **The lens colour** is dark grey when the head is off and moves towards the head's colour as its intensity rises. Lenses are not affected by the scene's lights; they simply show their colour.
+- **The lists grow by doubling**, starting at 64 entries.
+- **Lenses do not take clicks.** Clicking a fixture selects it through its body, as before.
+
+### Measured
+
+- A 1024-head scene went from 1024 lens draw calls to 1.
+- 100 spots plus 1024 LED heads: 179 draw calls in total, about 2.5 ms of CPU per frame. Most of the 179 are the fixture bodies and stage objects.
 
 ## Bugs found along the way
 
@@ -148,7 +280,7 @@ These appeared after the switch to the light table and draw-on-demand. Each is f
 
 ## What was left alone
 
-- **MSAA on the solid pass** is still on. The bench has a toggle to compare.
+- **MSAA on the solid pass** is still on. MSAA (multisample anti-aliasing) smooths the jagged, stair-stepped edges of objects by checking four points inside each pixel along an edge instead of one. It costs GPU memory and some time, and three.js turns it on at 4× by default. It was removed from the haze pass, where the blur hides it anyway, and kept on the solid pass, where edges are visible. The bench has a toggle to compare.
 - **The old lighting path** still exists behind `lightTable: false` on the renderer factory. Only the bench uses it, for comparison.
 - **Pixel strips** (`bar_pixel`) are still one light per pixel. Showing them as lenses only, or lenses plus one soft wash per fixture, was discussed and put off as a look change.
 
