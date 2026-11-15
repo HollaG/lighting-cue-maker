@@ -1,6 +1,6 @@
 import { useTimelineContext } from "dnd-timeline";
 import { Box } from "@mantine/core";
-import { getSectionLengthMs, TimelineSectionType, type Timeline } from "../../types-v2/timeline";
+import { getSectionLengthMs, type Timeline } from "../../types-v2/timeline";
 import type { AudioFileWithUrl } from "../../types-v2/audioFile";
 import { TimelineRow } from "./TimelineRow";
 import { TimelineRowId } from "../../utils/timeline";
@@ -13,7 +13,7 @@ export const TimelineRows = ({
   itemId,
   timeline,
   audioFiles,
-  onSelect,
+  // onSelect: still in the props for the selection WIP, not used yet
   onDelete,
 }: {
   eventId: string;

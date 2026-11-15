@@ -8,8 +8,6 @@ import {
   Select,
   Group,
   Divider,
-  Grid,
-  Center,
   Modal,
   getDefaultZIndex,
   Button,
@@ -91,8 +89,6 @@ export const TimelineSectionItem = ({
   const onValueChange = async (field: keyof TimelineSection, value: any) => {
     await upsertSection({ ...section, [field]: value });
   };
-
-  const { valueToPixels } = useTimelineContext();
 
   return (
     <div
@@ -314,7 +310,7 @@ const TimelineBeatSectionItem = ({
   const threshold = 12; // px
 
   // track the x and y within the div
-  const { ref, x, y } = useMouse();
+  const { ref, x } = useMouse();
 
   // When the section starts before the visible range, dnd-timeline's itemContentStyle pads the content by the hidden
   // part (so labels stay in view). Everything in here then starts at the viewport edge, not the section start:
@@ -486,7 +482,7 @@ const TimelineBeatSectionItem = ({
     }
 
     return nodes;
-  }, [section.markers, valueToPixels, hiddenPx]);
+  }, [section.markers, valueToPixels, hiddenPx, cueOrder]);
   return (
     <>
       <Modal

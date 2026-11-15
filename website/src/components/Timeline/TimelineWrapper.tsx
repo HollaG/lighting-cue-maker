@@ -54,8 +54,9 @@ export const TimelineWrapper = ({
   const timeline: Timeline = pendingPatch ? { ...timelineProp, ...pendingPatch } : timelineProp;
 
   // "selected" clips
-  const [currentlySelectedAudios, setCurrentlySelectedAudios] = useState<Set<string>>(new Set());
-  const [currentlySelectedSections, setCurrentlySelectedSections] = useState<Set<string>>(new Set());
+  // (values not read yet: selection is WIP)
+  const [, setCurrentlySelectedAudios] = useState<Set<string>>(new Set());
+  const [, setCurrentlySelectedSections] = useState<Set<string>>(new Set());
 
   const onSelect = (type: TimelineRowId, ids: Set<string>) => {
     if (type === TimelineRowId.AUDIO) {

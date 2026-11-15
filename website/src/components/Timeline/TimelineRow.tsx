@@ -1,8 +1,7 @@
-import { useItem, useRow, type Span } from "dnd-timeline";
+import { useRow } from "dnd-timeline";
 import { useRef, type ReactNode } from "react";
-import { Box, Menu, Text } from "@mantine/core";
-import { type ItemData, TimelineRowId } from "../../utils/timeline";
-import { ConfirmDelete } from "../ConfirmDeleteButton/ConfirmDeleteButton";
+import { Text } from "@mantine/core";
+import { TimelineRowId } from "../../utils/timeline";
 import { useLocalStorage } from "@mantine/hooks";
 
 import classes from "./Timeline.module.css";

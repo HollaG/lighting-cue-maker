@@ -11,7 +11,7 @@ export const TimelineRuler = ({ onClickPos }: { onClickPos: (timeMs: number) => 
   const { range, pixelsToValue } = useTimelineContext();
 
   const minStepMs = pixelsToValue(TARGET_LABEL_GAP);
-  const { stepMs, ticks } = getTicks(range, minStepMs);
+  const { ticks } = getTicks(range, minStepMs);
 
   return (
     <div

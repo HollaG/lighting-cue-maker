@@ -173,7 +173,6 @@ const NICE_STEPS_MS = [
  */
 export const getTicks = (range: Range, minStepMs: number): { stepMs: number; ticks: number[] } => {
   const { start, end } = range;
-  const length = end - start;
 
   // find the closest step that is greater than or equal to minStepMs
   const stepMs = NICE_STEPS_MS.find((step) => step >= minStepMs) ?? NICE_STEPS_MS[NICE_STEPS_MS.length - 1];

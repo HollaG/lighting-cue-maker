@@ -7,7 +7,6 @@ import {
   FileButton,
   Group,
   Loader,
-  Menu,
   Popover,
   ScrollArea,
   Scroller,

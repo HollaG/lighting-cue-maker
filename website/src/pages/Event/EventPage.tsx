@@ -52,11 +52,8 @@ import { useResolvedDmx } from "../../hooks/useResolvedDmx";
 import { DMXControlWrapper } from "../../components/DMX/DMXControlWrapper";
 import { RichContentWrapper } from "../../components/RichContent-v2/RichContentWrapper";
 import { TimelineDrawerContainer } from "../../components/Timeline/TimelineDrawerContainer";
-import {
-  DrawerResizeHandle,
-  resizableDrawerStyles,
-  useDrawerSize,
-} from "../../components/DrawerResizeHandle/DrawerResizeHandle";
+import { DrawerResizeHandle } from "../../components/DrawerResizeHandle/DrawerResizeHandle";
+import { resizableDrawerStyles, useDrawerSize } from "../../components/DrawerResizeHandle/useDrawerSize";
 
 // const logger = new Logger("EventPage.tsx");
 
