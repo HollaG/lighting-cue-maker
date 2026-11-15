@@ -122,14 +122,14 @@ export const StagePreview3D = ({
    * Now the set only changes when fixtures are added or removed (which also recompiles shaders once).
    */
   const shadowCasterIds = useMemo(() => {
-    // PROTOTYPE: the light table keeps shadows in one texture array, so every spot can cast one, in the viewer too.
-    if (isViewOnly && !lightTable) return new Set<string>();
+    // The viewer gets the same shadows as the editor. With three.js lights that is the first MAX_SHADOW_CASTERS spots;
+    // the light table (prototype) keeps shadows in one texture array, so every spot can cast one.
     const ids = fixtures
       .filter((f) => getHeadCount(templatesById.get(f.fixtureTemplateId), f.modeId) === 1)
       .slice(0, lightTable ? lightTable.shadows.layerCount : MAX_SHADOW_CASTERS)
       .map((f) => f.id);
     return new Set(ids);
-  }, [fixtures, templatesById, isViewOnly, lightTable]);
+  }, [fixtures, templatesById, lightTable]);
 
   // Fixture meshes by id, so one gizmo can move the whole selection.
   const meshes = useRef(new Map<string, THREE.Object3D>());

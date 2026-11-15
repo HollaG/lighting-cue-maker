@@ -126,7 +126,7 @@ export const VisualiserBench = () => {
       ? `light table, ${config.spots} shadowed spots`
       : config.mode === "editor"
         ? `three.js lights, ${Math.min(8, config.spots)} shadowed spots`
-        : "three.js lights, no shadows (viewer has none today)";
+        : `three.js lights, ${Math.min(8, config.spots)} shadowed spots`;
   const sceneLine =
     `Scene: ${config.spots} spots, ${config.ledHeads} LED heads (${Math.ceil(config.ledHeads / HEADS_PER_BAR)} bars), ` +
     `${config.mode} mode, ${shadowText}, MSAA ${config.msaa ? "on" : "off"}, haze ${haze}, ambient ${ambientLight}, effect ${effect}, camera ${orbit ? "orbiting" : "still"}`;
@@ -162,7 +162,7 @@ export const VisualiserBench = () => {
             size="xs"
             data={[
               { value: "editor", label: "Editor (8 shadows)" },
-              { value: "viewer", label: "Viewer (no shadows)" },
+              { value: "viewer", label: "Viewer (8 shadows)" },
             ]}
             value={config.mode}
             onChange={(value) => setConfig({ ...config, mode: value as BenchSceneConfig["mode"] })}
