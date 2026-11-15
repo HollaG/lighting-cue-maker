@@ -11,12 +11,23 @@ RectAreaLightNode.setLTC(RectAreaLightTexturesLib.init());
 // TODO: Remove this workaround once the installed R3F version fixes https://github.com/pmndrs/react-three-fiber/issues/3782.
 const rendererInitializations = new WeakMap<EventTarget, Promise<WebGPURenderer>>();
 
-/** Reuse initialization when R3F configures the same canvas again before init finishes. */
-export const createVisualiser3DRenderer: CanvasProps["gl"] = (props) => {
-  const existing = rendererInitializations.get(props.canvas);
-  if (existing) return existing;
+/**
+ * A renderer factory for R3F's `gl` prop. `trackTimestamp` turns on GPU timestamp queries (the bench page reads GPU
+ * frame time with them); leave it off elsewhere, it adds a query per render pass.
+ */
+export const makeVisualiser3DRenderer =
+  (options: { trackTimestamp?: boolean } = {}): CanvasProps["gl"] =>
+  (props) => {
+    const existing = rendererInitializations.get(props.canvas);
+    if (existing) return existing;
+    return initRenderer(props, options);
+  };
 
-  const renderer = new WebGPURenderer(props as WebGPURendererParameters);
+/** Reuse initialization when R3F configures the same canvas again before init finishes. */
+export const createVisualiser3DRenderer: CanvasProps["gl"] = makeVisualiser3DRenderer();
+
+const initRenderer = (props: { canvas: EventTarget }, options: { trackTimestamp?: boolean }) => {
+  const renderer = new WebGPURenderer({ ...(props as unknown as WebGPURendererParameters), ...options });
   const initialization = renderer.init().then(
     () => {
       // A lost GPU device stops rendering with nothing in the console unless we log it.
