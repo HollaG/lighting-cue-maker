@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	"lighting-cue-maker/server/pkg/database"
 	"lighting-cue-maker/server/pkg/storage"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -103,5 +106,34 @@ func connectAudioStorage(cfg *config.Config) *storage.Store {
 		return nil
 	}
 	log.Printf("storage: connected, container %q", cfg.AzureAudioContainer)
+
+	// enable cors
+	if cfg.CORSURL != "" {
+		if err := AllowBrowserReads(ctx, cfg.AzureStorageConnectionString, cfg.CORSURL); err != nil {
+			log.Printf("storage: failed to set CORS for %q: %v", cfg.CORSURL, err)
+		}
+	}
 	return store
+}
+
+// AllowBrowserReads lets pages on `origin` fetch() blobs (needed to decode audio with Web Audio).
+// Replaces the account's blob CORS rules; other service settings are left as they are.
+func AllowBrowserReads(ctx context.Context, connectionString, origin string) error {
+	svc, err := service.NewClientFromConnectionString(connectionString, nil)
+	if err != nil {
+		return fmt.Errorf("storage: connect service: %w", err)
+	}
+	_, err = svc.SetProperties(ctx, &service.SetPropertiesOptions{
+		CORS: []*service.CORSRule{{
+			AllowedOrigins:  to.Ptr(origin), // e.g. cfg.CORSURL ("http://localhost:5173")
+			AllowedMethods:  to.Ptr("GET,HEAD"),
+			AllowedHeaders:  to.Ptr("*"),
+			ExposedHeaders:  to.Ptr("*"),
+			MaxAgeInSeconds: to.Ptr(int32(3600)), // browser caches the preflight check for 1 hour
+		}},
+	})
+	if err != nil {
+		return fmt.Errorf("storage: set CORS: %w", err)
+	}
+	return nil
 }

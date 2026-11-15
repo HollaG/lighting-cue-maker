@@ -1,41 +1,32 @@
 import {
   TimelineContext,
-  useItem,
-  useRow,
-  useTimelineContext,
   type DragEndEvent,
   type Range,
   type ResizeEndEvent,
-  type Span,
   type UsePanStrategy,
   useWheelStrategy,
 } from "dnd-timeline";
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Box, Flex, Group, Kbd, SegmentedControl, Stack, Text } from "@mantine/core";
-import {
-  getSectionLengthMs,
-  TimelineSectionType,
-  type Timeline,
-  type TimelineAudio,
-  type TimelineSection,
-  type UpsertTimeline,
-} from "../../types-v2/timeline";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { Box, Flex, Group, Kbd, SegmentedControl, Text } from "@mantine/core";
+import type { Timeline, UpsertTimeline } from "../../types-v2/timeline";
 import type { AudioFileWithUrl } from "../../types-v2/audioFile";
 import { Logger } from "../../utils/logger";
-
-/** The two fixed rows. Items can't move between them. */
-const TimelineRowId = {
-  AUDIO: "audio",
-  SECTIONS: "sections",
-} as const;
-type TimelineRowId = (typeof TimelineRowId)[keyof typeof TimelineRowId];
-
-/** What each item carries, so drag/resize handlers know which row (and so which list) it belongs to. */
-type ItemData = { rowId: TimelineRowId };
-
-const SIDEBAR_WIDTH = 128;
+import { TimelineRows } from "./TimelineRows";
+import { TimelineRuler } from "./TimelineRuler";
+import { getRowId, resizeSection, SIDEBAR_WIDTH, TimelineRowId, trimClip } from "../../utils/timeline";
+import { TimelinePlayhead } from "./TimelinePlayhead";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { useOs } from "@mantine/hooks";
 
 const logger = new Logger("TimelineWrapper", "orange");
+
+type Transport = {
+  playing: boolean;
+  /** seconds */
+  anchorCtxTime: number;
+  /** milliseconds */
+  anchorMs: number;
+};
 
 /**
  * The timeline editor: an audio row (clips) and a sections row. Times are ms everywhere; dnd-timeline works in the
@@ -53,10 +44,24 @@ export const TimelineWrapper = ({
   audioFiles: AudioFileWithUrl[];
   onSave: (patch: UpsertTimeline) => void;
 }) => {
+  // the zoom/pan modifier label: ⌘ on Apple, Ctrl elsewhere (dnd-timeline accepts either key on any OS).
+  // getValueInEffect: false = read it on the first render; we have no SSR, so no "undetermined" flash.
+  const os = useOs({ getValueInEffect: false });
+  const modKey = os === "macos" || os === "ios" ? "⌘" : "Ctrl";
+
   // we keep the update here, because if we use tanstack state (wait for GET), it lags behind, so the old state is shown as a flash
   const [optimistic, setOptimistic] = useState<{ base: Timeline; patch: UpsertTimeline } | null>(null);
   const pendingPatch = optimistic?.base === timelineProp ? optimistic.patch : undefined;
   const timeline: Timeline = pendingPatch ? { ...timelineProp, ...pendingPatch } : timelineProp;
+
+  // when the spacebar is pressed, toggle play/pause.
+  useHotkey("Space", () => {
+    if (playState === "play") {
+      onPlayStateChange("pause");
+    } else {
+      onPlayStateChange("play");
+    }
+  });
 
   const save = (patch: UpsertTimeline) => {
     // Merged with an edit still pending, so two quick edits (one to audios, one to sections) both stay visible.
@@ -169,6 +174,119 @@ export const TimelineWrapper = ({
     }
   };
 
+  // WebAudio: handle the playback position
+  const [playState, setPlayState] = useState<"play" | "pause" | "stop">("pause");
+  const [isPlayLoading, setIsPlayLoading] = useState(false); // for showing a spinner on the play button
+  const sourcesRef = useRef<
+    {
+      src: AudioBufferSourceNode;
+      delay: number; // delay from now until when it should play
+      offset: number; // where in the file it started playing, in seconds
+      duration: number; // how long the source is playing, in seconds
+    }[]
+  >([]); // for stopping all sources on stop
+
+  const onPlayStateChange = (newState: "play" | "pause" | "stop") => {
+    if (newState === "play") {
+      stopAllSources();
+      onPlay();
+      if (audioCtx.current) audioCtx.current.resume();
+    } else if (newState === "pause") {
+      // update the new playhead position
+      startPlayheadPositionRef.current = getPositionMs();
+      transportRef.current.playing = false;
+      stopAllSources();
+    } else if (newState === "stop") {
+      stopAllSources();
+      if (audioCtx.current) audioCtx.current.suspend();
+      startPlayheadPositionRef.current = 0;
+      transportRef.current.playing = false;
+    }
+    setPlayState(newState);
+  };
+
+  const stopAllSources = () => {
+    for (const src of sourcesRef.current) {
+      try {
+        src.src.stop();
+      } catch (e) {
+        logger.warn("Failed to stop source", { e });
+      }
+    }
+    sourcesRef.current = [];
+  };
+
+  const audioCtx = useRef<AudioContext | null>(null);
+  const startPlayheadPositionRef = useRef(0); // ms
+  useLayoutEffect(() => {
+    if (!audioCtx.current) audioCtx.current = new AudioContext();
+  }, []);
+
+  const onRulerClick = (timeMs: number) => {
+    // TODO: for now, round to 1000ms
+    const rounded = Math.round(timeMs / 1000) * 1000;
+    startPlayheadPositionRef.current = rounded;
+  };
+
+  const onPlay = async () => {
+    try {
+      if (!audioCtx.current) return;
+
+      setIsPlayLoading(true);
+
+      // NOTE: even if there are no audio clips, we still need to play~
+      // setup the clip timings
+      for (const clip of timeline.audios) {
+        const clipEnd = clip.startTime + clip.duration;
+        if (clipEnd < startPlayheadPositionRef.current) continue; // skip clips that are over
+
+        const file = audioFiles.find((f) => f.id === clip.audioFileId);
+        if (!file) continue; // some error
+
+        // get an offset for the clip, if we're some distance into the clip
+        const skipAmount = Math.max(0, startPlayheadPositionRef.current - clip.startTime);
+
+        // fetch the file
+        const res = await fetch(file.url);
+        const bytes = await res.arrayBuffer();
+        const buf = await audioCtx.current.decodeAudioData(bytes);
+
+        // create audio source
+        const src = audioCtx.current.createBufferSource();
+
+        src.buffer = buf;
+
+        src.connect(audioCtx.current.destination);
+
+        sourcesRef.current.push({
+          src,
+          delay: Math.max(0, clip.startTime - startPlayheadPositionRef.current) / 1000, // when (s)
+          offset: (clip.offset + skipAmount) / 1000, // where in the file (s)
+          duration: (clip.duration - skipAmount) / 1000,
+        });
+      }
+      const t0 = audioCtx.current.currentTime;
+      transportRef.current = { playing: true, anchorCtxTime: t0, anchorMs: startPlayheadPositionRef.current };
+
+      for (const src of sourcesRef.current) {
+        src.src.start(src.delay + t0, src.offset, src.duration);
+      }
+    } catch (e) {
+      logger.error("Failed to play audio", { e });
+    } finally {
+      setIsPlayLoading(false);
+    }
+  };
+
+  // handle playhead movement
+  const transportRef = useRef<Transport>({ playing: false, anchorMs: 0, anchorCtxTime: 0 });
+  const getPositionMs = useCallback(() => {
+    const t = transportRef.current;
+    const ctx = audioCtx.current;
+    if (!t.playing || !ctx) return startPlayheadPositionRef.current; // paused: the saved position
+    return t.anchorMs + (ctx.currentTime - t.anchorCtxTime) * 1000;
+  }, []);
+
   return (
     <TimelineContext
       range={range}
@@ -178,15 +296,7 @@ export const TimelineWrapper = ({
       sidebarWidth={SIDEBAR_WIDTH} // px on the left of each row for its label
       usePanStrategy={useWheelAndMiddleDragPan}
     >
-      {/* <Group my="xs">
-        <Flex flex={1} />
-        <Text c="dimmed" size="sm">
-          Zoom: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> +<Kbd>Scroll</Kbd>
-        </Text>
-        <Text c="dimmed" size="sm">
-          Pan: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> + <Kbd>Shift</Kbd> + <Kbd>Scroll</Kbd> or <Kbd>Middle-click</Kbd> + drag
-        </Text>
-      </Group> */}
+      {/* Transport controls */}
       <Box
         style={{
           display: "grid",
@@ -195,19 +305,33 @@ export const TimelineWrapper = ({
         my="sm"
       >
         <div />
-        <SegmentedControl data={["play", "pause", "stop"]} />
+        <SegmentedControl
+          disabled={isPlayLoading}
+          data={["play", "pause", "stop"]}
+          onChange={onPlayStateChange}
+          value={playState}
+        />
         <Group>
           <Flex flex={1} />
           <Text c="dimmed" size="sm">
-            Zoom: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> +<Kbd>Scroll</Kbd>
+            Zoom: <Kbd>{modKey}</Kbd> + <Kbd>Scroll</Kbd>
           </Text>
           <Text c="dimmed" size="sm">
-            Pan: <Kbd>CMD</Kbd>/<Kbd>CTRL</Kbd> + <Kbd>Shift</Kbd> + <Kbd>Scroll</Kbd> or <Kbd>Middle-click</Kbd> + drag
+            Pan: <Kbd>Middle-click</Kbd> + drag
           </Text>
         </Group>
       </Box>
-      <TimelineRuler />
-      <TimelineRows timeline={timeline} audioFiles={audioFiles} />
+
+      {/* Use a relative wrapper to allow for absolute posiitoning of child elements (mainly the playhead) */}
+      <Box
+        style={{
+          position: "relative",
+        }}
+      >
+        <TimelineRuler onClickPos={onRulerClick} />
+        <TimelinePlayhead getPositionMs={getPositionMs} />
+        <TimelineRows timeline={timeline} audioFiles={audioFiles} />
+      </Box>
     </TimelineContext>
   );
 };
@@ -261,349 +385,4 @@ const useWheelAndMiddleDragPan: UsePanStrategy = (timelineBag, onPanEnd) => {
       element.removeEventListener("pointercancel", onPointerUp);
     };
   }, [timelineBag.timelineRef]);
-};
-
-/** The row id stored in an item's data (see TimelineItem). */
-const getRowId = (data: object | undefined): TimelineRowId | undefined =>
-  (data as Partial<ItemData> | undefined)?.rowId;
-
-/** Must be inside TimelineContext: useTimelineContext gives the container's ref and style. */
-const TimelineRows = ({ timeline, audioFiles }: { timeline: Timeline; audioFiles: AudioFileWithUrl[] }) => {
-  const { setTimelineRef, style } = useTimelineContext();
-  const fileName = new Map(audioFiles.map((f) => [f.id, f.fileName]));
-
-  return (
-    <Box ref={setTimelineRef} style={style}>
-      <TimelineRow id={TimelineRowId.AUDIO} sidebar="Audio clips">
-        {timeline.audios.map((clip) => (
-          <TimelineItem
-            key={clip.id}
-            id={clip.id}
-            rowId={TimelineRowId.AUDIO}
-            span={{ start: clip.startTime, end: clip.startTime + clip.duration }}
-          >
-            {fileName.get(clip.audioFileId) ?? "Missing file"}
-          </TimelineItem>
-        ))}
-      </TimelineRow>
-
-      <TimelineRow
-        id={TimelineRowId.SECTIONS}
-        sidebar="Timed sections (Cue markers)"
-        styles={{
-          height: 128,
-        }}
-      >
-        {timeline.sections.map((section) => (
-          <TimelineItem
-            key={section.id}
-            id={section.id}
-            rowId={TimelineRowId.SECTIONS}
-            span={{ start: section.sectionStartTime, end: section.sectionStartTime + getSectionLengthMs(section) }}
-          >
-            {section.name || "Untitled"}
-          </TimelineItem>
-        ))}
-      </TimelineRow>
-    </Box>
-  );
-};
-
-const TimelineRow = ({
-  id,
-  sidebar,
-  children,
-  styles,
-}: {
-  id: TimelineRowId;
-  sidebar: ReactNode;
-  children: ReactNode;
-  styles?: React.CSSProperties;
-}) => {
-  const { setNodeRef, rowWrapperStyle, rowStyle, rowSidebarStyle } = useRow({ id });
-
-  return (
-    <div
-      style={{
-        ...rowWrapperStyle,
-        minHeight: 48,
-        borderBottom: "1px solid var(--mantine-color-default-border)",
-        overflow: "hidden",
-        ...styles,
-      }}
-    >
-      <div
-        style={{
-          ...rowSidebarStyle,
-          display: "flex",
-          alignItems: "center",
-          paddingInline: 8,
-          background: "var(--mantine-color-body)",
-          overflow: "hidden",
-        }}
-      >
-        <Text size="xs" c="dimmed">
-          {sidebar}
-        </Text>
-      </div>
-      <div ref={setNodeRef} style={rowStyle}>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const TimelineItem = ({
-  id,
-  rowId,
-  span,
-  children,
-}: {
-  id: string;
-  rowId: TimelineRowId;
-  span: Span;
-  children: ReactNode;
-}) => {
-  const data: ItemData = { rowId };
-  const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({ id, span, data });
-
-  return (
-    <div ref={setNodeRef} style={itemStyle} {...listeners} {...attributes}>
-      <div
-        style={{
-          ...itemContentStyle,
-          height: "100%",
-          overflow: "hidden",
-          borderRadius: "var(--mantine-radius-sm)",
-          background: "var(--mantine-primary-color-light)",
-          color: "var(--mantine-primary-color-light-color)",
-          paddingInline: 6,
-          display: "flex",
-          alignItems: "center",
-          zIndex: 99,
-        }}
-      >
-        <Text size="xs" truncate>
-          {children}
-        </Text>
-      </div>
-    </div>
-  );
-};
-
-/**
- * A clip resized = a trim (the file never changes). From the start edge the audio stays where it is in the song:
- * startTime and offset move together. Clamped to the file: offset ≥ 0, offset + duration ≤ its length.
- */
-const trimClip = (
-  clip: TimelineAudio,
-  span: Span,
-  direction: "start" | "end",
-  fileDurationMs = clip.offset + clip.duration,
-): TimelineAudio => {
-  if (direction === "end") {
-    const duration = Math.round(span.end - clip.startTime);
-    return { ...clip, duration: clamp(duration, 1, fileDurationMs - clip.offset) };
-  }
-  const end = clip.startTime + clip.duration;
-  // How far the start moved (+ = trimmed in): offset stays ≥ 0, the clip keeps ≥ 1 ms, and it can't start before 0.
-  const delta = clamp(
-    Math.round(span.start - clip.startTime),
-    Math.max(-clip.offset, -clip.startTime),
-    clip.duration - 1,
-  );
-  return {
-    ...clip,
-    startTime: clip.startTime + delta,
-    offset: clip.offset + delta,
-    duration: end - (clip.startTime + delta),
-  };
-};
-
-/**
- * A section resized. Markers always keep their place in the song, and the section never shrinks past them.
- *
- * - End edge: only the length changes; never shorter than the last marker.
- * - Start edge: only the start moves, the end stays exactly where it was. The markers' section-relative times shift
- *   by the same amount, and the start can't pass the first marker.
- * - Beat sections move either edge in whole bars (a multiple of timeSigNum beats), so the bar grid keeps lining up
- *   with the markers. Time sections move to the ms.
- */
-const resizeSection = (section: TimelineSection, span: Span, direction: "start" | "end"): TimelineSection => {
-  const times = section.markers.map((m) => m.time);
-  const firstMarker = times.length > 0 ? Math.min(...times) : Infinity;
-  const lastMarker = times.length > 0 ? Math.max(...times) : 0;
-  const oldLength = getSectionLengthMs(section);
-
-  /** Moves the start by delta ms (+ = later), keeping the end and the markers' song positions. */
-  const moveStart = (delta: number, length: Partial<TimelineSection>): TimelineSection =>
-    ({
-      ...section,
-      ...length,
-      sectionStartTime: section.sectionStartTime + delta,
-      markers: delta === 0 ? section.markers : section.markers.map((m) => ({ ...m, time: m.time - delta })),
-    }) as TimelineSection;
-
-  if (section.type === TimelineSectionType.BEAT) {
-    const beatsPerBar = section.timeSigNum;
-    const barMs = (beatsPerBar * 60000) / section.bpm;
-
-    if (direction === "end") {
-      const bars = Math.max(
-        Math.round((span.end - section.sectionStartTime) / barMs),
-        Math.ceil(lastMarker / barMs), // keeps the last marker inside
-        1,
-      );
-      return { ...section, beats: bars * beatsPerBar };
-    }
-
-    // Whole bars trimmed from the front (negative = extended). delta is worked out from the two rounded lengths,
-    // so start + length lands on the old end exactly (a section touching it must not overlap by 1 ms).
-    const deltaFor = (bars: number) =>
-      oldLength - Math.round(((section.beats - bars * beatsPerBar) * 60000) / section.bpm);
-    let bars = Math.min(
-      Math.round((span.start - section.sectionStartTime) / barMs),
-      Math.floor((section.beats - 1) / beatsPerBar), // keeps at least 1 beat
-    );
-    while (bars > 0 && deltaFor(bars) > firstMarker) bars--; // can't pass the first marker
-    while (bars < 0 && section.sectionStartTime + deltaFor(bars) < 0) bars++; // can't start before 0
-    return moveStart(deltaFor(bars), { beats: section.beats - bars * beatsPerBar });
-  }
-
-  if (direction === "end") {
-    const length = Math.round(span.end - section.sectionStartTime);
-    return { ...section, totalTimeMs: Math.max(length, lastMarker, 1) };
-  }
-  const delta = clamp(
-    Math.round(span.start - section.sectionStartTime),
-    -section.sectionStartTime, // can't start before 0
-    Math.min(firstMarker, oldLength - 1), // can't pass the first marker; keeps ≥ 1 ms
-  );
-  return moveStart(delta, { totalTimeMs: oldLength - delta });
-};
-
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
-
-const TARGET_LABEL_GAP = 100;
-const TimelineRuler = () => {
-  const { range, pixelsToValue } = useTimelineContext();
-
-  const minStepMs = pixelsToValue(TARGET_LABEL_GAP);
-  const { stepMs, ticks } = getTicks(range, minStepMs);
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        height: 28,
-        marginLeft: SIDEBAR_WIDTH,
-        borderBottom: "1px solid var(--mantine-color-default-border)",
-      }}
-    >
-      {ticks.map((t) => (
-        <TimelineTick key={t} timeMs={t} />
-      ))}
-    </div>
-  );
-};
-const TimelineTick = ({ timeMs }: { timeMs: number }) => {
-  const { valueToPixels, range } = useTimelineContext();
-  const left = valueToPixels(timeMs - range.start);
-
-  return (
-    <Box
-      style={{
-        position: "absolute",
-        left: left,
-        top: 0,
-        height: "100%",
-        // borderLeftWidth: "1px",
-        borderWidth: "0 0 0 2px",
-        borderStyle: "solid",
-        borderColor: "var(--mantine-color-default-border)",
-        paddingLeft: "0.2rem",
-        paddingBottom: "0.2rem",
-      }}
-    >
-      {" "}
-      <Text c="dimmed" size="xs" ff="monospace">
-        {msToTimeString(timeMs)}{" "}
-      </Text>
-    </Box>
-  );
-};
-
-/** Return ms as a time string, e.g. 3:45.678 */
-const msToTimeString = (ms: number) => {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const milliseconds = ms % 1000;
-
-  let output = `${seconds.toString().padStart(2, "0")}`;
-  if (milliseconds > 0) {
-    output += `.${milliseconds.toString().padStart(3, "0")}`;
-  }
-
-  if (minutes > 0) {
-    output = `${minutes}:${output}`;
-  }
-
-  return output;
-};
-
-const NICE_STEPS_MS = [
-  100,
-  250,
-  500, // sub-second (very zoomed in)
-  1_000,
-  2_000,
-  5_000,
-  10_000,
-  15_000,
-  30_000, // seconds
-  60_000,
-  2 * 60_000,
-  5 * 60_000,
-  10 * 60_000, // minutes (zoomed out)
-];
-
-/**
- * Calculate the interval of ticks to display.
- *
- * Use this in the tick component to display the time:
- *
- * With this function,
- * Given the:
- *   1. width of the timeline in px
- * You can:
- *   1. Calculate the px between one time unit and the next time unit
- *   2. Calculate the px gap between each tick (given by tickTime)
- *   3. Render all the ticks.
- *
- * Couple of note:
- *   1. ticks will always be equivalently spaced apart
- *   2. the first tick may not be at the start of the range.
- *
- *
- * @param range
- * @param minStepMs
- */
-const getTicks = (range: Range, minStepMs: number): { stepMs: number; ticks: number[] } => {
-  const { start, end } = range;
-  const length = end - start;
-
-  // find the closest step that is greater than or equal to minStepMs
-  const stepMs = NICE_STEPS_MS.find((step) => step >= minStepMs) ?? NICE_STEPS_MS[NICE_STEPS_MS.length - 1];
-
-  // where should the first step be? it should also be a multiple of stepMs
-  const first = Math.ceil(start / stepMs) * stepMs;
-
-  // calculate the ticks
-  const ticks: number[] = [];
-  for (let i = 0; first + i * stepMs < end; i++) {
-    ticks.push(first + i * stepMs); // computed from the index, so no floating-point drift
-  }
-
-  return { stepMs, ticks };
 };
