@@ -1,0 +1,59 @@
+/* A drag strip on one edge of a drawer. Absolute: the drawer's `content` must be position: relative (see DrawerResizeHandle). */
+.handle {
+  position: absolute;
+  z-index: 1001; /* above Mantine's sticky drawer header (z-index 1000) */
+  touch-action: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* the grip */
+  &::after {
+    content: "";
+    display: block;
+    border-radius: 2px;
+    background: var(--mantine-color-dimmed);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--mantine-primary-color-light);
+  }
+}
+
+/* bottom drawer: handle along its top edge */
+.edge-top {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  cursor: ns-resize;
+
+  &::after {
+    width: 40px;
+    height: 4px;
+  }
+}
+
+/* left drawer: handle along its right edge; right drawer: along its left edge */
+.edge-left,
+.edge-right {
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: ew-resize;
+
+  &::after {
+    width: 4px;
+    height: 40px;
+  }
+}
+
+.edge-left {
+  left: 0;
+}
+
+.edge-right {
+  right: 0;
+}

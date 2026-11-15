@@ -52,6 +52,11 @@ import { useResolvedDmx } from "../../hooks/useResolvedDmx";
 import { DMXControlWrapper } from "../../components/DMX/DMXControlWrapper";
 import { RichContentWrapper } from "../../components/RichContent-v2/RichContentWrapper";
 import { TimelineDrawerContainer } from "../../components/Timeline/TimelineDrawerContainer";
+import {
+  DrawerResizeHandle,
+  resizableDrawerStyles,
+  useDrawerSize,
+} from "../../components/DrawerResizeHandle/DrawerResizeHandle";
 
 // const logger = new Logger("EventPage.tsx");
 
@@ -80,11 +85,13 @@ export const EventPage = () => {
     closeTimeline();
   });
 
-  const [timelineHeight, setTimelineHeight] = useLocalStorage<number>({
-    key: "timeline-drawer-height",
-    defaultValue: 30,
-  });
-  const resizeTimeline = (height: number) => setTimelineHeight(Math.min(85, Math.max(20, height)));
+  // Drawer sizes (viewport %, saved in local storage): every drawer but event details can be resized.
+  const HEIGHT_LIMITS = { min: 20, max: 85 }; // bottom drawers, vh
+  const WIDTH_LIMITS = { min: 20, max: 80 }; // side drawers, vw
+  const [timelineHeight, resizeTimeline] = useDrawerSize("timeline-drawer-height", 30, HEIGHT_LIMITS);
+  const [dmxHeight, resizeDmx] = useDrawerSize("dmx-drawer-height", 30, HEIGHT_LIMITS);
+  const [lyricsWidth, resizeLyrics] = useDrawerSize("lyrics-drawer-width", 35, WIDTH_LIMITS);
+  const [cuesWidth, resizeCues] = useDrawerSize("cues-drawer-width", 35, WIDTH_LIMITS);
 
   const toggleDrawerHandler = (toggleCb: () => void, domain: "event" | "lyrics" | "cues" | "timeline" | "dmx") => {
     // only one drawer can be open at a time, so close the others if its open
@@ -228,7 +235,7 @@ export const EventPage = () => {
         onClose={() => setIsDmxDrawerOpen(false)}
         keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
         position="bottom"
-        size="30vh"
+        size={`${dmxHeight}vh`}
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
         withOverlay={false} // even a transparent overlay catches every click on the visualiser
         lockScroll={false} // scroll lock would also swallow the visualiser's scroll-to-zoom
@@ -240,8 +247,10 @@ export const EventPage = () => {
         zIndex={getDefaultZIndex("modal") + 1} // above the Lyrics and Cues drawers (both 200)
         scrollAreaComponent={undefined}
 
-        styles={{ body: { height: "100%", padding: 0, paddingTop: "var(--mantine-spacing-xs)" } }} // force the drawer body to be 100% height, never overflow
+        // force the drawer body to be 100% height, never overflow; paddingTop + relative: room for the resize handle
+        styles={{ body: { height: "100%", padding: 0, paddingTop: 12, position: "relative" } }}
       >
+        <DrawerResizeHandle edge="top" label="DMX overrides height" size={dmxHeight} onResize={resizeDmx} {...HEIGHT_LIMITS} />
         {isLoading ? (
           <Center h="100%">
             <Loader type="bars" />
@@ -435,7 +444,7 @@ export const EventPage = () => {
         onClose={closeLyrics}
         keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
         position="left"
-        size="lg"
+        size={`${lyricsWidth}vw`}
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
         withOverlay={false} // even a transparent overlay catches every click on the visualiser
         lockScroll={false} // scroll lock would also swallow the visualiser's scroll-to-zoom
@@ -443,7 +452,9 @@ export const EventPage = () => {
         withCloseButton
         closeOnEscape
         closeOnClickOutside={false} // allow manipulating the 3d visualiser
+        styles={resizableDrawerStyles}
       >
+        <DrawerResizeHandle edge="right" label="Lyrics width" size={lyricsWidth} onResize={resizeLyrics} {...WIDTH_LIMITS} />
         <Lyrics itemId={selectedItemId} eventId={eventId} />
       </Drawer>
 
@@ -500,7 +511,7 @@ export const EventPage = () => {
         onClose={closeCues}
         keepMounted // closing only hides it: cue cards keep their state and don't re-render on reopen
         position="right"
-        size="lg"
+        size={`${cuesWidth}vw`}
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
         withOverlay={false} // even a transparent overlay catches every click on the visualiser
         lockScroll={false} // scroll lock would also swallow the visualiser's scroll-to-zoom
@@ -508,7 +519,9 @@ export const EventPage = () => {
         withCloseButton
         closeOnEscape
         closeOnClickOutside={false} // allow manipulating the 3d visualiser
+        styles={resizableDrawerStyles}
       >
+        <DrawerResizeHandle edge="left" label="Cues width" size={cuesWidth} onResize={resizeCues} {...WIDTH_LIMITS} />
         <Cues eventId={eventId} itemId={selectedItemId} />
       </Drawer>
 
@@ -566,36 +579,12 @@ export const EventPage = () => {
           },
         }} // reserve space for the resize handle
       >
-        <Box
-          className={classes.timelineResizeHandle}
-          role="separator"
-          aria-label="Timeline height"
-          aria-orientation="horizontal"
-          aria-valuemin={20}
-          aria-valuemax={85}
-          aria-valuenow={Math.round(timelineHeight)}
-          tabIndex={0}
-          onPointerDown={(event) => {
-            if (event.button !== 0) return;
-            event.preventDefault();
-            event.currentTarget.focus();
-            event.currentTarget.setPointerCapture(event.pointerId);
-          }}
-          onPointerMove={(event) => {
-            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-            // A bottom drawer grows as its top edge moves up; store a viewport percentage.
-            resizeTimeline(((window.innerHeight - event.clientY) / window.innerHeight) * 100);
-          }}
-          onPointerUp={(event) => {
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              event.currentTarget.releasePointerCapture(event.pointerId);
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-            event.preventDefault();
-            resizeTimeline(timelineHeight + (event.key === "ArrowUp" ? 2 : -2));
-          }}
+        <DrawerResizeHandle
+          edge="top"
+          label="Timeline height"
+          size={timelineHeight}
+          onResize={resizeTimeline}
+          {...HEIGHT_LIMITS}
         />
         <TimelineDrawerContainer eventId={eventId} itemId={selectedItemId} />
       </Drawer>

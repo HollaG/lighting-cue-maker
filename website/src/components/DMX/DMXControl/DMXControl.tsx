@@ -61,6 +61,7 @@ export const DMXControl = ({
         min={0}
         max={255}
         onChangeEnd={(v) => onCommit(channel.id, v)}
+        flex={1}
       />
       <Box w="100%">
         <NumberInput
