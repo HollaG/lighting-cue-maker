@@ -50,9 +50,20 @@ import {
   type BenchSceneConfig,
 } from "./benchScene";
 
-const benchRenderers = {
-  msaa: makeVisualiser3DRenderer({ trackTimestamp: true }),
-  noMsaa: makeVisualiser3DRenderer({ trackTimestamp: true, antialias: false }),
+/** One renderer factory per combination, made once so R3F sees a stable `gl` prop. */
+const benchRenderers = new Map<string, ReturnType<typeof makeVisualiser3DRenderer>>();
+const getBenchRenderer = ({ msaa, lighting }: BenchSceneConfig) => {
+  const key = `${msaa}-${lighting}`;
+  let renderer = benchRenderers.get(key);
+  if (!renderer) {
+    renderer = makeVisualiser3DRenderer({
+      trackTimestamp: true,
+      lightTable: lighting === "table",
+      ...(msaa ? {} : { antialias: false }),
+    });
+    benchRenderers.set(key, renderer);
+  }
+  return renderer;
 };
 const RECORD_SECONDS = 10;
 const LIVE_WINDOW_MS = 1000;
@@ -60,7 +71,13 @@ const LIVE_WINDOW_MS = 1000;
 const ORBIT_SECONDS = 12;
 
 export const VisualiserBench = () => {
-  const [config, setConfig] = useState<BenchSceneConfig>({ spots: 8, ledHeads: 0, mode: "editor", msaa: true });
+  const [config, setConfig] = useState<BenchSceneConfig>({
+    spots: 8,
+    ledHeads: 0,
+    mode: "editor",
+    msaa: true,
+    lighting: "three",
+  });
   const [haze, setHaze] = useState(0.5);
   const [ambientLight, setAmbientLight] = useState(0.5);
   const [effect, setEffect] = useState<BenchEffect>("static");
@@ -102,10 +119,14 @@ export const VisualiserBench = () => {
   }, []);
 
   // A fresh canvas (and renderer) per scene, so each scene starts with no compiled shaders.
-  const sceneKey = `${config.spots}-${config.ledHeads}-${config.mode}-${config.msaa}`;
+  const sceneKey = `${config.spots}-${config.ledHeads}-${config.mode}-${config.msaa}-${config.lighting}`;
   useEffect(() => markSceneStart(), [sceneKey]);
   const shadowText =
-    config.mode === "editor" ? `${Math.min(8, config.spots)} shadowed spots` : "no shadows (viewer has none today)";
+    config.lighting === "table"
+      ? `light table, ${config.spots} shadowed spots`
+      : config.mode === "editor"
+        ? `three.js lights, ${Math.min(8, config.spots)} shadowed spots`
+        : "three.js lights, no shadows (viewer has none today)";
   const sceneLine =
     `Scene: ${config.spots} spots, ${config.ledHeads} LED heads (${Math.ceil(config.ledHeads / HEADS_PER_BAR)} bars), ` +
     `${config.mode} mode, ${shadowText}, MSAA ${config.msaa ? "on" : "off"}, haze ${haze}, ambient ${ambientLight}, effect ${effect}, camera ${orbit ? "orbiting" : "still"}`;
@@ -147,6 +168,17 @@ export const VisualiserBench = () => {
             onChange={(value) => setConfig({ ...config, mode: value as BenchSceneConfig["mode"] })}
           />
         </LabelledControl>
+        <LabelledControl label="Lighting">
+          <SegmentedControl
+            size="xs"
+            data={[
+              { value: "three", label: "three.js lights" },
+              { value: "table", label: "Light table" },
+            ]}
+            value={config.lighting}
+            onChange={(value) => setConfig({ ...config, lighting: value as BenchSceneConfig["lighting"] })}
+          />
+        </LabelledControl>
         <LabelledControl label="MSAA (solid pass)">
           <SegmentedControl
             size="xs"
@@ -186,7 +218,7 @@ export const VisualiserBench = () => {
         </Button>
       </Group>
 
-      {config.ledHeads >= 256 && (
+      {config.ledHeads >= 256 && config.lighting === "three" && (
         <Alert color="yellow" p="xs">
           Every LED head is its own area light today. {config.ledHeads} heads may take a long time to compile, or fail.
           That result is worth recording too.
@@ -199,7 +231,7 @@ export const VisualiserBench = () => {
             <Suspense fallback={<LoadingOverlay visible loaderProps={{ type: "bars" }} />}>
               <Canvas
                 key={sceneKey}
-                gl={config.msaa ? benchRenderers.msaa : benchRenderers.noMsaa}
+                gl={getBenchRenderer(config)}
                 frameloop="demand"
                 onCreated={configureVisualiser3DRenderer}
                 dpr={dpr}

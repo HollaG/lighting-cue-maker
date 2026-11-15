@@ -27,6 +27,8 @@ import { HeadSinkContext, HeadSinkRegistry } from "../Elements/headSinks";
 import { PatternEffectRunner, type PatternEffectPlayback } from "../PatternEffectRunner";
 import { FrameGateContext, type FrameGate } from "../frameGate";
 import { FrameGateUpdater } from "../FrameGateUpdater";
+import { useLightTable } from "../LightTable/useLightTable";
+import { LightTableUpdater } from "../LightTable/LightTableUpdater";
 
 const logger = new Logger("StagePreview3D");
 
@@ -106,6 +108,9 @@ export const StagePreview3D = ({
   const cuboids = stageElements.filter((element) => element.type === "cuboid");
   const humans = stageElements.filter((element) => element.type === "default_human");
 
+  // Null unless the renderer was created with a light table (the bench's prototype mode).
+  const lightTable = useLightTable();
+
   const templatesById = useMemo(() => new Map(fixtureTemplates.map((t) => [t.id, t])), [fixtureTemplates]);
 
   /**
@@ -117,13 +122,14 @@ export const StagePreview3D = ({
    * Now the set only changes when fixtures are added or removed (which also recompiles shaders once).
    */
   const shadowCasterIds = useMemo(() => {
-    if (isViewOnly) return new Set<string>();
+    // PROTOTYPE: the light table keeps shadows in one texture array, so every spot can cast one, in the viewer too.
+    if (isViewOnly && !lightTable) return new Set<string>();
     const ids = fixtures
       .filter((f) => getHeadCount(templatesById.get(f.fixtureTemplateId), f.modeId) === 1)
-      .slice(0, MAX_SHADOW_CASTERS)
+      .slice(0, lightTable ? lightTable.shadows.layerCount : MAX_SHADOW_CASTERS)
       .map((f) => f.id);
     return new Set(ids);
-  }, [fixtures, templatesById, isViewOnly]);
+  }, [fixtures, templatesById, isViewOnly, lightTable]);
 
   // Fixture meshes by id, so one gizmo can move the whole selection.
   const meshes = useRef(new Map<string, THREE.Object3D>());
@@ -154,6 +160,7 @@ export const StagePreview3D = ({
     <FrameGateContext.Provider value={frameGate}>
       <HeadSinkContext.Provider value={headSinks}>
         <FrameGateUpdater gate={frameGate} />
+        {lightTable && <LightTableUpdater table={lightTable} />}
         {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
         {/* FPS overlay: `window.stats = true` in the dev console. */}
         <VisualiserStats />

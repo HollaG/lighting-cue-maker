@@ -6,13 +6,16 @@ import { createContext } from "react";
 import * as THREE from "three";
 import type { HeadColour, HeadDecoder } from "../../../utils/visualiser-v2-decoder";
 
+/** What a head's light needs to be written to: a three.js light, or an entry of the light table. */
+export type HeadLightTarget = { color: THREE.Color; intensity: number };
+
 export type FixtureSink = {
   decoder: HeadDecoder;
   /** Scratch output for `decoder.decode`, one per head. */
   colours: HeadColour[];
   /** Per head, in head order. */
   lenses: (THREE.MeshBasicMaterial | null)[];
-  lights: (THREE.Light | null)[];
+  lights: (HeadLightTarget | null)[];
   /** Puts back what the fixture's own props say (its static DMX), for when the player stops writing to it. */
   restore: () => void;
 };
@@ -44,7 +47,7 @@ const scratch = new THREE.Color();
  */
 export const writeHead = (
   lens: THREE.MeshBasicMaterial | null | undefined,
-  light: THREE.Light | null | undefined,
+  light: HeadLightTarget | null | undefined,
   colour: THREE.Color,
   intensity: number,
 ) => {
@@ -58,6 +61,6 @@ export const writeHead = (
 /** writeHead from a decoded HeadColour (0–255 sRGB). */
 export const writeHeadColour = (
   lens: THREE.MeshBasicMaterial | null | undefined,
-  light: THREE.Light | null | undefined,
+  light: HeadLightTarget | null | undefined,
   { r, g, b, intensity }: HeadColour,
 ) => writeHead(lens, light, scratch.setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace), intensity);

@@ -21,6 +21,11 @@ export type BenchSceneConfig = {
   mode: "editor" | "viewer";
   /** 4× multisampling on the solid pass (R3F's default). The haze pass never uses it. */
   msaa: boolean;
+  /**
+   * "three": one three.js light per head, as the real visualiser does today.
+   * "table": the prototype light table with shared shadow storage (plan steps 4–5); every spot casts a shadow.
+   */
+  lighting: "three" | "table";
 };
 
 export const BENCH_CAMERA: Visualiser3DCameraView = { position: [0, 7, 14], target: [0, 1, 0], fov: 70 };
