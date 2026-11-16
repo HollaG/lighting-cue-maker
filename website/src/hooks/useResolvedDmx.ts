@@ -6,6 +6,8 @@ import { useGetVisualiserData } from "../query-v2/visualiser-data/useGetVisualis
 import { useAppStore } from "../store/appStore";
 import type { PatchedFixture } from "../types-v2/patchedFixture";
 import type { PatternEffectPlayback } from "../components/Visualiser3D-v2/PatternEffectRunner";
+import type { CueFade } from "../components/Visualiser3D-v2/CueFadeRunner";
+import type { Cue } from "../types-v2/cue";
 import { Logger } from "../utils/logger";
 import {
   applyOverrides,
@@ -36,6 +38,8 @@ export const useResolvedDmx = (
   dmxValuesWithOverrides: DmxValuesByFixtureId | null;
   /** The cue's pattern effects (on top of the static values, under the overrides). Null when nothing animates. */
   effectPlayback: PatternEffectPlayback | null;
+  /** The last change of cue, for the visualiser to fade over. Null until the cue first changes. */
+  cueFade: CueFade | null;
   isLoading: boolean;
 } => {
   const currentlySelectedCueId = useAppStore((state) => state.currentlySelectedCueId);
@@ -43,6 +47,23 @@ export const useResolvedDmx = (
 
   const { visualiserData, isVisualiserDataLoading } = useGetVisualiserData(eventId);
   const { cue, isCueLoading } = useGetCue(eventId, activeItemId, currentlySelectedCueId);
+
+  // --- Cue fades: a new CueFade each time a different cue arrives ---
+  // The time comes from the OUTGOING cue: a cue's transition time is how long it takes to go from it to the next cue,
+  // whichever cue that is. Edits and refetches of the same cue only update the stored cue (its latest transition
+  // time), so they never fade. No cue (none selected, or another item loading) = nothing to fade from.
+  const [fadeState, setFadeState] = useState<{ cue: Cue | null; cueFade: CueFade | null }>({ cue, cueFade: null });
+  if (cue !== fadeState.cue) {
+    const outgoing = fadeState.cue;
+    const isNewCue = !!cue && !!outgoing && cue.id !== outgoing.id;
+    setFadeState({
+      cue,
+      cueFade: isNewCue
+        ? { durationMs: Math.max(outgoing.transition.transitionTimeMs ?? 0, 0), startedAt: performance.now() }
+        : fadeState.cueFade,
+    });
+  }
+  const { cueFade } = fadeState;
 
   // Derived from the cue + setup data, so no state needed. Only recomputed when one of those changes.
   const dmxValues = useMemo(() => {
@@ -103,5 +124,5 @@ export const useResolvedDmx = (
   }, [dmxValues]);
 
   const isLoading = isVisualiserDataLoading || isCueLoading;
-  return { dmxValues, dmxValuesWithOverrides, effectPlayback, isLoading };
+  return { dmxValues, dmxValuesWithOverrides, effectPlayback, cueFade, isLoading };
 };

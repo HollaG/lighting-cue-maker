@@ -25,6 +25,7 @@ import { Visualiser3DSelectionTransform } from "../Elements/Visualiser3DSelectio
 import { VisualiserStats } from "../VisualiserStats";
 import { HeadSinkContext, HeadSinkRegistry } from "../Elements/headSinks";
 import { PatternEffectRunner, type PatternEffectPlayback } from "../PatternEffectRunner";
+import { CueFadeRunner, type CueFade } from "../CueFadeRunner";
 import { FrameGateContext, type FrameGate } from "../frameGate";
 import { FrameGateUpdater } from "../FrameGateUpdater";
 import { useLightTable } from "../LightTable/useLightTable";
@@ -61,6 +62,7 @@ export const StagePreview3D = ({
   isViewOnly = false,
   dmxValuesByFixtureId,
   effectPlayback,
+  cueFade,
   saveFixturePlacements = true,
 }: {
   eventId: string;
@@ -88,6 +90,8 @@ export const StagePreview3D = ({
   dmxValuesByFixtureId?: Record<string, (number | null)[]>;
   /** The cue's pattern effects, played every frame inside the canvas. */
   effectPlayback?: PatternEffectPlayback | null;
+  /** The last change of cue, faded over every frame inside the canvas. */
+  cueFade?: CueFade | null;
   /** False = moving a fixture is not saved to the server (the bench has no real event). */
   saveFixturePlacements?: boolean;
 }) => {
@@ -173,6 +177,15 @@ export const StagePreview3D = ({
           <LensLayer lenses={lensInstances} />
           {lightTable && <LightTableUpdater table={lightTable} />}
           {effectPlayback && <PatternEffectRunner playback={effectPlayback} registry={headSinks} />}
+          {/* Always mounted, so it sees the cue before a change and can fade from it. */}
+          <CueFadeRunner
+            fade={cueFade ?? null}
+            dmxValuesByFixtureId={dmxValuesByFixtureId}
+            effectPlayback={effectPlayback}
+            fixtures={fixtures}
+            fixtureTemplates={fixtureTemplates}
+            registry={headSinks}
+          />
           {/* FPS overlay: `window.stats = true` in the dev console. */}
           <VisualiserStats />
           <Visualiser3DVolumetrics fixtures={[]} environment={environment} />

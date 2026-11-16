@@ -68,6 +68,7 @@ import { useGetEvent } from "../../query-v2/events/useGetEvent";
 import { useGetFixtureGroups } from "../../query-v2/fixture-groups/useGetFixtureGroups";
 import { ResolutionScaleSelect, useVisualiserDpr } from "./ResolutionScaleSelect";
 import type { PatternEffectPlayback } from "./PatternEffectRunner";
+import type { CueFade } from "./CueFadeRunner";
 import { InvalidateOnGuiChange } from "./InvalidateOnGuiChange";
 
 export const Visualiser3D = ({
@@ -815,6 +816,7 @@ export const StaticVisualiser3D = ({
   fixtures,
   dmxValuesByFixtureId,
   effectPlayback,
+  cueFade,
 }: {
   visualiser: Visualiser;
   eventId: string;
@@ -826,6 +828,8 @@ export const StaticVisualiser3D = ({
   };
   /** The cue's pattern effects; played inside the canvas, so the page doesn't re-render per step. */
   effectPlayback?: PatternEffectPlayback | null;
+  /** The last change of cue, faded over inside the canvas. */
+  cueFade?: CueFade | null;
 }) => {
   const { event } = useGetEvent(eventId);
   // Resolution scale. The select for it lives on the page (e.g. EventPage), shared through localStorage.
@@ -880,6 +884,7 @@ export const StaticVisualiser3D = ({
             gui={null} // no editing panel
             dmxValuesByFixtureId={dmxValuesByFixtureId}
             effectPlayback={effectPlayback}
+            cueFade={cueFade}
           />
         </Canvas>
       </Suspense>

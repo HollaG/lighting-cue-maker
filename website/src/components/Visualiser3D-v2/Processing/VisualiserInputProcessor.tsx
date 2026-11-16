@@ -6,6 +6,7 @@ import type { PatchedFixture } from "../../../types-v2/patchedFixture";
 import type { Visualiser } from "../../../types-v2/visualiser";
 import { StaticVisualiser3D } from "../Visualiser3D";
 import type { PatternEffectPlayback } from "../PatternEffectRunner";
+import type { CueFade } from "../CueFadeRunner";
 
 export const VisualiserInputProcessor = ({
   visualiser,
@@ -13,6 +14,7 @@ export const VisualiserInputProcessor = ({
   fixtures,
   dmxValues,
   effectPlayback,
+  cueFade,
 }: {
   // Visualiser-required stuff
   visualiser: Visualiser;
@@ -21,6 +23,8 @@ export const VisualiserInputProcessor = ({
   /** Static values with overrides. */
   dmxValues?: ReturnType<typeof useResolvedDmx>["dmxValues"];
   effectPlayback?: PatternEffectPlayback | null;
+  /** The last change of cue, faded over in the canvas. */
+  cueFade?: CueFade | null;
 }) => {
   return (
     <StaticVisualiser3D
@@ -30,6 +34,7 @@ export const VisualiserInputProcessor = ({
       fixtures={fixtures}
       dmxValuesByFixtureId={dmxValues ?? undefined}
       effectPlayback={effectPlayback}
+      cueFade={cueFade}
     />
   );
 };

@@ -28,6 +28,11 @@ export class HeadSinkRegistry {
   /** Changes on every register/unregister, so the player knows to write to a newly mounted fixture. */
   version = 0;
 
+  /** Makes the effect player rewrite every fixture on its next frame, e.g. after a cue fade wrote over them. */
+  touch() {
+    this.version++;
+  }
+
   register(fixtureId: string, sink: FixtureSink) {
     this.sinks.set(fixtureId, sink);
     this.version++;

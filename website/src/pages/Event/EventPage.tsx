@@ -126,7 +126,7 @@ export const EventPage = () => {
   const { patchedFixtures } = useGetPatchedFixtures(eventId);
   // Static values (with overrides) go to the DMX drawer and the visualiser. Pattern effects come compiled
   // (effectPlayback) and play inside the visualiser's canvas, so this page doesn't re-render per effect step.
-  const { dmxValuesWithOverrides, effectPlayback, isLoading } = useResolvedDmx(eventId, patchedFixtures);
+  const { dmxValuesWithOverrides, effectPlayback, cueFade, isLoading } = useResolvedDmx(eventId, patchedFixtures);
 
   // Remember this event for "Past events" on the home page. Waits for the name, so the list never shows a blank entry;
   // a rename updates the stored name the next time the event loads.
@@ -673,6 +673,7 @@ export const EventPage = () => {
             fixtures={patchedFixtures}
             dmxValues={dmxValuesWithOverrides}
             effectPlayback={effectPlayback}
+            cueFade={cueFade}
           />
         ) : (
           <Center h="100%">{isVisualiserLoading ? <Loader type="bars" /> : <Text>No visualiser found</Text>}</Center>
