@@ -1,6 +1,15 @@
-import { ActionIcon, Box, Button, /* Divider, */ Group, /* OverflowList, */ Scroller, Stack, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Center,
+  /* Divider, */ Group,
+  /* OverflowList, */ Scroller,
+  Stack,
+  Text,
+} from "@mantine/core";
 import type { useResolvedDmx } from "../../hooks/useResolvedDmx";
-import { useCallback /* , useEffect, useState */ } from "react";
+import { useCallback, useRef /* , useEffect, useState */ } from "react";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
 import { useAppStore } from "../../store/appStore";
 import { CardBase } from "../Cues/CardBase";
@@ -25,6 +34,9 @@ export const DMXControlWrapper = ({
   const currentlyViewingFixtureIds = useAppStore((s) => s.currentlyViewingFixtureIds);
   const setCurrentlyViewingFixtureIds = useAppStore((s) => s.setCurrentlyViewingFixtureIds);
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
+
+  /** Each fixture's slider card, by fixture id, so a newly selected fixture can be scrolled into view. */
+  const cardRefs = useRef(new Map<string, HTMLDivElement>());
 
   const cueId = useAppStore((s) => s.currentlySelectedCueId);
   const { cue } = useGetCue(eventId, itemId, cueId);
@@ -108,13 +120,17 @@ export const DMXControlWrapper = ({
                 color={currentlyViewingFixtureIds.includes(fixture.id) ? "lime" : "gray"}
                 variant={currentlyViewingFixtureIds.includes(fixture.id) ? "light" : "outline"}
                 // Toggle: remove if already viewing, otherwise add (no duplicates).
-                onClick={() =>
-                  setCurrentlyViewingFixtureIds(
-                    currentlyViewingFixtureIds.includes(fixture.id)
-                      ? currentlyViewingFixtureIds.filter((id) => id !== fixture.id)
-                      : [...currentlyViewingFixtureIds, fixture.id],
-                  )
-                }
+                onClick={() => {
+                  if (currentlyViewingFixtureIds.includes(fixture.id)) {
+                    setCurrentlyViewingFixtureIds(currentlyViewingFixtureIds.filter((id) => id !== fixture.id));
+                    return;
+                  }
+                  setCurrentlyViewingFixtureIds([...currentlyViewingFixtureIds, fixture.id]);
+                  // Only on select, not deselect.
+                  cardRefs.current
+                    .get(fixture.id)
+                    ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+                }}
               >
                 {fixture.name}
               </Button>
@@ -144,11 +160,10 @@ export const DMXControlWrapper = ({
       >
         {patchedFixtures.map((fixture) => (
           <Box
-            // ref={(el) => {
-            //   if (el && currentlyViewingFixtureIds.includes(fixture.id)) {
-            //     el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-            //   }
-            // }}
+            ref={(el) => {
+              if (el) cardRefs.current.set(fixture.id, el);
+              else cardRefs.current.delete(fixture.id);
+            }}
             key={fixture.id}
 
             style={{ display: "flex", flex: "0 0 auto", minHeight: 0 }}
@@ -183,16 +198,30 @@ export const DMXControlWrapper = ({
                 {fixture.name}
               </Text>
 
-              {getChannelsForFixture(fixture.id).map((channel, index) => (
-                <DMXControl
-                  key={channel.id}
-                  channel={channel}
-                  dmxValue={dmxValuesByFixtureId[fixture.id]?.[index]}
-                  onClear={() => onClear(fixture.id, channel.id)}
-                  onCommit={(channelId, value) => onCommit(fixture.id, channelId, value)}
-                  overrideValue={overrides[fixture.id]?.[channel.id]}
-                />
-              ))}
+              {fixture.allowUserOverride ? (
+                getChannelsForFixture(fixture.id).map((channel, index) => (
+                  <DMXControl
+                    key={channel.id}
+                    channel={channel}
+                    dmxValue={dmxValuesByFixtureId[fixture.id]?.[index]}
+                    onClear={() => onClear(fixture.id, channel.id)}
+                    onCommit={(channelId, value) => onCommit(fixture.id, channelId, value)}
+                    overrideValue={overrides[fixture.id]?.[channel.id]}
+                  />
+                ))
+              ) : (
+                <Center>
+                  <Text
+                    style={{
+                      fontSize: "0.8rem",
+                      textAlign: "center",
+                      maxWidth: "6rem",
+                    }}
+                  >
+                    Custom settings cannot be set for this fixture.
+                  </Text>
+                </Center>
+              )}
             </CardBase>
           </Box>
         ))}

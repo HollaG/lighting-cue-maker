@@ -3,7 +3,8 @@ package v2
 // Request DTOs. Keep these in sync with website/src/types-v2/patchedFixture.ts
 // and website/src/query-v2/patched-fixtures.
 
-// UpsertPatchedFixtureReq: no id = create, id = update (all fields are replaced).
+// UpsertPatchedFixtureReq: no id = create, id = update (all fields are replaced,
+// except allowUserOverride: left out = keep; on create it defaults to true).
 // The event comes from the URL.
 type UpsertPatchedFixtureReq struct {
 	Id                *string `json:"id,omitempty"`
@@ -18,6 +19,8 @@ type UpsertPatchedFixtureReq struct {
 	RotX float64 `json:"rotX"`
 	RotY float64 `json:"rotY"`
 	RotZ float64 `json:"rotZ"`
+
+	AllowUserOverride *bool `json:"allowUserOverride,omitempty"`
 }
 
 // UpsertPatchedFixturesReq is the body of POST /api/v2/events/{eventId}/patched-fixtures.
@@ -48,6 +51,11 @@ type PatchedFixture struct {
 	RotX float64 `json:"rotX" gorm:"not null;default:0"`
 	RotY float64 `json:"rotY" gorm:"not null;default:0"`
 	RotZ float64 `json:"rotZ" gorm:"not null;default:0"`
+
+	// Whether users may override DMX values of this fixture in a cue. Defaults to true; existing rows get true from
+	// the column default. A pointer because GORM leaves a plain false bool with a default out of the INSERT (so false
+	// would become true); a non-nil pointer is always written. Never nil once read from the DB.
+	AllowUserOverride *bool `json:"allowUserOverride" gorm:"not null;default:true"`
 }
 
 func (PatchedFixture) TableName() string { return "v2.patched_fixtures" }

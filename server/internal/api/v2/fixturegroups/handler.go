@@ -86,7 +86,7 @@ func upsertFixtureGroups(c *gin.Context) {
 			}
 			// Select lists every editable column so zero values (sortOrder 0, grid null) are written too.
 			if err := tx.Model(row).
-				Select("Name", "Description", "FixtureIds", "Grid", "SortOrder", "AllowUserOverride").
+				Select("Name", "Description", "FixtureIds", "Grid", "SortOrder").
 				Updates(row).Error; err != nil {
 				return err
 			}
@@ -162,11 +162,9 @@ func buildGroups(
 	var errs []rowError
 
 	for i, g := range groups {
-		allowUserOverride := true // the default for a new group
 		row := modelsv2.FixtureGroup{
-			EventId:           eventId,
-			FixtureIds:        datatypes.JSONSlice[string]{},
-			AllowUserOverride: &allowUserOverride,
+			EventId:    eventId,
+			FixtureIds: datatypes.JSONSlice[string]{},
 		}
 		if g.Id != nil {
 			found, ok := existing[*g.Id]
@@ -189,10 +187,6 @@ func buildGroups(
 		}
 		if g.SortOrder != nil {
 			row.SortOrder = *g.SortOrder
-		}
-		if g.AllowUserOverride != nil {
-			allow := *g.AllowUserOverride // a copy, so the row doesn't point into the request
-			row.AllowUserOverride = &allow
 		}
 
 		if g.FixtureIds != nil {

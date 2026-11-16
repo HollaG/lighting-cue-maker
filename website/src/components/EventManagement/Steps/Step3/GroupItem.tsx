@@ -176,6 +176,7 @@ export const GroupItem = ({
                   Remove
                 </Button>
               }
+              showControls={[]}
             />
           ))}
         </Stack>

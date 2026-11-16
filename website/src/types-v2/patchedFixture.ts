@@ -27,6 +27,9 @@ export type PatchedFixture = Timestamps & {
   rotY: number;
   /** in deg default 0 */
   rotZ: number;
+
+  /** Whether users may override DMX values of this fixture in a cue. Defaults to true. */
+  allowUserOverride: boolean;
 };
 
 /** No `id` = create, `id` = update. `eventId` comes from the URL. */

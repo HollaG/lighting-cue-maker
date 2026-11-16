@@ -92,8 +92,12 @@ func upsertPatchedFixtures(c *gin.Context) {
 				}
 			} else {
 				// Select lists every editable column so zero values (e.g. posX 0) are written too.
+				columns := []any{"ModeId", "Name", "PosX", "PosY", "PosZ", "RotX", "RotY", "RotZ"}
+				if f.AllowUserOverride != nil { // left out = keep the saved value
+					columns = append(columns, "AllowUserOverride")
+				}
 				if err := tx.Model(&row).
-					Select("FixtureTemplateId", "ModeId", "Name", "PosX", "PosY", "PosZ", "RotX", "RotY", "RotZ").
+					Select("FixtureTemplateId", columns...).
 					Updates(&row).Error; err != nil {
 					return err
 				}
@@ -183,6 +187,11 @@ func fixtureFromRequest(f modelsv2.UpsertPatchedFixtureReq, eventId string) mode
 		RotY:              f.RotY,
 		RotZ:              f.RotZ,
 	}
+	allow := true // the default for a new fixture
+	if f.AllowUserOverride != nil {
+		allow = *f.AllowUserOverride // a copy, so the row doesn't point into the request
+	}
+	row.AllowUserOverride = &allow
 	if f.Id != nil {
 		row.Id = *f.Id
 	}

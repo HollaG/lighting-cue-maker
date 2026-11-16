@@ -131,6 +131,7 @@ const fixture = (
   rotX: 180,
   rotY: 0,
   rotZ: 0,
+  allowUserOverride: true,
 });
 
 /** Lays `count` items out in a centred grid of rows along X. */

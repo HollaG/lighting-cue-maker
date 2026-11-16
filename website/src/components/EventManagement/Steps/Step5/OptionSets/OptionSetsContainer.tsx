@@ -107,11 +107,7 @@ export const OptionSetsContainer = ({ fixtureGroup }: { fixtureGroup: FixtureGro
       <Divider />
       <Stack>
         {optionSets.map((optionSet) => (
-          <OptionSetContainer
-            key={optionSet.id}
-            optionSet={optionSet}
-            fixtureGroup={fixtureGroup}
-          />
+          <OptionSetContainer key={optionSet.id} optionSet={optionSet} fixtureGroup={fixtureGroup} />
         ))}
       </Stack>
     </Stack>

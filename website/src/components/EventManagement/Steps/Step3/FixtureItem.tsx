@@ -1,4 +1,4 @@
-import { Group, Select, Stack /* , Text */ } from "@mantine/core";
+import { Group, Select, Stack, Switch, Text } from "@mantine/core";
 import { useState, type ReactNode } from "react";
 import type { PatchedFixture } from "../../../../types-v2/patchedFixture";
 import { CardBase } from "../../../Cues/CardBase";
@@ -6,14 +6,18 @@ import { useUpsertPatchedFixtures } from "../../../../query-v2/patched-fixtures/
 import { useGetEvent } from "../../../../query-v2/events/useGetEvent";
 import { CustomTextInput } from "../../../CustomTextInput/CustomTextInput";
 
+type Control = "mode" | "override";
 export const FixtureItem = ({
   fixture,
   rightSection,
   index,
+  showControls = ["mode", "override"],
 }: {
   fixture: PatchedFixture;
   rightSection?: ReactNode;
   index?: number;
+
+  showControls?: Control[];
 }) => {
   const { mutateAsync: upsertPatchedFixture } = useUpsertPatchedFixtures(fixture.eventId);
   const { event } = useGetEvent(fixture.eventId);
@@ -74,12 +78,29 @@ export const FixtureItem = ({
           {rightSection}
         </Group>
 
-        <Select
-          data={modes.map((mode) => ({ value: mode.id, label: mode.name }))}
-          value={fixture.modeId}
-          allowDeselect={false}
-          onChange={(value) => (value ? upsertPatchedFixture([{ ...fixture, modeId: value }]) : null)}
-        />
+        {showControls.includes("mode") && (
+          <Select
+            data={modes.map((mode) => ({ value: mode.id, label: mode.name }))}
+            value={fixture.modeId}
+            allowDeselect={false}
+            onChange={(value) => (value ? upsertPatchedFixture([{ ...fixture, modeId: value }]) : null)}
+          />
+        )}
+
+        {showControls.includes("override") && (
+          <Stack gap="xs">
+            <Switch
+              label="Allow users to manually override DMX values"
+              checked={fixture.allowUserOverride ?? true}
+              onChange={(e) => {
+                if (fixture.allowUserOverride !== e.currentTarget.checked) {
+                  upsertPatchedFixture([{ ...fixture, allowUserOverride: e.currentTarget.checked }]);
+                }
+              }}
+            />
+            <Text c="dimmed">Note: Only QLC+ supports automated export to show file for DMX override.</Text>
+          </Stack>
+        )}
       </Stack>
     </CardBase>
   );

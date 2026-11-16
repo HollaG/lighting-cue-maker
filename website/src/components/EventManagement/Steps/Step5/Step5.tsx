@@ -70,8 +70,7 @@ export const Step5 = ({ eventId /* , onDone */ }: { eventId: string; onDone: () 
           Configure presets
         </Title>
         <Text> Here, you can set up your presets for users to easily configure cues.</Text>
-
-        <Grid>
+        <Grid mt="md">
           <Grid.Col span={3}>
             <Stack>
               {fixtureGroups.map((group) => (
