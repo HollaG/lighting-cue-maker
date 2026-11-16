@@ -3,6 +3,7 @@ import {
   getSectionLengthMs,
   TimelineSectionType,
   type TimelineAudio,
+  type TimelineBeatSection,
   type TimelineSection,
 } from "../types-v2/timeline";
 
@@ -187,4 +188,35 @@ export const getTicks = (range: Range, minStepMs: number): { stepMs: number; tic
   }
 
   return { stepMs, ticks };
+};
+
+/** Helper to generate a default Beat Section. Make sure to override the values you need (e.g. sectionStartTime) */
+export const makeDefaultTimelineSection = (): TimelineBeatSection => ({
+  id: crypto.randomUUID(),
+  name: "New Section",
+  sectionStartTime: 0,
+  linkToNext: false,
+  markers: [],
+  snapEnabled: true,
+  type: TimelineSectionType.BEAT,
+  timeSigNum: 4,
+  timeSigDenom: 4,
+  bpm: 120,
+  beats: 4, // default to one bar
+  snapFidelity: 1, // default to snapping every beat
+});
+
+/** Helper to create a new TimelineSection (default: Beat) from a drawn span */
+export const createSectionFromSpan = (span: Span): TimelineSection => {
+  const section = makeDefaultTimelineSection();
+  const length = span.end - span.start;
+
+  // A beat is 60000 / bpm ms; the time signature plays no part (see getSectionLengthMs).
+  const beats = Math.max(Math.round((length * section.bpm) / 60000), 1); // at least 1 beat
+
+  return {
+    ...section,
+    sectionStartTime: span.start,
+    beats,
+  };
 };

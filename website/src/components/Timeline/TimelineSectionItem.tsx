@@ -13,6 +13,7 @@ import {
   ActionIcon,
   Stack,
   Title,
+  Switch,
 } from "@mantine/core";
 import { type Span, useItem, useTimelineContext } from "dnd-timeline";
 import { useMemo, useState, type ReactNode } from "react";
@@ -142,11 +143,13 @@ export const TimelineSectionItem = ({
                 >
                   <Text
                     fz="xs"
+                    truncate="end"
+                    miw={0}
                     style={{
                       color: "var(--mantine-color-dark-1)",
                     }}
                   >
-                    Click and drag this bar to reposition
+                    Click and drag this bar to reposition. Right Click for more options
                   </Text>
                 </Flex>
                 {/* Main content */}
@@ -170,28 +173,33 @@ export const TimelineSectionItem = ({
 
                   onPointerDown={(e) => e.stopPropagation()} // controls bar: don't start a dnd-kit drag (it swallows clicks and clears the caret)
                 >
-                  <div
+                  <Box
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr auto 1fr",
+                      // display: "grid",
+                      // gridTemplateColumns: "1fr auto 1fr",
+                      display: "flex",
+                      flexDirection: "row",
                       alignItems: "center",
                       width: "100%",
                       flex: 1,
-                      gap: "0.5rem",
+                      gap: "var(--mantine-spacing-sm)",
                     }}
                   >
-                    <CustomTextInput value={section.name || "Untitled"} />
-                    {/* Beats / Time mode */}
-                    <SegmentedControl
-                      size="xs"
-                      data={[
-                        { label: "BPM", value: TimelineSectionType.BEAT },
-                        { label: "Time", value: TimelineSectionType.TIME },
-                      ]}
-                      value={section.type}
-                      onChange={(value) => onValueChange("type", value as TimelineSectionType)}
-                    />
-
+                    <Box>
+                      <SegmentedControl
+                        size="xs"
+                        data={[
+                          { label: "BPM", value: TimelineSectionType.BEAT },
+                          { label: "Time", value: TimelineSectionType.TIME },
+                        ]}
+                        value={section.type}
+                        onChange={(value) => onValueChange("type", value as TimelineSectionType)}
+                      />
+                    </Box>
+                    <Box style={{ width: "15rem" }}>
+                      <CustomTextInput value={section.name || "Untitled"} />
+                    </Box>
+                    <Flex flex={1} />
                     {section.type === "beat" && (
                       <Group justify="end" gap="sm">
                         <Text c="dimmed" size="sm">
@@ -267,9 +275,20 @@ export const TimelineSectionItem = ({
                             onSave={(bpm) => void upsertSection({ id: section.id, bpm })}
                           />
                         </Box>
+                        <Divider orientation="vertical" />
+
+                        {/* Link */}
+                        <Switch
+                          label="Link"
+                          checked={section.linkToNext}
+                          onChange={(e) => {
+                            if (e.currentTarget.checked !== undefined)
+                              void upsertSection({ id: section.id, linkToNext: e.currentTarget.checked });
+                          }}
+                        />
                       </Group>
                     )}
-                  </div>
+                  </Box>
                 </Flex>
               </Flex>
             </Box>
@@ -572,7 +591,12 @@ const TimelineBeatSectionItem = ({
           <Button color="gray" onClick={() => closeModal()}>
             Cancel adding
           </Button>
-          <Button disabled={!selectedCueToAddId || pendingTimeMs === undefined} variant="light" loading={isSectionSaving} onClick={onAddCue}>
+          <Button
+            disabled={!selectedCueToAddId || pendingTimeMs === undefined}
+            variant="light"
+            loading={isSectionSaving}
+            onClick={onAddCue}
+          >
             Add selected cue
           </Button>
         </Group>

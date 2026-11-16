@@ -30,6 +30,7 @@ import { TimelineWrapper } from "./TimelineWrapper";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Timeline, TimelineAudio, TimelineBeatSection, TimelineSection } from "../../types-v2/timeline";
 import type { Range } from "dnd-timeline";
+import { makeDefaultTimelineSection } from "../../utils/timeline";
 
 const AUDIO_EXTENSIONS = [".mp3", ".m4a", ".aac", ".ogg", ".opus", ".wav", ".flac"];
 const AUDIO_ACCEPT = [
@@ -111,20 +112,12 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
       // round up to multiple of 4
       const roundedBeats = Math.ceil(beats / 4) * 4;
       const section: TimelineBeatSection = {
-        id: crypto.randomUUID(),
+        ...makeDefaultTimelineSection(),
         name: `${file.fileName}`,
-        type: "beat",
         sectionStartTime: startTime,
-        bpm: 120, // default
 
         // Calculate how many beats fit in the clips duration, and add 1 if there's a remainder.
         beats: roundedBeats,
-        linkToNext: true,
-        markers: [],
-        snapEnabled: true,
-        timeSigNum: 4,
-        timeSigDenom: 4,
-        snapFidelity: 1,
       };
 
       newAudios.push(clip);

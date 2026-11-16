@@ -6,7 +6,14 @@ import type { AudioFileWithUrl } from "../../types-v2/audioFile";
 import { Logger } from "../../utils/logger";
 import { TimelineRows } from "./TimelineRows";
 import { TimelineRuler } from "./TimelineRuler";
-import { getRowId, resizeSection, SIDEBAR_WIDTH, TimelineRowId, trimClip } from "../../utils/timeline";
+import {
+  createSectionFromSpan,
+  getRowId,
+  resizeSection,
+  SIDEBAR_WIDTH,
+  TimelineRowId,
+  trimClip,
+} from "../../utils/timeline";
 import { TimelinePlayhead } from "./TimelinePlayhead";
 import { useHotkey } from "@tanstack/react-hotkeys";
 
@@ -342,6 +349,20 @@ export const TimelineWrapper = ({
     }
   };
 
+  /** Handle the onCreate from dragging on the Timeline (Section row only) */
+  const onCreate = (range: Range) => {
+    const { start, end } = range;
+
+    // the start has to be snapped to the nearest second (for now)
+    const snappedStart = Math.round(start / 1000) * 1000;
+
+    // intentionally fail if we overlap
+    const section = createSectionFromSpan({ start: snappedStart, end });
+
+    // try to create
+    save({ sections: [...timeline.sections, section] });
+  };
+
   return (
     <TimelineContext
       range={range}
@@ -383,7 +404,15 @@ export const TimelineWrapper = ({
         <Box style={{ position: "relative" }}>
           <TimelineRuler onClickPos={onRulerClick} />
           <TimelinePlayhead getPositionMs={getPositionMs} />
-          <TimelineRows eventId={eventId} itemId={itemId} timeline={timeline} audioFiles={audioFiles} onSelect={onSelect} onDelete={onDelete} />
+          <TimelineRows
+            eventId={eventId}
+            itemId={itemId}
+            timeline={timeline}
+            audioFiles={audioFiles}
+            onSelect={onSelect}
+            onDelete={onDelete}
+            onCreate={onCreate}
+          />
         </Box>
       </Box>
     </TimelineContext>

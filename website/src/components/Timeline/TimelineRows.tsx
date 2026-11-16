@@ -1,4 +1,4 @@
-import { useTimelineContext } from "dnd-timeline";
+import { useTimelineContext, type Range } from "dnd-timeline";
 import { Box } from "@mantine/core";
 import { getSectionLengthMs, type Timeline } from "../../types-v2/timeline";
 import type { AudioFileWithUrl } from "../../types-v2/audioFile";
@@ -15,6 +15,7 @@ export const TimelineRows = ({
   audioFiles,
   // onSelect: still in the props for the selection WIP, not used yet
   onDelete,
+  onCreate,
 }: {
   eventId: string;
   itemId: string;
@@ -22,12 +23,14 @@ export const TimelineRows = ({
   audioFiles: AudioFileWithUrl[];
   onSelect: (type: TimelineRowId, ids: Set<string>) => void;
   onDelete: (type: TimelineRowId, id: string) => void;
+  onCreate: (range: Range) => void;
 }) => {
   const { setTimelineRef, style } = useTimelineContext();
   const fileName = new Map(audioFiles.map((f) => [f.id, f.fileName]));
 
   return (
     <Box ref={setTimelineRef} style={style}>
+      {/* Explicity no creation for Audio */}
       <TimelineRow id={TimelineRowId.AUDIO} sidebar="Audio clips">
         {timeline.audios.map((clip) => (
           <TimelineAudioItem
@@ -45,11 +48,8 @@ export const TimelineRows = ({
       <TimelineRow
         id={TimelineRowId.SECTIONS}
         sidebar="Timed sections (Cue markers)"
-        styles={
-          {
-            // height: 128,
-          }
-        }
+
+        onCreate={onCreate}
       >
         {timeline.sections.map((section) => (
           <TimelineSectionItem
