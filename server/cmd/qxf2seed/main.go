@@ -3,6 +3,7 @@
 //
 //	go run ./cmd/qxf2seed path/to/fixture.qxf                 # prints the SQL
 //	go run ./cmd/qxf2seed -out templates path/to/fixture.qxf  # writes templates/<manufacturer-model>.sql
+//	go run ./cmd/qxf2seed -brightness 25 ...                  # brightnessModifier (default 100)
 //
 // Warnings (a preset or fixture type it doesn't know) go to stderr; those channels import as "custom".
 package main
@@ -16,6 +17,7 @@ import (
 
 func main() {
 	outDir := flag.String("out", "", "folder to write <manufacturer-model>.sql into (default: print to stdout)")
+	brightness := flag.Int("brightness", 100, "brightnessModifier: how bright the fixture looks in the visualiser (%)")
 	flag.Parse()
 	if flag.NArg() != 1 {
 		fmt.Fprintln(os.Stderr, "usage: qxf2seed [-out folder] fixture.qxf")
@@ -34,6 +36,7 @@ func main() {
 	for _, w := range warnings {
 		fmt.Fprintln(os.Stderr, "warning:", w)
 	}
+	t.Properties.BrightnessModifier = *brightness // CueSketch-only: QLC+ files have nothing for it
 	sql, err := render(t, filepath.Base(path))
 	if err != nil {
 		fail(err)
