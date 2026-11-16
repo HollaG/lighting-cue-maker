@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { Item, ItemOverview, UpsertItem } from "../../types-v2/item";
 import { makeGetItemQueryKey } from "./useGetItem";
-import { itemsUrl, makeGetItemsQueryKey } from "./useGetItems";
+import { itemsUrl, makeGetItemsQueryKey, makeItemsQueryKeyPrefix } from "./useGetItems";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 // Keep in sync with UpsertItemReqBody in server/internal/models/v2/item.go.
 export type UpsertItemReq = {
@@ -20,6 +22,7 @@ export type UpsertItemRes = {
  */
 export const useUpsertItem = (eventId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     mutationFn: (item: UpsertItem) => api.post<UpsertItemReq, UpsertItemRes>(itemsUrl(eventId), { item }),
@@ -39,6 +42,10 @@ export const useUpsertItem = (eventId: string) => {
       );
       // Only the list is refetched: refetching the single item on every lyrics save would resend the whole text.
       void queryClient.invalidateQueries({ queryKey: makeGetItemsQueryKey(eventId) });
+      // The others refetch the list and the single item (lyrics, comments), which this tab already has.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeItemsQueryKeyPrefix(eventId)],
+      });
     },
   });
 };

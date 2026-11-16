@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { ItemOverview } from "../../types-v2/item";
 import { makeGetItemQueryKey } from "./useGetItem";
-import { itemsUrl, makeGetItemsQueryKey } from "./useGetItems";
+import { itemsUrl, makeGetItemsQueryKey, makeItemsQueryKeyPrefix } from "./useGetItems";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 /**
  * Soft-deletes one item. Its cues stay, so restoring it brings them back
@@ -10,6 +12,7 @@ import { itemsUrl, makeGetItemsQueryKey } from "./useGetItems";
  */
 export const useDeleteItem = (eventId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     mutationFn: (itemId: string) =>
@@ -22,6 +25,10 @@ export const useDeleteItem = (eventId: string) => {
       );
       queryClient.removeQueries({ queryKey: makeGetItemQueryKey(eventId, itemId) });
       void queryClient.invalidateQueries({ queryKey: makeGetItemsQueryKey(eventId) });
+      // Tell the others in the event (realtime) to refetch.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeItemsQueryKeyPrefix(eventId)],
+      });
     },
   });
 };

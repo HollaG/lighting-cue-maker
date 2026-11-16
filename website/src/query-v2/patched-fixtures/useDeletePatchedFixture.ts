@@ -4,7 +4,9 @@ import type { PatchedFixture } from "../../types-v2/patchedFixture";
 import type { FixtureGroup } from "../../types-v2/fixtureGroups";
 import { makeGetPatchedFixturesQueryKey } from "./useUpsertPatchedFixtures";
 import { makeGetFixtureGroupsQueryKey } from "../fixture-groups/useGetFixtureGroups";
-import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
+import { invalidateVisualiserData, makeGetVisualiserDataQueryKey } from "../visualiser-data/useGetVisualiserData";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 /**
  * Soft-deletes one patched fixture.
@@ -14,6 +16,7 @@ import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserDat
  */
 export const useDeletePatchedFixture = (eventId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     mutationFn: (fixtureId: string) =>
@@ -45,6 +48,16 @@ export const useDeletePatchedFixture = (eventId: string) => {
       void queryClient.invalidateQueries({ queryKey: fixturesKey });
       void queryClient.invalidateQueries({ queryKey: groupsKey });
       invalidateVisualiserData(queryClient, eventId);
+      // Currently a no-op: EditEvent (the setup pages) has no RealtimeProvider.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetPatchedFixturesQueryKey(eventId)],
+      });
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetFixtureGroupsQueryKey(eventId)],
+      });
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetVisualiserDataQueryKey(eventId)],
+      });
     },
   });
 };

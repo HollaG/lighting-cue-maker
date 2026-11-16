@@ -50,6 +50,7 @@ import { popTransition } from "../../utils/animations";
 import { VisualiserInputProcessor } from "../../components/Visualiser3D-v2/Processing/VisualiserInputProcessor";
 import { ResolutionScaleSelect } from "../../components/Visualiser3D-v2/ResolutionScaleSelect";
 import { useResolvedDmx } from "../../hooks/useResolvedDmx";
+import { useLiveQueryUpdates } from "../../hooks/realtime/useLiveQueryUpdates";
 import { DMXControlWrapper } from "../../components/DMX/DMXControlWrapper";
 import { RichContentWrapper } from "../../components/RichContent-v2/RichContentWrapper";
 import { TimelineDrawerContainer } from "../../components/Timeline/TimelineDrawerContainer";
@@ -127,6 +128,10 @@ export const EventPage = () => {
   // Static values (with overrides) go to the DMX drawer and the visualiser. Pattern effects come compiled
   // (effectPlayback) and play inside the visualiser's canvas, so this page doesn't re-render per effect step.
   const { dmxValuesWithOverrides, effectPlayback, cueFade, isLoading } = useResolvedDmx(eventId, patchedFixtures);
+
+  // Live updates: when someone else in the event saves, the v2 mutation hooks broadcast the query keys they changed
+  // (through the realtime server); this refetches them here.
+  useLiveQueryUpdates(); // only call ONCE
 
   // Remember this event for "Past events" on the home page. Waits for the name, so the list never shows a blank entry;
   // a rename updates the stored name the next time the event loads.

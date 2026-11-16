@@ -2,11 +2,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { FixtureGroup } from "../../types-v2/fixtureGroups";
 import { makeGetFixtureGroupsQueryKey } from "./useGetFixtureGroups";
-import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
+import { invalidateVisualiserData, makeGetVisualiserDataQueryKey } from "../visualiser-data/useGetVisualiserData";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 /** Soft-deletes one fixture group. */
 export const useDeleteFixtureGroup = (eventId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     // Step 3 (fixture groups), so the Next button's spinner covers it.
@@ -23,6 +26,13 @@ export const useDeleteFixtureGroup = (eventId: string) => {
       );
       void queryClient.invalidateQueries({ queryKey: makeGetFixtureGroupsQueryKey(eventId) });
       invalidateVisualiserData(queryClient, eventId);
+      // Currently a no-op: EditEvent (the setup pages) has no RealtimeProvider.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetFixtureGroupsQueryKey(eventId)],
+      });
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetVisualiserDataQueryKey(eventId)],
+      });
     },
   });
 };

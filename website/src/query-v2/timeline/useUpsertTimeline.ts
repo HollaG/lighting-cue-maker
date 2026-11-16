@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { Timeline, UpsertTimeline } from "../../types-v2/timeline";
 import { makeGetTimelineQueryKey, timelineUrl } from "./useGetTimeline";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 // Keep in sync with UpsertTimelineReqBody in server/internal/models/v2/timeline.go.
 export type UpsertTimelineReq = {
@@ -26,12 +28,15 @@ export type UpsertTimelineRes = {
  */
 export const useUpsertTimeline = (eventId: string, itemId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
   const queryKey = makeGetTimelineQueryKey(eventId, itemId);
   const mutationKey = ["upsertTimeline", eventId, itemId];
 
   /** Merges the patch into the cached timeline (no-op if there's none yet: the server creates it). */
   const applyToCache = (patch: UpsertTimeline) =>
-    queryClient.setQueryData<Timeline | null>(queryKey, (prev) => (prev ? { ...prev, ...withoutUndefined(patch) } : prev));
+    queryClient.setQueryData<Timeline | null>(queryKey, (prev) =>
+      prev ? { ...prev, ...withoutUndefined(patch) } : prev,
+    );
 
   const mutation = useMutation({
     mutationKey,
@@ -47,6 +52,8 @@ export const useUpsertTimeline = (eventId: string, itemId: string) => {
     },
 
     onSuccess: (res) => {
+      // Tell the others in the event, before the queued-save check below: the server has this save.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, { queryKey: [...queryKey] });
       // A newer save of this timeline is still queued: its optimistic data is newer than this response.
       if (queryClient.isMutating({ mutationKey }) > 1) return;
       queryClient.setQueryData<Timeline | null>(queryKey, res.timeline);

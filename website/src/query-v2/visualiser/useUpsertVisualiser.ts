@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { UpsertVisualiser, Visualiser } from "../../types-v2/visualiser";
 import { makeGetVisualiserQueryKey } from "./useGetVisualiser";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 // Keep in sync with UpsertVisualiserBody in server/internal/models/v2/visualiser.go.
 export type UpsertVisualiserReq = {
@@ -18,6 +20,7 @@ export type UpsertVisualiserRes = {
  */
 export const useUpsertVisualiser = (eventId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     // Step 4 (fixture placements) save, so the Next button's spinner covers it.
@@ -30,6 +33,10 @@ export const useUpsertVisualiser = (eventId: string) => {
     onSuccess: (res) => {
       // The response is the saved visualiser, so put it straight into the cache.
       queryClient.setQueryData(makeGetVisualiserQueryKey(eventId), res.visualiser);
+      // Currently a no-op: EditEvent (the setup pages) has no RealtimeProvider.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetVisualiserQueryKey(eventId)],
+      });
     },
   });
 };

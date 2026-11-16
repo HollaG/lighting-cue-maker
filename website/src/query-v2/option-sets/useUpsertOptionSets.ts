@@ -3,7 +3,9 @@ import { api } from "../../lib/api";
 import type { OptionSet, UpsertOptionSet } from "../../types-v2/optionSet";
 import { makeGetOptionSetsQueryKey, makeOptionSetsQueryKeyPrefix, optionSetsUrl } from "./useGetOptionSets";
 import { makeGetOptionSetQueryKey } from "./useGetOptionSet";
-import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
+import { invalidateVisualiserData, makeGetVisualiserDataQueryKey } from "../visualiser-data/useGetVisualiserData";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 // Keep in sync with UpsertOptionSetsReq in server/internal/models/v2/option_set.go.
 export type UpsertOptionSetsReq = {
@@ -21,6 +23,7 @@ export type UpsertOptionSetsRes = {
  */
 export const useUpsertOptionSets = (eventId: string, fixtureGroupId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     // Step 5 (presets) save, so the Next button's spinner covers it.
@@ -43,6 +46,13 @@ export const useUpsertOptionSets = (eventId: string, fixtureGroupId: string) => 
       // Then refetch to pick up the server's order (sortOrder).
       void queryClient.invalidateQueries({ queryKey: makeOptionSetsQueryKeyPrefix(eventId, fixtureGroupId) });
       invalidateVisualiserData(queryClient, eventId);
+      // Currently a no-op: EditEvent (the setup pages) has no RealtimeProvider.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeOptionSetsQueryKeyPrefix(eventId, fixtureGroupId)],
+      });
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetVisualiserDataQueryKey(eventId)],
+      });
     },
   });
 };

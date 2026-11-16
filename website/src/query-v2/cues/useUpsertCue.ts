@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { Cue, UpsertCue } from "../../types-v2/cue";
 import { cuesUrl, makeGetCuesQueryKey } from "./useGetCues";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 // Keep in sync with UpsertCueReqBody in server/internal/models/v2/cue.go.
 export type UpsertCueReq = {
@@ -20,6 +22,7 @@ export type UpsertCueRes = {
  */
 export const useUpsertCue = (eventId: string, itemId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
   const queryKey = makeGetCuesQueryKey(eventId, itemId);
   const mutationKey = ["upsertCue", eventId, itemId];
 
@@ -51,6 +54,8 @@ export const useUpsertCue = (eventId: string, itemId: string) => {
     },
 
     onSuccess: (res) => {
+      // Tell the others in the event, before the stale-response check below: the server has this save.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, { queryKey: [...queryKey] });
       // make sure we don't overwrite.
       // when a old response comes back AFTER we optimistically update BUT before the new patch (with the optimistic data) lands
       const pendingForThisCue = queryClient.isMutating({

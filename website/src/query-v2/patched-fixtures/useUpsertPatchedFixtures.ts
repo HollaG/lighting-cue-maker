@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { PatchedFixture, UpsertPatchedFixture } from "../../types-v2/patchedFixture";
-import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
+import { invalidateVisualiserData, makeGetVisualiserDataQueryKey } from "../visualiser-data/useGetVisualiserData";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 export type UpsertPatchedFixturesReq = {
   fixtures: UpsertPatchedFixture[];
@@ -21,6 +23,7 @@ export const makeGetPatchedFixturesQueryKey = (eventId: string) => ["v2", "patch
  */
 export const useUpsertPatchedFixtures = (eventId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
   const queryKey = makeGetPatchedFixturesQueryKey(eventId);
 
   return useMutation({
@@ -47,6 +50,14 @@ export const useUpsertPatchedFixtures = (eventId: string) => {
 
     onError: (_error, _fixtures, context) => {
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+    },
+
+    onSuccess: () => {
+      // Currently a no-op: EditEvent (the setup pages) has no RealtimeProvider.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, { queryKey: [...queryKey] });
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetVisualiserDataQueryKey(eventId)],
+      });
     },
 
     onSettled: () => {

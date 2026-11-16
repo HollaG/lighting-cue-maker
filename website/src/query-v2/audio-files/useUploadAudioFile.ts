@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { AudioFileWithUrl } from "../../types-v2/audioFile";
 import { audioFilesUrl, makeGetAudioFilesQueryKey } from "./useGetAudioFiles";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 // Keep in sync with upload in server/internal/api/v2/audiofiles/handler.go.
 export type UploadAudioFileRes = {
@@ -44,6 +46,7 @@ export const readAudioDurationMs = (file: File): Promise<number> =>
  */
 export const useUploadAudioFile = (eventId: string, itemId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     mutationFn: async (file: File) => {
@@ -60,6 +63,10 @@ export const useUploadAudioFile = (eventId: string, itemId: string) => {
     },
 
     onSuccess: (audioFile) => {
+      // Tell the others in the event (realtime) to refetch.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetAudioFilesQueryKey(eventId, itemId)],
+      });
       // The list is oldest first: append (or replace, if somehow already there).
       queryClient.setQueryData<AudioFileWithUrl[]>(makeGetAudioFilesQueryKey(eventId, itemId), (prev) => {
         if (!prev) return prev;

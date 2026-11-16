@@ -3,7 +3,9 @@ import { api } from "../../lib/api";
 import type { OptionSet } from "../../types-v2/optionSet";
 import { makeGetOptionSetsQueryKey, makeOptionSetsQueryKeyPrefix, optionSetsUrl } from "./useGetOptionSets";
 import { makeGetOptionSetQueryKey } from "./useGetOptionSet";
-import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
+import { invalidateVisualiserData, makeGetVisualiserDataQueryKey } from "../visualiser-data/useGetVisualiserData";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 /**
  * Soft-deletes one option set. Cues keep their references to it, so restoring it brings them back
@@ -11,6 +13,7 @@ import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserDat
  */
 export const useDeleteOptionSet = (eventId: string, fixtureGroupId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     // Step 5 (presets), so the Next button's spinner covers it.
@@ -26,6 +29,14 @@ export const useDeleteOptionSet = (eventId: string, fixtureGroupId: string) => {
       queryClient.removeQueries({ queryKey: makeGetOptionSetQueryKey(eventId, fixtureGroupId, optionSetId) });
       void queryClient.invalidateQueries({ queryKey: makeOptionSetsQueryKeyPrefix(eventId, fixtureGroupId) });
       invalidateVisualiserData(queryClient, eventId);
+
+      // Currently a no-op: EditEvent (the setup pages) has no RealtimeProvider.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeOptionSetsQueryKeyPrefix(eventId, fixtureGroupId)],
+      });
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetVisualiserDataQueryKey(eventId)],
+      });
     },
   });
 };

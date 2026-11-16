@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import type { FixtureGroup, UpsertFixtureGroup } from "../../types-v2/fixtureGroups";
 import { makeGetFixtureGroupsQueryKey } from "./useGetFixtureGroups";
-import { invalidateVisualiserData } from "../visualiser-data/useGetVisualiserData";
+import { invalidateVisualiserData, makeGetVisualiserDataQueryKey } from "../visualiser-data/useGetVisualiserData";
+import { useOptionalRealtime } from "../../context/realtime";
+import { ClientMessageType } from "../../types/realtime/realtime";
 
 // Keep in sync with the fixture-groups request in server/internal/api/v2.
 export type UpsertFixtureGroupsReq = {
@@ -19,6 +21,7 @@ export type UpsertFixtureGroupsRes = {
  */
 export const useUpsertFixtureGroups = (eventId: string) => {
   const queryClient = useQueryClient();
+  const realtime = useOptionalRealtime();
 
   return useMutation({
     // Step 3 (fixture groups) save, so the Next button's spinner covers it.
@@ -42,6 +45,13 @@ export const useUpsertFixtureGroups = (eventId: string) => {
       // Then refetch to pick up anything the server changed (e.g. sort order).
       void queryClient.invalidateQueries({ queryKey: makeGetFixtureGroupsQueryKey(eventId) });
       invalidateVisualiserData(queryClient, eventId);
+      // Currently a no-op: EditEvent (the setup pages) has no RealtimeProvider.
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetFixtureGroupsQueryKey(eventId)],
+      });
+      realtime?.sendMessage(ClientMessageType.ClientMessageInvalidateQuery, {
+        queryKey: [...makeGetVisualiserDataQueryKey(eventId)],
+      });
     },
   });
 };
