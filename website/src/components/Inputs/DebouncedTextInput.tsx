@@ -2,10 +2,7 @@ import { TextInput, type TextInputProps } from "@mantine/core";
 import type { ComponentType } from "react";
 import { parseText, useDebouncedDraft } from "./useDebouncedDraft";
 
-type DebouncedTextInputProps = Omit<
-  TextInputProps,
-  "value" | "defaultValue" | "onChange" | "onFocus" | "onBlur" | "onKeyDown"
-> & {
+type DebouncedTextInputProps = Omit<TextInputProps, "value" | "defaultValue" | "onChange"> & {
   value: string;
   onSave: (value: string) => void;
   debounceMs?: number;
@@ -17,7 +14,10 @@ type DebouncedTextInputProps = Omit<
   inputComponent?: ComponentType<TextInputProps>;
 };
 
-/** A TextInput that saves after a pause in typing, and on blur / Enter (rules on useDebouncedDraft). */
+/**
+ * A TextInput that saves after a pause in typing, and on blur / Enter (rules on useDebouncedDraft).
+ * onFocus / onBlur / onKeyDown run before the input's own.
+ */
 export const DebouncedTextInput = ({
   value,
   onSave,
@@ -25,12 +25,18 @@ export const DebouncedTextInput = ({
   trim = true,
   allowEmpty = false,
   inputComponent: Input = TextInput,
+  onFocus,
+  onBlur,
+  onKeyDown,
   ...props
 }: DebouncedTextInputProps) => {
-  const { onChange, ...draft } = useDebouncedDraft<string, string>({
+  const { onChange, ...draft } = useDebouncedDraft<string, string, HTMLInputElement>({
     value,
     onSave,
     debounceMs,
+    onFocus,
+    onBlur,
+    onKeyDown,
     parse: (raw) => parseText(raw, { trim, allowEmpty }),
   });
 

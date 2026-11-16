@@ -1,7 +1,14 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import { useDebouncedCallback } from "@mantine/hooks";
 
-export type UseDebouncedDraftOptions<T, Raw> = {
+/** The input's own handlers. Each runs before the draft's handler of the same name. */
+export type DraftEventHandlers<E extends HTMLElement> = {
+  onFocus?: (e: FocusEvent<E>) => void;
+  onBlur?: (e: FocusEvent<E>) => void;
+  onKeyDown?: (e: KeyboardEvent<E>) => void;
+};
+
+export type UseDebouncedDraftOptions<T, Raw, E extends HTMLElement = HTMLElement> = DraftEventHandlers<E> & {
   /** The saved value. Shown whenever the input isn't focused, so changes from elsewhere (refetch, undo) show up. */
   value: T;
   onSave: (value: T) => void;
@@ -24,13 +31,16 @@ export type UseDebouncedDraftOptions<T, Raw> = {
  * `Raw` is what the input hands back (e.g. `string | number` for a NumberInput); `T` is what gets saved.
  * Returns props to spread onto the input; `onChange` takes the raw value, not the event.
  */
-export const useDebouncedDraft = <T extends Raw, Raw>({
+export const useDebouncedDraft = <T extends Raw, Raw, E extends HTMLElement = HTMLElement>({
   value,
   onSave,
   parse,
   debounceMs = 500,
   commitOnEnter = true,
-}: UseDebouncedDraftOptions<T, Raw>) => {
+  onFocus,
+  onBlur,
+  onKeyDown,
+}: UseDebouncedDraftOptions<T, Raw, E>) => {
   /** What's being typed; null when not editing. */
   const [draft, setDraft] = useState<Raw | null>(null);
   /** Set by Escape so the blur that follows doesn't save. */
@@ -57,7 +67,10 @@ export const useDebouncedDraft = <T extends Raw, Raw>({
 
   return {
     value: draft ?? value,
-    onFocus: () => setDraft(value),
+    onFocus: (e: FocusEvent<E>) => {
+      onFocus?.(e);
+      setDraft(value);
+    },
     onChange: (raw: Raw) => {
       setDraft(raw);
       const next = parse(raw);
@@ -65,8 +78,12 @@ export const useDebouncedDraft = <T extends Raw, Raw>({
         debouncedSave.cancel(); // invalid: don't send the previous keystroke's value either
       else debouncedSave(next);
     },
-    onBlur: commit,
-    onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+    onBlur: (e: FocusEvent<E>) => {
+      onBlur?.(e);
+      commit();
+    },
+    onKeyDown: (e: KeyboardEvent<E>) => {
+      onKeyDown?.(e);
       if (e.key === "Enter" && commitOnEnter) e.currentTarget.blur();
       if (e.key === "Escape") {
         cancelRef.current = true;

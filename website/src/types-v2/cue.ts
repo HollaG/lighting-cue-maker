@@ -29,5 +29,8 @@ export type UpsertCue = Omit<Partial<Cue>, "itemId" | "createdAt" | "updatedAt" 
 
 // TODO(draw.io): CueTransition and CueMode are not defined yet. The server stores `transition` as a JSON object
 // (replaced as a whole) and `mode` as a string, so these are placeholders until the design says more.
-export type CueTransition = Record<string, unknown>;
+export type CueTransition = {
+  holdTimeMs: number; // in milliseconds
+  transitionTimeMs: number; // in milliseconds
+};
 export type CueMode = string;

@@ -50,6 +50,8 @@ import { CueNotices } from "../CueNotices/CueNotices";
 import { useCueViewModeTracking } from "../../../hooks/realtime/useCueViewModeTracking";
 import { useActiveVersionTracking } from "../../../hooks/realtime/useActiveVersionTracking";
 import { useRealtimeStore } from "../../../store/realtimeStore";
+import { useRealtime } from "../../../context/realtime";
+import { ClientMessageType, ServerMessageType } from "../../../types/realtime/realtime";
 import { useCreateAlternate } from "../../../query/alternate-cue/useCreateAlternate";
 import { useGetAlternates } from "../../../query/alternate-cue/useGetAlternates";
 import type { AlternateCue } from "../../../types/alternate-cue";
@@ -619,6 +621,30 @@ const CueCardInternal = ({
 
   // control accordion panel state
   const [activeFixtureGroupId, setActiveFixtureGroupId] = useState<string | null>(null);
+  const [triggerAccordionOpen, setTriggerAccordionOpen] = useState(false);
+  const [transitionAccordionOpen, setTransitionAccordionOpen] = useState(false);
+  const { sendMessage, status, registerListener } = useRealtime();
+
+  useEffect(() => {
+    if (status !== "connected" || followingUserId) return;
+    sendMessage(ClientMessageType.ClientMessagePresenceUpdate, {
+      accordionState: { [cueId]: { triggerAccordionOpen, transitionAccordionOpen } },
+    });
+  }, [cueId, triggerAccordionOpen, transitionAccordionOpen, followingUserId, sendMessage, status]);
+
+  useEffect(() => {
+    return registerListener(ServerMessageType.ServerMessagePresenceUpdate, (data) => {
+      if (!followingUserId || data.userId !== followingUserId) return;
+      const accordionState = data.accordionState?.[cueId];
+      if (typeof accordionState?.triggerAccordionOpen === "boolean") {
+        setTriggerAccordionOpen(accordionState.triggerAccordionOpen);
+      }
+      if (typeof accordionState?.transitionAccordionOpen === "boolean") {
+        setTransitionAccordionOpen(accordionState.transitionAccordionOpen);
+      }
+    });
+  }, [cueId, followingUserId, registerListener]);
+
   const onFixtureSelect = (_fixtureId: string, fixtureGroupId: string) => {
     setActiveFixtureGroupId(fixtureGroupId);
   };
@@ -1330,8 +1356,10 @@ const CueCardInternal = ({
             </Collapse>
             <Collapse expanded={showTransition}>
               <SimpleGrid cols={2} spacing={0}>
-                {/* TODO: sync Accordion state when following */}
-                <Accordion>
+                <Accordion
+                  value={triggerAccordionOpen ? "holdTime" : null}
+                  onChange={(value) => setTriggerAccordionOpen(value !== null)}
+                >
                   <Accordion.Item value="holdTime">
                     <Accordion.Control>
                       {/* Change to next cue (currently {holdTimeMs === -1 ? "manually" : `after ${holdTimeMs / 1000}s`}) */}
@@ -1385,7 +1413,10 @@ const CueCardInternal = ({
                     </Accordion.Panel>
                   </Accordion.Item>
                 </Accordion>
-                <Accordion>
+                <Accordion
+                  value={transitionAccordionOpen ? "holdTime" : null}
+                  onChange={(value) => setTransitionAccordionOpen(value !== null)}
+                >
                   <Accordion.Item value="holdTime">
                     <Accordion.Control>
                       Cue transition time to next cue (currently{" "}

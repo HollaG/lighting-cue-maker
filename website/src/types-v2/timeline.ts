@@ -128,3 +128,31 @@ export type UpsertTimeline = Partial<TimelineFields>;
  */
 export const getSectionLengthMs = (section: TimelineSection): number =>
   section.type === TimelineSectionType.BEAT ? Math.round((section.beats * 60000) / section.bpm) : section.totalTimeMs;
+
+/**
+ * How long a cue holds on the timeline: from its marker to the next marker, in ms.
+ * - The last marker of a section holds until the next section's first marker if `linkToNext`, else forever (-1).
+ * - -1 too if no marker comes after it at all.
+ * - null if the cue has no marker. If it has several, the first one (in time) counts.
+ */
+export const getTimelineHoldTimeMs = (timeline: TimelineFields, cueId: string): number | null => {
+  const sections = [...timeline.sections].sort((a, b) => a.sectionStartTime - b.sectionStartTime);
+  // Every marker with its time from the timeline start, in time order, per section.
+  const markersBySection = sections.map((section) =>
+    section.markers
+      .map((marker) => ({ cueId: marker.cueId, start: section.sectionStartTime + marker.time }))
+      .sort((a, b) => a.start - b.start),
+  );
+
+  for (let s = 0; s < sections.length; s++) {
+    const markers = markersBySection[s];
+    const i = markers.findIndex((marker) => marker.cueId === cueId);
+    if (i === -1) continue;
+
+    const next =
+      markers[i + 1] ??
+      (sections[s].linkToNext ? markersBySection.slice(s + 1).find((later) => later.length > 0)?.[0] : undefined);
+    return next ? next.start - markers[i].start : -1;
+  }
+  return null;
+};

@@ -1,10 +1,7 @@
 import { Textarea, type TextareaProps } from "@mantine/core";
 import { parseText, useDebouncedDraft } from "./useDebouncedDraft";
 
-type DebouncedTextareaProps = Omit<
-  TextareaProps,
-  "value" | "defaultValue" | "onChange" | "onFocus" | "onBlur" | "onKeyDown"
-> & {
+type DebouncedTextareaProps = Omit<TextareaProps, "value" | "defaultValue" | "onChange"> & {
   value: string;
   onSave: (value: string) => void;
   debounceMs?: number;
@@ -16,7 +13,7 @@ type DebouncedTextareaProps = Omit<
 
 /**
  * A Textarea that saves after a pause in typing, and on blur (rules on useDebouncedDraft).
- * Enter is a new line here, not a save.
+ * Enter is a new line here, not a save. onFocus / onBlur / onKeyDown run before the input's own.
  */
 export const DebouncedTextarea = ({
   value,
@@ -24,12 +21,18 @@ export const DebouncedTextarea = ({
   debounceMs,
   trim = false,
   allowEmpty = true,
+  onFocus,
+  onBlur,
+  onKeyDown,
   ...props
 }: DebouncedTextareaProps) => {
-  const { onChange, ...draft } = useDebouncedDraft<string, string>({
+  const { onChange, ...draft } = useDebouncedDraft<string, string, HTMLTextAreaElement>({
     value,
     onSave,
     debounceMs,
+    onFocus,
+    onBlur,
+    onKeyDown,
     commitOnEnter: false,
     parse: (raw) => parseText(raw, { trim, allowEmpty }),
   });

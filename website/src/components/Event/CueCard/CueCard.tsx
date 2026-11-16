@@ -1,4 +1,5 @@
 import {
+  Accordion,
   ActionIcon,
   Box,
   Button,
@@ -9,19 +10,18 @@ import {
   Input,
   InputBase,
   Menu,
+  Radio,
   Select,
   SimpleGrid,
   Slider,
   Stack,
   Switch,
   Text,
-  Textarea,
   Title,
   Tooltip,
   useCombobox,
 } from "@mantine/core";
-import { useDebouncedCallback } from "@mantine/hooks";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useDeleteCue } from "../../../query-v2/cues/useDeleteCue";
 import { useUpsertCue } from "../../../query-v2/cues/useUpsertCue";
 import { useGetItem } from "../../../query-v2/items/useGetItem";
@@ -41,6 +41,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { makeGetCuesQueryKey } from "../../../query-v2/cues/useGetCues";
 import { IconCaretDown, IconEdit, IconHelpCircle, IconInfoSquareRounded, IconPlus } from "@tabler/icons-react";
 import { popTransition } from "../../../utils/animations";
+import { DebouncedNumberInput } from "../../Inputs/DebouncedNumberInput";
+import { DebouncedTextarea } from "../../Inputs/DebouncedTextarea";
+import { useGetTimeline } from "../../../query-v2/timeline/useGetTimeline";
+import { getTimelineHoldTimeMs } from "../../../types-v2/timeline";
 
 /**
  * One cue in the cues panel: header actions (copy, preview, delete) and comments.
@@ -89,13 +93,6 @@ export const CueCard = ({
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  // --- Comments (autosaved) ---------
-  const [comments, setComments] = useState(cue.comments);
-  const saveComments = useDebouncedCallback(
-    (value: string) => void upsertCue({ id: cue.id, comments: value }).catch(console.error),
-    { delay: 600, flushOnUnmount: true }, // leaving mid-typing still saves
-  );
-
   // --- Copy another cue ---------
   const [copyQuery, setCopyQuery] = useState("");
   const copyOptions = orderedCues
@@ -136,6 +133,26 @@ export const CueCard = ({
   // --- Custom DMX ---------
   const cueHasOverrides = Object.keys(cue.overrides).length > 0;
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
+
+  // --- Transitions and fades ---------
+  // Cues saved before CueTransition had fields hold `{}`: fall back to "manual, instant" (the old CueCard's default).
+  // Always save both fields: the server replaces `transition` as a whole.
+  const holdTimeMs = cue.transition.holdTimeMs ?? -1;
+  const transitionTimeMs = cue.transition.transitionTimeMs ?? 0;
+  const saveTransition = (change: Partial<Cue["transition"]>) =>
+    void upsertCue({ id: cue.id, transition: { holdTimeMs, transitionTimeMs, ...change } }).catch(console.error);
+  /** Keep arrow keys in the input instead of moving to the other radio in the group. */
+  const keepArrowKeysInInput = (event: KeyboardEvent) => {
+    if (event.key.startsWith("Arrow")) event.stopPropagation();
+  };
+
+  // --- Sync to timeline ---------
+  // A cue with a marker on the timeline holds until the next marker; its own hold time is kept but not used.
+  const { timeline } = useGetTimeline(eventId, itemId);
+  const timelineHoldTimeMs = timeline ? getTimelineHoldTimeMs(timeline, cue.id) : null;
+  const isCueInTimeline = timelineHoldTimeMs !== null;
+  /** The hold time that applies: the timeline's, else the cue's own. -1 = until changed manually. */
+  const effectiveHoldTimeMs = timelineHoldTimeMs ?? holdTimeMs;
 
   return (
     <div ref={cardRef} id={`cue-card-${cue.id}`} data-cursor-surface="cueCard" data-cursor-anchor={cue.id}>
@@ -285,18 +302,121 @@ export const CueCard = ({
               </Stack>
             </SimpleGrid>
           </Switch.Group>
-          <Textarea
+          <SimpleGrid cols={2} spacing={0}>
+            {/* TODO: sync Accordion state when following */}
+            <Accordion>
+              <Accordion.Item value="holdTime">
+                <Tooltip
+                  label="The hold time is currently being set by the timeline; adjust the cue's timing there instead."
+                  withArrow
+                  disabled={!isCueInTimeline}
+                  transitionProps={popTransition}
+                >
+                  <Accordion.Control disabled={isCueInTimeline}>
+                    {/* Change to next cue (currently {holdTimeMs === -1 ? "manually" : `after ${holdTimeMs / 1000}s`}) */}
+                    Cue hold time ({isCueInTimeline ? "set by the timeline: " : "currently "}
+                    {effectiveHoldTimeMs === -1 ? "infinite" : `${effectiveHoldTimeMs / 1000}s`})
+                  </Accordion.Control>
+                </Tooltip>
+
+                <Accordion.Panel>
+                  <Radio.Group
+                    value={holdTimeMs === -1 ? "manual" : "auto"}
+                    onChange={(value) => {
+                      if (value === "manual") saveTransition({ holdTimeMs: -1 });
+                      else if (holdTimeMs === -1) saveTransition({ holdTimeMs: 100 });
+                    }}
+                    disabled={isCueInTimeline}
+                  >
+                    <Group wrap="nowrap" gap="xs">
+                      <Radio label="Only when manually changed" value={"manual"} style={{ flex: 1 }} />
+                      <Radio.Card
+                        style={{ flex: 1 }}
+                        styles={{
+                          card: {
+                            border: 0,
+                          },
+                        }}
+                        value="auto"
+                      >
+                        <Group wrap="nowrap" gap="xs">
+                          <Radio.Indicator />
+                          <DebouncedNumberInput
+                            min={1}
+                            allowDecimal={false}
+                            label="Change after"
+                            suffix="ms"
+                            // While manual, show the 100 that picking "auto" will set.
+                            value={holdTimeMs === -1 ? 100 : holdTimeMs}
+                            onSave={(value) => saveTransition({ holdTimeMs: value })}
+                            disabled={holdTimeMs === -1 || isCueInTimeline}
+                            onKeyDown={keepArrowKeysInInput}
+                          />
+                        </Group>
+                      </Radio.Card>
+                    </Group>
+                  </Radio.Group>
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+            <Accordion>
+              <Accordion.Item value="holdTime">
+                <Accordion.Control>
+                  Cue transition time to next cue (currently{" "}
+                  {transitionTimeMs === 0 ? "Instant" : `${transitionTimeMs / 1000}s`})
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Radio.Group
+                    value={transitionTimeMs === 0 ? "instant" : "timed"}
+                    onChange={(value) => {
+                      if (value === "instant") saveTransition({ transitionTimeMs: 0 });
+                      else if (transitionTimeMs === 0) saveTransition({ transitionTimeMs: 100 });
+                    }}
+                  >
+                    <Group wrap="nowrap" gap="xs">
+                      <Radio label="Instant transition" value="instant" flex={1} />
+                      <Radio.Card
+                        flex={1}
+                        styles={{
+                          card: {
+                            border: 0,
+                          },
+                        }}
+                        value="timed"
+                      >
+                        <Group wrap="nowrap">
+                          <Radio.Indicator />
+                          <Box style={{ maxWidth: "200px" }}>
+                            <DebouncedNumberInput
+                              min={1}
+                              allowDecimal={false}
+                              label="Transition over"
+                              suffix="ms"
+                              // While instant, show the 100 that picking "timed" will set.
+                              value={transitionTimeMs === 0 ? 100 : transitionTimeMs}
+                              onSave={(value) => saveTransition({ transitionTimeMs: value })}
+                              disabled={transitionTimeMs === 0}
+                              onKeyDown={keepArrowKeysInInput}
+                            />
+                          </Box>
+                        </Group>
+                      </Radio.Card>
+                    </Group>
+                  </Radio.Group>
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+          </SimpleGrid>
+          {/* Autosaved; a pending save still goes out if the card unmounts mid-typing. */}
+          <DebouncedTextarea
             label="Comments"
             minRows={1}
             maxRows={4}
             variant="unstyled"
             autosize
-            value={comments}
-            onChange={(e) => {
-              setComments(e.currentTarget.value);
-              saveComments(e.currentTarget.value);
-            }}
-            onBlur={() => saveComments.flush()}
+            debounceMs={600}
+            value={cue.comments}
+            onSave={(comments) => void upsertCue({ id: cue.id, comments }).catch(console.error)}
             placeholder="Write any comments regarding this cue here..."
             styles={{ input: { fontSize: "16px" } }}
           />
