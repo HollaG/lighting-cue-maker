@@ -53,10 +53,23 @@ export const getHeadGrid = (headCount: number, properties: PhysicalProperties | 
   return { columns: headCount, rows: 1 };
 };
 
+/**
+ * A multi-head fixture's real size in metres, from the template's dimensions (mm), each falling back on its own.
+ * - pitch: distance between neighbouring heads. The front face (width × height) is split over the head grid:
+ *   width over the columns (local X), height over the rows (local Z). Default HEAD_PITCH.
+ * - thickness: the body along the beam (local Y), from depth. Default MULTI_HEAD_BODY_HEIGHT.
+ */
+export const getHeadSpacing = (columns: number, rows: number, properties: PhysicalProperties | undefined) => ({
+  pitchX: properties?.width ? properties.width / 1000 / columns : HEAD_PITCH,
+  pitchZ: properties?.height ? properties.height / 1000 / rows : HEAD_PITCH,
+  thickness: properties?.depth ? properties.depth / 1000 : MULTI_HEAD_BODY_HEIGHT,
+});
+
 export const getFixtureBody = (headCount: number, properties: PhysicalProperties | undefined): FixtureBody => {
   if (headCount === 1) return { shape: "cylinder", radius: SINGLE_HEAD_RADIUS, height: SINGLE_HEAD_HEIGHT };
   const { columns, rows } = getHeadGrid(headCount, properties);
-  return { shape: "box", size: [columns * HEAD_PITCH, MULTI_HEAD_BODY_HEIGHT, rows * HEAD_PITCH] };
+  const { pitchX, pitchZ, thickness } = getHeadSpacing(columns, rows, properties);
+  return { shape: "box", size: [columns * pitchX, thickness, rows * pitchZ] };
 };
 
 export const getHeadLayouts = (template: FixtureTemplate | undefined, modeId: string): HeadLayout[] => {
@@ -69,19 +82,16 @@ export const getHeadLayouts = (template: FixtureTemplate | undefined, modeId: st
   }
 
   const { columns, rows } = getHeadGrid(heads.length, template?.properties);
+  const { pitchX, pitchZ, thickness } = getHeadSpacing(columns, rows, template?.properties);
   return heads.map((head, index) => {
     const column = index % columns;
     const row = Math.floor(index / columns);
     return {
       index,
       name: head.name,
-      position: [
-        (column - (columns - 1) / 2) * HEAD_PITCH,
-        MULTI_HEAD_BODY_HEIGHT / 2,
-        (row - (rows - 1) / 2) * HEAD_PITCH,
-      ],
+      position: [(column - (columns - 1) / 2) * pitchX, thickness / 2, (row - (rows - 1) / 2) * pitchZ],
       // Leave a small gap between lenses so pixels read as separate.
-      size: [HEAD_PITCH * 0.85, HEAD_PITCH * 0.85],
+      size: [pitchX * 0.85, pitchZ * 0.85],
     };
   });
 };

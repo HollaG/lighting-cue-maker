@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { FixtureTemplate, Head, PhysicalProperties } from "../../types-v2/fixtureTemplates";
 import {
   HEAD_PITCH,
+  MULTI_HEAD_BODY_HEIGHT,
   getBeamAngle,
   getFixtureBody,
   getHeadCount,
   getHeadGrid,
   getHeadLayouts,
+  getHeadSpacing,
 } from "../visualiser-v2-heads";
 
 const properties = (overrides: Partial<PhysicalProperties> = {}): PhysicalProperties => ({
@@ -53,6 +55,31 @@ describe("fixture heads", () => {
       [-HEAD_PITCH / 2, HEAD_PITCH / 2],
       [HEAD_PITCH / 2, HEAD_PITCH / 2],
     ]);
+  });
+
+  it("sizes a multi-head fixture from its dimensions: the front face over the grid, depth as thickness", () => {
+    // Like the OPPSK 720 bar: 970 × 60 mm face, 68 mm deep, 24 × 3 heads.
+    const props = properties({ columns: 24, rows: 3, width: 970, height: 60, depth: 68 });
+    expect(getHeadSpacing(24, 3, props)).toEqual({ pitchX: 0.970 / 24, pitchZ: 0.02, thickness: 0.068 });
+    const body = getFixtureBody(72, props);
+    expect(body.shape === "box" && body.size.map((v) => +v.toFixed(3))).toEqual([0.97, 0.068, 0.06]);
+
+    const layouts = getHeadLayouts(template(72, { columns: 24, rows: 3, width: 970, height: 60, depth: 68 }), "m1");
+    expect(layouts[0].position.map((v) => +v.toFixed(4))).toEqual([-0.4648, 0.034, -0.02]);
+    expect(layouts[0].size.map((v) => +v.toFixed(4))).toEqual([0.0344, 0.017]);
+  });
+
+  it("falls back to the default pitch and thickness for each missing dimension on its own", () => {
+    expect(getHeadSpacing(4, 2, properties())).toEqual({
+      pitchX: HEAD_PITCH,
+      pitchZ: HEAD_PITCH,
+      thickness: MULTI_HEAD_BODY_HEIGHT,
+    });
+    expect(getHeadSpacing(4, 2, properties({ width: 400, height: 0 }))).toEqual({
+      pitchX: 0.1,
+      pitchZ: HEAD_PITCH,
+      thickness: MULTI_HEAD_BODY_HEIGHT,
+    });
   });
 
   it("beam angle falls back like QLC+", () => {

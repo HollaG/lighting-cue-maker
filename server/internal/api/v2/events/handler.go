@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 func createEvent(c *gin.Context) {
@@ -285,4 +286,119 @@ func derefOr(value *string, fallback string) string {
 		return fallback
 	}
 	return *value
+}
+
+// duplicateEvent copies an event's setup only: the event (with its fixture
+// template copies), patched fixtures, fixture groups, option sets with their
+// selectables, and the visualiser. Items, cues, timelines and audio files are
+// not copied.
+//
+// Every copied row gets a new Postgres-generated ID. Patched fixture IDs are
+// referenced inside JSON (group fixtureIds / grid, option set selectables), so
+// those are rewritten with a plain old -> new string replace, which is safe for
+// Postgres-generated UUIDs. Selectable IDs are kept: they only need to be
+// unique within their option set.
+func duplicateEvent(c *gin.Context) {
+	eventId := eventscope.EventId(c)
+
+	var newEventId string
+	err := database.DB().Transaction(func(tx *gorm.DB) error {
+		var event modelsv2.Event
+		if err := tx.First(&event, "id = ?", eventId).Error; err != nil {
+			return err
+		}
+		var fixtures []modelsv2.PatchedFixture
+		if err := tx.Where("event_id = ?", eventId).Find(&fixtures).Error; err != nil {
+			return err
+		}
+		var groups []modelsv2.FixtureGroup
+		if err := tx.Preload("OptionSets").Where("event_id = ?", eventId).Find(&groups).Error; err != nil {
+			return err
+		}
+		var visualisers []modelsv2.Visualiser // at most one per event
+		if err := tx.Where("event_id = ?", eventId).Limit(1).Find(&visualisers).Error; err != nil {
+			return err
+		}
+
+		// 0. Event. Clearing Base makes Postgres generate a new ID and timestamps.
+		event.Base = modelsv2.Base{}
+		event.Name = event.Name + " (copy)"
+		event.Status = modelsv2.EventStatusConfiguring
+		if err := tx.Create(&event).Error; err != nil {
+			return err
+		}
+		newEventId = event.Id
+
+		// 1. PatchedFixtures, collecting old/new ID pairs for the replacer.
+		// Loop by index: `for _, f := range` would give a copy, and Create
+		// would write the new ID into the copy instead of the slice.
+		idPairs := make([]string, 0, len(fixtures)*2)
+		for i := range fixtures {
+			f := &fixtures[i]
+			oldId := f.Id
+			f.Base = modelsv2.Base{}
+			f.EventId = newEventId
+			if err := tx.Create(f).Error; err != nil {
+				return err
+			}
+			idPairs = append(idPairs, oldId, f.Id)
+		}
+		fixtureIds := strings.NewReplacer(idPairs...)
+
+		// 2. FixtureGroups and 3. their OptionSets.
+		for i := range groups {
+			g := &groups[i]
+			optionSets := g.OptionSets
+			g.OptionSets = nil // created below, after the group has its new ID
+
+			g.Base = modelsv2.Base{}
+			g.EventId = newEventId
+			for j, id := range g.FixtureIds {
+				g.FixtureIds[j] = fixtureIds.Replace(id)
+			}
+			g.Grid = replaceInJSON(fixtureIds, g.Grid)
+			if err := tx.Create(g).Error; err != nil {
+				return err
+			}
+
+			for j := range optionSets {
+				o := &optionSets[j]
+				o.Base = modelsv2.Base{}
+				o.FixtureGroupId = g.Id
+				o.Selectables = replaceInJSON(fixtureIds, o.Selectables)
+				if err := tx.Create(o).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		// 4. Visualiser. Its JSON holds no fixture IDs, so it is copied as is.
+		for i := range visualisers {
+			v := &visualisers[i]
+			v.Base = modelsv2.Base{}
+			v.EventId = newEventId
+			if err := tx.Create(v).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		response.InternalError(c, "Failed to duplicate event")
+		return
+	}
+
+	response.Created(c, map[string]any{
+		"eventId": newEventId,
+	})
+}
+
+// replaceInJSON runs the replacer over raw JSON. Empty/NULL JSON is returned
+// untouched, so a null column doesn't become an invalid empty string.
+func replaceInJSON(r *strings.Replacer, value datatypes.JSON) datatypes.JSON {
+	if len(value) == 0 {
+		return value
+	}
+	return datatypes.JSON(r.Replace(string(value)))
 }

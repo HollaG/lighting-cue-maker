@@ -154,4 +154,11 @@ export type PhysicalProperties = {
   maxBeamAngle: number;
   /** CueSketch-only: how bright the fixture looks in the visualiser. */
   brightnessModifier: number;
+  /**
+   * Body size in mm, from QLC+ `<Dimensions>`. Missing or 0 = unknown: the visualiser falls back to its default sizes.
+   * width × height is the front face (where the light comes out; heads are spread over it), depth is front to back.
+   */
+  width?: number;
+  height?: number;
+  depth?: number;
 };
