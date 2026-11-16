@@ -6,7 +6,19 @@
 //  Delete
 // 2. Prevent making the grid size smaller if there are heads outside the new size
 
-import { Box, Center, Divider, getDefaultZIndex, Group, Menu, NumberInput, Stack, Text, Title } from "@mantine/core";
+import {
+  Box,
+  Center,
+  Divider,
+  getDefaultZIndex,
+  Group,
+  Menu,
+  NumberInput,
+  ScrollArea,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 import { CardBase, ClickableCardBase } from "../../../Cues/CardBase";
 import type { FixtureGroup, GridCell } from "../../../../types-v2/fixtureGroups";
 import type { PatchedFixture } from "../../../../types-v2/patchedFixture";
@@ -426,6 +438,22 @@ const GridPosition = ({
                     )}
                   </Menu.Sub>
                 )}
+
+                {/* Complex head adding */}
+                <Menu.Sub>
+                  <Menu.Sub.Target>
+                    <Menu.Sub.Item>Add ranged heads</Menu.Sub.Item>
+                  </Menu.Sub.Target>
+                  <RangedHeadAdding
+                    option={option}
+                    row={row}
+                    col={col}
+                    rows={rows}
+                    cols={cols}
+                    onAddHeads={onAddHeads}
+                  />
+                </Menu.Sub>
+
                 {option.heads.length > 1 && (
                   <Menu.Sub>
                     <Menu.Sub.Target>
@@ -436,17 +464,19 @@ const GridPosition = ({
                     </Menu.Sub.Target>
                     {option.populatedHeads.length < option.heads.length && (
                       <Menu.Sub.Dropdown>
-                        {option.heads.map((_, headIndex) => (
-                          <Menu.Item
-                            key={headIndex}
-                            disabled={option.populatedHeads.some(
-                              (c) => c.head === headIndex && c.fixtureId === option.fixture.id,
-                            )}
-                            onClick={() => onSingleOptionClick(row, col, headIndex, option.fixture.id)}
-                          >
-                            Head {headIndex + 1}
-                          </Menu.Item>
-                        ))}
+                        <ScrollArea.Autosize mah={500}>
+                          {option.heads.map((_, headIndex) => (
+                            <Menu.Item
+                              key={headIndex}
+                              disabled={option.populatedHeads.some(
+                                (c) => c.head === headIndex && c.fixtureId === option.fixture.id,
+                              )}
+                              onClick={() => onSingleOptionClick(row, col, headIndex, option.fixture.id)}
+                            >
+                              Head {headIndex + 1}
+                            </Menu.Item>
+                          ))}
+                        </ScrollArea.Autosize>
                       </Menu.Sub.Dropdown>
                     )}
                   </Menu.Sub>
@@ -488,6 +518,115 @@ const GridPosition = ({
   );
 };
 
+/**
+ * "Add ranged heads": pick heads `fromHead`..`toHead` (1-based, inclusive), then a direction to lay them out from
+ * the clicked cell. A direction is disabled when the range wouldn't fit there, or when a head in the range is
+ * already on the grid (a head can only be placed once).
+ */
+const RangedHeadAdding = ({
+  option,
+  row,
+  col,
+  rows,
+  cols,
+  onAddHeads,
+}: {
+  option: {
+    fixture: PatchedFixture;
+    heads: Head[];
+    populatedHeads: GridCell[];
+    otherCells: GridCell[];
+  };
+  /** The clicked cell: the first head of the range goes here. */
+  row: number;
+  col: number;
+  /** Grid size */
+  rows: number;
+  cols: number;
+  onAddHeads: (gridCells: GridCell[]) => void;
+}) => {
+  const headCount = option.heads.length;
+  const [fromHead, setFromHead] = useState(1);
+  const [toHead, setToHead] = useState(headCount);
+
+  // The range as 0-based head indexes, in placement order.
+  const headIndexes = Array.from({ length: toHead - fromHead + 1 }, (_, i) => fromHead - 1 + i);
+  const rangeHasPlacedHead = option.populatedHeads.some((c) => headIndexes.includes(c.head));
+  // Every filled position blocks, this fixture's own heads too (otherCells leaves those out).
+  const filledCells = [...option.otherCells, ...option.populatedHeads];
+
+  const canAddRange = (direction: Direction) =>
+    !rangeHasPlacedHead && canAdd({ row, col }, direction, headIndexes.length, { rows, cols }, filledCells);
+
+  const addRange = (direction: Direction) => {
+    const step = DirectionStep[direction];
+    onAddHeads(
+      headIndexes.map((head, i) => ({
+        row: row + step.row * i,
+        col: col + step.col * i,
+        fixtureId: option.fixture.id,
+        head,
+      })),
+    );
+  };
+
+  /** NumberInput's value as a whole number within [min, max], or null while the field is empty (keep the old one). */
+  const toBound = (value: string | number, min: number, max: number) => {
+    const n = Number(value);
+    if (value === "" || !Number.isFinite(n)) return null;
+    return Math.min(Math.max(Math.round(n), min), max);
+  };
+
+  return (
+    <Menu.Sub.Dropdown>
+      {/* Not a Menu.Item: an item would close the menu on click, block focusing the inputs (it prevents mousedown) */}
+      {/* and use the arrow keys to move between items. Arrow keys are stopped here so they step the numbers. */}
+      <Group
+        gap="xs"
+        px="sm"
+        py={6}
+        wrap="nowrap"
+        onKeyDown={(event) => {
+          if (event.key.startsWith("Arrow")) event.stopPropagation();
+        }}
+      >
+        <Text size="sm">Heads</Text>
+        <NumberInput
+          size="xs"
+          w="4rem"
+          value={fromHead}
+          min={1}
+          max={toHead}
+          allowDecimal={false}
+          onChange={(value) => {
+            const next = toBound(value, 1, toHead);
+            if (next !== null) setFromHead(next);
+          }}
+        />
+        <Text size="sm">to</Text>
+        <NumberInput
+          size="xs"
+          w="4rem"
+          value={toHead}
+          min={fromHead}
+          max={headCount}
+          allowDecimal={false}
+          onChange={(value) => {
+            const next = toBound(value, fromHead, headCount);
+            if (next !== null) setToHead(next);
+          }}
+        />
+      </Group>
+      <Menu.Divider />
+      {[Direction.Right, Direction.Left, Direction.Up, Direction.Down].map((direction) => (
+        <Menu.Item key={direction} disabled={!canAddRange(direction)} onClick={() => addRange(direction)}>
+          Add heads {fromHead}–{toHead} {DIRECTION_LABELS[direction]}
+        </Menu.Item>
+      ))}
+    </Menu.Sub.Dropdown>
+  );
+};
+
 type SimpleGridCell = { row: number; col: number };
 
 /**
@@ -518,6 +657,13 @@ const DirectionStep: Record<Direction, SimpleGridCell> = {
   [Direction.Down]: { row: 1, col: 0 },
   [Direction.Left]: { row: 0, col: -1 },
   [Direction.Right]: { row: 0, col: 1 },
+};
+
+const DIRECTION_LABELS: Record<Direction, string> = {
+  [Direction.Right]: "to the right",
+  [Direction.Left]: "to the left",
+  [Direction.Up]: "upwards",
+  [Direction.Down]: "downwards",
 };
 
 /**

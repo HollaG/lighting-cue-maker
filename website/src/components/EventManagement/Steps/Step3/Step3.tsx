@@ -80,7 +80,13 @@ export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string
         rotY: 0,
         rotZ: 0,
       };
-      await upsertPatchedFixtures(Array.from({ length: newCount }, () => ({ ...fixture })));
+
+      const fixtureArrayToAdd = [];
+      const alreadyExistingOfThisTemplate = patchedFixtures.filter((f) => f.fixtureTemplateId === newTemplate.id);
+      for (let i = 0; i < newCount; i++) {
+        fixtureArrayToAdd.push({ ...fixture, name: `${fixture.name} ${alreadyExistingOfThisTemplate.length + i + 1}` });
+      }
+      await upsertPatchedFixtures(fixtureArrayToAdd);
 
       setNewCount(1); // keep the template and mode picked, so adding more of the same is quick
     } catch {
