@@ -4,6 +4,7 @@ import {
   Button,
   Center,
   Container,
+  Divider,
   Drawer,
   Flex,
   FloatingIndicator,
@@ -54,6 +55,11 @@ import { RichContentWrapper } from "../../components/RichContent-v2/RichContentW
 import { TimelineDrawerContainer } from "../../components/Timeline/TimelineDrawerContainer";
 import { DrawerResizeHandle } from "../../components/DrawerResizeHandle/DrawerResizeHandle";
 import { resizableDrawerStyles, useDrawerSize } from "../../components/DrawerResizeHandle/useDrawerSize";
+import { CustomTextInput } from "../../components/CustomTextInput/CustomTextInput";
+import { DebouncedTextInput } from "../../components/Inputs/DebouncedTextInput";
+import { DebouncedTextarea } from "../../components/Inputs/DebouncedTextarea";
+import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton/ConfirmDeleteButton";
+import { useDeleteItem } from "../../query-v2/items/useDeleteItem";
 
 // const logger = new Logger("EventPage.tsx");
 
@@ -161,6 +167,9 @@ export const EventPage = () => {
   // --- Item selection ---------
   const [itemName, setItemName] = useState("");
   const { mutateAsync: upsertItem, isPending: isItemCreating } = useUpsertItem(eventId);
+  // Separate from the one above, so saving the name or comments doesn't show "Add item" as loading.
+  const { mutate: saveItem } = useUpsertItem(eventId);
+  const { mutateAsync: deleteItem } = useDeleteItem(eventId);
 
   const onAddItem = async () => {
     const name = itemName.trim();
@@ -208,22 +217,28 @@ export const EventPage = () => {
     [items, selectedItemId, setSelectedItemId, setControlRef, closeEventDetails],
   );
 
+  const item = items.find((i) => i.id === selectedItemId) ?? undefined;
+
   return (
     <>
       {/* Centered pull-down */}
-      <Box
+      <Stack
         style={{
           position: "absolute",
           top: "0.5rem",
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 1000,
+          alignItems: "center",
         }}
+        gap="xs"
       >
-        <Button size="xs" variant="outline" onClick={toggleDrawerHandler.bind(null, toggleEventDetails, "event")}>
-          {openedEventDetails ? "Close" : "Open"} event details
+        <Button size="xs" variant="light" onClick={toggleDrawerHandler.bind(null, toggleEventDetails, "event")}>
+          {/* {openedEventDetails ? "Close" : "Open"} event details */}
+          Change item
         </Button>
-      </Box>
+        {item && <Text>Item: {item.name}</Text>}
+      </Stack>
 
       {/* DMX overrides */}
       {/* <Drawer */}
@@ -247,7 +262,13 @@ export const EventPage = () => {
         // force the drawer body to be 100% height, never overflow; paddingTop + relative: room for the resize handle
         styles={{ body: { height: "100%", padding: 0, paddingTop: 12, position: "relative" } }}
       >
-        <DrawerResizeHandle edge="top" label="DMX overrides height" size={dmxHeight} onResize={resizeDmx} {...HEIGHT_LIMITS} />
+        <DrawerResizeHandle
+          edge="top"
+          label="DMX overrides height"
+          size={dmxHeight}
+          onResize={resizeDmx}
+          {...HEIGHT_LIMITS}
+        />
         {isLoading ? (
           <Center h="100%">
             <Loader type="bars" />
@@ -419,6 +440,56 @@ export const EventPage = () => {
               </Stack>
             </Center>
           )}
+
+          <Flex
+            mt="md"
+            style={{
+              flexDirection: "row",
+              alignItems: "start",
+            }}
+          >
+            {/* Only for an existing item: without an id, a save would create a new item. */}
+            {item && (
+              <>
+                <Stack flex={4}>
+                  <DebouncedTextInput
+                    inputComponent={CustomTextInput}
+                    size="xxl"
+                    placeholder="Your item name"
+                    value={item.name}
+                    onSave={(name) => saveItem({ id: item.id, name })}
+                  />
+                  <DebouncedTextarea
+                    minRows={3}
+                    variant="unstyled"
+                    autosize
+                    placeholder="Type a brief description or comments about your item"
+                    value={item.comments ?? ""}
+                    onSave={(comments) => saveItem({ id: item.id, comments })}
+                    styles={{ input: { fontSize: "16px" } }}
+                  />
+                </Stack>
+                <Divider orientation="vertical" mx="md" />
+                <Stack flex={4}>
+                  <Box>
+                    <ConfirmDeleteButton
+                      onConfirm={async () => {
+                        if (!item) return;
+                        await deleteItem(item.id);
+
+                        // reset the selectedItem
+                        setSelectedItemId("");
+                      }}
+                      buttonProps={{
+                        variant: "filled",
+                      }}
+                      label="Delete item"
+                    ></ConfirmDeleteButton>
+                  </Box>
+                </Stack>
+              </>
+            )}
+          </Flex>
         </Container>
       </Drawer>
 
@@ -451,7 +522,13 @@ export const EventPage = () => {
         closeOnClickOutside={false} // allow manipulating the 3d visualiser
         styles={resizableDrawerStyles}
       >
-        <DrawerResizeHandle edge="right" label="Lyrics width" size={lyricsWidth} onResize={resizeLyrics} {...WIDTH_LIMITS} />
+        <DrawerResizeHandle
+          edge="right"
+          label="Lyrics width"
+          size={lyricsWidth}
+          onResize={resizeLyrics}
+          {...WIDTH_LIMITS}
+        />
         <Lyrics itemId={selectedItemId} eventId={eventId} />
       </Drawer>
 

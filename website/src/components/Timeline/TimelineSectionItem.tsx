@@ -4,7 +4,6 @@ import {
   Box,
   Flex,
   SegmentedControl,
-  NumberInput,
   Select,
   Group,
   Divider,
@@ -16,8 +15,8 @@ import {
   Title,
 } from "@mantine/core";
 import { type Span, useItem, useTimelineContext } from "dnd-timeline";
-import { useMemo, useRef, useState, type ReactNode } from "react";
-import { useDebouncedCallback, useDisclosure, useMouse } from "@mantine/hooks";
+import { useMemo, useState, type ReactNode } from "react";
+import { useDisclosure, useMouse } from "@mantine/hooks";
 import type { ItemData, TimelineRowId } from "../../utils/timeline";
 import { ConfirmDelete } from "../ConfirmDeleteButton/ConfirmDeleteButton";
 import {
@@ -29,6 +28,7 @@ import {
   type TimelineSection,
 } from "../../types-v2/timeline";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
+import { DebouncedNumberInput } from "../Inputs/DebouncedNumberInput";
 import {
   useUpsertTimelineSectionItem,
   type TimelineSectionPatch,
@@ -199,7 +199,8 @@ export const TimelineSectionItem = ({
                         </Text>
                         <Box style={{ width: "4rem" }}>
                           {/* (Beats) Bars (but actually convert to beats later) */}
-                          <BlurNumberInput
+                          <DebouncedNumberInput
+                            size="xs"
                             placeholder="Bar count"
                             value={Math.round(section.beats / section.timeSigNum)}
                             min={1}
@@ -258,7 +259,8 @@ export const TimelineSectionItem = ({
                           BPM
                         </Text>
                         <Box style={{ width: "4rem" }}>
-                          <BlurNumberInput
+                          <DebouncedNumberInput
+                            size="xs"
                             placeholder="BPM"
                             value={section.bpm}
                             min={1}
@@ -666,87 +668,5 @@ const TimelineBeatSectionItem = ({
         </Flex>
       )}
     </>
-  );
-};
-
-/**
- * A NumberInput that keeps what's typed locally and saves it after a pause in typing (`debounceMs`), and on blur / Enter.
- * Only valid values are saved: an empty value, a non-number or one below `min` is never sent, and on blur the saved
- * value comes back.
- * Escape drops what hasn't been saved yet (a debounced save that already went out stays).
- * While not focused it just shows `value`, so changes from elsewhere (undo, refetch) show up.
- */
-const BlurNumberInput = ({
-  value,
-  onSave,
-  min,
-  allowDecimal = true,
-  placeholder,
-  debounceMs = 500,
-}: {
-  value: number;
-  onSave: (value: number) => void;
-  min?: number;
-  allowDecimal?: boolean;
-  placeholder?: string;
-  debounceMs?: number;
-}) => {
-  /** What's being typed; null when not editing. */
-  const [draft, setDraft] = useState<string | number | null>(null);
-  /** Set by Escape so the blur that follows doesn't save. */
-  const cancelRef = useRef(false);
-
-  /** The number to save, or null if `raw` isn't a valid value. */
-  const parse = (raw: string | number | null): number | null => {
-    if (raw === null || raw === "") return null;
-    const n = typeof raw === "number" ? raw : Number(raw);
-    if (!Number.isFinite(n) || (min !== undefined && n < min)) return null;
-    return n;
-  };
-
-  // Reads the latest `value` when it fires, so it skips a save that would change nothing.
-  // Flushed on unmount, so a pending edit isn't lost if the input disappears (e.g. switching to Time).
-  const debouncedSave = useDebouncedCallback(
-    (n: number) => {
-      if (n !== value) onSave(n);
-    },
-    { delay: debounceMs, flushOnUnmount: true },
-  );
-
-  const commit = () => {
-    debouncedSave.cancel();
-    const next = parse(draft);
-    setDraft(null);
-    if (cancelRef.current) {
-      cancelRef.current = false;
-      return;
-    }
-    if (next !== null && next !== value) onSave(next);
-  };
-
-  return (
-    <NumberInput
-      size="xs"
-      placeholder={placeholder}
-      min={min}
-      allowDecimal={allowDecimal}
-      value={draft ?? value}
-      onFocus={() => setDraft(value)}
-      onChange={(raw) => {
-        setDraft(raw);
-        const n = parse(raw);
-        if (n === null)
-          debouncedSave.cancel(); // empty / invalid: don't send the previous keystroke's value either
-        else debouncedSave(n);
-      }}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-        if (e.key === "Escape") {
-          cancelRef.current = true;
-          e.currentTarget.blur();
-        }
-      }}
-    />
   );
 };
