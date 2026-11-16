@@ -115,6 +115,7 @@ Table v2.fixture_groups {
     cells[] MUST be kept in sync with fixture_ids.
   ''']
   sort_order int
+  allow_user_override bool [default: true, note: 'whether users can override DMX of this fixture group']
   created_at timestamp
   updated_at timestamp
   deleted_at timestamp

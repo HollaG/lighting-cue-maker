@@ -13,8 +13,9 @@ type UpsertFixtureGroupReq struct {
 	Description *string  `json:"description,omitempty"`
 	FixtureIds  []string `json:"fixtureIds,omitempty"`
 	// Left out = keep, null = remove the layout.
-	Grid      datatypes.JSON `json:"grid,omitempty"`
-	SortOrder *int           `json:"sortOrder,omitempty"`
+	Grid              datatypes.JSON `json:"grid,omitempty"`
+	SortOrder         *int           `json:"sortOrder,omitempty"`
+	AllowUserOverride *bool          `json:"allowUserOverride,omitempty"`
 }
 
 // UpsertFixtureGroupsReq is the body of POST /api/v2/events/{eventId}/fixture-groups.
@@ -38,6 +39,11 @@ type FixtureGroup struct {
 	Grid       datatypes.JSON              `json:"grid" gorm:"type:jsonb"` // Grid, nullable
 
 	SortOrder int `json:"sortOrder" gorm:"not null;default:0"`
+
+	// Whether users may override DMX values of this group's fixtures in a cue. Defaults to true; existing rows got
+	// true from the column default. A pointer because GORM leaves a plain false bool with a default out of the
+	// INSERT (so false would become true); a non-nil pointer is always written. Never nil once read from the DB.
+	AllowUserOverride *bool `json:"allowUserOverride" gorm:"not null;default:true"`
 
 	OptionSets []OptionSet `json:"optionSets,omitempty" gorm:"foreignKey:FixtureGroupId"`
 }
