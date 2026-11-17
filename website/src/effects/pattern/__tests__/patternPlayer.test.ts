@@ -88,6 +88,40 @@ describe("compilePatternPlayer", () => {
     expect(player.values.get("f1")![1]).toBe(7);
   });
 
+  it("mask on RGBW: a white cell keeps the red base, an off cell goes black", () => {
+    const player = compile([
+      pattern("columnChase", {
+        blendMode: BlendMode.MASK,
+        colours: [{ name: "White", hex: "#ffffff" }],
+        fadeInDuration: 0,
+        fadeOutDuration: 0,
+      }),
+    ]);
+    player.evaluate(0);
+    // Head 0 lit, heads 1-3 off.
+    expect(player.values.get("f1")).toEqual([255, 200, 0, 0, 0, ...Array.from({ length: 3 }, () => [0, 0, 0, 0]).flat()]);
+  });
+
+  it("mask on RGBW: a coloured cell filters a white base", () => {
+    const whiteBase = { f1: [255, ...Array.from({ length: 4 }, () => [0, 0, 0, 255]).flat()] };
+    const player = compilePatternPlayer({
+      base: whiteBase,
+      patterns: [
+        pattern("columnChase", {
+          blendMode: BlendMode.MASK,
+          colours: [{ name: "Red", hex: "#ff0000" }],
+          fadeInDuration: 0,
+          fadeOutDuration: 0,
+        }),
+      ],
+      fixtures: [fixture],
+      fixtureTemplates: [template],
+    });
+    player.evaluate(0);
+    // W-only white is full R, G and B light; the red cell keeps only the red.
+    expect(player.values.get("f1")!.slice(1, 9)).toEqual([255, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
   it("never changes the base", () => {
     const before = structuredClone(base);
     compile([pattern("columnChase")]).evaluate(500);

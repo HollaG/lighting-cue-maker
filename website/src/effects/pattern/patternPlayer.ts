@@ -6,7 +6,7 @@
 // are thin wrappers around this file, so their tests cover it.
 
 import type { Grid } from "../../types-v2/fixtureGroups";
-import type { ChannelType, FixtureTemplate } from "../../types-v2/fixtureTemplates";
+import { ChannelType, type FixtureTemplate } from "../../types-v2/fixtureTemplates";
 import { BlendMode, type PatternSelectable } from "../../types-v2/optionSet";
 import type { PatchedFixture } from "../../types-v2/patchedFixture";
 import {
@@ -157,10 +157,14 @@ export const createPatternTrack = (
   };
 };
 
-/** The LD's colours as RGB, padded with white up to `colourCount`. */
+/**
+ * The LD's colours as RGB, padded up to `colourCount`: a missing first colour is white, any later one is black.
+ * With the default MASK blend mode, white shows the base light and black turns it off, so a two-colour effect
+ * (e.g. alternate) switches cells on and off instead of being white/white, which would change nothing.
+ */
 const getEffectColours = (selectable: PatternSelectable, colourCount: number): Rgb[] => {
   const colours: Rgb[] = (selectable.colours ?? []).map((c) => parseHex(c.hex) ?? WHITE);
-  while (colours.length < colourCount) colours.push(WHITE);
+  while (colours.length < colourCount) colours.push(colours.length === 0 ? WHITE : BLACK);
   return colours;
 };
 
@@ -200,6 +204,56 @@ export const blend = (mode: BlendMode, base: number, effect: number): number => 
   }
 };
 
+/**
+ * MASK: the pattern colour is a filter over the base light, so a white cell keeps the base as it is and a black cell
+ * turns it off. Done in light terms, not DMX terms: converting the pattern colour to DMX first (as `blend` does)
+ * moves white onto W on RGBW heads and inverts CMY, so a white cell would black out a red base.
+ *
+ * One colour channel on its own. RGBW heads go through maskRgbw instead, since their white is shared with R, G, B.
+ */
+export const maskChannel = (type: ChannelType, base: number, rgb: readonly [number, number, number]): number => {
+  const [r, g, b] = rgb;
+  switch (type) {
+    case ChannelType.RED:
+      return Math.round((base * r) / 255);
+    case ChannelType.GREEN:
+      return Math.round((base * g) / 255);
+    case ChannelType.BLUE:
+      return Math.round((base * b) / 255);
+    // The white part of the pattern colour.
+    case ChannelType.WHITE:
+      return Math.round((base * Math.min(r, g, b)) / 255);
+    // CMY filters subtract light: mask the light let through (255 - filter), then turn it back into a filter.
+    case ChannelType.CYAN:
+      return 255 - Math.round(((255 - base) * r) / 255);
+    case ChannelType.MAGENTA:
+      return 255 - Math.round(((255 - base) * g) / 255);
+    case ChannelType.YELLOW:
+      return 255 - Math.round(((255 - base) * b) / 255);
+    // Specials: by how bright the cell is.
+    default:
+      return Math.round((base * Math.max(r, g, b)) / 255);
+  }
+};
+
+/**
+ * MASK on an RGBW head: read the base as light (W adds to R, G and B), filter it by the pattern colour, then move
+ * the shared white back onto W, the same split getWhiteShare makes. So a W-only white masked by red comes out red.
+ */
+const maskRgbw = (values: (number | null)[], slots: RgbwSlots, rgb: readonly [number, number, number]) => {
+  const w = values[slots.w] ?? 0;
+  const r = Math.round((Math.min(255, (values[slots.r] ?? 0) + w) * rgb[0]) / 255);
+  const g = Math.round((Math.min(255, (values[slots.g] ?? 0) + w) * rgb[1]) / 255);
+  const b = Math.round((Math.min(255, (values[slots.b] ?? 0) + w) * rgb[2]) / 255);
+  const white = Math.min(r, g, b);
+  values[slots.r] = r - white;
+  values[slots.g] = g - white;
+  values[slots.b] = b - white;
+  values[slots.w] = white;
+};
+
+type RgbwSlots = { r: number; g: number; b: number; w: number };
+
 /** One grid cell a pattern writes: a fixture head's colour slots. */
 type CellTarget = {
   values: (number | null)[];
@@ -208,6 +262,8 @@ type CellTarget = {
   slots: { slot: number; type: ChannelType }[];
   /** Every channel type of the head, for the RGBW white share. */
   headTypes: ChannelType[];
+  /** The head's red, green, blue and white slots, when it has all four. For MASK. */
+  rgbwSlots: RgbwSlots | null;
 };
 
 type CompiledPattern = { track: PatternTrack; effectId: string; blendMode: BlendMode; targets: CellTarget[] };
@@ -290,7 +346,16 @@ export const compilePatternPlayer = (input: CompilePatternPlayerInput): PatternP
         fixtureValues = [...base[fixture.id]];
         values.set(fixture.id, fixtureValues);
       }
-      targets.push({ values: fixtureValues, position: track.indexByKey.get(cellKey(cell.col, cell.row))!, slots, headTypes });
+      const slotOf = (type: ChannelType) => slots.find((s) => s.type === type)?.slot;
+      const [r, g, b, w] = [ChannelType.RED, ChannelType.GREEN, ChannelType.BLUE, ChannelType.WHITE].map(slotOf);
+      const rgbwSlots = r !== undefined && g !== undefined && b !== undefined && w !== undefined ? { r, g, b, w } : null;
+      targets.push({
+        values: fixtureValues,
+        position: track.indexByKey.get(cellKey(cell.col, cell.row))!,
+        slots,
+        headTypes,
+        rgbwSlots,
+      });
     }
     compiled.push({ track, effectId: effect.id, blendMode: selectable.blendMode, targets });
   }
@@ -331,6 +396,17 @@ export const compilePatternPlayer = (input: CompilePatternPlayerInput): PatternP
         colour[0] = rgb[target.position * 3];
         colour[1] = rgb[target.position * 3 + 1];
         colour[2] = rgb[target.position * 3 + 2];
+        if (pattern.blendMode === BlendMode.MASK) {
+          const { rgbwSlots } = target;
+          if (rgbwSlots) maskRgbw(target.values, rgbwSlots, colour);
+          for (const { slot, type } of target.slots) {
+            if (rgbwSlots && (slot === rgbwSlots.r || slot === rgbwSlots.g || slot === rgbwSlots.b || slot === rgbwSlots.w)) {
+              continue;
+            }
+            target.values[slot] = maskChannel(type, target.values[slot] ?? 0, colour);
+          }
+          continue;
+        }
         const white = getWhiteShare(colour, target.headTypes);
         for (const { slot, type } of target.slots) {
           const effectValue = getColourChannelValue(type, colour, white)!;
