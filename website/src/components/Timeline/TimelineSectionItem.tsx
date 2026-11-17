@@ -12,7 +12,6 @@ import {
   Button,
   ActionIcon,
   Stack,
-  Title,
   Switch,
 } from "@mantine/core";
 import { type Span, useItem, useTimelineContext } from "dnd-timeline";
@@ -44,6 +43,7 @@ import { sanitize } from "../../utils/sanitize";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { popTransition } from "../../utils/animations";
 import { notifications } from "../../utils/notifications";
+import { TimelineMarkerItem } from "./TimelineMarkerItem";
 
 const COMMON_TIME_SIGNATURES = [
   { label: "4/4", value: "4/4" },
@@ -352,6 +352,8 @@ const TimelineBeatSectionItem = ({
 
   // useMouse keeps its last x/y after the mouse leaves, so track hovering separately.
   const [hovered, setHovered] = useState(false);
+  /** While a marker is dragged, the hover ghost and sub-beat lines are hidden. */
+  const [isDraggingMarker, setIsDraggingMarker] = useState(false);
   /** The beat the cursor is in (0-based), clamped so the last beat's right edge doesn't count as a new beat. */
   const hoveredBeat = Math.min(Math.floor(sectionX / beatPx), section.beats - 1);
   /** Sub-beat lines only make sense when snapping finer than a beat. */
@@ -467,58 +469,49 @@ const TimelineBeatSectionItem = ({
     closeModal();
   };
 
-  // render the cue items
-  // const [cueItems, setCueItems] = useState<ReactNode[]>([]);
+  // --- Cue markers (draggable) ---
+  const sectionLengthMs = getSectionLengthMs(section);
+  /** Grid step in ms for dragging markers: the same grid as the hover ghost (snapPx), but zoom-independent. */
+  const snapMs = section.snapEnabled
+    ? section.snapFidelity === 0
+      ? beatMs * section.timeSigNum
+      : beatMs / section.snapFidelity
+    : null;
 
-  // useEffect(() => {
+  /** "Bar 3 · Beat 2", 1-based, for the drag readout. */
+  // const formatMarkerTime = (ms: number) => {
+  // const beats = ms / beatMs;
+  // const bar = Math.floor(beats / section.timeSigNum) + 1;
+  // const beat = Math.floor(beats % section.timeSigNum) + 1;
+  // return `Bar ${bar} / Beat ${beat}`;
 
-  // })
-  const cueItems = useMemo<ReactNode[]>(() => {
-    const nodes: ReactNode[] = [];
-    for (const m of section.markers) {
-      // calculate the exact x location
-      const markerX = valueToPixels(m.time);
-      // create a cue item for this marker
+  //   return "";
+  // };
 
-      nodes.push(
-        <Box
-          key={m.id}
-          style={{
-            position: "absolute",
-            left: markerX - 2 - hiddenPx, // center the 8px wide box
-            top: 0,
-            width: 4,
-            height: "100%",
-            backgroundColor: "light-dark(var(--cue-color--light), var(--cue-color--dark))",
-            // borderRadius: "var(--mantine-radius-sm)",
-            pointerEvents: "none",
-          }}
-        >
-          <Box
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0 + 2,
+  const onMoveMarker = (markerId: string, time: number) => {
+    // Only `markers` is sent, so other fields edited meanwhile aren't overwritten. Kept sorted by time.
+    const markers = section.markers
+      .map((m) => (m.id === markerId ? { ...m, time } : m))
+      .sort((a, b) => a.time - b.time);
+    void upsertSection({ id: section.id, markers });
+  };
 
-              backgroundColor: "light-dark(var(--cue-color--light), var(--cue-color--dark))",
-              padding: "0.2rem",
-            }}
-          >
-            <Title
-              order={6}
-              style={{
-                textWrap: "nowrap",
-              }}
-            >
-              Cue {cueOrder.indexOf(m.cueId) + 1}
-            </Title>
-          </Box>
-        </Box>,
-      );
-    }
-
-    return nodes;
-  }, [section.markers, valueToPixels, hiddenPx, cueOrder]);
+  const sortedMarkers = useMemo(() => [...section.markers].sort((a, b) => a.time - b.time), [section.markers]);
+  const cueItems: ReactNode[] = sortedMarkers.map((m, i) => (
+    <TimelineMarkerItem
+      key={m.id}
+      marker={m}
+      label={`Cue ${cueOrder.indexOf(m.cueId) + 1}`}
+      hiddenPx={hiddenPx}
+      snapMs={snapMs}
+      // Can't reach or pass a neighbour (cue order comes from the lyrics), and stays inside the section.
+      minTime={i > 0 ? sortedMarkers[i - 1].time + 1 : 0}
+      maxTime={i < sortedMarkers.length - 1 ? sortedMarkers[i + 1].time - 1 : sectionLengthMs}
+      // formatTime={formatMarkerTime}
+      onDraggingChange={setIsDraggingMarker}
+      onMove={onMoveMarker}
+    />
+  ));
   return (
     <>
       <Modal
@@ -624,6 +617,7 @@ const TimelineBeatSectionItem = ({
           {cueItems}
           {/* track the mouse position */}
           <Box
+            hidden={isDraggingMarker}
             style={{
               border: "2px solid light-dark(var(--cue-color--light), var(--cue-color--dark))",
               width: "12px",
@@ -677,7 +671,7 @@ const TimelineBeatSectionItem = ({
           {/* track the mouse position */}
 
           <Box
-            hidden={!hovered}
+            hidden={!hovered || isDraggingMarker}
             style={{
               border: "2px solid light-dark(var(--cue-color--light), var(--cue-color--dark))",
               width: "12px",
