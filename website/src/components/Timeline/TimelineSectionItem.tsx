@@ -497,6 +497,11 @@ const TimelineBeatSectionItem = ({
   };
 
   const sortedMarkers = useMemo(() => [...section.markers].sort((a, b) => a.time - b.time), [section.markers]);
+
+  const onDeleteMarker = (markerId: string) => {
+    const markers = section.markers.filter((m) => m.id !== markerId);
+    void upsertSection({ id: section.id, markers });
+  };
   const cueItems: ReactNode[] = sortedMarkers.map((m, i) => (
     <TimelineMarkerItem
       key={m.id}
@@ -510,8 +515,10 @@ const TimelineBeatSectionItem = ({
       // formatTime={formatMarkerTime}
       onDraggingChange={setIsDraggingMarker}
       onMove={onMoveMarker}
+      onDelete={onDeleteMarker}
     />
   ));
+
   return (
     <>
       <Modal
@@ -611,6 +618,8 @@ const TimelineBeatSectionItem = ({
           onClick={() => onClick(hoveredTimeMs)}
 
           onMouseEnter={() => setHovered(true)}
+          // sometimes it might miss the enter event
+          onMouseMove={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
           {/* cue items */}
@@ -648,6 +657,8 @@ const TimelineBeatSectionItem = ({
           ref={ref}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
+          // sometimes it might miss the enter event
+          onMouseMove={() => setHovered(true)}
           onClick={() => onClick(hoveredTimeMs)}
         >
           {/* The snap lines, ONLY for the hovered beat: one beat wide, a line every snapPx (sub-beats). */}

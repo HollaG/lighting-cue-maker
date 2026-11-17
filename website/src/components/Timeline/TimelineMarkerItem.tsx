@@ -1,7 +1,8 @@
-import { Box, Title } from "@mantine/core";
+import { Box, Menu, Title } from "@mantine/core";
 import { useTimelineContext } from "dnd-timeline";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import type { TimelineMarker } from "../../types-v2/timeline";
+import { ConfirmDelete } from "../ConfirmDeleteButton/ConfirmDeleteButton";
 
 /** How wide the grab area is, in px. The visible line stays 4px. */
 const GRAB_WIDTH = 12;
@@ -34,6 +35,7 @@ export const TimelineMarkerItem = ({
   // formatTime,
   onDraggingChange,
   onMove,
+  onDelete,
 }: {
   marker: TimelineMarker;
   /** e.g. "Cue 3" */
@@ -50,6 +52,8 @@ export const TimelineMarkerItem = ({
   onDraggingChange: (dragging: boolean) => void;
   /** Called on release when the time changed. */
   onMove: (markerId: string, time: number) => void;
+  /** Called when the user confirms deletion. */
+  onDelete: (markerId: string) => void;
 }) => {
   const { valueToPixels, pixelsToValue } = useTimelineContext();
   /** Set while dragging: where the press started, and the marker's time then. */
@@ -108,50 +112,67 @@ export const TimelineMarkerItem = ({
   const x = valueToPixels(time) - hiddenPx;
 
   return (
-    <Box
-      ref={elementRef}
-      style={{
-        position: "absolute",
-        left: x - GRAB_WIDTH / 2,
-        top: 0,
-        width: GRAB_WIDTH,
-        height: "100%",
-        cursor: isDragging ? "grabbing" : "ew-resize",
-        touchAction: "none", // no scrolling/zooming on touch while dragging
-        zIndex: isDragging ? 2 : 1,
-      }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={endDrag}
-      onClick={(event) => event.stopPropagation()} // don't open the add-cue modal
-    >
-      {/* The visible 4px line, centred in the grab area. */}
-      <Box
-        style={{
-          position: "absolute",
-          left: GRAB_WIDTH / 2 - 2,
-          top: 0,
-          width: 4,
-          height: "100%",
-          backgroundColor: "light-dark(var(--cue-color--light), var(--cue-color--dark))",
-          opacity: isDragging ? 0.8 : 1,
-        }}
-      />
-      <Box
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: GRAB_WIDTH / 2,
-          backgroundColor: "light-dark(var(--cue-color--light), var(--cue-color--dark))",
-          padding: "0.2rem",
-        }}
-      >
-        <Title order={6} style={{ textWrap: "nowrap" }}>
-          {label}
-          {/* {isDragging && ` · ${formatTime(time)}`} */}
-        </Title>
-      </Box>
-    </Box>
+    <Menu>
+      <Menu.ContextMenu>
+        <Box
+          ref={elementRef}
+          style={{
+            position: "absolute",
+            left: x - GRAB_WIDTH / 2,
+            top: 0,
+            width: GRAB_WIDTH,
+            height: "100%",
+            cursor: isDragging ? "grabbing" : "ew-resize",
+            touchAction: "none", // no scrolling/zooming on touch while dragging
+            zIndex: isDragging ? 2 : 1,
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={endDrag}
+          onClick={(event) => event.stopPropagation()} // don't open the add-cue modal
+        >
+          {/* The visible 4px line, centred in the grab area. */}
+          <Box
+            style={{
+              position: "absolute",
+              left: GRAB_WIDTH / 2 - 2,
+              top: 0,
+              width: 4,
+              height: "100%",
+              backgroundColor: "light-dark(var(--cue-color--light), var(--cue-color--dark))",
+              opacity: isDragging ? 0.8 : 1,
+            }}
+          />
+          <Box
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: GRAB_WIDTH / 2,
+              backgroundColor: "light-dark(var(--cue-color--light), var(--cue-color--dark))",
+              padding: "0.2rem",
+            }}
+          >
+            <Title order={6} style={{ textWrap: "nowrap" }}>
+              {label}
+              {/* {isDragging && ` · ${formatTime(time)}`} */}
+            </Title>
+          </Box>
+        </Box>
+      </Menu.ContextMenu>
+      {/* Portal events still bubble through React to the draggable item. */}
+      <Menu.Dropdown onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
+        <Menu.Label>Actions</Menu.Label>
+        {/* <Menu.Item>Open</Menu.Item>
+                 <Menu.Item>Rename</Menu.Item>
+                 <Menu.Item>Duplicate</Menu.Item> */}
+        {/* <Menu.Divider /> */}
+        <ConfirmDelete onConfirm={() => onDelete(marker.id)}>
+          <Menu.Item color="red" closeMenuOnClick={false}>
+            Delete
+          </Menu.Item>
+        </ConfirmDelete>
+      </Menu.Dropdown>
+    </Menu>
   );
 };
