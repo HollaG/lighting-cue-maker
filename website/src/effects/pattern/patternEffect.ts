@@ -115,7 +115,7 @@ export type PatternCellInput = {
   /** 0 … stepCount - 1 */
   step: number;
   stepCount: number;
-  /** The LD's colours. Always has at least `colourCount` entries (missing ones are white). */
+  /** The LD's colours. Always has at least `colourCount` entries (a missing first colour is white, later ones black). */
   colours: Rgb[];
   /** 0 ≤ n < 1. Seeded by (step, col, row), so the same cell in the same step always gets the same numbers. */
   random: () => number;
