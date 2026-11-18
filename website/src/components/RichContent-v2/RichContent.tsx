@@ -1,18 +1,13 @@
 // feature[class=Realtime] Lyrics with word-level cursor anchors
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Group, Flex, Stack } from "@mantine/core";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
 import { useGetItem } from "../../query-v2/items/useGetItem";
 import { useUpsertItem } from "../../query-v2/items/useUpsertItem";
 import { useUpsertCue } from "../../query-v2/cues/useUpsertCue";
 import { RichWord } from "./RichWord";
-import {
-  insertCueInRichContent,
-  isInRichRange,
-  removeCueFromRawLyrics,
-  type RichRange,
-} from "../../utils/cue/cueForm";
+import { insertCueInRichContent, isInRichRange, removeCueFromRawLyrics, type RichRange } from "../../utils/cue/cueForm";
 import { generateRaw, generateRich } from "../../utils/convertText";
 import { insertTimingMarkerInRichContent, removeTimingMarkerFromContent } from "../../utils/timingUtils";
 import type { IndicatorTimingMode } from "../../store/slices/timingSlice";
@@ -55,6 +50,7 @@ const RichContentInternal = ({
 
   const isMovingCue = useAppStore((state) => state.isMovingCue);
   const setIsMovingCue = useAppStore((state) => state.setIsMovingCue);
+  const isPlaying = useAppStore((state) => state.isPlaying);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!item) return;
@@ -166,6 +162,17 @@ const RichContentInternal = ({
 
   // Cue ids and numbers for every word, parsed once per lyrics change instead of on every render.
   const parsedLines = React.useMemo(() => parseLines(content), [content]);
+
+  // if is playing, then scroll into view
+  useEffect(() => {
+    if (!isPlaying) return;
+    if (!currentlySelectedCueId) return;
+
+    const cueElement = document.getElementById(`ref-${currentlySelectedCueId}`);
+    if (cueElement) {
+      cueElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [currentlySelectedCueId, isPlaying]);
 
   return (
     <Stack

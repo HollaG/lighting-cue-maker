@@ -18,6 +18,7 @@ import { TimelinePlayhead } from "./TimelinePlayhead";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useTimelineCueSync } from "./useTimelineCueSync";
+import { useAppStore } from "../../store/appStore";
 
 const logger = new Logger("TimelineWrapper", "orange");
 
@@ -69,6 +70,8 @@ export const TimelineWrapper = ({
 
   // WebAudio: handle the playback position
   const [playState, setPlayState] = useState<"play" | "pause" | "stop">("pause");
+  const isPlaying = useAppStore((state) => state.isPlaying);
+  const setIsPlaying = useAppStore((state) => state.setIsPlaying);
   const [isPlayLoading, setIsPlayLoading] = useState(false); // for showing a spinner on the play button
 
   const onSelect = (type: TimelineRowId, ids: Set<string>) => {
@@ -81,7 +84,7 @@ export const TimelineWrapper = ({
 
   // when the spacebar is pressed, toggle play/pause.
   useHotkey("Space", () => {
-    if (playState === "play") {
+    if (isPlaying) {
       onPlayStateChange("pause");
     } else {
       onPlayStateChange("play");
@@ -142,7 +145,7 @@ export const TimelineWrapper = ({
     logger.info("onDragEnd", { event });
 
     // DO NOT ALLOW DRAGGING ANYTHING DURING PLAYING!
-    if (playState === "play") {
+    if (isPlaying) {
       logger.warn("Ignoring drag during playback");
       return;
     }
@@ -233,6 +236,7 @@ export const TimelineWrapper = ({
       _onStop();
     }
     setPlayState(newState);
+    setIsPlaying(newState === "play");
   };
 
   const _onStop = () => {
@@ -263,7 +267,7 @@ export const TimelineWrapper = ({
     const rounded = Math.round(timeMs / 1000) * 1000;
 
     // if playing, stop playing, then resume
-    if (playState === "play") {
+    if (isPlaying) {
       onPlayStateChange("pause");
       startPlayheadPositionRef.current = rounded;
       onPlayStateChange("play");
@@ -380,7 +384,7 @@ export const TimelineWrapper = ({
   };
 
   // sync the cue markers
-  useTimelineCueSync({ timeline, getPositionMs, playing: playState === "play" });
+  useTimelineCueSync({ timeline, getPositionMs, playing: isPlaying });
 
   // Pointer only: dnd-kit's default KeyboardSensor starts a drag when Space/Enter is pressed on a focused item,
   // which clashes with Space = play/pause (and Space again would drop the item and save it).
