@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"lighting-cue-maker/server/internal/api/v2/eventscope"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func createEvent(c *gin.Context) {
@@ -196,6 +198,95 @@ func updateEvent(c *gin.Context) {
 
 	if err := database.DB().Save(&event).Error; err != nil {
 		response.InternalError(c, "Failed to update event")
+		return
+	}
+
+	response.OK(c, map[string]any{
+		"event": event,
+	})
+}
+
+// errTemplateNotInEvent: the template ID isn't one of the event's copies.
+var errTemplateNotInEvent = errors.New("fixture template not in event")
+
+// updateEventFixtureTemplate edits one of the event's template copies (not the
+// library template). Only the fields in the request are touched; the rest of the
+// copy's JSON is kept as is.
+func updateEventFixtureTemplate(c *gin.Context) {
+	eventId := eventscope.EventId(c)
+	templateId := c.Param("templateId")
+
+	var req modelsv2.UpdateEventFixtureTemplateReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body", nil)
+		return
+	}
+	if req.BrightnessModifier != nil && *req.BrightnessModifier < 0 {
+		response.BadRequest(c, "Brightness modifier cannot be negative", nil)
+		return
+	}
+
+	var event modelsv2.Event
+	err := database.DB().Transaction(func(tx *gorm.DB) error {
+		// Lock the row: two quick saves (e.g. two templates edited at once) would
+		// otherwise both read the old JSON, and the second write would undo the first.
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&event, "id = ?", eventId).Error; err != nil {
+			return err
+		}
+
+		// Raw maps rather than FixtureTemplate structs, so fields we don't touch
+		// (or that the Go struct doesn't know) come back out unchanged.
+		var templates []map[string]json.RawMessage
+		if err := json.Unmarshal(event.FixtureTemplates, &templates); err != nil {
+			return err
+		}
+
+		index := -1
+		for i, t := range templates {
+			var id string
+			if json.Unmarshal(t["id"], &id) == nil && id == templateId {
+				index = i
+				break
+			}
+		}
+		if index == -1 {
+			return errTemplateNotInEvent
+		}
+
+		properties := map[string]json.RawMessage{}
+		if raw, ok := templates[index]["properties"]; ok && len(raw) > 0 {
+			if err := json.Unmarshal(raw, &properties); err != nil {
+				return err
+			}
+		}
+		if req.BrightnessModifier != nil {
+			raw, err := json.Marshal(*req.BrightnessModifier)
+			if err != nil {
+				return err
+			}
+			properties["brightnessModifier"] = raw
+		}
+
+		rawProperties, err := json.Marshal(properties)
+		if err != nil {
+			return err
+		}
+		templates[index]["properties"] = rawProperties
+
+		merged, err := json.Marshal(templates)
+		if err != nil {
+			return err
+		}
+		event.FixtureTemplates = datatypes.JSON(merged)
+		// Only this column: the rest of the row wasn't edited.
+		return tx.Model(&event).Update("fixture_templates", event.FixtureTemplates).Error
+	})
+	if errors.Is(err, errTemplateNotInEvent) {
+		response.NotFound(c, "Fixture template is not in this event")
+		return
+	}
+	if err != nil {
+		response.InternalError(c, "Failed to update fixture template")
 		return
 	}
 

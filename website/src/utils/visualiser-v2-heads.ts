@@ -107,3 +107,13 @@ export const getBeamAngle = (properties: PhysicalProperties | undefined): number
   if (max > 0) return max;
   return 10;
 };
+
+/**
+ * The template's `brightnessModifier` (%) as a multiplier on its lights: 100 = 1 = base brightness.
+ * Missing or invalid falls back to 1, so older templates without the field look as before.
+ */
+export const getBrightnessScale = (properties: PhysicalProperties | undefined): number => {
+  const percent = properties?.brightnessModifier;
+  if (typeof percent !== "number" || !Number.isFinite(percent) || percent < 0) return 1;
+  return percent / 100;
+};

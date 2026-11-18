@@ -27,6 +27,9 @@ import { STEP_FORM_ID } from "../StepForm";
 import { FixtureItem } from "./FixtureItem";
 import { GridControl } from "./GridControl";
 import { GroupItem } from "./GroupItem";
+import { CardBase } from "../../../Cues/CardBase";
+import { DebouncedNumberInput } from "../../../Inputs/DebouncedNumberInput";
+import { useUpdateEventFixtureTemplate } from "../../../../query-v2/events/useUpdateEventFixtureTemplate";
 
 /** Fixture grouping and arrangement */
 export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string }) => {
@@ -37,6 +40,9 @@ export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string
   const { mutateAsync: deleteFixture, isPending: isDeleteFixturePending } = useDeletePatchedFixture(eventId);
 
   const { mutateAsync: upsertFixtureGroups } = useUpsertFixtureGroups(eventId);
+  const { mutateAsync: updateTemplate } = useUpdateEventFixtureTemplate(eventId);
+  const updateEventFixtureTemplate = (args: Parameters<typeof updateTemplate>[0]) =>
+    updateTemplate(args).catch(() => {});
 
   const fixtureTemplates = event?.fixtureTemplates ?? [];
 
@@ -150,69 +156,136 @@ export const Step3 = ({ eventId, onDone }: { onDone: () => void; eventId: string
         </Text>
 
         <SimpleGrid cols={3} mt="lg" spacing="xl">
-          {/* List of all fixtures */}
-          <Box>
-            <Title mb="lg" order={5}>
-              {" "}
-              Fixture list{" "}
-            </Title>
-            <Group gap="xs" mb="md" wrap="nowrap" align="flex-end">
-              <Select
-                disabled={isFixtureTemplatesLoading}
-                placeholder="Select a fixture model"
-                data={librarySelectData}
-                searchable
-                flex={1}
-                rightSection={isFixtureTemplatesLoading ? <Loader size="xs" type="bars" /> : undefined}
-                value={newTemplateId}
-                onChange={(id) => {
-                  setNewTemplateId(id);
-                  // the old mode belongs to the previous template; default to the new one's first mode
-                  setNewModeId(libraryTemplates.find((t) => t.id === id)?.modes[0]?.id ?? null);
-                }}
-              />
-              <Select
-                w="8rem"
-                data={newTemplate ? newTemplate.modes.map((mode) => ({ value: mode.id, label: mode.name })) : []}
-                placeholder="Mode"
-                disabled={!newTemplate}
-                allowDeselect={false}
-                value={newModeId}
-                onChange={setNewModeId}
-              />
-              <NumberInput w="4rem" value={newCount} onChange={(v) => setNewCount(Number(v) || 1)} min={1} />
-              <Button
-                variant="light"
-                onClick={onAddFixtures}
-                disabled={!newTemplate || !newModeId}
-                loading={isUpdateEventPending || isUpsertFixturesPending}
-              >
-                Add
-              </Button>
-            </Group>
+          <Stack>
+            {/* List of fixture templates deployed */}
             <Stack gap="xs">
-              {patchedFixtures.map((fixture) => (
-                <FixtureItem
-                  key={fixture.id}
-                  fixture={fixture}
-                  rightSection={
-                    <Button
-                      variant="subtle"
-                      color="red"
-                      size="xs"
-                      onClick={() => {
-                        setLastDeletedFixtureId(fixture.id);
-                        deleteFixture(fixture.id);
-                      }}
-                      loading={isDeleteFixturePending && lastDeletedFixtureId === fixture.id}
-                    >
-                      Delete
-                    </Button>
-                  }
+              <Title order={5}> Fixture models used </Title>
+              <Group gap="xs" mb="md" wrap="nowrap" align="flex-end">
+                <Select
+                  disabled={isFixtureTemplatesLoading}
+                  placeholder="Select a fixture model"
+                  data={librarySelectData}
+                  searchable
+                  flex={1}
+                  rightSection={isFixtureTemplatesLoading ? <Loader size="xs" type="bars" /> : undefined}
+                  value={newTemplateId}
+                  onChange={(id) => {
+                    setNewTemplateId(id);
+                    // the old mode belongs to the previous template; default to the new one's first mode
+                    setNewModeId(libraryTemplates.find((t) => t.id === id)?.modes[0]?.id ?? null);
+                  }}
                 />
-              ))}
+                <Select
+                  w="8rem"
+                  data={newTemplate ? newTemplate.modes.map((mode) => ({ value: mode.id, label: mode.name })) : []}
+                  placeholder="Mode"
+                  disabled={!newTemplate}
+                  allowDeselect={false}
+                  value={newModeId}
+                  onChange={setNewModeId}
+                />
+                <NumberInput w="4rem" value={newCount} onChange={(v) => setNewCount(Number(v) || 1)} min={1} />
+                <Button
+                  variant="light"
+                  onClick={onAddFixtures}
+                  disabled={!newTemplate || !newModeId}
+                  loading={isUpdateEventPending || isUpsertFixturesPending}
+                >
+                  Add
+                </Button>
+              </Group>
+              <Stack gap="xs">
+                {event?.fixtureTemplates.map((template) => (
+                  <CardBase key={template.id} isActive={false}>
+                    <Stack gap="xs">
+                      <Group>
+                        <Text flex={1}>
+                          {template.manufacturer} {template.name}
+                        </Text>
+                        <Text c="dimmed">
+                          Qty: {patchedFixtures.filter((f) => f.fixtureTemplateId === template.id).length}
+                        </Text>
+                      </Group>
+
+                      <DebouncedNumberInput
+                        required
+                        min={0}
+                        allowDecimal={false}
+                        suffix="%"
+                        label="Brightness modifier"
+                        description="How bright this model looks in the visualiser"
+                        value={template.properties.brightnessModifier}
+                        onSave={(brightnessModifier) =>
+                          void updateEventFixtureTemplate({ templateId: template.id, req: { brightnessModifier } })
+                        }
+                      />
+                    </Stack>
+                  </CardBase>
+                ))}
+              </Stack>
             </Stack>
-          </Box>
+
+            {/* List of all fixtures */}
+            <Stack gap="xs">
+              <Title order={5}> Fixture list </Title>
+              <Group gap="xs" mb="md" wrap="nowrap" align="flex-end">
+                <Select
+                  disabled={isFixtureTemplatesLoading}
+                  placeholder="Select a fixture model"
+                  data={librarySelectData}
+                  searchable
+                  flex={1}
+                  rightSection={isFixtureTemplatesLoading ? <Loader size="xs" type="bars" /> : undefined}
+                  value={newTemplateId}
+                  onChange={(id) => {
+                    setNewTemplateId(id);
+                    // the old mode belongs to the previous template; default to the new one's first mode
+                    setNewModeId(libraryTemplates.find((t) => t.id === id)?.modes[0]?.id ?? null);
+                  }}
+                />
+                <Select
+                  w="8rem"
+                  data={newTemplate ? newTemplate.modes.map((mode) => ({ value: mode.id, label: mode.name })) : []}
+                  placeholder="Mode"
+                  disabled={!newTemplate}
+                  allowDeselect={false}
+                  value={newModeId}
+                  onChange={setNewModeId}
+                />
+                <NumberInput w="4rem" value={newCount} onChange={(v) => setNewCount(Number(v) || 1)} min={1} />
+                <Button
+                  variant="light"
+                  onClick={onAddFixtures}
+                  disabled={!newTemplate || !newModeId}
+                  loading={isUpdateEventPending || isUpsertFixturesPending}
+                >
+                  Add
+                </Button>
+              </Group>
+              <Stack gap="xs">
+                {patchedFixtures.map((fixture) => (
+                  <FixtureItem
+                    key={fixture.id}
+                    fixture={fixture}
+                    rightSection={
+                      <Button
+                        variant="subtle"
+                        color="red"
+                        size="xs"
+                        onClick={() => {
+                          setLastDeletedFixtureId(fixture.id);
+                          deleteFixture(fixture.id);
+                        }}
+                        loading={isDeleteFixturePending && lastDeletedFixtureId === fixture.id}
+                      >
+                        Delete
+                      </Button>
+                    }
+                  />
+                ))}
+              </Stack>
+            </Stack>
+          </Stack>
 
           {/* List of groups */}
           <Stack gap="xs">

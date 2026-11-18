@@ -18,7 +18,7 @@ const properties = (overrides: Partial<PhysicalProperties> = {}): PhysicalProper
   maxTilt: 0,
   minBeamAngle: 0,
   maxBeamAngle: 0,
-  brightnessModifier: 1,
+  brightnessModifier: 100,
   ...overrides,
 });
 

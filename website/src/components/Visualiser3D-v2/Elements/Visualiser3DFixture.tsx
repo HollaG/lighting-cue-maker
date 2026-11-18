@@ -4,7 +4,13 @@ import * as THREE from "three";
 import type { PatchedFixture } from "../../../types-v2/patchedFixture";
 import type { FixtureTemplate } from "../../../types-v2/fixtureTemplates";
 import { getFixture3DPosition, getFixture3DRotation } from "../../../utils/visualiser-v2";
-import { getBeamAngle, getFixtureBody, getHeadLayouts, type HeadLayout } from "../../../utils/visualiser-v2-heads";
+import {
+  getBeamAngle,
+  getBrightnessScale,
+  getFixtureBody,
+  getHeadLayouts,
+  type HeadLayout,
+} from "../../../utils/visualiser-v2-heads";
 import { VOLUMETRIC_LIGHT_MASK } from "../visualiser3DRenderer";
 import { decodeHeadStates, getHeadDecoder } from "../../../utils/visualiser-v2-decoder";
 import { HeadSinkContext, LENS_OFF_COLOUR, writeHead, type HeadLensTarget, type HeadLightTarget } from "./headSinks";
@@ -70,6 +76,9 @@ export const Visualiser3DFixture = ({
     [heads.length, fixtureTemplate],
   );
   const beamAngle = getBeamAngle(fixtureTemplate?.properties);
+  // Per-model calibration (LD-set, %), so models look as bright relative to each other as in real life.
+  // Only the lights: lenses still lerp by intensity alone, so a dimmed model's lens still reads as "on".
+  const brightness = getBrightnessScale(fixtureTemplate?.properties);
 
   // To let LDs view the fixtures better when building the scene, set the intensity to SELECTED when in build mode (viewOnly = false)
   // Else, follow DMX values.
@@ -156,6 +165,7 @@ export const Visualiser3DFixture = ({
         heads={heads}
         states={states}
         beamAngle={beamAngle}
+        brightness={brightness}
         castShadow={castShadow}
         lightRef={(i, light) => {
           lightRefs.current[i] = light;
@@ -236,12 +246,15 @@ const HeadLights = ({
   heads,
   states,
   beamAngle,
+  brightness,
   castShadow,
   lightRef,
 }: {
   heads: HeadLayout[];
   states: HeadState[];
   beamAngle: number;
+  /** Multiplier on every light's output (the template's brightnessModifier / 100). */
+  brightness: number;
   castShadow: boolean;
   /** Called with each head's light (by head position), and null on unmount. */
   lightRef: (headIndex: number, light: HeadLightTarget | null) => void;
@@ -255,19 +268,27 @@ const HeadLights = ({
         heads={heads}
         states={states}
         beamAngle={beamAngle}
+        brightness={brightness}
         castShadow={castShadow}
         lightRef={lightRef}
       />
     );
   }
+
+  // three.js lights have no scale of their own: scale the props, and hand the effect player a wrapper that scales
+  // what it writes, so both paths match the table's.
+  const scaledStates = brightness === 1 ? states : states.map((s) => ({ ...s, intensity: s.intensity * brightness }));
+  const scaledRef = (i: number, light: HeadLightTarget | null) =>
+    lightRef(i, light && brightness !== 1 ? scaleLightTarget(light, brightness) : light);
+
   if (heads.length === 1) {
     return (
       <SpotHeadLight
         head={heads[0]}
-        state={states[0]}
+        state={scaledStates[0]}
         beamAngle={beamAngle}
         castShadow={castShadow}
-        lightRef={(light) => lightRef(0, light)}
+        lightRef={(light) => scaledRef(0, light)}
       />
     );
   }
@@ -277,11 +298,27 @@ const HeadLights = ({
     <>
       {heads.map((head, i) => (
         // An off head adds nothing; skip it instead of paying for it in every pixel.
-        <PanelHeadLight key={head.index} head={head} state={states[i]} lightRef={(light) => lightRef(i, light)} />
+        <PanelHeadLight
+          key={head.index}
+          head={head}
+          state={scaledStates[i]}
+          lightRef={(light) => scaledRef(i, light)}
+        />
       ))}
     </>
   );
 };
+
+/** A light target whose `intensity` writes are multiplied by `scale` (for three.js lights, which have no scale). */
+const scaleLightTarget = (light: HeadLightTarget, scale: number): HeadLightTarget => ({
+  color: light.color,
+  get intensity() {
+    return scale === 0 ? 0 : light.intensity / scale;
+  },
+  set intensity(value: number) {
+    light.intensity = value * scale;
+  },
+});
 
 /** How much brighter than its lens area an LED head's cone is. 1 = the same on-axis brightness as its old panel light. */
 const LED_HEAD_GAIN = 1;
@@ -297,6 +334,7 @@ const TableHeadLights = ({
   heads,
   states,
   beamAngle,
+  brightness,
   castShadow,
   lightRef,
 }: {
@@ -304,6 +342,7 @@ const TableHeadLights = ({
   heads: HeadLayout[];
   states: HeadState[];
   beamAngle: number;
+  brightness: number;
   castShadow: boolean;
   lightRef: (headIndex: number, light: HeadLightTarget | null) => void;
 }) => {
@@ -319,10 +358,11 @@ const TableHeadLights = ({
           angle: THREE.MathUtils.degToRad(beamAngle / 2),
           // Only single-head fixtures cast shadows, as before.
           castShadow: castShadow && heads.length === 1,
-          intensityScale: heads.length === 1 ? 1 : head.size[0] * head.size[1] * LED_HEAD_GAIN,
+          // The table multiplies this into every intensity write (props and effect player alike).
+          intensityScale: (heads.length === 1 ? 1 : head.size[0] * head.size[1] * LED_HEAD_GAIN) * brightness,
         }),
       ),
-    [heads, beamAngle, castShadow],
+    [heads, beamAngle, castShadow, brightness],
   );
 
   useEffect(() => {

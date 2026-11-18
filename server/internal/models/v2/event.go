@@ -51,6 +51,15 @@ type UpdateEventReq struct {
 	FixtureTemplateIds []string `json:"fixtureTemplateIds"`
 }
 
+// UpdateEventFixtureTemplateReq is the body of
+// PATCH /api/v2/events/{eventId}/fixture-templates/{templateId}.
+// It edits the event's copy of a template, never the library one.
+// Each field: nil = leave as is.
+type UpdateEventFixtureTemplateReq struct {
+	// CueSketch-only: how bright the fixture looks in the visualiser (%). Must be >= 0.
+	BrightnessModifier *int `json:"brightnessModifier,omitempty"`
+}
+
 // DB model
 
 type Event struct {

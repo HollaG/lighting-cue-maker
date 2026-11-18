@@ -13,4 +13,5 @@ func RegisterScoped(rg *gin.RouterGroup) {
 	rg.GET("", getEvent)
 	rg.PATCH("", updateEvent)
 	rg.POST("/duplicate", duplicateEvent)
+	rg.PATCH("/fixture-templates/:templateId", updateEventFixtureTemplate)
 }
