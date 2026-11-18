@@ -152,34 +152,26 @@ describe("resolvePatternParams", () => {
   });
 });
 
-describe("rainbow orientation", () => {
-  const rainbow = patternEffects.get("rainbow")!;
-  const colourAt = (orientation: string, col: number, row: number) =>
-    rainbow.colourAt({
-      col,
-      row,
-      cols: 4,
-      rows: 4,
-      step: 0,
-      stepCount: 24,
-      colours: [],
-      random: Math.random,
-      params: { orientation },
-    });
+describe("gradient (matches QLC+ gradient.js)", () => {
+  const gradient = patternEffects.get("gradient")!;
+  const colourAt = (col: number, row: number, step: number, params: PatternParamValues) =>
+    gradient.colourAt({ col, row, cols: 3, rows: 3, step, stepCount: 15, colours: [], random: Math.random, params });
+  const rainbow = { preset: "rainbow", size: 5, orientation: "horizontal" };
 
-  it("horizontal: same colour down a column, changes along a row", () => {
-    expect(colourAt("horizontal", 1, 0)).toEqual(colourAt("horizontal", 1, 3));
-    expect(colourAt("horizontal", 0, 0)).not.toEqual(colourAt("horizontal", 1, 0));
+  it("has `size` colours per preset colour", () => {
+    expect(gradient.stepCount({ cols: 3, rows: 3, params: rainbow })).toBe(15);
   });
 
-  it("vertical: same colour along a row, changes down a column", () => {
-    expect(colourAt("vertical", 0, 1)).toEqual(colourAt("vertical", 3, 1));
-    expect(colourAt("vertical", 0, 0)).not.toEqual(colourAt("vertical", 0, 1));
+  it("blends towards the next colour, and the cell to the right is one colour ahead", () => {
+    expect(colourAt(0, 0, 0, rainbow)).toEqual([255, 0, 0]);
+    expect(colourAt(1, 0, 0, rainbow)).toEqual([204, 51, 0]);
+    expect(colourAt(0, 0, 1, rainbow)).toEqual([204, 51, 0]);
+    expect(colourAt(0, 0, 14, rainbow)).toEqual([204, 0, 51]); // last blend: blue back to red
   });
 
   it("radial: cells the same distance from the centre match", () => {
-    expect(colourAt("radial", 0, 0)).toEqual(colourAt("radial", 3, 3));
-    expect(colourAt("radial", 1, 1)).toEqual(colourAt("radial", 2, 2));
-    expect(colourAt("radial", 0, 0)).not.toEqual(colourAt("radial", 1, 1));
+    const radial = { ...rainbow, orientation: "radial" };
+    expect(colourAt(0, 0, 0, radial)).toEqual(colourAt(2, 2, 0, radial));
+    expect(colourAt(1, 1, 0, radial)).toEqual([255, 0, 0]);
   });
 });

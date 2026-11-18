@@ -63,7 +63,7 @@ const compile = (patterns: ActivePattern[], overrides?: Parameters<typeof compil
 
 describe("compilePatternPlayer", () => {
   it("gives the same values frame by frame as evaluating each time from scratch", () => {
-    const patterns = [pattern("columnChase"), pattern("twinkle", { blendMode: BlendMode.ADDITIVE, stepDuration: 170 })];
+    const patterns = [pattern("stripes"), pattern("randomFillSingle", { blendMode: BlendMode.ADDITIVE, stepDuration: 170 })];
     const running = compile(patterns);
     // Uneven frame times, a long stall, and a jump back to the start (a new cue reuses nothing: fresh player).
     for (let t = 0; t < 4000; t += 7 + (t % 23)) {
@@ -75,14 +75,14 @@ describe("compilePatternPlayer", () => {
   });
 
   it("reports no change while holding a step, and a change on the next step", () => {
-    const player = compile([pattern("columnChase", { fadeInDuration: 0, fadeOutDuration: 0 })]);
+    const player = compile([pattern("stripes", { fadeInDuration: 0, fadeOutDuration: 0 })]);
     expect(player.evaluate(10)).toBe(true);
     expect(player.evaluate(150)).toBe(false);
     expect(player.evaluate(310)).toBe(true);
   });
 
   it("applies overrides after the effects", () => {
-    const player = compile([pattern("columnChase", { fadeInDuration: 0, fadeOutDuration: 0 })], { f1: { r: 7 } });
+    const player = compile([pattern("stripes", { fadeInDuration: 0, fadeOutDuration: 0 })], { f1: { r: 7 } });
     player.evaluate(0);
     // `r` is the first red slot of the mode (head 0).
     expect(player.values.get("f1")![1]).toBe(7);
@@ -90,7 +90,7 @@ describe("compilePatternPlayer", () => {
 
   it("mask on RGBW: a white cell keeps the red base, an off cell goes black", () => {
     const player = compile([
-      pattern("columnChase", {
+      pattern("stripes", {
         blendMode: BlendMode.MASK,
         colours: [{ name: "White", hex: "#ffffff" }],
         fadeInDuration: 0,
@@ -107,7 +107,7 @@ describe("compilePatternPlayer", () => {
     const player = compilePatternPlayer({
       base: whiteBase,
       patterns: [
-        pattern("columnChase", {
+        pattern("stripes", {
           blendMode: BlendMode.MASK,
           colours: [{ name: "Red", hex: "#ff0000" }],
           fadeInDuration: 0,
@@ -124,22 +124,22 @@ describe("compilePatternPlayer", () => {
 
   it("never changes the base", () => {
     const before = structuredClone(base);
-    compile([pattern("columnChase")]).evaluate(500);
+    compile([pattern("stripes")]).evaluate(500);
     expect(base).toEqual(before);
   });
 });
 
 describe("getNextPatternChangeDelay", () => {
   it("is 0 while any pattern fades, and otherwise the nearest step of any pattern", () => {
-    const slow = pattern("columnChase", { stepDuration: 1000, fadeInDuration: 0, fadeOutDuration: 0 });
-    const fast = pattern("columnChase", { stepDuration: 250, fadeInDuration: 0, fadeOutDuration: 0 });
+    const slow = pattern("stripes", { stepDuration: 1000, fadeInDuration: 0, fadeOutDuration: 0 });
+    const fast = pattern("stripes", { stepDuration: 250, fadeInDuration: 0, fadeOutDuration: 0 });
     expect(getNextPatternChangeDelay([slow, fast], 100)).toBe(150);
-    const fading = pattern("columnChase", { stepDuration: 1000, fadeInDuration: 300 });
+    const fading = pattern("stripes", { stepDuration: 1000, fadeInDuration: 300 });
     expect(getNextPatternChangeDelay([fading, fast], 100)).toBe(0);
   });
 
   it("fades up from black at the start even without a valid step length", () => {
-    const noSteps = pattern("columnChase", { stepDuration: 0, fadeInDuration: 300 });
+    const noSteps = pattern("stripes", { stepDuration: 0, fadeInDuration: 300 });
     expect(getNextPatternChangeDelay([noSteps], 100)).toBe(0);
     expect(getNextPatternChangeDelay([noSteps], 400)).toBe(Infinity);
   });

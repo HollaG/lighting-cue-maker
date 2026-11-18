@@ -45,7 +45,7 @@ const chase = (overrides: Partial<PatternSelectable> = {}): ActivePattern => ({
     name: "Chase",
     fixtureIds: "all",
     type: SelectableType.EFFECT_PATTERN,
-    effect: "columnChase",
+    effect: "stripes",
     colours: [{ name: "Blue", hex: "#0000ff" }],
     blendMode: BlendMode.NORMAL,
     colourMode: "rgb",

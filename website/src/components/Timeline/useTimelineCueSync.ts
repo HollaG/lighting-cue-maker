@@ -1,6 +1,6 @@
 // A hook that tracks the timeline and activates (non-purely) cues via selectedCueId in the CueSlice
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import type { Timeline } from "../../types-v2/timeline";
 import { useAppStore } from "../../store/appStore";
 
@@ -14,8 +14,6 @@ export const useTimelineCueSync = ({
   playing: boolean;
 }) => {
   const setSelectedCueId = useAppStore((state) => state.setCurrentlySelectedCueId);
-
-  const lastCueIdRef = useRef<string | null>(null); // last cueId applied by this hook
 
   // marker list in time
   const markers = useMemo(

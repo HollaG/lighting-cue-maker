@@ -254,7 +254,7 @@ export const getBenchPatterns = (fixtures: PatchedFixture[], effect: BenchEffect
       name: id,
       type: SelectableType.EFFECT_PATTERN,
       fixtureIds: "all",
-      effect: "columnChase",
+      effect: "stripes",
       colours: [{ name: id, hex }],
       blendMode: BlendMode.NORMAL,
       colourMode: "rgb",

@@ -2,7 +2,7 @@
  * Pattern effects: what colour each cell of a fixture group's grid has at each step.
  *
  * HOW TO ADD A PATTERN EFFECT
- *   1. Copy `effects/columnChase.ts` to `effects/<yourEffect>.ts`.
+ *   1. Copy `effects/stripes.ts` to `effects/<yourEffect>.ts`.
  *   2. Give it a new, unique `id` (stored in PatternSelectable.effect, so never rename it later),
  *      a `name` and a `description` for the LD.
  *   3. Write `stepCount` and `colourAt`. That's all: the file is picked up automatically (see registry.ts),

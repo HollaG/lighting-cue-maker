@@ -245,7 +245,7 @@ export const ColourMode = {
 export type ColourMode = (typeof ColourMode)[keyof typeof ColourMode];
 
 /**
- * The `id` of an effect in src/effects/pattern/registry.ts, e.g. "columnChase".
+ * The `id` of an effect in src/effects/pattern/registry.ts, e.g. "stripes".
  * May not exist any more (effect file removed): the engine skips it, the LD UI should warn.
  */
 export type PatternEffect = string;
