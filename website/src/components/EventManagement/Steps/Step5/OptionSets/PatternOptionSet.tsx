@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { upperFirst, useDebouncedCallback, useDisclosure } from "@mantine/hooks";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   BlendMode,
   ColourMode,
@@ -146,17 +146,19 @@ export const PatternOptionSet = ({
 
   return (
     <Stack>
-      {rows.map((row) => (
-        <PatternOptionRow
-          key={row.id}
-          row={row}
-          onChangeRow={onChangeRow}
-          onCloneRow={onCloneRow}
-          onDeleteRow={onDeleteRow}
-          onBlur={() => saveRows.flush()}
-          grid={fixtureGroup.grid}
-          fixtures={patchedFixtures}
-        />
+      {rows.map((row, index) => (
+        <React.Fragment key={row.id}>
+          <PatternOptionRow
+            row={row}
+            onChangeRow={onChangeRow}
+            onCloneRow={onCloneRow}
+            onDeleteRow={onDeleteRow}
+            onBlur={() => saveRows.flush()}
+            grid={fixtureGroup.grid}
+            fixtures={patchedFixtures}
+          />
+          {index < rows.length - 1 && <Divider />}
+        </React.Fragment>
       ))}
       <Center>
         <Group>
@@ -444,7 +446,6 @@ const PatternParamInputs = ({
 
   return (
     <>
-      <Divider label="Parameters" labelPosition="left" />
       <SimpleGrid cols={3} spacing="xs">
         {params.map((param) => (
           <PatternParamInput key={param.id} param={param} value={values[param.id]} onChange={setParam} />

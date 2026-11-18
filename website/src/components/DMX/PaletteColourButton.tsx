@@ -16,7 +16,6 @@ import { useDisclosure } from "@mantine/hooks";
 import { useState } from "react";
 import type { PaletteApplicable } from "../../utils/visualiser-v2-decoder";
 import { ChannelType } from "../../types-v2/fixtureTemplates";
-import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 
 const RAINBOW = "linear-gradient(135deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff)";
 

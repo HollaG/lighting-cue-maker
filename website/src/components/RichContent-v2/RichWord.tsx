@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, Center, Group, HoverCard, Button, Indicator } from "@mantine/core";
+import { Box, Text, Center, Group, HoverCard, Button } from "@mantine/core";
 import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
