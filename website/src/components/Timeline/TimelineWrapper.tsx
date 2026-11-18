@@ -16,6 +16,7 @@ import {
 } from "../../utils/timeline";
 import { TimelinePlayhead } from "./TimelinePlayhead";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { useTimelineCueSync } from "./useTimelineCueSync";
 
 const logger = new Logger("TimelineWrapper", "orange");
 
@@ -150,8 +151,9 @@ export const TimelineWrapper = ({
     } else {
       // for now, sections also snap the same as audio clips.
       // the more complicated logic comes from INSIDE a section.
-      const snappedStart = Math.round(start / 1000) * 1000;
+      // const snappedStart = Math.round(start / 1000) * 1000;
 
+      const snappedStart = Math.round(start); // TODO(snap): DO NOT SNAP SECTIONS
       save({ sections: timeline.sections.map((s) => (s.id === id ? { ...s, sectionStartTime: snappedStart } : s)) });
     }
   };
@@ -214,15 +216,18 @@ export const TimelineWrapper = ({
     } else if (newState === "pause") {
       // update the new playhead position
       startPlayheadPositionRef.current = getPositionMs();
-      transportRef.current.playing = false;
-      stopAllSources();
+      _onStop();
     } else if (newState === "stop") {
-      stopAllSources();
       if (audioCtx.current) audioCtx.current.suspend();
       startPlayheadPositionRef.current = 0;
-      transportRef.current.playing = false;
+      _onStop();
     }
     setPlayState(newState);
+  };
+
+  const _onStop = () => {
+    transportRef.current.playing = false;
+    stopAllSources();
   };
 
   const stopAllSources = () => {
@@ -354,7 +359,8 @@ export const TimelineWrapper = ({
     const { start, end } = range;
 
     // the start has to be snapped to the nearest second (for now)
-    const snappedStart = Math.round(start / 1000) * 1000;
+    // const snappedStart = Math.round(start / 1000) * 1000;
+    const snappedStart = Math.round(start); // TODO(snap): DO NOT SNAP SECTIONS
 
     // intentionally fail if we overlap
     const section = createSectionFromSpan({ start: snappedStart, end });
@@ -362,6 +368,9 @@ export const TimelineWrapper = ({
     // try to create
     save({ sections: [...timeline.sections, section] });
   };
+
+  // sync the cue markers
+  useTimelineCueSync({ timeline, getPositionMs, playing: playState === "play" });
 
   return (
     <TimelineContext

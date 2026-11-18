@@ -62,7 +62,7 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
   // if no timeline, ask to create
   const { timeline, isTimelineLoading } = useGetTimeline(eventId, itemId);
   const { audioFiles } = useGetAudioFiles(eventId, itemId);
-  const { mutateAsync: upsertTimeline, saveTimeline } = useUpsertTimeline(eventId, itemId);
+  const { mutateAsync: upsertTimeline, saveTimeline, isPending } = useUpsertTimeline(eventId, itemId);
   const { mutateAsync: uploadAudioFile } = useUploadAudioFile(eventId, itemId);
 
   const [isUploading, setIsUploading] = useState(false);
@@ -224,6 +224,7 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
                   snapEnabled: true,
                 })
               }
+              loading={isPending}
             >
               Enable
             </Button>
