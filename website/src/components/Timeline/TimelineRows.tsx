@@ -16,6 +16,7 @@ export const TimelineRows = ({
   // onSelect: still in the props for the selection WIP, not used yet
   onDelete,
   onCreate,
+  disabled = false,
 }: {
   eventId: string;
   itemId: string;
@@ -24,6 +25,7 @@ export const TimelineRows = ({
   onSelect: (type: TimelineRowId, ids: Set<string>) => void;
   onDelete: (type: TimelineRowId, id: string) => void;
   onCreate: (range: Range) => void;
+  disabled?: boolean;
 }) => {
   const { setTimelineRef, style } = useTimelineContext();
   const fileName = new Map(audioFiles.map((f) => [f.id, f.fileName]));
@@ -39,6 +41,7 @@ export const TimelineRows = ({
             rowId={TimelineRowId.AUDIO}
             span={{ start: clip.startTime, end: clip.startTime + clip.duration }}
             onDelete={(id) => onDelete(TimelineRowId.AUDIO, id)}
+            disabled={disabled}
           >
             {fileName.get(clip.audioFileId) ?? "Missing file"}
           </TimelineAudioItem>
@@ -62,6 +65,7 @@ export const TimelineRows = ({
             onDelete={(id) => onDelete(TimelineRowId.SECTIONS, id)}
             section={section}
             sections={timeline.sections}
+            disabled={disabled}
           />
         ))}
       </TimelineRow>

@@ -75,6 +75,7 @@ export const TimelineSectionItem = ({
   section,
   sections,
   onDelete,
+  disabled = false,
 }: {
   eventId: string;
   itemId: string;
@@ -84,9 +85,10 @@ export const TimelineSectionItem = ({
   section: TimelineSection;
   sections: TimelineSection[]; // all sections, for finding the left/right cues
   onDelete: (id: string) => void;
+  disabled?: boolean;
 }) => {
   const data: ItemData = { rowId };
-  const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({ id, span, data });
+  const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({ id, span, data, disabled });
 
   const { upsertSection } = useUpsertTimelineSectionItem(eventId, itemId);
 
@@ -131,27 +133,31 @@ export const TimelineSectionItem = ({
                 }}
               >
                 {/* Drag bar */}
-                <Flex
-                  style={{
-                    height: "1.5rem",
-                    backgroundColor: "var(--mantine-color-dark-5)",
-                    cursor: "grab",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    fz="xs"
-                    truncate="end"
-                    miw={0}
+                {disabled ? (
+                  <> </>
+                ) : (
+                  <Flex
                     style={{
-                      color: "var(--mantine-color-dark-1)",
+                      height: "1.5rem",
+                      backgroundColor: "var(--mantine-color-dark-5)",
+                      cursor: "grab",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
                     }}
                   >
-                    Click and drag this bar to reposition. Right Click for more options
-                  </Text>
-                </Flex>
+                    <Text
+                      fz="xs"
+                      truncate="end"
+                      miw={0}
+                      style={{
+                        color: "var(--mantine-color-dark-1)",
+                      }}
+                    >
+                      Click and drag this bar to reposition. Right Click for more options
+                    </Text>
+                  </Flex>
+                )}
                 {/* Main content */}
                 <Flex flex={1} onPointerDown={(e) => e.stopPropagation()}>
                   {section.type === TimelineSectionType.BEAT && (

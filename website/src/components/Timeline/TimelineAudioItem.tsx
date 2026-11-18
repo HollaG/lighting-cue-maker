@@ -10,16 +10,18 @@ export const TimelineAudioItem = ({
   span,
   children,
   onDelete,
+  disabled = false,
 }: {
   id: string;
   rowId: TimelineRowId;
   span: Span;
   children: ReactNode;
+  disabled?: boolean;
 
   onDelete: (id: string) => void;
 }) => {
   const data: ItemData = { rowId };
-  const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({ id, span, data });
+  const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({ id, span, data, disabled });
 
   return (
     <div

@@ -16,6 +16,7 @@ import {
 } from "../../utils/timeline";
 import { TimelinePlayhead } from "./TimelinePlayhead";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useTimelineCueSync } from "./useTimelineCueSync";
 
 const logger = new Logger("TimelineWrapper", "orange");
@@ -65,6 +66,10 @@ export const TimelineWrapper = ({
   // (values not read yet: selection is WIP)
   const [, setCurrentlySelectedAudios] = useState<Set<string>>(new Set());
   const [, setCurrentlySelectedSections] = useState<Set<string>>(new Set());
+
+  // WebAudio: handle the playback position
+  const [playState, setPlayState] = useState<"play" | "pause" | "stop">("pause");
+  const [isPlayLoading, setIsPlayLoading] = useState(false); // for showing a spinner on the play button
 
   const onSelect = (type: TimelineRowId, ids: Set<string>) => {
     if (type === TimelineRowId.AUDIO) {
@@ -135,6 +140,13 @@ export const TimelineWrapper = ({
    */
   const onDragEnd = (event: DragEndEvent) => {
     logger.info("onDragEnd", { event });
+
+    // DO NOT ALLOW DRAGGING ANYTHING DURING PLAYING!
+    if (playState === "play") {
+      logger.warn("Ignoring drag during playback");
+      return;
+    }
+
     const rowId = getRowId(event.active.data.current);
     if (!rowId || event.over?.id !== rowId) return; // reject drag from audio to section / vice versa
     const span = event.active.data.current.getSpanFromDragEvent?.(event);
@@ -196,9 +208,7 @@ export const TimelineWrapper = ({
     }
   };
 
-  // WebAudio: handle the playback position
-  const [playState, setPlayState] = useState<"play" | "pause" | "stop">("pause");
-  const [isPlayLoading, setIsPlayLoading] = useState(false); // for showing a spinner on the play button
+  // other WebAudio stuff
   const sourcesRef = useRef<
     {
       src: AudioBufferSourceNode;
@@ -372,8 +382,13 @@ export const TimelineWrapper = ({
   // sync the cue markers
   useTimelineCueSync({ timeline, getPositionMs, playing: playState === "play" });
 
+  // Pointer only: dnd-kit's default KeyboardSensor starts a drag when Space/Enter is pressed on a focused item,
+  // which clashes with Space = play/pause (and Space again would drop the item and save it).
+  const sensors = useSensors(useSensor(PointerSensor));
+
   return (
     <TimelineContext
+      sensors={sensors}
       range={range}
       onRangeChanged={setRangeClamped} // receives an updater function (prev => next), which setState accepts
       onDragEnd={onDragEnd}
@@ -421,6 +436,7 @@ export const TimelineWrapper = ({
             onSelect={onSelect}
             onDelete={onDelete}
             onCreate={onCreate}
+            disabled={playState === "play"}
           />
         </Box>
       </Box>
