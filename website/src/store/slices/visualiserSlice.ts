@@ -65,6 +65,10 @@ export interface VisualiserSlice {
 
   canUndo: () => boolean;
   canRedo: () => boolean;
+
+  // fixtures
+  selectedFixtureIds: string[];
+  setSelectedFixtureIds: (fixtureIds: string[]) => void;
 }
 
 export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = (set, get) => ({
@@ -152,6 +156,8 @@ export const visualiserSlice: StateCreator<AppStore, [], [], VisualiserSlice> = 
     const { history, historyPointer } = get();
     return historyPointer >= -1 && historyPointer < history.length - 1;
   },
+  selectedFixtureIds: [],
+  setSelectedFixtureIds: (fixtureIds: string[]) => set({ selectedFixtureIds: fixtureIds }),
 });
 
 // const diffStates = (prev: Visualiser3D)

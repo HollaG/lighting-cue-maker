@@ -80,6 +80,9 @@ export const EventPage = () => {
   const [openedTimeline, { /* open: openTimeline, */ close: closeTimeline, toggle: toggleTimeline }] =
     useDisclosure(false);
 
+  const selectedFixtureIds = useAppStore((s) => s.selectedFixtureIds);
+  const setSelectedFixtureIds = useAppStore((s) => s.setSelectedFixtureIds);
+
   // The timeline drawer's own Escape (closeOnEscape) is off: Mantine's modals and drawers each listen for Escape on
   // window (capture phase), so Escape inside a modal opened from the timeline (e.g. placing a cue marker) closed both.
   // Bubble phase runs after the modal's handler, and the modal is still in the DOM then (React hasn't re-rendered).
@@ -224,6 +227,25 @@ export const EventPage = () => {
 
   const item = items.find((i) => i.id === selectedItemId) ?? undefined;
 
+  // --- handle selecting of fixtures ---------
+  const onFixtureSelect = (fixtureId: string, additive: boolean) => {
+    if (additive) {
+      // toggle the fixture in the selection
+      if (selectedFixtureIds.includes(fixtureId)) {
+        setSelectedFixtureIds(selectedFixtureIds.filter((id) => id !== fixtureId));
+      } else {
+        setSelectedFixtureIds([...selectedFixtureIds, fixtureId]);
+      }
+    } else {
+      if (selectedFixtureIds.includes(fixtureId)) {
+        // already selected, and it's the only one: deselect it
+        setSelectedFixtureIds([]);
+      } else {
+        // select only this fixture
+        setSelectedFixtureIds([fixtureId]);
+      }
+    }
+  };
   return (
     <>
       {/* Centered pull-down */}
@@ -679,6 +701,8 @@ export const EventPage = () => {
             dmxValues={dmxValuesWithOverrides}
             effectPlayback={effectPlayback}
             cueFade={cueFade}
+            selectedFixtureIds={selectedFixtureIds}
+            onFixtureSelect={onFixtureSelect}
           />
         ) : (
           <Center h="100%">{isVisualiserLoading ? <Loader type="bars" /> : <Text>No visualiser found</Text>}</Center>

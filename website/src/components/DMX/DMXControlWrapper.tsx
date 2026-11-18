@@ -9,7 +9,7 @@ import {
   Text,
 } from "@mantine/core";
 import type { useResolvedDmx } from "../../hooks/useResolvedDmx";
-import { useCallback, useRef /* , useEffect, useState */ } from "react";
+import { useCallback, useEffect, useRef /* , useEffect, useState */ } from "react";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
 import { useAppStore } from "../../store/appStore";
 import { CardBase } from "../Cues/CardBase";
@@ -19,6 +19,7 @@ import { DMXControl } from "./DMXControl/DMXControl";
 import { useGetCue } from "../../query-v2/cues/useGetCue";
 import { useUpsertCue } from "../../query-v2/cues/useUpsertCue";
 import { IconChevronDown } from "@tabler/icons-react";
+import type { PatchedFixture } from "../../types-v2/patchedFixture";
 
 // const logger = new Logger("DMXControlWrapper", "red");
 
@@ -31,8 +32,8 @@ export const DMXControlWrapper = ({
   itemId: string;
   dmxValuesByFixtureId: NonNullable<ReturnType<typeof useResolvedDmx>["dmxValues"]>;
 }) => {
-  const currentlyViewingFixtureIds = useAppStore((s) => s.currentlyViewingFixtureIds);
-  const setCurrentlyViewingFixtureIds = useAppStore((s) => s.setCurrentlyViewingFixtureIds);
+  const currentlyViewingFixtureIds = useAppStore((s) => s.selectedFixtureIds);
+  const setCurrentlyViewingFixtureIds = useAppStore((s) => s.setSelectedFixtureIds);
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
 
   /** Each fixture's slider card, by fixture id, so a newly selected fixture can be scrolled into view. */
@@ -108,6 +109,36 @@ export const DMXControlWrapper = ({
     },
     [cue, upsertCue],
   );
+
+  const onFixtureButtonClick = useCallback(
+    (fixture: PatchedFixture) => {
+      if (currentlyViewingFixtureIds.includes(fixture.id)) {
+        setCurrentlyViewingFixtureIds(currentlyViewingFixtureIds.filter((id) => id !== fixture.id));
+        return;
+      }
+      setCurrentlyViewingFixtureIds([...currentlyViewingFixtureIds, fixture.id]);
+      // Only on select, not deselect.
+      // cardRefs.current.get(fixture.id)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    },
+    [currentlyViewingFixtureIds, setCurrentlyViewingFixtureIds],
+  );
+
+  // store the "previous" state of the selected fixture ids
+  const prevSelectedFixtureIdsRef = useRef<string[]>(currentlyViewingFixtureIds);
+  useEffect(() => {
+    // when the fixture ids change, get only the ADDITIONS
+    // do not get deletions
+    const additions = currentlyViewingFixtureIds.filter((id) => !prevSelectedFixtureIdsRef.current.includes(id));
+    if (additions.length) {
+      // scroll the first addition into view
+      const firstAddedFixtureId = additions[0];
+      cardRefs.current
+        .get(firstAddedFixtureId)
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
+    prevSelectedFixtureIdsRef.current = currentlyViewingFixtureIds;
+  }, [currentlyViewingFixtureIds]);
+
   return (
     <Stack gap="xs" style={{ height: "100%", overflow: "hidden" }}>
       <Group style={{ width: "100%", flex: "0 0 auto" }} align="flex-start">
@@ -120,17 +151,7 @@ export const DMXControlWrapper = ({
                 color={currentlyViewingFixtureIds.includes(fixture.id) ? "lime" : "gray"}
                 variant={currentlyViewingFixtureIds.includes(fixture.id) ? "light" : "outline"}
                 // Toggle: remove if already viewing, otherwise add (no duplicates).
-                onClick={() => {
-                  if (currentlyViewingFixtureIds.includes(fixture.id)) {
-                    setCurrentlyViewingFixtureIds(currentlyViewingFixtureIds.filter((id) => id !== fixture.id));
-                    return;
-                  }
-                  setCurrentlyViewingFixtureIds([...currentlyViewingFixtureIds, fixture.id]);
-                  // Only on select, not deselect.
-                  cardRefs.current
-                    .get(fixture.id)
-                    ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-                }}
+                onClick={() => onFixtureButtonClick(fixture)}
               >
                 {fixture.name}
               </Button>

@@ -817,6 +817,9 @@ export const StaticVisualiser3D = ({
   dmxValuesByFixtureId,
   effectPlayback,
   cueFade,
+
+  selectedFixtureIds,
+  onFixtureSelect,
 }: {
   visualiser: Visualiser;
   eventId: string;
@@ -830,6 +833,11 @@ export const StaticVisualiser3D = ({
   effectPlayback?: PatternEffectPlayback | null;
   /** The last change of cue, faded over inside the canvas. */
   cueFade?: CueFade | null;
+
+  /** The fixtures that are selected in the parent page. */
+  selectedFixtureIds?: string[];
+  /** Clicking a fixture. Stage elements (cuboids, humans) can't be selected here, so they never call this. */
+  onFixtureSelect?: (fixtureId: string, additive: boolean) => void;
 }) => {
   const { event } = useGetEvent(eventId);
   // Resolution scale. The select for it lives on the page (e.g. EventPage), shared through localStorage.
@@ -845,6 +853,15 @@ export const StaticVisualiser3D = ({
 
   // No editing, so no state: read the saved environment directly.
   const environment = useMemo(() => visualiser.config3d || { haze: 0.5, ambientLight: 0.5 }, [visualiser.config3d]);
+
+  const onObjectSelect = useCallback(
+    (id: string, additive = false, type: "fixture" | "element") => {
+      if (type === "fixture") {
+        onFixtureSelect?.(id, additive);
+      }
+    },
+    [onFixtureSelect],
+  );
 
   if (!event) return null;
 
@@ -885,6 +902,8 @@ export const StaticVisualiser3D = ({
             dmxValuesByFixtureId={dmxValuesByFixtureId}
             effectPlayback={effectPlayback}
             cueFade={cueFade}
+            onObjectSelect={onObjectSelect}
+            selectedObjectIds={selectedFixtureIds}
           />
         </Canvas>
       </Suspense>

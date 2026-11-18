@@ -15,6 +15,8 @@ export const VisualiserInputProcessor = ({
   dmxValues,
   effectPlayback,
   cueFade,
+  onFixtureSelect,
+  selectedFixtureIds,
 }: {
   // Visualiser-required stuff
   visualiser: Visualiser;
@@ -25,6 +27,8 @@ export const VisualiserInputProcessor = ({
   effectPlayback?: PatternEffectPlayback | null;
   /** The last change of cue, faded over in the canvas. */
   cueFade?: CueFade | null;
+  onFixtureSelect?: (fixtureId: string, additive: boolean) => void;
+  selectedFixtureIds?: string[];
 }) => {
   return (
     <StaticVisualiser3D
@@ -35,6 +39,8 @@ export const VisualiserInputProcessor = ({
       dmxValuesByFixtureId={dmxValues ?? undefined}
       effectPlayback={effectPlayback}
       cueFade={cueFade}
+      onFixtureSelect={onFixtureSelect}
+      selectedFixtureIds={selectedFixtureIds}
     />
   );
 };

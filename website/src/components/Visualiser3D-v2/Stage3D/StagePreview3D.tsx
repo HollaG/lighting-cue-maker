@@ -77,8 +77,9 @@ export const StagePreview3D = ({
   onCameraMove?: () => void;
   onCameraRest?: () => void;
 
-  /** Only provided when ViewOnly is false. `additive`: shift/ctrl/cmd-click adds to the selection. */
-  onObjectSelect?: (objectId: string, additive?: boolean) => void;
+  /** `additive`: shift/ctrl/cmd-click adds to the selection. */
+  /** `type` says what was clicked, so a caller can ignore stage elements (e.g. the view-only visualiser). */
+  onObjectSelect?: (objectId: string, additive: boolean, type: "fixture" | "element") => void;
   updateStageElement: (newElement: Visualiser3DObject) => void;
   gui: GUI | null;
 
@@ -220,7 +221,7 @@ export const StagePreview3D = ({
               dmxValues={dmxValuesByFixtureId?.[fixture.id]}
               fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
               isSelected={!!selectedObjectIds?.includes(fixture.id)}
-              onSelect={(id, additive) => onObjectSelect?.(id, additive)}
+              onSelect={(id, additive) => onObjectSelect?.(id, additive, "fixture")}
               onMeshChange={onMeshChange}
               castShadow={shadowCasterIds.has(fixture.id)}
               viewOnly={isViewOnly}
@@ -241,7 +242,7 @@ export const StagePreview3D = ({
               key={cuboid.id}
               cuboid={cuboid}
               isSelected={!!selectedObjectIds?.includes(cuboid.id)}
-              onSelect={() => onObjectSelect && onObjectSelect(cuboid.id)}
+              onSelect={() => onObjectSelect?.(cuboid.id, false, "element")}
               // onChange={onChange}
               onChange={isViewOnly ? () => {} : updateStageElement}
               gui={gui}
@@ -255,7 +256,7 @@ export const StagePreview3D = ({
               key={human.id}
               human={human}
               isSelected={!!selectedObjectIds?.includes(human.id)}
-              onSelect={() => onObjectSelect && onObjectSelect(human.id)}
+              onSelect={() => onObjectSelect?.(human.id, false, "element")}
               onChange={isViewOnly ? () => {} : updateStageElement}
               gui={gui}
 

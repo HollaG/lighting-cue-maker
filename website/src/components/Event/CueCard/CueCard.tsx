@@ -39,7 +39,7 @@ import type { FixtureGroup } from "../../../types-v2/fixtureGroups";
 import { OptionSetType, SelectableType, type OptionSet } from "../../../types-v2/optionSet";
 import { useQueryClient } from "@tanstack/react-query";
 import { makeGetCuesQueryKey } from "../../../query-v2/cues/useGetCues";
-import { IconCaretDown, IconEdit, IconHelpCircle, IconInfoSquareRounded, IconPlus } from "@tabler/icons-react";
+import { IconCaretDown, IconEdit, IconEye, IconHelpCircle, IconInfoSquareRounded, IconPlus } from "@tabler/icons-react";
 import { popTransition } from "../../../utils/animations";
 import { DebouncedNumberInput } from "../../Inputs/DebouncedNumberInput";
 import { DebouncedTextarea } from "../../Inputs/DebouncedTextarea";
@@ -215,7 +215,7 @@ export const CueCard = memo(function CueCard({
                 </Menu.Dropdown>
               </Menu>
 
-              <Button variant="transparent" size="xs" onClick={onPreview}>
+              <Button variant="light" size="xs" onClick={onPreview} leftSection={<IconEye size="1rem" />}>
                 Preview cue
               </Button>
             </Group>
@@ -433,6 +433,8 @@ const CueCardFixtureGroupOptionSetPickers = ({ fixtureGroup, cue }: { fixtureGro
   const { optionSets } = useGetOptionSets(fixtureGroup.eventId, fixtureGroup.id);
   const disabled = !cue.activeFixtureGroupIds.includes(fixtureGroup.id); // duplicated in the picker
 
+  const setSelectedFixtureIds = useAppStore((s) => s.setSelectedFixtureIds);
+
   return (
     <Stack
       gap="xs"
@@ -455,6 +457,9 @@ const CueCardFixtureGroupOptionSetPickers = ({ fixtureGroup, cue }: { fixtureGro
           </Tooltip>
         </Group>
         <Flex flex={1} />
+        <Button variant="transparent" size="xs" onClick={() => setSelectedFixtureIds(fixtureGroup.fixtureIds)}>
+          Select fixtures
+        </Button>
         <Switch
           styles={{
             track: { cursor: "pointer" },
