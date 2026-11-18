@@ -21,7 +21,7 @@ import {
   Tooltip,
   useCombobox,
 } from "@mantine/core";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { memo, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useDeleteCue } from "../../../query-v2/cues/useDeleteCue";
 import { useUpsertCue } from "../../../query-v2/cues/useUpsertCue";
 import { useGetItem } from "../../../query-v2/items/useGetItem";
@@ -48,12 +48,16 @@ import { getTimelineHoldTimeMs } from "../../../types-v2/timeline";
 
 /**
  * One cue in the cues panel: header actions (copy, preview, delete) and comments.
+ *
+ * Memoized, and told whether it is selected instead of reading the selected id: changing cue then re-renders only
+ * the two cards whose `isSelected` flips, not every card.
  */
-export const CueCard = ({
+export const CueCard = memo(function CueCard({
   eventId,
   cue,
   cueNumber,
   orderedCues,
+  isSelected,
 }: {
   eventId: string;
   cue: Cue;
@@ -61,13 +65,12 @@ export const CueCard = ({
   cueNumber: number;
   /** Every cue of the item in lyric order, for "Copy another cue". */
   orderedCues: Cue[];
-}) => {
+  isSelected: boolean;
+}) {
   const itemId = cue.itemId;
 
-  const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
   const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
-  const isSelected = currentlySelectedCueId === cue.id;
 
   const { item } = useGetItem(eventId, itemId);
   // const { event } = useGetEvent(eventId)
@@ -424,7 +427,7 @@ export const CueCard = ({
       </CardBase>
     </div>
   );
-};
+});
 
 const CueCardFixtureGroupOptionSetPickers = ({ fixtureGroup, cue }: { fixtureGroup: FixtureGroup; cue: Cue }) => {
   const { optionSets } = useGetOptionSets(fixtureGroup.eventId, fixtureGroup.id);

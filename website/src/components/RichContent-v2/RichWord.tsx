@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, Center, Group, HoverCard, Button } from "@mantine/core";
+import { Box, Text, Center, Group, HoverCard, Button, Indicator } from "@mantine/core";
 import clsx from "clsx";
 import classes from "./RichWord.module.css";
 import { convertUuidForDatabase } from "../../utils/convertUuid";
@@ -86,6 +86,7 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, inputMo
       return (
         <HoverCard shadow="md" withArrow position="top" id={`ref-${id}`}>
           <HoverCard.Target>
+            {/* <Indicator label="AUTO" color="red"> */}
             <Group
               data-action={`select-${idType}`}
               {...{ [`data-${idType}-id`]: id }}
@@ -109,6 +110,7 @@ const RichWordInternal = ({ word, index1, index2, cueNumber, isSelected, inputMo
                 ></Text>
               </Box>
             </Group>
+            {/* </Indicator> */}
           </HoverCard.Target>
           {inputMode !== "disabled" && (
             <HoverCard.Dropdown>

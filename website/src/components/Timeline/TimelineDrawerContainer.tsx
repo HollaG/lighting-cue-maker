@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Box,
   Button,
   Center,
@@ -31,6 +32,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Timeline, TimelineAudio, TimelineBeatSection, TimelineSection } from "../../types-v2/timeline";
 import type { Range } from "dnd-timeline";
 import { makeDefaultTimelineSection } from "../../utils/timeline";
+import { IconChevronDown } from "@tabler/icons-react";
 
 const AUDIO_EXTENSIONS = [".mp3", ".m4a", ".aac", ".ogg", ".opus", ".wav", ".flac"];
 const AUDIO_ACCEPT = [
@@ -58,7 +60,15 @@ const formatDuration = (ms: number) => {
   return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
 };
 
-export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; itemId: string }) => {
+export const TimelineDrawerContainer = ({
+  eventId,
+  itemId,
+  onClose,
+}: {
+  eventId: string;
+  itemId: string;
+  onClose: () => void;
+}) => {
   // if no timeline, ask to create
   const { timeline, isTimelineLoading } = useGetTimeline(eventId, itemId);
   const { audioFiles } = useGetAudioFiles(eventId, itemId);
@@ -229,6 +239,12 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
               Enable
             </Button>
           </Box>
+          <Divider my="xs" />
+          <Box>
+            <Button variant="transparent" onClick={onClose}>
+              Close
+            </Button>
+          </Box>
         </Stack>
       </Center>
     );
@@ -361,6 +377,10 @@ export const TimelineDrawerContainer = ({ eventId, itemId }: { eventId: string; 
                 </Button>
               )}
             </FileButton>
+            <Divider orientation="vertical" />
+            <ActionIcon mr="xs" variant="transparent" onClick={onClose}>
+              <IconChevronDown size="1rem" />
+            </ActionIcon>
           </Group>
         </Group>
         <Tabs.Panel value="main" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>

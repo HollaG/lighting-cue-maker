@@ -164,60 +164,108 @@ const RichContentInternal = ({
     void saveRawLyrics(updatedRawLyrics).catch(console.error);
   };
 
+  // Cue ids and numbers for every word, parsed once per lyrics change instead of on every render.
+  const parsedLines = React.useMemo(() => parseLines(content), [content]);
+
   return (
     <Stack
       gap={0}
       onClick={handleContainerClick}
       {...(isCursorSurface && { "data-cursor-surface": "lyrics", "data-cursor-item-id": itemId })}
     >
-      {(() => {
-        let cueCount = 0;
-        return content.map((line, index1) => {
-          const words = line.map((word, index2) => {
-              let cueNumber: number | undefined = 0;
-              let cueId: string | undefined = undefined;
-
-              if (word.startsWith("{cueId=") || word.startsWith("<cueId=")) {
-                cueCount++;
-                cueNumber = cueCount;
-                if (word.endsWith("=cueId}") || word.endsWith("=cueId>")) {
-                  const rawId = word.split(/[{<]cueId=/)[1].split(/=cueId[}>]/)[0];
-                  cueId = convertUuidForDatabase(rawId);
-                } else {
-                  cueId = convertUuidForDatabase(word.match(/[{<]cueId=(.*?)=cueId[}>]/)?.[1] || "");
-                }
-              }
-
-              // After the cue counting above, so hidden cues still count towards the numbers of the visible ones.
-              if (visibleRange && !isInRichRange([index1, index2], visibleRange)) return null;
-
-              // TODO: support selection for non-cues
-              const isSelected = !!cueId && currentlySelectedCueId === cueId;
-
-              return (
-                <Flex key={index2} data-cursor-anchor={`${index1}:${index2}`}>
-                  <RichWord
-                    word={word}
-                    index1={index1}
-                    index2={index2}
-                    cueNumber={cueNumber}
-                    isSelected={isSelected}
-                    inputMode={inputMode}
-                  />
-                </Flex>
-              );
-          });
-          // Skip a line with nothing visible, or it leaves an empty row.
-          if (visibleRange && words.every((w) => w === null)) return null;
-          return (
-            <Group key={index1} gap="0px" align="end">
-              {words}
-            </Group>
-          );
-        });
-      })()}
+      {parsedLines.map((line, index1) => (
+        <RichLine
+          key={index1}
+          line={line}
+          index1={index1}
+          // Only the line holding the selected cue gets its id, so changing cue re-renders just the old and new lines.
+          selectedCueId={
+            currentlySelectedCueId && line.cueIds.has(currentlySelectedCueId) ? currentlySelectedCueId : undefined
+          }
+          inputMode={inputMode}
+          visibleRange={visibleRange}
+        />
+      ))}
     </Stack>
   );
 };
 
 export const RichContent = React.memo(RichContentInternal);
+
+type ParsedWord = {
+  word: string;
+  /** Set on cue markers. */
+  cueId: string | undefined;
+  /** The cue's number in the whole lyrics (1-based); 0 for other words. */
+  cueNumber: number;
+};
+type ParsedLine = { words: ParsedWord[]; cueIds: Set<string> };
+
+/** Reads the cue id out of a cue marker word ({cueId=…=cueId} or <cueId=…=cueId>), else undefined. */
+const getCueId = (word: string): string | undefined => {
+  if (!word.startsWith("{cueId=") && !word.startsWith("<cueId=")) return undefined;
+  if (word.endsWith("=cueId}") || word.endsWith("=cueId>")) {
+    const rawId = word.split(/[{<]cueId=/)[1].split(/=cueId[}>]/)[0];
+    return convertUuidForDatabase(rawId);
+  }
+  return convertUuidForDatabase(word.match(/[{<]cueId=(.*?)=cueId[}>]/)?.[1] || "");
+};
+
+/** Numbers the cues across all lines, so hidden lines (visibleRange) still count towards the visible cues' numbers. */
+const parseLines = (content: string[][]): ParsedLine[] => {
+  let cueCount = 0;
+  return content.map((line) => {
+    const cueIds = new Set<string>();
+    const words = line.map((word): ParsedWord => {
+      const cueId = getCueId(word);
+      if (cueId === undefined) return { word, cueId, cueNumber: 0 };
+      cueIds.add(cueId);
+      return { word, cueId, cueNumber: ++cueCount };
+    });
+    return { words, cueIds };
+  });
+};
+
+/**
+ * One line of the lyrics. Memoized: `line` stays the same object until the lyrics change, and `selectedCueId` is only
+ * set when the selected cue is in this line, so most lines skip re-rendering when the selection changes.
+ */
+const RichLine = React.memo(function RichLine({
+  line,
+  index1,
+  selectedCueId,
+  inputMode,
+  visibleRange,
+}: {
+  line: ParsedLine;
+  index1: number;
+  selectedCueId: string | undefined;
+  inputMode: InputMode | "disabled";
+  visibleRange: RichRange | undefined;
+}) {
+  const words = line.words.map(({ word, cueId, cueNumber }, index2) => {
+    if (visibleRange && !isInRichRange([index1, index2], visibleRange)) return null;
+
+    return (
+      <Flex key={index2} data-cursor-anchor={`${index1}:${index2}`}>
+        <RichWord
+          word={word}
+          index1={index1}
+          index2={index2}
+          cueNumber={cueNumber}
+          // TODO: support selection for non-cues
+          isSelected={!!cueId && cueId === selectedCueId}
+          inputMode={inputMode}
+        />
+      </Flex>
+    );
+  });
+
+  // Skip a line with nothing visible, or it leaves an empty row.
+  if (visibleRange && words.every((w) => w === null)) return null;
+  return (
+    <Group gap="0px" align="end">
+      {words}
+    </Group>
+  );
+});

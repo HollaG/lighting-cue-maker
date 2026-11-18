@@ -6,6 +6,7 @@ import type { Cue } from "../../types-v2/cue";
 import { getCueOrder } from "../../utils/cue/cueForm";
 import { Logger } from "../../utils/logger";
 import { sanitize } from "../../utils/sanitize";
+import { useAppStore } from "../../store/appStore";
 import { CueCard } from "./CueCard/CueCard";
 
 const logger = new Logger("Cues.tsx");
@@ -13,6 +14,9 @@ const logger = new Logger("Cues.tsx");
 export const Cues = ({ eventId, itemId }: { eventId: string; itemId: string }) => {
   const { cues, isCuesLoading } = useGetCues(eventId, itemId);
   const { item } = useGetItem(eventId, itemId);
+  // Read here, not in each card: this list re-renders (cheap), and the memoized cards skip unless their
+  // `isSelected` flips (or their other props change).
+  const currentlySelectedCueId = useAppStore((s) => s.currentlySelectedCueId);
 
   // The server returns cues oldest first; their real order is where their markers sit in the lyrics.
   // Cues without a marker (e.g. removed by hand in lyric mode) are not shown.
@@ -42,7 +46,14 @@ export const Cues = ({ eventId, itemId }: { eventId: string; itemId: string }) =
         </Text>
       )}
       {orderedCues.map((cue, index) => (
-        <CueCard key={cue.id} eventId={eventId} cue={cue} cueNumber={index + 1} orderedCues={orderedCues} />
+        <CueCard
+          key={cue.id}
+          eventId={eventId}
+          cue={cue}
+          cueNumber={index + 1}
+          orderedCues={orderedCues}
+          isSelected={currentlySelectedCueId === cue.id}
+        />
       ))}
     </Stack>
   );

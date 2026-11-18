@@ -665,7 +665,7 @@ export const EventPage = () => {
           onResize={resizeTimeline}
           {...HEIGHT_LIMITS}
         />
-        <TimelineDrawerContainer eventId={eventId} itemId={selectedItemId} />
+        <TimelineDrawerContainer eventId={eventId} itemId={selectedItemId} onClose={closeTimeline} />
       </Drawer>
 
       {/* Main visualiser */}
