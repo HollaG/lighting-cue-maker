@@ -230,5 +230,108 @@ const writeHeadColour = ({ rgb = [255, 255, 255], dimmer = 1 }: BeamAttributes, 
   out.intensity = Math.round(dimmer * (peak / 255) * 100);
 };
 
-const toHex = (r: number, g: number, b: number) =>
-  "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+const toHex = (r: number, g: number, b: number) => "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+
+// --- Special palette detection: detect if can have palettes, like:
+//     Colour
+//     Intensity
+//     Position (TODO)
+//     Others
+
+/**
+ * Detects if a Fixture itself can have a colour palette.
+ * As long as one head has a colour channel
+ *   has R+G+B OR
+ *   has C+M+Y
+ *
+ * TODO: support white channels
+ *
+ * @returns a boolean array indicating if that head has a colour channel.
+ */
+export const hasPaletteColour = (fixtureTemplate: FixtureTemplate, modeId: string): PaletteApplicable =>
+  findHeadChannels(fixtureTemplate, modeId, [
+    ChannelType.RED,
+    ChannelType.GREEN,
+    ChannelType.BLUE,
+    ChannelType.CYAN,
+    ChannelType.MAGENTA,
+    ChannelType.YELLOW,
+  ]);
+
+/** Per head: whether it has a white channel, and its slot. */
+export const hasPaletteWhite = (fixtureTemplate: FixtureTemplate, modeId: string): PaletteApplicable =>
+  findHeadChannels(fixtureTemplate, modeId, [ChannelType.WHITE]);
+
+/** Per head: whether it has an amber channel, and its slot. */
+export const hasPaletteAmber = (fixtureTemplate: FixtureTemplate, modeId: string): PaletteApplicable =>
+  findHeadChannels(fixtureTemplate, modeId, [ChannelType.AMBER]);
+
+/** Per head: whether it has a UV channel, and its slot. */
+export const hasPaletteUV = (fixtureTemplate: FixtureTemplate, modeId: string): PaletteApplicable =>
+  findHeadChannels(fixtureTemplate, modeId, [ChannelType.UV]);
+
+/** Per head: whether it has a lime channel, and its slot. */
+export const hasPaletteLime = (fixtureTemplate: FixtureTemplate, modeId: string): PaletteApplicable =>
+  findHeadChannels(fixtureTemplate, modeId, [ChannelType.LIME]);
+
+/** The channel types a palette can write to (the keys of PaletteApplicable's `channels`). */
+type PaletteChannelType = keyof PaletteApplicable[number]["channels"];
+
+/**
+ * For each head, the slot of each of `types` it has. `has` = it has at least one of them.
+ * Fine channels are skipped, and the first coarse channel of each type wins (same as the decoder).
+ * No heads = one head with every channel (QLC+ behaviour, same as getHeadLayouts). [] if the mode is missing.
+ */
+const findHeadChannels = (
+  fixtureTemplate: FixtureTemplate,
+  modeId: string,
+  types: readonly PaletteChannelType[],
+): PaletteApplicable => {
+  const mode = fixtureTemplate.modes.find((m) => m.id === modeId);
+  if (!mode) return [];
+
+  const channelsById = new Map(fixtureTemplate.channels.map((c) => [c.id, c]));
+  const channelAt = (slot: number) => channelsById.get(mode.channelIds[slot]);
+  const isWanted = (type: ChannelType): type is PaletteChannelType =>
+    (types as readonly ChannelType[]).includes(type);
+
+  const headSlots =
+    mode.heads.length > 0 ? mode.heads.map((h) => h.channelIndexes) : [mode.channelIds.map((_, i) => i)];
+
+  return headSlots.map((slots) => {
+    const channels: PaletteApplicable[number]["channels"] = {};
+    for (const slot of slots) {
+      const channel = channelAt(slot);
+      if (!channel || channel.role === ChannelRole.FINE || !isWanted(channel.type)) continue;
+      channels[channel.type] ??= slot;
+    }
+    return { has: types.some((type) => channels[type] !== undefined), channels };
+  });
+};
+
+/** Which palette control (e.g. a colour picker) a head can have in the DMX drawer. */
+export const Palette = {
+  COLOUR: "Colour",
+  INTENSITY: "Intensity",
+  POSITION: "Position",
+  OTHER: "Other",
+} as const;
+export type Palette = (typeof Palette)[keyof typeof Palette];
+
+export type PaletteApplicable = {
+  has: boolean;
+  channels: {
+    [ChannelType.RED]?: number; // the channel slot / index (0-based)
+    [ChannelType.GREEN]?: number;
+    [ChannelType.BLUE]?: number;
+    [ChannelType.CYAN]?: number;
+    [ChannelType.MAGENTA]?: number;
+    [ChannelType.YELLOW]?: number;
+    [ChannelType.WHITE]?: number;
+    [ChannelType.AMBER]?: number;
+    [ChannelType.LIME]?: number;
+    [ChannelType.UV]?: number;
+  };
+}[];
+
+export const hasPaletteCheckers = [{ type: Palette.COLOUR, has: hasPaletteColour }];

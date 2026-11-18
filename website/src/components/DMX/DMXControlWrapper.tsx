@@ -2,20 +2,17 @@ import {
   ActionIcon,
   Box,
   Button,
-  Center,
   /* Divider, */ Group,
   /* OverflowList, */ Scroller,
   Stack,
-  Text,
 } from "@mantine/core";
 import type { useResolvedDmx } from "../../hooks/useResolvedDmx";
-import { useCallback, useEffect, useRef /* , useEffect, useState */ } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
 import { useAppStore } from "../../store/appStore";
-import { CardBase } from "../Cues/CardBase";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
 // import { Logger } from "../../utils/logger";
-import { DMXControl } from "./DMXControl/DMXControl";
+import { DMXFixture } from "./DMXFixture";
 import { useGetCue } from "../../query-v2/cues/useGetCue";
 import { useUpsertCue } from "../../query-v2/cues/useUpsertCue";
 import { IconChevronDown } from "@tabler/icons-react";
@@ -48,58 +45,39 @@ export const DMXControlWrapper = ({
   const fixtureTemplates = event?.fixtureTemplates ?? [];
   const overrides = cue?.overrides || {};
 
+  const templatesById = useMemo(() => new Map(fixtureTemplates.map((t) => [t.id, t])), [fixtureTemplates]);
+
+  // The latest cue, for the callbacks below. Read through a ref so the callbacks stay the same function across cue
+  // changes; otherwise every memoized DMXFixture would re-render on each change.
+  const cueRef = useRef(cue);
+  useLayoutEffect(() => {
+    cueRef.current = cue;
+  });
+
   /**
-   * Get the channels for this fixture and its selected mode.
-   *
-   * @param fixtureId
-   * @returns
+   * Several channels of one fixture in a single save. Calling onCommit once per channel instead would lose all but
+   * the last: each call reads cueRef before the previous change has re-rendered into it.
    */
-  const getChannelsForFixture = (fixtureId: string) => {
-    const fixtureTemplate = fixtureTemplates.find(
-      (ft) => ft.id === patchedFixtures.find((pf) => pf.id === fixtureId)?.fixtureTemplateId,
-    );
-    if (!fixtureTemplate) {
-      return [];
-    }
-
-    const mode = fixtureTemplate.modes.find((m) => m.id === patchedFixtures.find((pf) => pf.id === fixtureId)?.modeId);
-
-    if (!mode) {
-      return [];
-    }
-
-    const channels = mode.channelIds.map((channelId) => fixtureTemplate.channels.find((c) => c.id === channelId));
-
-    // if any channel is undefined, log error
-    if (channels.some((c) => c === undefined)) {
-      console.error(
-        `Some channels are undefined for fixture ${fixtureId}. Check fixture template and mode configuration.`,
-      );
-      console.error(
-        fixtureTemplate,
-        patchedFixtures.find((pf) => pf.id === fixtureId),
-      );
-      return [];
-    }
-
-    // the channels are now in the same order as the dmx values.
-
-    return channels as NonNullable<(typeof channels)[number]>[];
-  };
-
-  const onCommit = useCallback(
-    (fixtureId: string, channelId: string, value: number) => {
+  const onCommitMany = useCallback(
+    (fixtureId: string, valuesByChannelId: Record<string, number>) => {
+      const cue = cueRef.current;
       if (!cue) return;
       upsertCue({
         id: cue.id,
-        overrides: { ...cue.overrides, [fixtureId]: { ...cue.overrides[fixtureId], [channelId]: value } },
+        overrides: { ...cue.overrides, [fixtureId]: { ...cue.overrides[fixtureId], ...valuesByChannelId } },
       });
     },
-    [cue, upsertCue],
+    [upsertCue],
+  );
+
+  const onCommit = useCallback(
+    (fixtureId: string, channelId: string, value: number) => onCommitMany(fixtureId, { [channelId]: value }),
+    [onCommitMany],
   );
 
   const onClear = useCallback(
     (fixtureId: string, channelId: string) => {
+      const cue = cueRef.current;
       if (!cue) return;
       const { [channelId]: _, ...rest } = cue.overrides[fixtureId] ?? {};
       const overrides = { ...cue.overrides };
@@ -107,8 +85,13 @@ export const DMXControlWrapper = ({
       else delete overrides[fixtureId]; // no empty {} left behind
       upsertCue({ id: cue.id, overrides });
     },
-    [cue, upsertCue],
+    [upsertCue],
   );
+
+  const registerCard = useCallback((fixtureId: string, el: HTMLDivElement | null) => {
+    if (el) cardRefs.current.set(fixtureId, el);
+    else cardRefs.current.delete(fixtureId);
+  }, []);
 
   const onFixtureButtonClick = useCallback(
     (fixture: PatchedFixture) => {
@@ -180,71 +163,18 @@ export const DMXControlWrapper = ({
         }}
       >
         {patchedFixtures.map((fixture) => (
-          <Box
-            ref={(el) => {
-              if (el) cardRefs.current.set(fixture.id, el);
-              else cardRefs.current.delete(fixture.id);
-            }}
+          <DMXFixture
             key={fixture.id}
-
-            style={{ display: "flex", flex: "0 0 auto", minHeight: 0 }}
-          >
-            <CardBase
-              isActive={currentlyViewingFixtureIds.includes(fixture.id)}
-              style={{
-                flex: "0 0 auto",
-                minHeight: 0,
-                display: "flex",
-                flexDirection: "row",
-                overflow: "hidden",
-                gap: "var(--mantine-spacing-xs)",
-              }}
-            >
-              {/* Vertical name, reading bottom → top. Long names are cut with "…"; the full name shows on hover. */}
-              <Text
-                title={fixture.name}
-                style={{
-                  writingMode: "vertical-lr",
-                  transform: "rotate(180deg)",
-                  flex: "0 1 auto",
-                  maxHeight: "100%",
-                  minHeight: 0, // allow it to be shorter than the full name
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  fontSize: "0.6rem",
-                  marginTop: "auto",
-                }}
-              >
-                {fixture.name}
-              </Text>
-
-              {fixture.allowUserOverride ? (
-                getChannelsForFixture(fixture.id).map((channel, index) => (
-                  <DMXControl
-                    key={channel.id}
-                    channel={channel}
-                    dmxValue={dmxValuesByFixtureId[fixture.id]?.[index]}
-                    onClear={() => onClear(fixture.id, channel.id)}
-                    onCommit={(channelId, value) => onCommit(fixture.id, channelId, value)}
-                    overrideValue={overrides[fixture.id]?.[channel.id]}
-                  />
-                ))
-              ) : (
-                <Center>
-                  <Text
-                    style={{
-                      fontSize: "0.8rem",
-                      textAlign: "center",
-                      maxWidth: "6rem",
-                    }}
-                  >
-                    Custom settings cannot be set for this fixture.
-                  </Text>
-                </Center>
-              )}
-            </CardBase>
-          </Box>
+            fixture={fixture}
+            fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
+            dmxValues={dmxValuesByFixtureId[fixture.id]}
+            overrides={overrides[fixture.id]}
+            isActive={currentlyViewingFixtureIds.includes(fixture.id)}
+            onCommit={onCommit}
+            onCommitMany={onCommitMany}
+            onClear={onClear}
+            registerCard={registerCard}
+          />
         ))}
       </Box>
     </Stack>
