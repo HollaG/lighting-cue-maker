@@ -91,6 +91,14 @@ export const TimelineWrapper = ({
     }
   });
 
+  useHotkey("Control+Space", () => {
+    // send the playhead back to where it started from
+    if (isPlaying) {
+      onPlayStateChange("pause");
+      startPlayheadPositionRef.current = playheadBeforePlayRef.current;
+    }
+  });
+
   const save = (patch: UpsertTimeline) => {
     // Merged with an edit still pending, so two quick edits (one to audios, one to sections) both stay visible.
     setOptimistic({ base: timelineProp, patch: { ...pendingPatch, ...patch } });
@@ -221,10 +229,13 @@ export const TimelineWrapper = ({
     }[]
   >([]); // for stopping all sources on stop
 
+  const playheadBeforePlayRef = useRef(0); // ms: the playhead position before the last play started
+
   const onPlayStateChange = (newState: "play" | "pause" | "stop") => {
     if (newState === "play") {
       stopAllSources();
       onPlay();
+      playheadBeforePlayRef.current = getPositionMs();
       if (audioCtx.current) audioCtx.current.resume();
     } else if (newState === "pause") {
       // update the new playhead position
