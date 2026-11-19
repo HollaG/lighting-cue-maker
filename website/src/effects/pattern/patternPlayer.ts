@@ -128,6 +128,10 @@ export const createPatternTrack = (
       return false;
     }
 
+    // As in QLC+: the previous step fades out while this one fades in, each on its own curve, and each channel takes
+    // the higher of the two (HTP). The very first step fades up from black.
+    const inLevel = fadeIn > 0 ? Math.min(1, intoStep / fadeIn) : 1;
+    const outLevel = fadeOut > 0 ? 1 - Math.min(1, intoStep / fadeOut) : 0;
     for (let i = 0; i < positions.length; i++) {
       const to = current[i] ?? BLACK;
       if (!hasFades) {
@@ -136,13 +140,10 @@ export const createPatternTrack = (
         rgb[i * 3 + 2] = to[2];
         continue;
       }
-      // Fade from the previous step's colour. The very first step fades up from black.
       const from = previous?.[i] ?? BLACK;
-      const fade = current[i] ? fadeIn : fadeOut; // turning on/changing colour uses fade in; turning off uses fade out
-      const progress = fade > 0 ? Math.min(1, intoStep / fade) : 1;
-      rgb[i * 3] = Math.round(from[0] + (to[0] - from[0]) * progress);
-      rgb[i * 3 + 1] = Math.round(from[1] + (to[1] - from[1]) * progress);
-      rgb[i * 3 + 2] = Math.round(from[2] + (to[2] - from[2]) * progress);
+      for (let c = 0; c < 3; c++) {
+        rgb[i * 3 + c] = Math.round(Math.max(from[c] * outLevel, to[c] * inLevel));
+      }
     }
     settled = intoStep >= longestFade;
     return true;
