@@ -306,7 +306,9 @@ export const TimelineSectionItem = ({
             {/* <Menu.Item>Open</Menu.Item>
             <Menu.Item>Rename</Menu.Item>
             <Menu.Item>Duplicate</Menu.Item> */}
+            {/* <Menu.Item }>Split section</Menu.Item> */}
             {/* <Menu.Divider /> */}
+
             <ConfirmDelete onConfirm={() => onDelete(id)}>
               <Menu.Item color="red" closeMenuOnClick={false}>
                 Delete

@@ -114,6 +114,33 @@ export const resizeSection = (section: TimelineSection, span: Span, direction: "
   return moveStart(delta, { totalTimeMs: oldLength - delta });
 };
 
+/**
+ * Where a dragged section lands. If it would overlap another section, it snaps next to that section, whichever way
+ * moves it less: its start onto the other's end, or its end onto the other's start. Touching (end === start) is not
+ * an overlap.
+ *
+ * Returns null if no snap fits (each option overlaps a third section or starts before 0): the drag is dropped.
+ */
+export const snapSectionStart = (sections: TimelineSection[], id: string, start: number): number | null => {
+  const moving = sections.find((s) => s.id === id);
+  if (!moving) return start;
+  const length = getSectionLengthMs(moving);
+  const others = sections
+    .filter((s) => s.id !== id)
+    .map((s) => ({ start: s.sectionStartTime, end: s.sectionStartTime + getSectionLengthMs(s) }));
+
+  const overlapping = (from: number) => others.filter((o) => from < o.end && from + length > o.start);
+
+  const hit = overlapping(start);
+  if (hit.length === 0) return start;
+
+  const candidates = hit
+    .flatMap((o) => [o.end, o.start - length]) // start after it / end before it
+    .filter((c) => c >= 0 && overlapping(c).length === 0)
+    .sort((a, b) => Math.abs(a - start) - Math.abs(b - start));
+  return candidates[0] ?? null;
+};
+
 export const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 /** Return ms as a time string, e.g. 3:45.678 */

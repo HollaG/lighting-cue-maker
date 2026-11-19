@@ -11,6 +11,7 @@ import {
   getRowId,
   resizeSection,
   SIDEBAR_WIDTH,
+  snapSectionStart,
   TimelineRowId,
   trimClip,
 } from "../../utils/timeline";
@@ -176,7 +177,13 @@ export const TimelineWrapper = ({
       // the more complicated logic comes from INSIDE a section.
       // const snappedStart = Math.round(start / 1000) * 1000;
 
-      const snappedStart = Math.round(start); // TODO(snap): DO NOT SNAP SECTIONS
+      // TODO(snap): DO NOT SNAP SECTIONS (to a grid). They only snap against each other, so they never overlap.
+      const snappedStart = snapSectionStart(timeline.sections, id, Math.round(start));
+      if (snappedStart === null) {
+        logger.warn("No room for the dragged section, ignoring drag");
+        return;
+      }
+
       save({ sections: timeline.sections.map((s) => (s.id === id ? { ...s, sectionStartTime: snappedStart } : s)) });
     }
   };
@@ -395,7 +402,15 @@ export const TimelineWrapper = ({
   };
 
   // sync the cue markers
-  useTimelineCueSync({ timeline, getPositionMs, playing: isPlaying });
+  useTimelineCueSync({
+    timeline,
+    getPositionMs,
+    playing: isPlaying,
+    onSectionEnd: (endMs) => {
+      onPlayStateChange("pause");
+      startPlayheadPositionRef.current = endMs; // we might overshoot due to render (60fps = 16ms)
+    },
+  });
 
   // Pointer only: dnd-kit's default KeyboardSensor starts a drag when Space/Enter is pressed on a focused item,
   // which clashes with Space = play/pause (and Space again would drop the item and save it).

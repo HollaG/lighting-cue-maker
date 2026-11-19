@@ -1,17 +1,22 @@
 // A hook that tracks the timeline and activates (non-purely) cues via selectedCueId in the CueSlice
 
-import { useEffect, useMemo } from "react";
-import type { Timeline } from "../../types-v2/timeline";
+import { useEffect, useMemo, useRef } from "react";
+import { getSectionLengthMs, type Timeline } from "../../types-v2/timeline";
 import { useAppStore } from "../../store/appStore";
 
 export const useTimelineCueSync = ({
   timeline,
   getPositionMs,
   playing,
+
+  onSectionEnd,
 }: {
   timeline: Timeline;
   getPositionMs: () => number;
   playing: boolean;
+
+  /** called when playback crosses the end of a section with linkToNext off */
+  onSectionEnd: (endMs: number) => void;
 }) => {
   const setSelectedCueId = useAppStore((state) => state.setCurrentlySelectedCueId);
 
@@ -29,6 +34,22 @@ export const useTimelineCueSync = ({
     [timeline],
   );
 
+  // Where should we stop the playhead (for non link sections)
+  const stopPoints = useMemo(
+    () =>
+      timeline.sections
+        .filter((s) => !s.linkToNext)
+        .map((s) => s.sectionStartTime + getSectionLengthMs(s))
+        .sort((a, b) => a - b),
+    [timeline],
+  );
+
+  // AI put this here, don't really understand, but to my knowledge
+  // it just seems to be a way to not re-run use effect cos the deps change
+  const onSectionEndRef = useRef(onSectionEnd);
+  onSectionEndRef.current = onSectionEnd;
+
+  // Register a loop for firing cues
   useEffect(() => {
     if (!playing) return;
 
@@ -50,8 +71,17 @@ export const useTimelineCueSync = ({
       const crossed = markers.findLast((m) => (inclusive ? m.atMs >= prevMs : m.atMs > prevMs) && m.atMs <= positionMs);
       if (crossed) setSelectedCueId(crossed.cueId);
 
+      // EXTRA: if we have just hit the end of a section and the section is set to not Link, then we pause
+      const stopAt = stopPoints.find((s) => s > prevMs && s <= positionMs); // just crossed
+
+      if (stopAt !== undefined) {
+        onSectionEndRef.current(stopAt);
+        return; // don't schedule another frame; `playing` becomes false and the effect cleans up
+      }
+
       prevMs = positionMs;
       inclusive = false;
+
       raf = requestAnimationFrame(tick);
     });
 
