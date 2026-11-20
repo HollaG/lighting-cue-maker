@@ -154,7 +154,24 @@ export const EventPage = () => {
     if (!selectedItemId) openEventDetails();
   }, [eventId]);
 
-  // const selectedItem = items.find((item) => item.id === selectedItemId);
+  // check if user is new (directly read not thru effect so we get the intiial value)
+  // const isUserNew = useMemo(() => !localStorage.getItem(`${eventId}-last-hidden-time`), [eventId]);
+
+  // Save the user's last minimized time (last time they closed the page)
+  // useEffect(() => {
+  //   const key = `${eventId}-last-hidden-time`;
+  //   const save = () => localStorage.setItem(key, String(Date.now()));
+
+  //   const onVisibility = () => {
+  //     if (document.visibilityState === "hidden") save();
+  //   };
+  //   document.addEventListener("visibilitychange", onVisibility);
+
+  //   return () => {
+  //     document.removeEventListener("visibilitychange", onVisibility);
+  //     save(); // leaving the event page inside the app (route change / switching event)
+  //   };
+  // }, [eventId]);
 
   // Mirror the selected item into the app store (`activeItemId`), for components that aren't handed it as a prop.
   // The page's per-event local storage above stays the source of truth, so each event still remembers its own item.
@@ -246,8 +263,22 @@ export const EventPage = () => {
       }
     }
   };
+
+  // --- GUIDED TOUR ---------
+  // const [active, setActive] = useState(false);
+  // const [step, setStep] = useState(0);
+
   return (
     <>
+      {/* <Tour active={active} step={step} onStepChange={setStep} onClose={() => setActive(false)}>
+        <Tour.Step target="#controlled-target-1" title="Step 1">
+          This is the first step.
+        </Tour.Step>
+        <Tour.Step target="#controlled-target-2" title="Step 2">
+          This is the second step.
+        </Tour.Step>
+      </Tour> */}
+
       {/* Centered pull-down */}
       <Stack
         style={{
@@ -316,7 +347,7 @@ export const EventPage = () => {
         opened={openedEventDetails}
         onClose={closeEventDetails}
         position="top"
-        size="lg"
+        size="xl"
         overlayProps={{ backgroundOpacity: 0, blur: 1.5 }}
         withCloseButton={selectedItemId !== ""} // don't allow closing if no item is selected
         closeOnEscape={selectedItemId !== ""} // don't allow closing if no item is selected
@@ -517,6 +548,14 @@ export const EventPage = () => {
               </>
             )}
           </Flex>
+          {/* {isUserNew && (
+            <Stack mt="md">
+              <Center>Looks like you're new here! Take a guided tour?</Center>
+              <Center>
+                <Button> Begin walkthrough</Button>
+              </Center>
+            </Stack>
+          )} */}
         </Container>
       </Drawer>
 
