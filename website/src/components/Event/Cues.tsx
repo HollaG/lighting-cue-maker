@@ -4,12 +4,9 @@ import { useGetCues } from "../../query-v2/cues/useGetCues";
 import { useGetItem } from "../../query-v2/items/useGetItem";
 import type { Cue } from "../../types-v2/cue";
 import { getCueOrder } from "../../utils/cue/cueForm";
-import { Logger } from "../../utils/logger";
 import { sanitize } from "../../utils/sanitize";
 import { useAppStore } from "../../store/appStore";
 import { CueCard } from "./CueCard/CueCard";
-
-const logger = new Logger("Cues.tsx");
 
 export const Cues = ({ eventId, itemId }: { eventId: string; itemId: string }) => {
   const { cues, isCuesLoading } = useGetCues(eventId, itemId);

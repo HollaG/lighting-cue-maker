@@ -3,7 +3,6 @@ import {
   Text,
   Box,
   Flex,
-  SegmentedControl,
   Select,
   Group,
   Divider,
@@ -31,10 +30,7 @@ import {
 } from "../../types-v2/timeline";
 import { CustomTextInput } from "../CustomTextInput/CustomTextInput";
 import { DebouncedNumberInput } from "../Inputs/DebouncedNumberInput";
-import {
-  useUpsertTimelineSectionItem,
-  type TimelineSectionPatch,
-} from "../../query-v2/timeline/useUpsertTimelineSectionItem";
+import { useUpsertTimelineSectionItem } from "../../query-v2/timeline/useUpsertTimelineSectionItem";
 import { Logger } from "../../utils/logger";
 import { useAppStore } from "../../store/appStore";
 import { useGetItem } from "../../query-v2/items/useGetItem";
@@ -94,10 +90,10 @@ export const TimelineSectionItem = ({
 
   const { upsertSection, replaceSection } = useUpsertTimelineSectionItem(eventId, itemId);
 
-  const onValueChange = async (field: keyof TimelineSection, value: any) => {
-    // Only this field: spreading `section` would send the copy from this render and undo edits made since.
-    await upsertSection({ id: section.id, [field]: value } as TimelineSectionPatch);
-  };
+  // const onValueChange = async (field: keyof TimelineSection, value: any) => {
+  //   // Only this field: spreading `section` would send the copy from this render and undo edits made since.
+  //   await upsertSection({ id: section.id, [field]: value } as TimelineSectionPatch);
+  // };
 
   const { ref, width } = useElementSize();
 
