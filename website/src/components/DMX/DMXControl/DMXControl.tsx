@@ -4,12 +4,16 @@ import { ChannelType, type Channel } from "../../../types-v2/fixtureTemplates";
 // import type { PatchedFixture } from "../../../types-v2/patchedFixture";
 // import { Logger } from "../../../utils/logger";
 import { IconBulb, IconQuestionMark } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { memo, useState } from "react";
 
 // const logger = new Logger("DMXControl", "green");
 
-export const DMXControl = ({
+/**
+ * Slider for a channel
+ */
+export const DMXControl = memo(function DMXControl({
   // eventId,
+  fixtureId,
   dmxValue,
   channel,
 
@@ -18,13 +22,16 @@ export const DMXControl = ({
   onClear,
 }: {
   // eventId: string;
+  fixtureId: string;
   dmxValue: number | null;
   channel: Channel;
 
   overrideValue: number | undefined; // cue.overrides[fixtureId]?.[channel.id]
-  onCommit: (channelId: string, value: number) => void;
-  onClear: (channelId: string) => void;
-}) => {
+  /** Must be stable. */
+  onCommit: (fixtureId: string, channelId: string, value: number) => void;
+  /** Must be stable. */
+  onClear: (fixtureId: string, channelId: string) => void;
+}) {
   // 4-layer component:
   // 1. button to enable or not
   // 2. representation of the channel type
@@ -33,9 +40,11 @@ export const DMXControl = ({
 
   const shownValue = overrideValue ?? dmxValue ?? channel.defaultValue ?? 0;
   const [draft, setDraft] = useState(shownValue);
-
-  useEffect(() => setDraft(shownValue), [shownValue]); // follow saves, other users, cue switches
-
+  const [prevShown, setPrevShown] = useState(shownValue);
+  if (shownValue !== prevShown) {
+    setPrevShown(shownValue);
+    setDraft(shownValue);
+  }
   const isOverridden = overrideValue !== undefined;
 
   return (
@@ -50,7 +59,9 @@ export const DMXControl = ({
       <Checkbox
         size="xs"
         checked={isOverridden}
-        onChange={(e) => (e.currentTarget.checked ? onCommit(channel.id, draft) : onClear(channel.id))}
+        onChange={(e) =>
+          e.currentTarget.checked ? onCommit(fixtureId, channel.id, draft) : onClear(fixtureId, channel.id)
+        }
       />
 
       <HeaderIcon channel={channel} key={channel.id} />
@@ -60,7 +71,7 @@ export const DMXControl = ({
         value={draft}
         min={0}
         max={255}
-        onChangeEnd={(v) => onCommit(channel.id, v)}
+        onChangeEnd={(v) => onCommit(fixtureId, channel.id, v)}
         flex={1}
       />
       <Box w="100%">
@@ -73,13 +84,13 @@ export const DMXControl = ({
           max={255}
           step={1}
           onBlur={() => {
-            if (draft !== shownValue) onCommit(channel.id, draft);
+            if (draft !== shownValue) onCommit(fixtureId, channel.id, draft);
           }}
         />
       </Box>
     </Stack>
   );
-};
+});
 
 /** 20 x 20 icon depending on the channel */
 const HeaderIcon = ({ channel }: { channel: Channel }) => {

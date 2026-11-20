@@ -127,10 +127,12 @@ export const DMXFixture = memo(function DMXFixture({
           channels.map((channel, index) => (
             <DMXControl
               key={channel.id}
+              fixtureId={fixture.id}
               channel={channel}
               dmxValue={dmxValues?.[index] ?? null}
-              onClear={() => onClear(fixture.id, channel.id)}
-              onCommit={(channelId, value) => onCommit(fixture.id, channelId, value)}
+              // passed straight through (stable), so the memoized control skips when only another channel changed
+              onClear={onClear}
+              onCommit={onCommit}
               overrideValue={overrides?.[channel.id]}
             />
           ))

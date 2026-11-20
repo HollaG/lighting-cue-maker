@@ -38,8 +38,8 @@ export const DMXControlWrapper = ({
   const displayedFixtures = useMemo(
     () =>
       currentlyViewingFixtureIds.length === 0
-        ? patchedFixtures
-        : patchedFixtures.filter((f) => currentlyViewingFixtureIds.includes(f.id)),
+        ? patchedFixtures.map((f) => ({ fixture: f, show: true }))
+        : patchedFixtures.map((f) => ({ fixture: f, show: currentlyViewingFixtureIds.includes(f.id) })),
     [patchedFixtures, currentlyViewingFixtureIds],
   );
   const { event } = useGetEvent(eventId);
@@ -152,7 +152,7 @@ export const DMXControlWrapper = ({
 
       <Box
         style={{
-          overflowX: "auto",
+          overflowX: "scroll",
           display: "flex",
           flexDirection: "row",
           flexWrap: "nowrap",
@@ -166,7 +166,7 @@ export const DMXControlWrapper = ({
           paddingBottom: "var(--mantine-spacing-xs)",
         }}
       >
-        {displayedFixtures.map((fixture) => (
+        {/* {displayedFixtures.map((fixture) => (
           <DMXFixture
             key={fixture.id}
             fixture={fixture}
@@ -179,6 +179,29 @@ export const DMXControlWrapper = ({
             onClear={onClear}
             registerCard={registerCard}
           />
+        ))} */}
+        {displayedFixtures.map(({ fixture, show }) => (
+          <Box
+            key={fixture.id}
+
+            style={{
+              display: show ? "flex" : "none",
+              flex: "0 0 auto",
+              minHeight: 0,
+            }}
+          >
+            <DMXFixture
+              fixture={fixture}
+              fixtureTemplate={templatesById.get(fixture.fixtureTemplateId)}
+              dmxValues={dmxValuesByFixtureId[fixture.id]}
+              overrides={overrides[fixture.id]}
+              isActive={currentlyViewingFixtureIds.includes(fixture.id)}
+              onCommit={onCommit}
+              onCommitMany={onCommitMany}
+              onClear={onClear}
+              registerCard={registerCard}
+            />
+          </Box>
         ))}
       </Box>
     </Stack>
