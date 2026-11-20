@@ -92,7 +92,7 @@ export const TimelineSectionItem = ({
   const data: ItemData = { rowId };
   const { setNodeRef, attributes, listeners, itemStyle, itemContentStyle } = useItem({ id, span, data, disabled });
 
-  const { upsertSection } = useUpsertTimelineSectionItem(eventId, itemId);
+  const { upsertSection, replaceSection } = useUpsertTimelineSectionItem(eventId, itemId);
 
   const onValueChange = async (field: keyof TimelineSection, value: any) => {
     // Only this field: spreading `section` would send the copy from this render and undo edits made since.
@@ -105,6 +105,52 @@ export const TimelineSectionItem = ({
   // show the collapsed menu when we drop below 45 rem
   const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
   const showCollapsedMenuButton = width < 45 * remPx;
+
+  // --- handle splitting ---------
+  const [splitAtMs, setSplitAtMs] = useState<number | null>(null);
+  const onContextMenuAt = (timeMs: number | null) => {
+    setSplitAtMs(timeMs);
+  };
+  const onSplit = () => {
+    // TIME is not implemented yet.
+    // TIME can be split anywhere.
+    if (splitAtMs === null || section.type !== TimelineSectionType.BEAT) return;
+
+    const beatMs = 60000 / section.bpm;
+    const splitBeats = Math.round(splitAtMs / beatMs); // round to nearest bar
+
+    // TODO: for now, if the user tries to split along a beat, show toast error - only allow bars
+    if (Math.abs(splitAtMs / beatMs - splitBeats) > 0.01 || splitBeats % section.timeSigNum !== 0) {
+      notifications.show({
+        title: "Invalid split",
+        message: "You can only split sections at bar boundaries.",
+        color: "red",
+      });
+      return;
+    }
+    // On the very start or end: nothing to split.
+    if (splitBeats <= 0 || splitBeats >= section.beats) return;
+
+    const splitMs = Math.round(splitBeats * beatMs);
+
+    // left side: keeps the id, ends at the split, and runs straight into the right half
+    const left: TimelineBeatSection = {
+      ...section,
+      beats: splitBeats,
+      linkToNext: false, // split means user want to not link them
+      markers: section.markers.filter((m) => m.time < splitMs),
+    };
+    // right side: new id, starts at the split, keeps the original linkToNext
+    const right: TimelineBeatSection = {
+      ...section,
+      id: crypto.randomUUID(),
+      sectionStartTime: section.sectionStartTime + splitMs,
+      beats: section.beats - splitBeats,
+      markers: section.markers.filter((m) => m.time >= splitMs).map((m) => ({ ...m, time: m.time - splitMs })),
+    };
+
+    void replaceSection(section.id, [left, right]);
+  };
   return (
     <div
       ref={setNodeRef}
@@ -130,7 +176,7 @@ export const TimelineSectionItem = ({
           zIndex: 99,
         }}
       >
-        <Menu shadow="md" position="top" withArrow withinPortal>
+        <Menu shadow="md" position="top" withArrow withinPortal onClose={() => onContextMenuAt(null)}>
           <Menu.ContextMenu>
             <Box w="100%" style={{ overflow: "hidden" }} h="100%">
               <Flex
@@ -169,7 +215,13 @@ export const TimelineSectionItem = ({
                 {/* Main content */}
                 <Flex flex={1} onPointerDown={(e) => e.stopPropagation()}>
                   {section.type === TimelineSectionType.BEAT && (
-                    <TimelineBeatSectionItem eventId={eventId} itemId={itemId} section={section} sections={sections} />
+                    <TimelineBeatSectionItem
+                      eventId={eventId}
+                      itemId={itemId}
+                      section={section}
+                      sections={sections}
+                      onContextMenuAt={onContextMenuAt}
+                    />
                   )}
                 </Flex>
                 {/* controls and text */}
@@ -418,11 +470,11 @@ export const TimelineSectionItem = ({
           {/* Portal events still bubble through React to the draggable item. */}
           <Menu.Dropdown onPointerDown={(event) => event.stopPropagation()}>
             <Menu.Label>Actions</Menu.Label>
-            {/* <Menu.Item>Open</Menu.Item>
-            <Menu.Item>Rename</Menu.Item>
-            <Menu.Item>Duplicate</Menu.Item> */}
-            {/* <Menu.Item }>Split section</Menu.Item> */}
-            {/* <Menu.Divider /> */}
+
+            <Menu.Item onClick={() => onSplit()} disabled={splitAtMs === null}>
+              Split section
+            </Menu.Item>
+            <Menu.Divider />
 
             <ConfirmDelete onConfirm={() => onDelete(id)}>
               <Menu.Item color="red" closeMenuOnClick={false}>
@@ -442,11 +494,16 @@ const TimelineBeatSectionItem = ({
   itemId,
   section,
   sections,
+
+  onContextMenuAt,
 }: {
   eventId: string;
   itemId: string;
   section: TimelineBeatSection;
   sections: TimelineSection[];
+
+  /** trap the time at which right click was clicked */
+  onContextMenuAt: (timeMs: number) => void;
 }) => {
   const { upsertSection, isSectionSaving } = useUpsertTimelineSectionItem(eventId, itemId);
   const { valueToPixels, pixelsToValue, range } = useTimelineContext();
@@ -725,6 +782,7 @@ const TimelineBeatSectionItem = ({
         </Group>
       </Modal>
 
+      {/* zoomed out */}
       {beatPx < threshold ? (
         <Flex
           flex={1}
@@ -744,6 +802,7 @@ const TimelineBeatSectionItem = ({
           // sometimes it might miss the enter event
           onMouseMove={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
+          onContextMenu={() => onContextMenuAt(hoveredTimeMs)}
         >
           {/* cue items */}
           {cueItems}
@@ -765,6 +824,7 @@ const TimelineBeatSectionItem = ({
           ></Box>
         </Flex>
       ) : (
+        // Zoomed in
         <Flex
           flex={1}
           style={{
@@ -783,6 +843,7 @@ const TimelineBeatSectionItem = ({
           // sometimes it might miss the enter event
           onMouseMove={() => setHovered(true)}
           onClick={() => onClick(hoveredTimeMs)}
+          onContextMenu={() => onContextMenuAt(hoveredTimeMs)}
         >
           {/* The snap lines, ONLY for the hovered beat: one beat wide, a line every snapPx (sub-beats). */}
           {showSubBeatLines && (

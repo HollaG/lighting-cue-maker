@@ -51,5 +51,15 @@ export const useUpsertTimelineSectionItem = (eventId: string, itemId: string) =>
     return saveTimeline({ sections: current.sections.filter((s) => s.id !== id) });
   };
 
-  return { upsertSection, deleteSection, isSectionSaving: isPending };
+  /**
+   * Swaps the section with this id for `replacements` (e.g. the two halves of a split), in ONE save: two upserts would
+   * leave a moment where the halves overlap the original, which the server rejects.
+   */
+  const replaceSection = (id: string, replacements: TimelineSection[]) => {
+    const current = queryClient.getQueryData<Timeline | null>(makeGetTimelineQueryKey(eventId, itemId));
+    if (!current) return Promise.resolve(undefined);
+    return saveTimeline({ sections: current.sections.flatMap((s) => (s.id === id ? replacements : [s])) });
+  };
+
+  return { upsertSection, deleteSection, replaceSection, isSectionSaving: isPending };
 };
