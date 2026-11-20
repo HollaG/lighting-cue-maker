@@ -352,7 +352,7 @@ const PatternRowControls = ({
               placeholder="0"
               value={row.fadeInDuration}
               min={0}
-              onChange={(value) => (value ? onChangeRow(row.id, { fadeInDuration: value as number }) : null)}
+              onChange={(value) => (typeof value === 'number' ? onChangeRow(row.id, { fadeInDuration: value }) : null)}
               withAsterisk
             />
             <NumberInput
@@ -360,7 +360,7 @@ const PatternRowControls = ({
               placeholder="0"
               value={row.fadeOutDuration}
               min={0}
-              onChange={(value) => (value ? onChangeRow(row.id, { fadeOutDuration: value as number }) : null)}
+              onChange={(value) => (typeof value === 'number' ? onChangeRow(row.id, { fadeOutDuration: value }) : null)}
               withAsterisk
             />
           </SimpleGrid>
