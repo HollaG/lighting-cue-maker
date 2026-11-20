@@ -128,8 +128,9 @@ export const createPatternTrack = (
       return false;
     }
 
-    // As in QLC+: the previous step fades out while this one fades in, each on its own curve, and each channel takes
-    // the higher of the two (HTP). The very first step fades up from black.
+    // Each channel fades from its value in the previous step to its value in this one: over the fade in time when it
+    // rises, the fade out time when it falls. A channel that keeps its value holds steady (so in a fill, heads already
+    // lit don't fade again). The very first step fades up from black.
     const inLevel = fadeIn > 0 ? Math.min(1, intoStep / fadeIn) : 1;
     const outLevel = fadeOut > 0 ? 1 - Math.min(1, intoStep / fadeOut) : 0;
     for (let i = 0; i < positions.length; i++) {
@@ -142,7 +143,11 @@ export const createPatternTrack = (
       }
       const from = previous?.[i] ?? BLACK;
       for (let c = 0; c < 3; c++) {
-        rgb[i * 3 + c] = Math.round(Math.max(from[c] * outLevel, to[c] * inLevel));
+        const f = from[c];
+        const t = to[c];
+        rgb[i * 3 + c] = t > f
+          ? Math.round(f + (t - f) * inLevel) // rising: fade in time
+          : Math.round(t + (f - t) * outLevel); // falling or unchanged: fade out time
       }
     }
     settled = intoStep >= longestFade;

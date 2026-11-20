@@ -92,12 +92,12 @@ describe("applyPatternEffects", () => {
     expect(apply(pattern, 1250)).toEqual([255, 0, 0, 128, 0, 0, 255]);
   });
 
-  it("a cell lit in both steps follows both curves, not one blend", () => {
-    // One column: the same cell is lit every step. Its old light is gone after 100 ms; the new one takes 500 ms.
+  it("a cell lit the same in both steps holds steady, no dip", () => {
+    // One column: the same cell is lit every step, so nothing should fade.
     const single: Grid = { cols: 1, rows: 1, cells: [{ col: 0, row: 0, head: 0, fixtureId: "f1" }] };
     const pattern = { ...chase({ fadeInDuration: 500, fadeOutDuration: 100 }), grid: single };
-    expect(apply(pattern, 1050)[3]).toBe(128); // max(255 × 0.5 out, 255 × 0.1 in)
-    expect(apply(pattern, 1250)[3]).toBe(128); // max(0 out, 255 × 0.5 in)
+    expect(apply(pattern, 1050)[3]).toBe(255);
+    expect(apply(pattern, 1250)[3]).toBe(255);
   });
 
   it("does not change the base", () => {

@@ -122,6 +122,18 @@ describe("compilePatternPlayer", () => {
     expect(player.values.get("f1")!.slice(1, 9)).toEqual([255, 0, 0, 0, 0, 0, 0, 0]);
   });
 
+  it("fill: a head that stays lit holds steady while the next head fades in", () => {
+    const player = compile([pattern("fill", { colours: [{ name: "Red", hex: "#ff0000" }] })]);
+    // Step 1 (300 ms), 60 ms in: half of the 120 ms fade in.
+    player.evaluate(360);
+    expect(player.values.get("f1")!.slice(1)).toEqual([
+      255, 0, 0, 0, // head 0: lit in step 0 and step 1, no fade
+      128, 0, 0, 0, // head 1: fading in
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+    ]);
+  });
+
   it("never changes the base", () => {
     const before = structuredClone(base);
     compile([pattern("stripes")]).evaluate(500);
