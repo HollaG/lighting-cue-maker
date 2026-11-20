@@ -2,7 +2,7 @@ import { Box, Center, Stack, Text } from "@mantine/core";
 import { memo, useMemo } from "react";
 import type { Channel, FixtureTemplate } from "../../types-v2/fixtureTemplates";
 import type { PatchedFixture } from "../../types-v2/patchedFixture";
-import { hasPaletteColour } from "../../utils/visualiser-v2-decoder";
+import { hasPaletteColour, hasPaletteWhite } from "../../utils/visualiser-v2-decoder";
 import { CardBase } from "../Cues/CardBase";
 import { DMXControl } from "./DMXControl/DMXControl";
 import { PaletteColourButton } from "./PaletteColourButton";
@@ -52,6 +52,11 @@ export const DMXFixture = memo(function DMXFixture({
     [fixtureTemplate, fixture.modeId],
   );
   const canPickColour = colourHeads.some((head) => head.has);
+  // same heads, in the same order: the picker's white slider writes to these
+  const whiteHeads = useMemo(
+    () => (!!fixtureTemplate ? hasPaletteWhite(fixtureTemplate, fixture.modeId) : []),
+    [fixtureTemplate, fixture.modeId],
+  );
 
   if (!fixtureTemplate) {
     return (
@@ -101,7 +106,7 @@ export const DMXFixture = memo(function DMXFixture({
             <PaletteColourButton
               title={`Colour for ${fixture.name}`}
               colourHeads={colourHeads}
-              // whiteHeads TODO
+              whiteHeads={whiteHeads}
               // slots → channel ids (`channels` is in slot order)
               onApply={(valuesBySlot) =>
                 onCommitMany(

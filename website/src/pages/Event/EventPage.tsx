@@ -272,7 +272,7 @@ export const EventPage = () => {
       <Drawer
         opened={isDmxDrawerOpen}
         onClose={() => setIsDmxDrawerOpen(false)}
-        keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
+        // keepMounted
         position="bottom"
         size={`${dmxHeight}vh`}
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.

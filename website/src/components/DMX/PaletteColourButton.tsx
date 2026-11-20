@@ -6,8 +6,10 @@ import {
   Divider,
   getDefaultZIndex,
   Group,
+  Input,
   Modal,
   SegmentedControl,
+  Slider,
   Stack,
   Text,
   TextInput,
@@ -56,6 +58,7 @@ export const PaletteColourButton = ({
   title = "Pick a colour",
   onPick,
   colourHeads,
+  whiteHeads,
   onApply,
 
   headGrid,
@@ -64,6 +67,8 @@ export const PaletteColourButton = ({
   onPick?: (hex: string) => void;
   /** One entry per head (PaletteApplicable is already an array). */
   colourHeads: PaletteApplicable;
+  /** Each head's white channel, same heads in the same order as `colourHeads`. Omit for no white slider. */
+  whiteHeads?: PaletteApplicable;
   /** The values to write, by slot (0-based index in the fixture's mode). Saved together, as one change. */
   onApply: (valuesBySlot: Map<number, number>) => void;
 
@@ -74,7 +79,19 @@ export const PaletteColourButton = ({
 }) => {
   const [opened, { open, close }] = useDisclosure(false);
   const [colour, setColour] = useState("#ffffff");
-  const [mode, setMode] = useState<"full" | "swatches">("full");
+  const [mode, setMode] = useState<"full" | "swatches">("swatches");
+
+  const [white, setWhite] = useState(0);
+
+  const hasWhite = !!whiteHeads?.some((head) => head.has);
+
+  /** The head's colour channels, plus its white channel if it has one. */
+  const getHeadValues = (headIndex: number) => {
+    const values = getHeadColourValues(colourHeads[headIndex].channels, colour);
+    const whiteSlot = whiteHeads?.[headIndex]?.channels[ChannelType.WHITE];
+    if (whiteSlot !== undefined) values.set(whiteSlot, white);
+    return values;
+  };
 
   return (
     <>
@@ -122,6 +139,11 @@ export const PaletteColourButton = ({
                 { label: "Swatches", value: "swatches" },
               ]}
             />
+            {hasWhite && (
+              <Input.Wrapper label={`White (${white})`}>
+                <Slider value={white} onChange={setWhite} min={0} max={255} label={null} />
+              </Input.Wrapper>
+            )}
           </Stack>
           <Divider />
           <Stack flex={8} miw={0}>
@@ -143,7 +165,7 @@ export const PaletteColourButton = ({
                     px={0}
                     variant="default"
                     disabled={!head.has}
-                    onClick={() => onApply(getHeadColourValues(head.channels, colour))}
+                    onClick={() => onApply(getHeadValues(i))}
                   >
                     {i + 1}
                   </Button>
@@ -162,8 +184,8 @@ export const PaletteColourButton = ({
  * RGB: derive from hex
  * CMY: invert RGB (255 - value)
  *
- * NOTE: we don't support W/WW/whatever other special channels from this color picker.
- *       This aligns with QLC+ behaviour. They will be separate (a slider)
+ * NOTE: white comes from its own slider (see `getHeadValues`), not from the hex. Other special channels
+ *       (WW, amber, UV...) aren't supported here. This aligns with QLC+ behaviour.
  */
 const getHeadColourValues = (channels: PaletteApplicable[number]["channels"], hex: string): Map<number, number> => {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));

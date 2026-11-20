@@ -1,11 +1,4 @@
-import {
-  ActionIcon,
-  Box,
-  Button,
-  /* Divider, */ Group,
-  /* OverflowList, */ Scroller,
-  Stack,
-} from "@mantine/core";
+import { ActionIcon, Box, Button, /* Divider, */ Group, /* OverflowList, */ Scroller, Stack } from "@mantine/core";
 import type { useResolvedDmx } from "../../hooks/useResolvedDmx";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
@@ -41,6 +34,14 @@ export const DMXControlWrapper = ({
   const { mutateAsync: upsertCue } = useUpsertCue(eventId, itemId);
 
   const { patchedFixtures /* , isPatchedFixturesLoading */ } = useGetPatchedFixtures(eventId);
+
+  const displayedFixtures = useMemo(
+    () =>
+      currentlyViewingFixtureIds.length === 0
+        ? patchedFixtures
+        : patchedFixtures.filter((f) => currentlyViewingFixtureIds.includes(f.id)),
+    [patchedFixtures, currentlyViewingFixtureIds],
+  );
   const { event } = useGetEvent(eventId);
   const fixtureTemplates = event?.fixtureTemplates ?? [];
   const overrides = cue?.overrides || {};
@@ -141,6 +142,9 @@ export const DMXControlWrapper = ({
             ))}
           </Group>
         </Scroller>
+        <Button size="xs" variant="subtle" onClick={() => setCurrentlyViewingFixtureIds([])}>
+          Deselect
+        </Button>
         <ActionIcon mr="xs" variant="transparent" onClick={() => setIsDmxDrawerOpen(false)}>
           <IconChevronDown size="1rem" />
         </ActionIcon>
@@ -162,7 +166,7 @@ export const DMXControlWrapper = ({
           paddingBottom: "var(--mantine-spacing-xs)",
         }}
       >
-        {patchedFixtures.map((fixture) => (
+        {displayedFixtures.map((fixture) => (
           <DMXFixture
             key={fixture.id}
             fixture={fixture}
