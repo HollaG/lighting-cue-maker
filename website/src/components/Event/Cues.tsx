@@ -27,7 +27,14 @@ export const Cues = ({ eventId, itemId }: { eventId: string; itemId: string }) =
       .filter((cue): cue is Cue => !!cue);
   }, [cues, item?.rawLyrics]);
 
-  logger.info("Rendering Cues", { eventId, itemId, cues: orderedCues.length });
+  // previously in each cue
+  // caused every cue to re render when the cues changed
+  // - prevously we passed orderedCues down
+  const orderKey = orderedCues.map((c) => c.id).join(",");
+  const copyOptions = useMemo(
+    () => (orderKey ? orderKey.split(",") : []).map((id, i) => ({ value: id, label: `Cue ${i + 1}` })),
+    [orderKey],
+  );
 
   if (isCuesLoading) {
     return (
@@ -51,7 +58,7 @@ export const Cues = ({ eventId, itemId }: { eventId: string; itemId: string }) =
           eventId={eventId}
           cue={cue}
           cueNumber={index + 1}
-          orderedCues={orderedCues}
+          copyOptions={copyOptions}
           isSelected={currentlySelectedCueId === cue.id}
         />
       ))}

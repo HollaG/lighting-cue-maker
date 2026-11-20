@@ -55,15 +55,18 @@ export const CueCard = memo(function CueCard({
   eventId,
   cue,
   cueNumber,
-  orderedCues,
+  copyOptions,
   isSelected,
 }: {
   eventId: string;
   cue: Cue;
   /** 1-based position in the lyrics. */
   cueNumber: number;
-  /** Every cue of the item in lyric order, for "Copy another cue". */
-  orderedCues: Cue[];
+  /**
+   * Every cue of the item in lyric order (this one included), for "Copy another cue". Ids and labels only, so it
+   * stays the same array when a cue is edited and doesn't re-render every card.
+   */
+  copyOptions: { value: string; label: string }[];
   isSelected: boolean;
 }) {
   const itemId = cue.itemId;
@@ -115,13 +118,18 @@ export const CueCard = memo(function CueCard({
 
   // --- Copy another cue ---------
   const [copyQuery, setCopyQuery] = useState("");
-  const copyOptions = orderedCues
-    .map((other, index) => ({ cue: other, number: index + 1 }))
-    .filter((option) => option.cue.id !== cue.id)
-    .filter((option) => copyQuery === "" || `Cue ${option.number}`.includes(copyQuery));
+  const queryClient = useQueryClient();
+  const filteredCopyOptions = copyOptions
+    .filter((option) => option.value !== cue.id)
+    .filter((option) => copyQuery === "" || option.label.includes(copyQuery));
 
   /** Copies everything the cue sets (not its comments) from another cue. */
-  const onCopyFrom = async (source: Cue, sourceNumber: number) => {
+  const onCopyFrom = async (sourceId: string, sourceLabel: string) => {
+    // Read the source from the cache at click time: the options only hold ids.
+    const source = queryClient
+      .getQueryData<Cue[]>(makeGetCuesQueryKey(eventId, itemId))
+      ?.find((c) => c.id === sourceId);
+    if (!source) return;
     try {
       await upsertCue({
         id: cue.id,
@@ -131,7 +139,7 @@ export const CueCard = memo(function CueCard({
         selectableIds: source.selectableIds,
         overrides: source.overrides,
       });
-      notifications.show({ title: `Copied cue ${sourceNumber}!`, message: "" });
+      notifications.show({ title: `Copied ${sourceLabel.toLowerCase()}!`, message: "" });
 
       // set this cue as selected
       setSelected();
@@ -251,13 +259,13 @@ export const CueCard = memo(function CueCard({
                     placeholder="Search cues"
                   />
                   <Menu.Label>Copy all settings from:</Menu.Label>
-                  {copyOptions.length > 0 ? (
-                    copyOptions.map((option) => (
-                      <Menu.Item key={option.cue.id} onClick={() => void onCopyFrom(option.cue, option.number)}>
+                  {filteredCopyOptions.length > 0 ? (
+                    filteredCopyOptions.map((option) => (
+                      <Menu.Item key={option.value} onClick={() => void onCopyFrom(option.value, option.label)}>
                         <Group>
-                          Cue {option.number}
+                          {option.label}
                           <Text c="dimmed" fz="sm">
-                            {option.cue.id.slice(0, 4)}
+                            {option.value.slice(0, 4)}
                           </Text>
                         </Group>
                       </Menu.Item>
