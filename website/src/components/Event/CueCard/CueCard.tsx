@@ -70,6 +70,17 @@ export const CueCard = memo(function CueCard({
   const itemId = cue.itemId;
 
   const setSelectedCueId = useAppStore((s) => s.setCurrentlySelectedCueId);
+  /** True while a selection made from inside this card is on its way: the scroll effect below skips it. */
+  const skipNextScrollRef = useRef(false);
+  /**
+   * Selects this cue without scrolling: for edits made in this card, which the user is already looking at.
+   * Passed down so the pickers below don't need the cue id.
+   */
+  const setSelected = () => {
+    // Already selected: `isSelected` won't change and the effect won't run, so leave the flag unset.
+    if (!isSelected) skipNextScrollRef.current = true;
+    setSelectedCueId(cue.id);
+  };
   const showCueIdentifiers = useAppStore((s) => s.showCueIdentifiers);
 
   const { item } = useGetItem(eventId, itemId);
@@ -80,11 +91,17 @@ export const CueCard = memo(function CueCard({
   const { mutateAsync: upsertItem } = useUpsertItem(eventId);
 
   // --- Scroll into view ---------
-  // Selecting this cue (e.g. clicking its marker in the lyrics) brings the card into view.
+  // Selecting this cue from elsewhere (e.g. clicking its marker in the lyrics) brings the card into view.
+  // Not when the selection came from an edit in this card (`setSelected`).
   // "nearest" leaves an already-visible card where it is, e.g. when "Preview cue" on this card selected it.
   const cardRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (isSelected) cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (!isSelected) return;
+    if (skipNextScrollRef.current) {
+      skipNextScrollRef.current = false;
+      return;
+    }
+    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [isSelected]);
 
   /** Select this cue and bring its marker in the lyrics into view. */
@@ -115,6 +132,9 @@ export const CueCard = memo(function CueCard({
         overrides: source.overrides,
       });
       notifications.show({ title: `Copied cue ${sourceNumber}!`, message: "" });
+
+      // set this cue as selected
+      setSelected();
     } catch {
       // error notif handled by api.ts
     }
@@ -122,8 +142,11 @@ export const CueCard = memo(function CueCard({
 
   // --- Active fixture groups ---------
   /** Switch.Group passes the whole new list of switched-on group ids, with the clicked one added or removed. */
-  const onActiveFixtureGroupsChange = (activeFixtureGroupIds: string[]) =>
-    void upsertCue({ id: cue.id, activeFixtureGroupIds }).catch(console.error);
+  const onActiveFixtureGroupsChange = (activeFixtureGroupIds: string[]) => {
+    void upsertCue({ id: cue.id, activeFixtureGroupIds })
+      .catch(console.error)
+      .then(() => setSelected());
+  };
 
   // --- Delete ---------
   /** Deletes the cue, then removes its marker from the lyrics. */
@@ -142,8 +165,11 @@ export const CueCard = memo(function CueCard({
   // Always save both fields: the server replaces `transition` as a whole.
   const holdTimeMs = cue.transition.holdTimeMs ?? -1;
   const transitionTimeMs = cue.transition.transitionTimeMs ?? 0;
-  const saveTransition = (change: Partial<Cue["transition"]>) =>
-    void upsertCue({ id: cue.id, transition: { holdTimeMs, transitionTimeMs, ...change } }).catch(console.error);
+  const saveTransition = (change: Partial<Cue["transition"]>) => {
+    void upsertCue({ id: cue.id, transition: { holdTimeMs, transitionTimeMs, ...change } })
+      .then(() => setSelected())
+      .catch(console.error);
+  };
   /** Keep arrow keys in the input instead of moving to the other radio in the group. */
   const keepArrowKeysInInput = (event: KeyboardEvent) => {
     if (event.key.startsWith("Arrow")) event.stopPropagation();
@@ -233,7 +259,12 @@ export const CueCard = memo(function CueCard({
           <Switch.Group value={cue.activeFixtureGroupIds} onChange={onActiveFixtureGroupsChange}>
             <SimpleGrid cols={2} spacing="md" verticalSpacing="md">
               {fixtureGroups.map((fixtureGroup) => (
-                <CueCardFixtureGroupOptionSetPickers key={fixtureGroup.id} fixtureGroup={fixtureGroup} cue={cue} />
+                <CueCardFixtureGroupOptionSetPickers
+                  key={fixtureGroup.id}
+                  fixtureGroup={fixtureGroup}
+                  cue={cue}
+                  setSelected={setSelected}
+                />
               ))}
 
               {/* DMX Manual Override card */}
@@ -271,7 +302,7 @@ export const CueCard = memo(function CueCard({
                     size="sm"
                     onClick={() => {
                       setIsDmxDrawerOpen(true);
-                      setSelectedCueId(cue.id);
+                      setSelected();
                     }}
                   >
                     {cueHasOverrides ? <IconEdit size={"0.75rem"} /> : <IconPlus size={"0.75rem"} />}
@@ -429,7 +460,16 @@ export const CueCard = memo(function CueCard({
   );
 });
 
-const CueCardFixtureGroupOptionSetPickers = ({ fixtureGroup, cue }: { fixtureGroup: FixtureGroup; cue: Cue }) => {
+const CueCardFixtureGroupOptionSetPickers = ({
+  fixtureGroup,
+  cue,
+  setSelected,
+}: {
+  fixtureGroup: FixtureGroup;
+  cue: Cue;
+  /** Selects the cue this card is for. */
+  setSelected: () => void;
+}) => {
   const { optionSets } = useGetOptionSets(fixtureGroup.eventId, fixtureGroup.id);
   const disabled = !cue.activeFixtureGroupIds.includes(fixtureGroup.id); // duplicated in the picker
 
@@ -474,7 +514,13 @@ const CueCardFixtureGroupOptionSetPickers = ({ fixtureGroup, cue }: { fixtureGro
       {optionSets.map((optionSet) => (
         // Render the option set corresponding to the OptionSetType
 
-        <OptionSetWrapper key={optionSet.id} optionSet={optionSet} eventId={fixtureGroup.eventId} cue={cue} />
+        <OptionSetWrapper
+          key={optionSet.id}
+          optionSet={optionSet}
+          eventId={fixtureGroup.eventId}
+          cue={cue}
+          setSelected={setSelected}
+        />
       ))}
     </Stack>
   );
@@ -489,7 +535,18 @@ const CueCardFixtureGroupOptionSetPickers = ({ fixtureGroup, cue }: { fixtureGro
  * @param param0
  * @returns
  */
-const OptionSetWrapper = ({ optionSet, eventId, cue }: { cue: Cue; optionSet: OptionSet; eventId: string }) => {
+const OptionSetWrapper = ({
+  optionSet,
+  eventId,
+  cue,
+  setSelected,
+}: {
+  cue: Cue;
+  optionSet: OptionSet;
+  eventId: string;
+  /** Selects the cue this picker edits. */
+  setSelected: () => void;
+}) => {
   const queryClient = useQueryClient();
   const { mutateAsync: upsertCue } = useUpsertCue(eventId, cue.itemId);
   const disabled = !cue.activeFixtureGroupIds.includes(optionSet.fixtureGroupId); // duplicated in the picker
@@ -510,9 +567,9 @@ const OptionSetWrapper = ({ optionSet, eventId, cue }: { cue: Cue; optionSet: Op
 
     const otherSelectableIds = latestCue.selectableIds.filter((id) => !possibleSelectableIdsForOptionSet.includes(id));
 
-    void upsertCue({ id: cue.id, selectableIds: [...otherSelectableIds, ...newSelectedSelectableIds] }).catch(
-      console.error,
-    );
+    void upsertCue({ id: cue.id, selectableIds: [...otherSelectableIds, ...newSelectedSelectableIds] })
+      .catch(console.error)
+      .then(() => setSelected());
   };
 
   if (optionSet.selectables.length === 0) {
