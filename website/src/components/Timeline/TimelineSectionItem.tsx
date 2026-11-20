@@ -13,10 +13,12 @@ import {
   ActionIcon,
   Stack,
   Switch,
+  Popover,
+  SimpleGrid,
 } from "@mantine/core";
 import { type Span, useItem, useTimelineContext } from "dnd-timeline";
 import { useMemo, useState, type ReactNode } from "react";
-import { useDisclosure, useMouse } from "@mantine/hooks";
+import { useDisclosure, useElementSize, useMouse } from "@mantine/hooks";
 import type { ItemData, TimelineRowId } from "../../utils/timeline";
 import { ConfirmDelete } from "../ConfirmDeleteButton/ConfirmDeleteButton";
 import {
@@ -97,6 +99,12 @@ export const TimelineSectionItem = ({
     await upsertSection({ id: section.id, [field]: value } as TimelineSectionPatch);
   };
 
+  const { ref, width } = useElementSize();
+
+  // the text box is 15 rem
+  // show the collapsed menu when we drop below 45 rem
+  const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const showCollapsedMenuButton = width < 45 * remPx;
   return (
     <div
       ref={setNodeRef}
@@ -189,9 +197,11 @@ export const TimelineSectionItem = ({
                       width: "100%",
                       flex: 1,
                       gap: "var(--mantine-spacing-sm)",
+                      flexWrap: "nowrap",
                     }}
+                    ref={ref}
                   >
-                    <Box>
+                    {/* <Box>
                       <SegmentedControl
                         size="xs"
                         data={[
@@ -201,98 +211,203 @@ export const TimelineSectionItem = ({
                         value={section.type}
                         onChange={(value) => onValueChange("type", value as TimelineSectionType)}
                       />
-                    </Box>
+                    </Box> */}
                     <Box style={{ width: "15rem" }}>
                       <CustomTextInput value={section.name || "Untitled"} />
                     </Box>
                     <Flex flex={1} />
                     {section.type === "beat" && (
-                      <Group justify="end" gap="sm">
-                        <Text c="dimmed" size="sm">
-                          Bars
-                        </Text>
-                        <Box style={{ width: "4rem" }}>
-                          {/* (Beats) Bars (but actually convert to beats later) */}
-                          <DebouncedNumberInput
-                            size="xs"
-                            placeholder="Bar count"
-                            value={Math.round(section.beats / section.timeSigNum)}
-                            min={1}
-                            allowDecimal={false}
-                            onSave={(bars) => void upsertSection({ id: section.id, beats: bars * section.timeSigNum })}
-                          />
-                        </Box>
-                        <Divider orientation="vertical" />
+                      <>
+                        {!showCollapsedMenuButton && (
+                          <Group justify="end" gap="sm" wrap="nowrap">
+                            <Text c="dimmed" size="sm">
+                              Bars
+                            </Text>
+                            <Box style={{ width: "4rem" }}>
+                              {/* (Beats) Bars (but actually convert to beats later) */}
+                              <DebouncedNumberInput
+                                size="xs"
+                                placeholder="Bar count"
+                                value={Math.round(section.beats / section.timeSigNum)}
+                                min={1}
+                                allowDecimal={false}
+                                onSave={(bars) =>
+                                  void upsertSection({ id: section.id, beats: bars * section.timeSigNum })
+                                }
+                              />
+                            </Box>
+                            <Divider orientation="vertical" />
 
-                        {/* (Beats) Time Signature */}
-                        <Text c="dimmed" size="sm">
-                          Time Signature
-                        </Text>
-                        <Box style={{ width: "4rem" }}>
-                          <Select
-                            data={COMMON_TIME_SIGNATURES}
-                            size="xs"
-                            value={`${section.timeSigNum}/${section.timeSigDenom}`}
-                            onChange={async (value) => {
-                              if (!value || section.type !== TimelineSectionType.BEAT) return;
-                              const [timeSigNum, timeSigDenom] = value.split("/").map(Number);
-                              void upsertSection({ id: section.id, timeSigNum, timeSigDenom });
-                            }}
-                          />
-                        </Box>
-                        <Divider orientation="vertical" />
+                            {/* (Beats) Time Signature */}
+                            <Text c="dimmed" size="sm">
+                              Time Signature
+                            </Text>
+                            <Box style={{ width: "4rem" }}>
+                              <Select
+                                data={COMMON_TIME_SIGNATURES}
+                                size="xs"
+                                value={`${section.timeSigNum}/${section.timeSigDenom}`}
+                                onChange={async (value) => {
+                                  if (!value || section.type !== TimelineSectionType.BEAT) return;
+                                  const [timeSigNum, timeSigDenom] = value.split("/").map(Number);
+                                  void upsertSection({ id: section.id, timeSigNum, timeSigDenom });
+                                }}
+                              />
+                            </Box>
+                            <Divider orientation="vertical" />
 
-                        {/* (Beats) Time Signature */}
-                        <Text c="dimmed" size="sm">
-                          Snap
-                        </Text>
-                        <Box style={{ width: "4rem" }}>
-                          <Select
-                            data={SNAP_DIVISIONS}
-                            size="xs"
-                            value={section.snapFidelity}
-                            onChange={async (value) => {
-                              if (value === undefined || section.type !== TimelineSectionType.BEAT) return;
-                              if (value === 0) {
-                                void upsertSection({ id: section.id, snapFidelity: 0, snapEnabled: true });
-                                return;
-                              }
-                              if (value === -1) {
-                                void upsertSection({ id: section.id, snapFidelity: 0, snapEnabled: false });
-                                return;
-                              }
-                              const snapFidelity = Number(value);
-                              void upsertSection({ id: section.id, snapFidelity, snapEnabled: true });
-                            }}
-                          />
-                        </Box>
-                        <Divider orientation="vertical" />
+                            {/* (Beats) Time Signature */}
+                            <Text c="dimmed" size="sm">
+                              Snap
+                            </Text>
+                            <Box style={{ width: "4rem" }}>
+                              <Select
+                                data={SNAP_DIVISIONS}
+                                size="xs"
+                                value={section.snapFidelity}
+                                onChange={async (value) => {
+                                  if (value === undefined || section.type !== TimelineSectionType.BEAT) return;
+                                  if (value === 0) {
+                                    void upsertSection({ id: section.id, snapFidelity: 0, snapEnabled: true });
+                                    return;
+                                  }
+                                  if (value === -1) {
+                                    void upsertSection({ id: section.id, snapFidelity: 0, snapEnabled: false });
+                                    return;
+                                  }
+                                  const snapFidelity = Number(value);
+                                  void upsertSection({ id: section.id, snapFidelity, snapEnabled: true });
+                                }}
+                              />
+                            </Box>
+                            <Divider orientation="vertical" />
 
-                        {/* BPM */}
-                        <Text c="dimmed" size="sm">
-                          BPM
-                        </Text>
-                        <Box style={{ width: "4rem" }}>
-                          <DebouncedNumberInput
-                            size="xs"
-                            placeholder="BPM"
-                            value={section.bpm}
-                            min={1}
-                            onSave={(bpm) => void upsertSection({ id: section.id, bpm })}
-                          />
-                        </Box>
-                        <Divider orientation="vertical" />
+                            {/* BPM */}
+                            <Text c="dimmed" size="sm">
+                              BPM
+                            </Text>
+                            <Box style={{ width: "4rem" }}>
+                              <DebouncedNumberInput
+                                size="xs"
+                                placeholder="BPM"
+                                value={section.bpm}
+                                min={1}
+                                onSave={(bpm) => void upsertSection({ id: section.id, bpm })}
+                              />
+                            </Box>
+                            <Divider orientation="vertical" />
 
-                        {/* Link */}
-                        <Switch
-                          label="Link"
-                          checked={section.linkToNext}
-                          onChange={(e) => {
-                            if (e.currentTarget.checked !== undefined)
-                              void upsertSection({ id: section.id, linkToNext: e.currentTarget.checked });
-                          }}
-                        />
-                      </Group>
+                            {/* Link */}
+                            <Switch
+                              label="Link"
+                              checked={section.linkToNext}
+                              onChange={(e) => {
+                                if (e.currentTarget.checked !== undefined)
+                                  void upsertSection({ id: section.id, linkToNext: e.currentTarget.checked });
+                              }}
+                            />
+                          </Group>
+                        )}
+
+                        {showCollapsedMenuButton && (
+                          <Popover position="top" withArrow shadow="md" withinPortal transitionProps={popTransition}>
+                            <Popover.Target>
+                              <Button size="xs" variant="light">
+                                Settings
+                              </Button>
+                            </Popover.Target>
+                            <Popover.Dropdown>
+                              <SimpleGrid cols={2}>
+                                <Flex align="center" justify="end">
+                                  <Text size="sm">Bars</Text>
+                                </Flex>
+                                <Box style={{ width: "4rem" }}>
+                                  {/* (Beats) Bars (but actually convert to beats later) */}
+                                  <DebouncedNumberInput
+                                    size="xs"
+                                    placeholder="Bar count"
+                                    value={Math.round(section.beats / section.timeSigNum)}
+                                    min={1}
+                                    allowDecimal={false}
+                                    onSave={(bars) =>
+                                      void upsertSection({ id: section.id, beats: bars * section.timeSigNum })
+                                    }
+                                  />
+                                </Box>
+
+                                {/* (Beats) Time Signature */}
+                                <Flex align="center" justify="end">
+                                  <Text size="sm">Time Signature</Text>
+                                </Flex>
+                                <Box style={{ width: "4rem" }}>
+                                  <Select
+                                    data={COMMON_TIME_SIGNATURES}
+                                    size="xs"
+                                    value={`${section.timeSigNum}/${section.timeSigDenom}`}
+                                    onChange={async (value) => {
+                                      if (!value || section.type !== TimelineSectionType.BEAT) return;
+                                      const [timeSigNum, timeSigDenom] = value.split("/").map(Number);
+                                      void upsertSection({ id: section.id, timeSigNum, timeSigDenom });
+                                    }}
+                                  />
+                                </Box>
+
+                                {/* (Beats) Time Signature */}
+                                <Flex align="center" justify="end">
+                                  <Text size="sm">Snap</Text>
+                                </Flex>
+                                <Box style={{ width: "4rem" }}>
+                                  <Select
+                                    data={SNAP_DIVISIONS}
+                                    size="xs"
+                                    value={section.snapFidelity}
+                                    onChange={async (value) => {
+                                      if (value === undefined || section.type !== TimelineSectionType.BEAT) return;
+                                      if (value === 0) {
+                                        void upsertSection({ id: section.id, snapFidelity: 0, snapEnabled: true });
+                                        return;
+                                      }
+                                      if (value === -1) {
+                                        void upsertSection({ id: section.id, snapFidelity: 0, snapEnabled: false });
+                                        return;
+                                      }
+                                      const snapFidelity = Number(value);
+                                      void upsertSection({ id: section.id, snapFidelity, snapEnabled: true });
+                                    }}
+                                  />
+                                </Box>
+
+                                {/* BPM */}
+                                <Flex align="center" justify="end">
+                                  <Text size="sm">BPM</Text>
+                                </Flex>
+                                <Box style={{ width: "4rem" }}>
+                                  <DebouncedNumberInput
+                                    size="xs"
+                                    placeholder="BPM"
+                                    value={section.bpm}
+                                    min={1}
+                                    onSave={(bpm) => void upsertSection({ id: section.id, bpm })}
+                                  />
+                                </Box>
+
+                                <Flex align="center" justify="end">
+                                  <Text size="sm">Link</Text>
+                                </Flex>
+                                {/* Link */}
+                                <Switch
+                                  // label="Link"
+                                  checked={section.linkToNext}
+                                  onChange={(e) => {
+                                    if (e.currentTarget.checked !== undefined)
+                                      void upsertSection({ id: section.id, linkToNext: e.currentTarget.checked });
+                                  }}
+                                />
+                              </SimpleGrid>
+                            </Popover.Dropdown>
+                          </Popover>
+                        )}
+                      </>
                     )}
                   </Box>
                 </Flex>
