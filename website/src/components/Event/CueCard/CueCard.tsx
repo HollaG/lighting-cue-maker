@@ -17,7 +17,6 @@ import {
   Stack,
   Switch,
   Text,
-  Title,
   Tooltip,
   useCombobox,
 } from "@mantine/core";
@@ -106,11 +105,12 @@ export const CueCard = memo(function CueCard({
 
   /** Select this cue and bring its marker in the lyrics into view. */
   const onPreview = () => {
-    setSelectedCueId(cue.id);
-    // RichWord puts `data-cue-id` on each cue marker. Not rendered in lyric mode, so then this does nothing.
-    document
-      .querySelector<HTMLElement>(`[data-cue-id="${cue.id}"]`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!isSelected) setSelected();
+    else setSelectedCueId("");
+
+    // document
+    //   .querySelector<HTMLElement>(`[data-cue-id="${cue.id}"]`)
+    //   ?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   // --- Copy another cue ---------
@@ -185,11 +185,17 @@ export const CueCard = memo(function CueCard({
 
   return (
     <div ref={cardRef} id={`cue-card-${cue.id}`} data-cursor-surface="cueCard" data-cursor-anchor={cue.id}>
-      <CardBase isActive={isSelected} shadow={isSelected ? "lg" : "none"}>
+      <CardBase
+        isActive={isSelected}
+        shadow={isSelected ? "lg" : "none"}
+        style={{
+          alignSelf: "start",
+        }}
+      >
         <Stack gap="md">
           <Group align="center" justify="space-between">
             <Group gap="xs">
-              <Title
+              {/* <Title
                 order={4}
                 style={{
                   backgroundColor: isSelected
@@ -198,7 +204,32 @@ export const CueCard = memo(function CueCard({
                 }}
               >
                 Cue {cueNumber}
-              </Title>
+              </Title> */}
+              <Tooltip
+                label="Preview this cue in the visualiser"
+                openDelay={300}
+                position="top"
+                withArrow
+                transitionProps={popTransition}
+              >
+                <Button
+                  variant="light"
+                  vars={() => ({
+                    root: isSelected
+                      ? {}
+                      : {
+                          "--button-bg": "transparent",
+                          // The same colour as the selected fill.
+                          "--button-bd": "1px solid var(--mantine-primary-color-light)",
+                        },
+                  })}
+                  rightSection={<IconEye width="1rem" />}
+                  onClick={onPreview}
+                >
+                  {" "}
+                  Cue {cueNumber}{" "}
+                </Button>
+              </Tooltip>
               {showCueIdentifiers && (
                 <Tooltip label={`Cue ID: ${cue.id}`}>
                   <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
@@ -241,9 +272,9 @@ export const CueCard = memo(function CueCard({
                 </Menu.Dropdown>
               </Menu>
 
-              <Button variant="light" size="xs" onClick={onPreview} leftSection={<IconEye size="1rem" />}>
+              {/* <Button variant="light" size="xs" onClick={onPreview} leftSection={<IconEye size="1rem" />}>
                 Preview cue
-              </Button>
+              </Button> */}
             </Group>
 
             <ConfirmDeleteButton
@@ -253,11 +284,18 @@ export const CueCard = memo(function CueCard({
             />
           </Group>
 
-          {/* Each group's Switch finds this through context: it is on when its id is in `activeFixtureGroupIds`. */}
-          {/* The group wraps the grid, not the other way round: it renders its own wrapper element, which would */}
-          {/* otherwise become the grid's only child. */}
           <Switch.Group value={cue.activeFixtureGroupIds} onChange={onActiveFixtureGroupsChange}>
-            <SimpleGrid cols={2} spacing="md" verticalSpacing="md">
+            <SimpleGrid
+              type="container"
+              cols={{
+                base: 1,
+                "400px": 2,
+                "700px": 3,
+                "1000px": 4,
+              }}
+              spacing="md"
+              verticalSpacing="md"
+            >
               {fixtureGroups.map((fixtureGroup) => (
                 <CueCardFixtureGroupOptionSetPickers
                   key={fixtureGroup.id}
@@ -336,7 +374,14 @@ export const CueCard = memo(function CueCard({
               </Stack>
             </SimpleGrid>
           </Switch.Group>
-          <SimpleGrid cols={2} spacing={0}>
+          <SimpleGrid
+            cols={{
+              base: 1,
+              "400px": 2,
+            }}
+            spacing={0}
+            type="container"
+          >
             {/* TODO: sync Accordion state when following */}
             <Accordion>
               <Accordion.Item value="holdTime">
@@ -475,6 +520,10 @@ const CueCardFixtureGroupOptionSetPickers = ({
 
   const setSelectedFixtureIds = useAppStore((s) => s.setSelectedFixtureIds);
 
+  let label = `${fixtureGroup.name}`;
+  if (fixtureGroup.description) {
+    label += `: ${fixtureGroup.description}`;
+  }
   return (
     <Stack
       gap="xs"
@@ -487,19 +536,43 @@ const CueCardFixtureGroupOptionSetPickers = ({
         border: "1px solid light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
 
         transition: "all 0.2s ease-in-out",
+        minHeight: 0,
       }}
     >
-      <Group>
-        <Group gap="xs" align="center">
-          <Text fw="bold">{fixtureGroup.name}</Text>
-          <Tooltip label={fixtureGroup.description} position="top" withArrow>
-            <IconInfoSquareRounded width="0.75rem" height="0.75rem" style={{ color: "var(--mantine-gray-5)" }} />
+      <Group wrap="nowrap" gap="xs">
+        <Group gap="xs" align="center" wrap="nowrap" miw={0}>
+          <Tooltip label={label} position="top" withArrow transitionProps={popTransition} openDelay={300}>
+            <Text fw="bold" truncate="end">
+              {fixtureGroup.name}
+            </Text>
           </Tooltip>
+          {/* <Tooltip label={fixtureGroup.description} position="top" withArrow transitionProps={popTransition}>
+            <IconInfoSquareRounded
+              width="0.75rem"
+              height="0.75rem"
+              style={{ color: "var(--mantine-gray-5)", flexShrink: 0 }}
+            />
+          </Tooltip> */}
         </Group>
         <Flex flex={1} />
-        <Button variant="transparent" size="xs" onClick={() => setSelectedFixtureIds(fixtureGroup.fixtureIds)}>
+        {/* <Button variant="transparent" size="xs" onClick={() => setSelectedFixtureIds(fixtureGroup.fixtureIds)}>
           Select fixtures
-        </Button>
+        </Button> */}
+        <Tooltip
+          label="Highlight the fixtures in the visualiser"
+          openDelay={300}
+          position="top"
+          withArrow
+          transitionProps={popTransition}
+        >
+          <ActionIcon variant="light">
+            <IconEye size="1rem" onClick={() => setSelectedFixtureIds(fixtureGroup.fixtureIds)} />
+          </ActionIcon>
+        </Tooltip>
+
+        {/* <ActionIcon variant="transparent" onClick={() => setIsExpanded((prev) => !prev)}>
+          <IconChevronDown size="1rem" />
+        </ActionIcon> */}
         <Switch
           styles={{
             track: { cursor: "pointer" },
@@ -508,20 +581,23 @@ const CueCardFixtureGroupOptionSetPickers = ({
           value={fixtureGroup.id}
           onLabel="ON"
           offLabel="OFF"
+          size="sm"
         />
       </Group>
       <Divider />
-      {optionSets.map((optionSet) => (
-        // Render the option set corresponding to the OptionSetType
+      <Stack gap="xs">
+        {optionSets.map((optionSet) => (
+          // Render the option set corresponding to the OptionSetType
 
-        <OptionSetWrapper
-          key={optionSet.id}
-          optionSet={optionSet}
-          eventId={fixtureGroup.eventId}
-          cue={cue}
-          setSelected={setSelected}
-        />
-      ))}
+          <OptionSetWrapper
+            key={optionSet.id}
+            optionSet={optionSet}
+            eventId={fixtureGroup.eventId}
+            cue={cue}
+            setSelected={setSelected}
+          />
+        ))}
+      </Stack>
     </Stack>
   );
 };
@@ -725,7 +801,9 @@ const OptionSetColourType = ({
               setSearch(selected?.name ?? "");
             }}
           />
-          <Button
+
+          {/* Deprecated - we now allow users to "turn off" fixture groups, so this is no longer needed */}
+          {/* <Button
             size="xs"
             variant="transparent"
             color="gray"
@@ -736,7 +814,7 @@ const OptionSetColourType = ({
             }}
           >
             Clear
-          </Button>
+          </Button> */}
         </div>
       </Combobox.Target>
 
