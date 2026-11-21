@@ -2,6 +2,7 @@ package audiofiles
 
 import (
 	"bytes"
+	"mime"
 	"path"
 	"strings"
 	"unicode/utf8"
@@ -34,6 +35,16 @@ func detectAudioType(head []byte) (string, bool) {
 		return "audio/mp4", true
 	}
 	return "", false
+}
+
+// fallbackMimeType is the type for a file detectAudioType doesn't recognise: the
+// browser's audio/* or video/* type if it sent one, else a generic binary type.
+func fallbackMimeType(contentType string) string {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err == nil && (strings.HasPrefix(mediaType, "audio/") || strings.HasPrefix(mediaType, "video/")) {
+		return mediaType
+	}
+	return "application/octet-stream"
 }
 
 // extensionFor is the file extension for a type detectAudioType returns, so a

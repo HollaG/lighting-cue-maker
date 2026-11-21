@@ -131,10 +131,12 @@ func (h *handler) upload(c *gin.Context) {
 
 	buffered := bufio.NewReader(part)
 	head, _ := buffered.Peek(sniffLen) // a shorter file just gives a shorter head
+	// Any file is accepted: the browser already checked it plays (it reads the duration from an <audio> element
+	// before uploading), and playback decodes by content, not by type. The type is only a label for the blob.
+	// Unrecognised files (e.g. an MP3 with junk before its first frame, or WebM) use the browser's type instead.
 	mimeType, ok := detectAudioType(head)
 	if !ok {
-		response.Error(c, http.StatusUnsupportedMediaType, "Unsupported audio format. Use MP3, M4A/AAC, OGG/Opus, WAV or FLAC")
-		return
+		mimeType = fallbackMimeType(part.Header.Get("Content-Type"))
 	}
 
 	id := uuid.NewString()
