@@ -268,13 +268,14 @@ export const TimelineDrawerContainer = ({
       >
         <Group style={{ flexWrap: "nowrap", alignItems: "center" }}>
           <Scroller flex={1}>
-            <Tabs.List style={{ flexWrap: "nowrap" }}>
-              <Tabs.Tab value="main">Main timeline</Tabs.Tab>
-              <Divider orientation="vertical" />
-              <Tabs.Tab value="alternate1">Alternate 1</Tabs.Tab>
+            <Box></Box>
+            {/* <Tabs.List style={{ flexWrap: "nowrap" }}> */}
+            {/* <Tabs.Tab value="main">Main timeline</Tabs.Tab> */}
+            {/* <Divider orientation="vertical" /> */}
+            {/* <Tabs.Tab value="alternate1">Alternate 1</Tabs.Tab>
               <Tabs.Tab value="alternate1">Alternate 2</Tabs.Tab>
-              <Tabs.Tab value="alternate1">Alternate 3</Tabs.Tab>
-            </Tabs.List>
+              <Tabs.Tab value="alternate1">Alternate 3</Tabs.Tab> */}
+            {/* </Tabs.List> */}
           </Scroller>
           <Divider orientation="vertical" />
           <Group>
