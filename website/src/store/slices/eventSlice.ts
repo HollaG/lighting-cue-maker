@@ -32,6 +32,10 @@ export interface EventSlice {
   setIsDmxDrawerOpen: (open: boolean) => void;
   toggleDmxDrawer: () => void;
 
+  isHelpDialogOpen: boolean;
+  setIsHelpDialogOpen: (open: boolean) => void;
+  toggleHelpDialog: () => void;
+
   closeAllDrawers: () => void;
 }
 
@@ -71,6 +75,10 @@ export const eventSlice: StateCreator<AppStore, [], [], EventSlice> = (set) => (
   isDmxDrawerOpen: false,
   setIsDmxDrawerOpen: (open) => set({ isDmxDrawerOpen: open }),
   toggleDmxDrawer: () => set((s) => ({ isDmxDrawerOpen: !s.isDmxDrawerOpen })),
+
+  isHelpDialogOpen: false,
+  setIsHelpDialogOpen: (open) => set({ isHelpDialogOpen: open }),
+  toggleHelpDialog: () => set((s) => ({ isHelpDialogOpen: !s.isHelpDialogOpen })),
 
   closeAllDrawers: () =>
     set({

@@ -13,6 +13,7 @@ import {
   Image,
   Loader,
   Menu,
+  Modal,
   Stack,
   Text,
   TextInput,
@@ -43,6 +44,7 @@ import {
   IconFileExport,
   IconFileSpreadsheet,
   IconEdit,
+  IconHelpCircle,
 } from "@tabler/icons-react";
 import { Lyrics } from "../../components/Event/Lyrics";
 import { Cues } from "../../components/Event/Cues";
@@ -62,6 +64,7 @@ import { DebouncedTextarea } from "../../components/Inputs/DebouncedTextarea";
 import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton/ConfirmDeleteButton";
 import { useDeleteItem } from "../../query-v2/items/useDeleteItem";
 import { EventTour } from "../../components/Tour/Event/EventTour";
+import { HelpContent } from "../../components/Tour/Help";
 
 // const logger = new Logger("EventPage.tsx");
 
@@ -94,6 +97,10 @@ export const EventPage = () => {
   const setIsTimelineDrawerOpen = useAppStore((s) => s.setIsTimelineDrawerOpen);
   const toggleTimeline = useAppStore((s) => s.toggleTimelineDrawer);
   const closeTimeline = useCallback(() => setIsTimelineDrawerOpen(false), [setIsTimelineDrawerOpen]);
+
+  const isHelpDialogOpen = useAppStore((s) => s.isHelpDialogOpen);
+  const setIsHelpDialogOpen = useAppStore((s) => s.setIsHelpDialogOpen);
+  const closeHelpDialog = useCallback(() => setIsHelpDialogOpen(false), [setIsHelpDialogOpen]);
 
   const selectedFixtureIds = useAppStore((s) => s.selectedFixtureIds);
   const setSelectedFixtureIds = useAppStore((s) => s.setSelectedFixtureIds);
@@ -170,8 +177,6 @@ export const EventPage = () => {
   }, [eventId]);
 
   const setTourActive = useAppStore((s) => s.setEventTourActive);
-  // check if user is new (directly read not thru effect so we get the intiial value)
-  const isUserNew = useMemo(() => !localStorage.getItem(`${eventId}-last-hidden-time`), [eventId]);
 
   // Save the user's last minimized time (last time they closed the page)
   useEffect(() => {
@@ -594,6 +599,7 @@ export const EventPage = () => {
         opened={openedLyrics}
         onClose={closeLyrics}
         keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
+        keepMountedMode="display-none"
         position="left"
         size={`${lyricsWidth}vw`}
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
@@ -672,6 +678,7 @@ export const EventPage = () => {
         opened={openedCues}
         onClose={closeCues}
         keepMounted // closing only hides it: cue cards keep their state and don't re-render on reopen
+        keepMountedMode="display-none"
         position="right"
         size={`${cuesWidth}vw`}
         // A side panel, not a modal: the visualiser next to it stays usable while the lyrics are open.
@@ -712,6 +719,7 @@ export const EventPage = () => {
         opened={openedTimeline}
         onClose={() => closeTimeline()}
         keepMounted // closing only hides it: keeps scroll position and unsaved typing (and skips a re-render on reopen)
+        keepMountedMode="display-none"
         position="bottom"
         size={`${timelineHeight}vh`}
 
@@ -746,6 +754,41 @@ export const EventPage = () => {
         />
         <TimelineDrawerContainer eventId={eventId} itemId={selectedItemId} onClose={closeTimeline} />
       </Drawer>
+
+      {/* Help button */}
+      <Box
+        style={{
+          position: "absolute",
+          left: "0.5rem",
+          bottom: "0.5rem",
+          zIndex: getDefaultZIndex("modal") - 1,
+        }}
+      >
+        <Button
+          variant="outline"
+          color="gray"
+          size="xs"
+          leftSection={<IconHelpCircle width="1rem" />}
+          onClick={() => setIsHelpDialogOpen(true)}
+        >
+          Help
+        </Button>
+      </Box>
+
+      {/* Help Modal (note: not a drawer) */}
+      <Modal
+        opened={isHelpDialogOpen}
+        onClose={closeHelpDialog}
+        title="Help"
+        size="lg"
+        overlayProps={{ opacity: 0.5, blur: 4 }}
+        closeOnEscape
+        closeOnClickOutside
+        centered
+        zIndex={getDefaultZIndex("modal") + 1} // above the Lyrics and Cues drawers (both 200)
+      >
+        <HelpContent />
+      </Modal>
 
       {/* Main visualiser */}
       <Box h="100dvh" w="100%" id="tour-event-9">

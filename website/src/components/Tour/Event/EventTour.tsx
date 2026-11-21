@@ -1,5 +1,5 @@
 import { Alert, Button, Kbd, Stack, Text, Tour } from "@mantine/core";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { useAppStore } from "../../../store/appStore";
 import { useLocalStorage } from "@mantine/hooks";
 import { useGetItem } from "../../../query-v2/items/useGetItem";
@@ -25,8 +25,6 @@ const STEPS_WITH_NEXT = new Set([4, 6, 8, 9, 10, 11]);
  *
  */
 export const EventTour = ({ eventId }: { eventId: string }) => {
-  // check if user is new (directly read not thru effect so we get the intiial value)
-  const isUserNew = useMemo(() => !localStorage.getItem(`${eventId}-last-hidden-time`), [eventId]);
   const [selectedItemId] = useLocalStorage({
     key: `${eventId}-item-selected`,
     defaultValue: "",
@@ -57,9 +55,6 @@ export const EventTour = ({ eventId }: { eventId: string }) => {
   const { item } = useGetItem(eventId, selectedItemId);
   const firstCueId = useMemo(() => getCueOrder(sanitize(item?.rawLyrics ?? ""))[0], [item?.rawLyrics]);
 
-  // Step 8
-  const selectedCueId = useAppStore((s) => s.currentlySelectedCueId);
-
   // Step 10
   const closeAllDrawers = useAppStore((s) => s.closeAllDrawers);
 
@@ -68,19 +63,19 @@ export const EventTour = ({ eventId }: { eventId: string }) => {
   // criteria: event details drawer is open BEFORE the tour has begun
   useEffect(() => {
     if (step === 0 && isEventDetailsDrawerOpen) advanceEventTour();
-  }, [isEventDetailsDrawerOpen, step]);
+  }, [isEventDetailsDrawerOpen, step, advanceEventTour]);
 
   // Step 1 -> 0
   // critiera: user closes the modal, but has not selected an item
   useEffect(() => {
     if (step === 1 && !isEventDetailsDrawerOpen && !selectedItemId) setStep(0);
-  }, [step, isEventDetailsDrawerOpen, selectedItemId]);
+  }, [step, isEventDetailsDrawerOpen, selectedItemId, setStep]);
 
   // Step 1 -> 2
   // critiera: the modal closes AND the user has selected an item
   useEffect(() => {
     if (step === 1 && !isEventDetailsDrawerOpen && selectedItemId) advanceEventTour();
-  }, [step, isEventDetailsDrawerOpen, selectedItemId]);
+  }, [step, isEventDetailsDrawerOpen, selectedItemId, advanceEventTour]);
 
   // Auto-advance: step 2 -> 3.1
   // criteria: drawer is open
@@ -91,13 +86,13 @@ export const EventTour = ({ eventId }: { eventId: string }) => {
         advanceEventTour();
       }, 300);
     }
-  }, [step, isLyricsDrawerOpen]);
+  }, [step, isLyricsDrawerOpen, advanceEventTour]);
 
   // Auto-advance: step 3.1 --> 3
   // critiera: user is in Lyric mode
   useEffect(() => {
     if (step === 3 && inputMode === "raw") advanceEventTour();
-  }, [step, inputMode]);
+  }, [step, inputMode, advanceEventTour]);
 
   // Manual advance: step 3 -> 4
   // Critiera: user clicks the Next button in the tour AND there is some text in the lyrics
@@ -107,7 +102,7 @@ export const EventTour = ({ eventId }: { eventId: string }) => {
   // Critiera: user switches to Cue mode
   useEffect(() => {
     if (step === 5 && inputMode === "cue") advanceEventTour();
-  }, [step, inputMode]);
+  }, [step, inputMode, advanceEventTour]);
 
   // Manual advance: step 5 -> 6
   // Critiera: user clicks the Next button in the tour AND there is at least one cue in the lyrics
@@ -134,7 +129,7 @@ export const EventTour = ({ eventId }: { eventId: string }) => {
       //   requestAnimationFrame(() => setSelectedCueId(undefined));
       // }
     }
-  }, [step, isCuesDrawerOpen, firstCueId, setSelectedCueId]);
+  }, [step, isCuesDrawerOpen, firstCueId, setSelectedCueId, advanceEventTour]);
 
   // CANCEL CANCEL, we cannot detect when the user previews a cue through manual click
   // Auto/Manual advance: step 7 -> 8
@@ -299,10 +294,10 @@ export const EventTour = ({ eventId }: { eventId: string }) => {
           <br />
           The visualiser is where you can check your cue design.
           <span>
-            <Kbd>Right-click</Kbd> and <Kbd>Drag</Kbd> to rotate the view
+            <Kbd>Left-click</Kbd> and <Kbd>Drag</Kbd> to rotate the view
           </span>
           <span>
-            <Kbd>Left-click</Kbd> and <Kbd>Drag</Kbd> to pan the view around
+            <Kbd>Right-click</Kbd> and <Kbd>Drag</Kbd> to pan the view around
           </span>
           <span>
             <Kbd>Scroll</Kbd> to zoom in and out.
