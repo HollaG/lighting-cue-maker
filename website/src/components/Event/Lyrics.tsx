@@ -1,4 +1,4 @@
-import { Stack, Flex, Alert, Code, Kbd, Textarea, Group } from "@mantine/core";
+import { Stack, Flex, Alert, Code, Kbd, Textarea, Group, Box } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 // import { ContentControl } from "../ContentControl/ContentControl";
 import { RichContentWrapper } from "../RichContent-v2/RichContentWrapper";
@@ -161,27 +161,29 @@ export const Lyrics = ({ eventId, itemId }: { itemId: string; eventId: string })
           <></>
         )}
       </Alert>
-      {inputMode === "raw" && (
-        <Textarea
-          variant="unstyled"
-          autosize
-          // className={classes["lyric-input"]}
-          value={internalRawLyrics}
-          onChange={(e) => onChangeLyrics(e.target.value)}
-          onBlur={() => saveLyrics.flush()} // save right away when the field loses focus
-          placeholder="Paste all your lyrics here! You can also include band introductions or other improv stuff."
-          styles={{
-            input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
-          }}
-          minRows={14}
-        />
-      )}
+      <Box id="tour-event-3">
+        {inputMode === "raw" && (
+          <Textarea
+            variant="unstyled"
+            autosize
+            // className={classes["lyric-input"]}
+            value={internalRawLyrics}
+            onChange={(e) => onChangeLyrics(e.target.value)}
+            onBlur={() => saveLyrics.flush()} // save right away when the field loses focus
+            placeholder="Paste all your lyrics here! You can also include band introductions or other improv stuff."
+            styles={{
+              input: { fontSize: "16px" }, // Or use rem units like '1.25rem'
+            }}
+            minRows={14}
+          />
+        )}
 
-      {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
-        <div ref={contentRef} id="focus-trap-lyrics" tabIndex={-1} style={{ outline: "none" }}>
-          <RichContentWrapper itemId={itemId} eventId={eventId} />
-        </div>
-      )}
+        {(inputMode === "cue" || inputMode === "bump" || inputMode === "timing") && (
+          <div ref={contentRef} id="focus-trap-lyrics" tabIndex={-1} style={{ outline: "none" }}>
+            <RichContentWrapper itemId={itemId} eventId={eventId} />
+          </div>
+        )}
+      </Box>
     </Stack>
   );
 };

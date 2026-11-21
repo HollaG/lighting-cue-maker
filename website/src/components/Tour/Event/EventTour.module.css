@@ -1,0 +1,20 @@
+/*
+ * Tour.Navigation layout (Mantine 9.8, TourNavigation.mjs):
+ *   .navigation > Group > [Skip button, step counter, Group > [Back button (not on step 0), Next/Close button]]
+ * The inner Group's last button is always Next (Close on the last step); any button before it is Back.
+ */
+
+.navigation>div>button:first-child {
+  /* Hide skip button */
+  visibility: hidden;
+}
+
+/* Back is never supported */
+.navigation>div>div>button:not(:last-child) {
+  display: none;
+}
+
+/* Next: hidden on steps whose Alert has no Next button (added per step in EventTour.tsx) */
+.nextHidden>div>div>button:last-child {
+  visibility: hidden; /* not display: none, so the step counter doesn't shift between steps */
+}

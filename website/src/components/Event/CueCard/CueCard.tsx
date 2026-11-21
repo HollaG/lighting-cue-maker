@@ -193,17 +193,18 @@ export const CueCard = memo(function CueCard({
 
   return (
     <div ref={cardRef} id={`cue-card-${cue.id}`} data-cursor-surface="cueCard" data-cursor-anchor={cue.id}>
-      <CardBase
-        isActive={isSelected}
-        shadow={isSelected ? "lg" : "none"}
-        style={{
-          alignSelf: "start",
-        }}
-      >
-        <Stack gap="md">
-          <Group align="center" justify="space-between">
-            <Group gap="xs">
-              {/* <Title
+      <div id={cueNumber === 1 ? "tour-event-7" : undefined}>
+        <CardBase
+          isActive={isSelected}
+          shadow={isSelected ? "lg" : "none"}
+          style={{
+            alignSelf: "start",
+          }}
+        >
+          <Stack gap="md">
+            <Group align="center" justify="space-between">
+              <Group gap="xs">
+                {/* <Title
                 order={4}
                 style={{
                   backgroundColor: isSelected
@@ -213,147 +214,148 @@ export const CueCard = memo(function CueCard({
               >
                 Cue {cueNumber}
               </Title> */}
-              <Tooltip
-                label="Preview this cue in the visualiser"
-                openDelay={300}
-                position="top"
-                withArrow
-                transitionProps={popTransition}
-              >
-                <Button
-                  variant="light"
-                  vars={() => ({
-                    root: isSelected
-                      ? {}
-                      : {
-                          "--button-bg": "transparent",
-                          // The same colour as the selected fill.
-                          "--button-bd": "1px solid var(--mantine-primary-color-light)",
-                        },
-                  })}
-                  rightSection={<IconEye width="1rem" />}
-                  onClick={onPreview}
+                <Tooltip
+                  label="Preview this cue in the visualiser"
+                  openDelay={300}
+                  position="top"
+                  withArrow
+                  transitionProps={popTransition}
                 >
-                  {" "}
-                  Cue {cueNumber}{" "}
-                </Button>
-              </Tooltip>
-              {showCueIdentifiers && (
-                <Tooltip label={`Cue ID: ${cue.id}`}>
-                  <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
-                    {cue.id.slice(0, 4)}
-                  </Text>
-                </Tooltip>
-              )}
-
-              <Menu shadow="md">
-                <Menu.Target>
-                  <Button variant="transparent" size="xs">
-                    Copy another cue
+                  <Button
+                    variant="light"
+                    vars={() => ({
+                      root: isSelected
+                        ? {}
+                        : {
+                            "--button-bg": "transparent",
+                            // The same colour as the selected fill.
+                            "--button-bd": "1px solid var(--mantine-primary-color-light)",
+                          },
+                    })}
+                    rightSection={<IconEye width="1rem" />}
+                    onClick={onPreview}
+                    id={cueNumber === 1 ? "tour-event-8" : undefined}
+                  >
+                    {" "}
+                    Cue {cueNumber}{" "}
                   </Button>
-                </Menu.Target>
-                <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
-                  <Menu.Search
-                    value={copyQuery}
-                    onChange={(event) => setCopyQuery(event.currentTarget.value)}
-                    placeholder="Search cues"
-                  />
-                  <Menu.Label>Copy all settings from:</Menu.Label>
-                  {filteredCopyOptions.length > 0 ? (
-                    filteredCopyOptions.map((option) => (
-                      <Menu.Item key={option.value} onClick={() => void onCopyFrom(option.value, option.label)}>
-                        <Group>
-                          {option.label}
-                          <Text c="dimmed" fz="sm">
-                            {option.value.slice(0, 4)}
-                          </Text>
-                        </Group>
-                      </Menu.Item>
-                    ))
-                  ) : (
-                    <Menu.Item disabled>
-                      <Text c="dimmed" size="sm" ta="center" py="xs">
-                        No cues found
-                      </Text>
-                    </Menu.Item>
-                  )}
-                </Menu.Dropdown>
-              </Menu>
+                </Tooltip>
+                {showCueIdentifiers && (
+                  <Tooltip label={`Cue ID: ${cue.id}`}>
+                    <Text c="dimmed" style={{ textDecoration: "underline dotted" }}>
+                      {cue.id.slice(0, 4)}
+                    </Text>
+                  </Tooltip>
+                )}
 
-              {/* <Button variant="light" size="xs" onClick={onPreview} leftSection={<IconEye size="1rem" />}>
+                <Menu shadow="md">
+                  <Menu.Target>
+                    <Button variant="transparent" size="xs">
+                      Copy another cue
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown mah={500} style={{ overflowY: "auto" }}>
+                    <Menu.Search
+                      value={copyQuery}
+                      onChange={(event) => setCopyQuery(event.currentTarget.value)}
+                      placeholder="Search cues"
+                    />
+                    <Menu.Label>Copy all settings from:</Menu.Label>
+                    {filteredCopyOptions.length > 0 ? (
+                      filteredCopyOptions.map((option) => (
+                        <Menu.Item key={option.value} onClick={() => void onCopyFrom(option.value, option.label)}>
+                          <Group>
+                            {option.label}
+                            <Text c="dimmed" fz="sm">
+                              {option.value.slice(0, 4)}
+                            </Text>
+                          </Group>
+                        </Menu.Item>
+                      ))
+                    ) : (
+                      <Menu.Item disabled>
+                        <Text c="dimmed" size="sm" ta="center" py="xs">
+                          No cues found
+                        </Text>
+                      </Menu.Item>
+                    )}
+                  </Menu.Dropdown>
+                </Menu>
+
+                {/* <Button variant="light" size="xs" onClick={onPreview} leftSection={<IconEye size="1rem" />}>
                 Preview cue
               </Button> */}
+              </Group>
+
+              <ConfirmDeleteButton
+                message={`Delete cue ${cueNumber}? This cannot be undone`}
+                onConfirm={onDelete}
+                buttonProps={{ variant: "transparent" }}
+              />
             </Group>
 
-            <ConfirmDeleteButton
-              message={`Delete cue ${cueNumber}? This cannot be undone`}
-              onConfirm={onDelete}
-              buttonProps={{ variant: "transparent" }}
-            />
-          </Group>
-
-          <Switch.Group value={cue.activeFixtureGroupIds} onChange={onActiveFixtureGroupsChange}>
-            <SimpleGrid
-              type="container"
-              cols={{
-                base: 1,
-                "400px": 2,
-                "700px": 3,
-                "1000px": 4,
-              }}
-              spacing="md"
-              verticalSpacing="md"
-            >
-              {fixtureGroups.map((fixtureGroup) => (
-                <CueCardFixtureGroupOptionSetPickers
-                  key={fixtureGroup.id}
-                  fixtureGroup={fixtureGroup}
-                  cue={cue}
-                  setSelected={setSelected}
-                />
-              ))}
-
-              {/* DMX Manual Override card */}
-              <Stack
-                gap="xs"
-                p="lg"
-                style={{
-                  borderRadius: "6px",
-                  backgroundColor: !cueHasOverrides
-                    ? "transparent"
-                    : "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
-                  border: "1px solid light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
-
-                  transition: "all 0.2s ease-in-out",
+            <Switch.Group value={cue.activeFixtureGroupIds} onChange={onActiveFixtureGroupsChange}>
+              <SimpleGrid
+                type="container"
+                cols={{
+                  base: 1,
+                  "400px": 2,
+                  "700px": 3,
+                  "1000px": 4,
                 }}
+                spacing="md"
+                verticalSpacing="md"
               >
-                <Group>
-                  <Group gap="xs" align="center">
-                    <Text fw="bold">Custom settings</Text>
-                    <Tooltip
-                      label="Configure fixtures how you'd like - not restricted to fixed selections"
-                      position="top"
-                      withArrow
+                {fixtureGroups.map((fixtureGroup) => (
+                  <CueCardFixtureGroupOptionSetPickers
+                    key={fixtureGroup.id}
+                    fixtureGroup={fixtureGroup}
+                    cue={cue}
+                    setSelected={setSelected}
+                  />
+                ))}
+
+                {/* DMX Manual Override card */}
+                <Stack
+                  gap="xs"
+                  p="lg"
+                  style={{
+                    borderRadius: "6px",
+                    backgroundColor: !cueHasOverrides
+                      ? "transparent"
+                      : "light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
+                    border: "1px solid light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))",
+
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  <Group>
+                    <Group gap="xs" align="center">
+                      <Text fw="bold">Custom settings</Text>
+                      <Tooltip
+                        label="Configure fixtures how you'd like - not restricted to fixed selections"
+                        position="top"
+                        withArrow
+                      >
+                        <IconInfoSquareRounded
+                          width="0.75rem"
+                          height="0.75rem"
+                          style={{ color: "var(--mantine-gray-5)" }}
+                        />
+                      </Tooltip>
+                    </Group>
+                    <Flex flex={1} />
+                    <ActionIcon
+                      variant={cueHasOverrides ? "light" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setIsDmxDrawerOpen(true);
+                        setSelected();
+                      }}
                     >
-                      <IconInfoSquareRounded
-                        width="0.75rem"
-                        height="0.75rem"
-                        style={{ color: "var(--mantine-gray-5)" }}
-                      />
-                    </Tooltip>
-                  </Group>
-                  <Flex flex={1} />
-                  <ActionIcon
-                    variant={cueHasOverrides ? "light" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setIsDmxDrawerOpen(true);
-                      setSelected();
-                    }}
-                  >
-                    {cueHasOverrides ? <IconEdit size={"0.75rem"} /> : <IconPlus size={"0.75rem"} />}
-                  </ActionIcon>
-                  {/* <Switch
+                      {cueHasOverrides ? <IconEdit size={"0.75rem"} /> : <IconPlus size={"0.75rem"} />}
+                    </ActionIcon>
+                    {/* <Switch
                     styles={{
                       track: { cursor: "pointer" },
                       input: { cursor: "pointer" },
@@ -362,153 +364,154 @@ export const CueCard = memo(function CueCard({
                     onLabel="ON"
                     offLabel="OFF"
                   /> */}
-                </Group>
-                <Divider />
-                {/* {optionSets.map((optionSet) => (
+                  </Group>
+                  <Divider />
+                  {/* {optionSets.map((optionSet) => (
                   // Render the option set corresponding to the OptionSetType
 
                   <OptionSetWrapper key={optionSet.id} optionSet={optionSet} eventId={fixtureGroup.eventId} cue={cue} />
                 ))} */}
 
-                {!cueHasOverrides ? (
-                  <Text c="dimmed" size="sm">
-                    No custom settings yet
-                  </Text>
-                ) : (
-                  <Text c="dimmed" size="sm">
-                    Some values are overriden, click Edit to see them
-                  </Text>
-                )}
-              </Stack>
-            </SimpleGrid>
-          </Switch.Group>
-          <SimpleGrid
-            cols={{
-              base: 1,
-              "400px": 2,
-            }}
-            spacing={0}
-            type="container"
-          >
-            {/* TODO: sync Accordion state when following */}
-            <Accordion>
-              <Accordion.Item value="holdTime">
-                <Tooltip
-                  label="The hold time is currently being set by the timeline; adjust the cue's timing there instead."
-                  withArrow
-                  disabled={!isCueInTimeline}
-                  transitionProps={popTransition}
-                >
-                  <Accordion.Control disabled={isCueInTimeline}>
-                    {/* Change to next cue (currently {holdTimeMs === -1 ? "manually" : `after ${holdTimeMs / 1000}s`}) */}
-                    Cue hold time ({isCueInTimeline ? "set by the timeline: " : "currently "}
-                    {effectiveHoldTimeMs === -1 ? "infinite" : `${effectiveHoldTimeMs / 1000}s`})
-                  </Accordion.Control>
-                </Tooltip>
+                  {!cueHasOverrides ? (
+                    <Text c="dimmed" size="sm">
+                      No custom settings yet
+                    </Text>
+                  ) : (
+                    <Text c="dimmed" size="sm">
+                      Some values are overriden, click Edit to see them
+                    </Text>
+                  )}
+                </Stack>
+              </SimpleGrid>
+            </Switch.Group>
+            <SimpleGrid
+              cols={{
+                base: 1,
+                "400px": 2,
+              }}
+              spacing={0}
+              type="container"
+            >
+              {/* TODO: sync Accordion state when following */}
+              <Accordion>
+                <Accordion.Item value="holdTime">
+                  <Tooltip
+                    label="The hold time is currently being set by the timeline; adjust the cue's timing there instead."
+                    withArrow
+                    disabled={!isCueInTimeline}
+                    transitionProps={popTransition}
+                  >
+                    <Accordion.Control disabled={isCueInTimeline}>
+                      {/* Change to next cue (currently {holdTimeMs === -1 ? "manually" : `after ${holdTimeMs / 1000}s`}) */}
+                      Cue hold time ({isCueInTimeline ? "set by the timeline: " : "currently "}
+                      {effectiveHoldTimeMs === -1 ? "infinite" : `${effectiveHoldTimeMs / 1000}s`})
+                    </Accordion.Control>
+                  </Tooltip>
 
-                <Accordion.Panel>
-                  <Radio.Group
-                    value={holdTimeMs === -1 ? "manual" : "auto"}
-                    onChange={(value) => {
-                      if (value === "manual") saveTransition({ holdTimeMs: -1 });
-                      else if (holdTimeMs === -1) saveTransition({ holdTimeMs: 100 });
-                    }}
-                    disabled={isCueInTimeline}
-                  >
-                    <Group wrap="nowrap" gap="xs">
-                      <Radio label="Only when manually changed" value={"manual"} style={{ flex: 1 }} />
-                      <Radio.Card
-                        style={{ flex: 1 }}
-                        styles={{
-                          card: {
-                            border: 0,
-                          },
-                        }}
-                        value="auto"
-                      >
-                        <Group wrap="nowrap" gap="xs">
-                          <Radio.Indicator />
-                          <DebouncedNumberInput
-                            min={1}
-                            allowDecimal={false}
-                            label="Change after"
-                            suffix="ms"
-                            // While manual, show the 100 that picking "auto" will set.
-                            value={holdTimeMs === -1 ? 100 : holdTimeMs}
-                            onSave={(value) => saveTransition({ holdTimeMs: value })}
-                            disabled={holdTimeMs === -1 || isCueInTimeline}
-                            onKeyDown={keepArrowKeysInInput}
-                          />
-                        </Group>
-                      </Radio.Card>
-                    </Group>
-                  </Radio.Group>
-                </Accordion.Panel>
-              </Accordion.Item>
-            </Accordion>
-            <Accordion>
-              <Accordion.Item value="holdTime">
-                <Accordion.Control>
-                  Cue transition time to next cue (currently{" "}
-                  {transitionTimeMs === 0 ? "Instant" : `${transitionTimeMs / 1000}s`})
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <Radio.Group
-                    value={transitionTimeMs === 0 ? "instant" : "timed"}
-                    onChange={(value) => {
-                      if (value === "instant") saveTransition({ transitionTimeMs: 0 });
-                      else if (transitionTimeMs === 0) saveTransition({ transitionTimeMs: 100 });
-                    }}
-                  >
-                    <Group wrap="nowrap" gap="xs">
-                      <Radio label="Instant transition" value="instant" flex={1} />
-                      <Radio.Card
-                        flex={1}
-                        styles={{
-                          card: {
-                            border: 0,
-                          },
-                        }}
-                        value="timed"
-                      >
-                        <Group wrap="nowrap">
-                          <Radio.Indicator />
-                          <Box style={{ maxWidth: "200px" }}>
+                  <Accordion.Panel>
+                    <Radio.Group
+                      value={holdTimeMs === -1 ? "manual" : "auto"}
+                      onChange={(value) => {
+                        if (value === "manual") saveTransition({ holdTimeMs: -1 });
+                        else if (holdTimeMs === -1) saveTransition({ holdTimeMs: 100 });
+                      }}
+                      disabled={isCueInTimeline}
+                    >
+                      <Group wrap="nowrap" gap="xs">
+                        <Radio label="Only when manually changed" value={"manual"} style={{ flex: 1 }} />
+                        <Radio.Card
+                          style={{ flex: 1 }}
+                          styles={{
+                            card: {
+                              border: 0,
+                            },
+                          }}
+                          value="auto"
+                        >
+                          <Group wrap="nowrap" gap="xs">
+                            <Radio.Indicator />
                             <DebouncedNumberInput
                               min={1}
                               allowDecimal={false}
-                              label="Transition over"
+                              label="Change after"
                               suffix="ms"
-                              // While instant, show the 100 that picking "timed" will set.
-                              value={transitionTimeMs === 0 ? 100 : transitionTimeMs}
-                              onSave={(value) => saveTransition({ transitionTimeMs: value })}
-                              disabled={transitionTimeMs === 0}
+                              // While manual, show the 100 that picking "auto" will set.
+                              value={holdTimeMs === -1 ? 100 : holdTimeMs}
+                              onSave={(value) => saveTransition({ holdTimeMs: value })}
+                              disabled={holdTimeMs === -1 || isCueInTimeline}
                               onKeyDown={keepArrowKeysInInput}
                             />
-                          </Box>
-                        </Group>
-                      </Radio.Card>
-                    </Group>
-                  </Radio.Group>
-                </Accordion.Panel>
-              </Accordion.Item>
-            </Accordion>
-          </SimpleGrid>
-          {/* Autosaved; a pending save still goes out if the card unmounts mid-typing. */}
-          <DebouncedTextarea
-            label="Comments"
-            minRows={1}
-            maxRows={4}
-            variant="unstyled"
-            autosize
-            debounceMs={600}
-            value={cue.comments}
-            onSave={(comments) => void upsertCue({ id: cue.id, comments }).catch(console.error)}
-            placeholder="Write any comments regarding this cue here..."
-            styles={{ input: { fontSize: "16px" } }}
-          />
-        </Stack>
-      </CardBase>
+                          </Group>
+                        </Radio.Card>
+                      </Group>
+                    </Radio.Group>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              </Accordion>
+              <Accordion>
+                <Accordion.Item value="holdTime">
+                  <Accordion.Control>
+                    Cue transition time to next cue (currently{" "}
+                    {transitionTimeMs === 0 ? "Instant" : `${transitionTimeMs / 1000}s`})
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Radio.Group
+                      value={transitionTimeMs === 0 ? "instant" : "timed"}
+                      onChange={(value) => {
+                        if (value === "instant") saveTransition({ transitionTimeMs: 0 });
+                        else if (transitionTimeMs === 0) saveTransition({ transitionTimeMs: 100 });
+                      }}
+                    >
+                      <Group wrap="nowrap" gap="xs">
+                        <Radio label="Instant transition" value="instant" flex={1} />
+                        <Radio.Card
+                          flex={1}
+                          styles={{
+                            card: {
+                              border: 0,
+                            },
+                          }}
+                          value="timed"
+                        >
+                          <Group wrap="nowrap">
+                            <Radio.Indicator />
+                            <Box style={{ maxWidth: "200px" }}>
+                              <DebouncedNumberInput
+                                min={1}
+                                allowDecimal={false}
+                                label="Transition over"
+                                suffix="ms"
+                                // While instant, show the 100 that picking "timed" will set.
+                                value={transitionTimeMs === 0 ? 100 : transitionTimeMs}
+                                onSave={(value) => saveTransition({ transitionTimeMs: value })}
+                                disabled={transitionTimeMs === 0}
+                                onKeyDown={keepArrowKeysInInput}
+                              />
+                            </Box>
+                          </Group>
+                        </Radio.Card>
+                      </Group>
+                    </Radio.Group>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              </Accordion>
+            </SimpleGrid>
+            {/* Autosaved; a pending save still goes out if the card unmounts mid-typing. */}
+            <DebouncedTextarea
+              label="Comments"
+              minRows={1}
+              maxRows={4}
+              variant="unstyled"
+              autosize
+              debounceMs={600}
+              value={cue.comments}
+              onSave={(comments) => void upsertCue({ id: cue.id, comments }).catch(console.error)}
+              placeholder="Write any comments regarding this cue here..."
+              styles={{ input: { fontSize: "16px" } }}
+            />
+          </Stack>
+        </CardBase>
+      </div>
     </div>
   );
 });

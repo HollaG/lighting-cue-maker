@@ -15,11 +15,6 @@ export interface CueSlice {
 
   isMovingCue: boolean;
   setIsMovingCue: (isMovingCue: boolean) => void;
-
-  /** Whether we open the DMX drawer for further editing */
-  isDmxDrawerOpen: boolean;
-  setIsDmxDrawerOpen: (isDmxDrawerOpen: boolean) => void;
-  toggleIsDmxDrawerOpen: () => void;
 }
 
 export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set) => ({
@@ -37,8 +32,4 @@ export const cueSlice: StateCreator<AppStore, [], [], CueSlice> = (set) => ({
 
   isMovingCue: false,
   setIsMovingCue: (isMovingCue) => set({ isMovingCue }),
-
-  isDmxDrawerOpen: false,
-  setIsDmxDrawerOpen: (isDmxDrawerOpen) => set({ isDmxDrawerOpen }),
-  toggleIsDmxDrawerOpen: () => set((state) => ({ isDmxDrawerOpen: !state.isDmxDrawerOpen })),
 });

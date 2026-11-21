@@ -188,6 +188,7 @@ export const ContentControlFixed = ({
       </Menu> */}
 
       <SegmentedControl
+        id="tour-event-redirect-3-1"
         data={[
           { label: "Lyric mode", value: "raw" },
           { label: "Cue mode", value: "cue" },

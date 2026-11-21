@@ -19,7 +19,7 @@ import {
   Title,
   UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure, useLocalStorage, useWindowEvent } from "@mantine/hooks";
+import { useLocalStorage, useWindowEvent } from "@mantine/hooks";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useGetEvent } from "../../query-v2/events/useGetEvent";
 import { useGetItems } from "../../query-v2/items/useGetItems";
@@ -61,6 +61,7 @@ import { DebouncedTextInput } from "../../components/Inputs/DebouncedTextInput";
 import { DebouncedTextarea } from "../../components/Inputs/DebouncedTextarea";
 import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton/ConfirmDeleteButton";
 import { useDeleteItem } from "../../query-v2/items/useDeleteItem";
+import { EventTour } from "../../components/Tour/Event/EventTour";
 
 // const logger = new Logger("EventPage.tsx");
 
@@ -68,17 +69,31 @@ export const EventPage = () => {
   const { eventId } = useParams({
     from: "/events/$eventId/",
   });
-  const [openedEventDetails, { open: openEventDetails, close: closeEventDetails, toggle: toggleEventDetails }] =
-    useDisclosure(false);
+  // Drawer open/close state lives in the store (eventSlice), so other components and the tour can open them.
+  const openedEventDetails = useAppStore((s) => s.isEventDetailsDrawerOpen);
+  const setIsEventDetailsDrawerOpen = useAppStore((s) => s.setIsEventDetailsDrawerOpen);
+  const toggleEventDetails = useAppStore((s) => s.toggleEventDetailsDrawer);
+  const openEventDetails = useCallback(() => setIsEventDetailsDrawerOpen(true), [setIsEventDetailsDrawerOpen]);
+  const closeEventDetails = useCallback(() => setIsEventDetailsDrawerOpen(false), [setIsEventDetailsDrawerOpen]);
 
-  // TODO (for the Radial menu): move into the Store
-  const [openedLyrics, { /* open: openLyrics, */ close: closeLyrics, toggle: toggleLyrics }] = useDisclosure(false);
-  const [openedCues, { /* open: openCues, */ close: closeCues, toggle: toggleCues }] = useDisclosure(false);
-  // for DMX drawer, the open/close state is in the app store, so that each individual CueCard can open it remotely.
+  const openedLyrics = useAppStore((s) => s.isLyricsDrawerOpen);
+  const setIsLyricsDrawerOpen = useAppStore((s) => s.setIsLyricsDrawerOpen);
+  const toggleLyrics = useAppStore((s) => s.toggleLyricsDrawer);
+  const closeLyrics = useCallback(() => setIsLyricsDrawerOpen(false), [setIsLyricsDrawerOpen]);
+
+  const openedCues = useAppStore((s) => s.isCuesDrawerOpen);
+  const setIsCuesDrawerOpen = useAppStore((s) => s.setIsCuesDrawerOpen);
+  const toggleCues = useAppStore((s) => s.toggleCuesDrawer);
+  const closeCues = useCallback(() => setIsCuesDrawerOpen(false), [setIsCuesDrawerOpen]);
+
   const isDmxDrawerOpen = useAppStore((s) => s.isDmxDrawerOpen);
   const setIsDmxDrawerOpen = useAppStore((s) => s.setIsDmxDrawerOpen);
-  const [openedTimeline, { /* open: openTimeline, */ close: closeTimeline, toggle: toggleTimeline }] =
-    useDisclosure(false);
+  const toggleDmx = useAppStore((s) => s.toggleDmxDrawer);
+
+  const openedTimeline = useAppStore((s) => s.isTimelineDrawerOpen);
+  const setIsTimelineDrawerOpen = useAppStore((s) => s.setIsTimelineDrawerOpen);
+  const toggleTimeline = useAppStore((s) => s.toggleTimelineDrawer);
+  const closeTimeline = useCallback(() => setIsTimelineDrawerOpen(false), [setIsTimelineDrawerOpen]);
 
   const selectedFixtureIds = useAppStore((s) => s.selectedFixtureIds);
   const setSelectedFixtureIds = useAppStore((s) => s.setSelectedFixtureIds);
@@ -154,24 +169,25 @@ export const EventPage = () => {
     if (!selectedItemId) openEventDetails();
   }, [eventId]);
 
+  const setTourActive = useAppStore((s) => s.setEventTourActive);
   // check if user is new (directly read not thru effect so we get the intiial value)
-  // const isUserNew = useMemo(() => !localStorage.getItem(`${eventId}-last-hidden-time`), [eventId]);
+  const isUserNew = useMemo(() => !localStorage.getItem(`${eventId}-last-hidden-time`), [eventId]);
 
   // Save the user's last minimized time (last time they closed the page)
-  // useEffect(() => {
-  //   const key = `${eventId}-last-hidden-time`;
-  //   const save = () => localStorage.setItem(key, String(Date.now()));
+  useEffect(() => {
+    const key = `${eventId}-last-hidden-time`;
+    const save = () => localStorage.setItem(key, String(Date.now()));
 
-  //   const onVisibility = () => {
-  //     if (document.visibilityState === "hidden") save();
-  //   };
-  //   document.addEventListener("visibilitychange", onVisibility);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") save();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
-  //   return () => {
-  //     document.removeEventListener("visibilitychange", onVisibility);
-  //     save(); // leaving the event page inside the app (route change / switching event)
-  //   };
-  // }, [eventId]);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      save(); // leaving the event page inside the app (route change / switching event)
+    };
+  }, [eventId]);
 
   // Mirror the selected item into the app store (`activeItemId`), for components that aren't handed it as a prop.
   // The page's per-event local storage above stays the source of truth, so each event still remembers its own item.
@@ -264,20 +280,9 @@ export const EventPage = () => {
     }
   };
 
-  // --- GUIDED TOUR ---------
-  // const [active, setActive] = useState(false);
-  // const [step, setStep] = useState(0);
-
   return (
     <>
-      {/* <Tour active={active} step={step} onStepChange={setStep} onClose={() => setActive(false)}>
-        <Tour.Step target="#controlled-target-1" title="Step 1">
-          This is the first step.
-        </Tour.Step>
-        <Tour.Step target="#controlled-target-2" title="Step 2">
-          This is the second step.
-        </Tour.Step>
-      </Tour> */}
+      <EventTour eventId={eventId} />
 
       {/* Centered pull-down */}
       <Stack
@@ -291,7 +296,12 @@ export const EventPage = () => {
         }}
         gap="xs"
       >
-        <Button size="xs" variant="light" onClick={toggleDrawerHandler.bind(null, toggleEventDetails, "event")}>
+        <Button
+          id="tour-event-0"
+          size="xs"
+          variant="light"
+          onClick={toggleDrawerHandler.bind(null, toggleEventDetails, "event")}
+        >
           {/* {openedEventDetails ? "Close" : "Open"} event details */}
           Change item
         </Button>
@@ -436,27 +446,54 @@ export const EventPage = () => {
               </Stack>
             </Box>
           )}
-          {items.length !== 0 ? (
-            <>
-              {/* <Group justify="center"> */}
-              <div className={classes.root} ref={setRootRef}>
-                {controls}
+          <div id="tour-event-1">
+            {items.length !== 0 ? (
+              <>
+                {/* <Group justify="center"> */}
+                <div className={classes.root} ref={setRootRef}>
+                  {controls}
 
-                <FloatingIndicator
-                  target={selectedItemId ? controlsRefs[selectedItemId] : null}
-                  parent={rootRef}
-                  className={classes.indicator}
-                />
-              </div>
+                  <FloatingIndicator
+                    target={selectedItemId ? controlsRefs[selectedItemId] : null}
+                    parent={rootRef}
+                    className={classes.indicator}
+                  />
+                </div>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  onAddItem();
-                }}
-              >
-                <Center mt="sm">
-                  <Text size="sm"> Please select an item, or add a new item/band/act: </Text>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    onAddItem();
+                  }}
+                >
+                  <Center mt="sm">
+                    <Text size="sm"> Please select an item, or add a new item/band/act: </Text>
+                    <TextInput
+                      value={itemName}
+                      onChange={(e) => setItemName(e.target.value)}
+                      ml={"md"}
+                      placeholder="Your item name"
+                      rightSectionWidth={"80px"}
+                      rightSection={
+                        <Button
+                          type="submit"
+                          size="xs"
+                          variant="transparent"
+                          disabled={isItemsLoading}
+                          loading={isItemCreating}
+                          loaderProps={{ type: "bars" }}
+                        >
+                          Add item
+                        </Button>
+                      }
+                    />
+                  </Center>
+                </form>
+              </>
+            ) : (
+              <Center mt={"xl"}>
+                <Stack>
+                  <Text size="sm"> to get started, enter your item/band/act's name: </Text>
                   <TextInput
                     value={itemName}
                     onChange={(e) => setItemName(e.target.value)}
@@ -464,40 +501,15 @@ export const EventPage = () => {
                     placeholder="Your item name"
                     rightSectionWidth={"80px"}
                     rightSection={
-                      <Button
-                        type="submit"
-                        size="xs"
-                        variant="transparent"
-                        disabled={isItemsLoading}
-                        loading={isItemCreating}
-                        loaderProps={{ type: "bars" }}
-                      >
+                      <Button size="xs" variant="transparent" onClick={() => onAddItem()}>
                         Add item
                       </Button>
                     }
                   />
-                </Center>
-              </form>
-            </>
-          ) : (
-            <Center mt={"xl"}>
-              <Stack>
-                <Text size="sm"> to get started, enter your item/band/act's name: </Text>
-                <TextInput
-                  value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  ml={"md"}
-                  placeholder="Your item name"
-                  rightSectionWidth={"80px"}
-                  rightSection={
-                    <Button size="xs" variant="transparent" onClick={() => onAddItem()}>
-                      Add item
-                    </Button>
-                  }
-                />
-              </Stack>
-            </Center>
-          )}
+                </Stack>
+              </Center>
+            )}
+          </div>
 
           <Flex
             mt="md"
@@ -548,14 +560,14 @@ export const EventPage = () => {
               </>
             )}
           </Flex>
-          {/* {isUserNew && (
+          {
             <Stack mt="md">
               <Center>Looks like you're new here! Take a guided tour?</Center>
               <Center>
-                <Button> Begin walkthrough</Button>
+                <Button onClick={() => setTourActive(true, 1)}> Begin walkthrough</Button>
               </Center>
             </Stack>
-          )} */}
+          }
         </Container>
       </Drawer>
 
@@ -568,7 +580,12 @@ export const EventPage = () => {
           zIndex: 1000,
         }}
       >
-        <Button size="xs" variant="light" onClick={toggleDrawerHandler.bind(null, toggleLyrics, "lyrics")}>
+        <Button
+          id="tour-event-2"
+          size="xs"
+          variant="light"
+          onClick={toggleDrawerHandler.bind(null, toggleLyrics, "lyrics")}
+        >
           {openedLyrics ? "Hide" : "Manage"} lyrics
         </Button>
       </Box>
@@ -628,7 +645,12 @@ export const EventPage = () => {
           zIndex: 1000,
         }}
       >
-        <Button size="xs" variant="light" onClick={toggleDrawerHandler.bind(null, toggleCues, "cues")}>
+        <Button
+          id="tour-event-6"
+          size="xs"
+          variant="light"
+          onClick={toggleDrawerHandler.bind(null, toggleCues, "cues")}
+        >
           {openedCues ? "Hide" : "Show"} cues
         </Button>
       </Box>
@@ -679,11 +701,7 @@ export const EventPage = () => {
           <Button size="xs" variant="light" onClick={() => toggleDrawerHandler(toggleTimeline, "timeline")}>
             {openedTimeline ? "Hide" : "Show"} timeline
           </Button>
-          <Button
-            size="xs"
-            variant="light"
-            onClick={() => toggleDrawerHandler(() => setIsDmxDrawerOpen(!isDmxDrawerOpen), "dmx")}
-          >
+          <Button size="xs" variant="light" onClick={() => toggleDrawerHandler(toggleDmx, "dmx")}>
             {isDmxDrawerOpen ? "Hide" : "Show"} DMX overrides
           </Button>
         </Group>
@@ -730,7 +748,7 @@ export const EventPage = () => {
       </Drawer>
 
       {/* Main visualiser */}
-      <Box h="100dvh" w="100%">
+      <Box h="100dvh" w="100%" id="tour-event-9">
         {visualiser ? (
           <VisualiserInputProcessor
             key={visualiser.id}
