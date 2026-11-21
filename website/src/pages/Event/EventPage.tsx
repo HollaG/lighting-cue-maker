@@ -28,7 +28,7 @@ import { useUpsertItem } from "../../query-v2/items/useUpsertItem";
 import { useGetPatchedFixtures } from "../../query-v2/patched-fixtures/useGetPatchedFixtures";
 import { useGetVisualiser } from "../../query-v2/visualiser/useGetVisualiser";
 // import { StaticVisualiser3D } from "../../components/Visualiser3D-v2/Visualiser3D";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "../../store/appStore";
 // import { Logger } from "../../utils/logger";
 import { saveRecentEvent } from "../../utils/recentEvents";
@@ -178,13 +178,27 @@ export const EventPage = () => {
 
   const setTourActive = useAppStore((s) => s.setEventTourActive);
 
-  // Save the user's last minimized time (last time they closed the page)
+  // --- New user ---------
+  // First visit to any event in this browser (not per event). Read during render (not in an effect) so the first
+  // render already has it; the effect below then marks the browser as visited for next time.
+  const isUserNew = useMemo(() => !localStorage.getItem("event-page-visited"), []);
   useEffect(() => {
-    const key = `${eventId}-last-hidden-time`;
-    const save = () => localStorage.setItem(key, String(Date.now()));
+    localStorage.setItem("event-page-visited", "1");
+  }, []);
+
+  // --- Last seen ---------
+  // When the user last hid/left this event, and which item they were on, so a later visit can show what changed
+  // since then. Saved as JSON: { time: number (ms since epoch), itemId: string }.
+  // The item is read through a ref: the listeners are set up once per event, and would otherwise save a stale item.
+  const selectedItemIdRef = useRef(selectedItemId);
+  selectedItemIdRef.current = selectedItemId;
+  useEffect(() => {
+    const key = `${eventId}-last-seen`;
+    const save = () =>
+      localStorage.setItem(key, JSON.stringify({ time: Date.now(), itemId: selectedItemIdRef.current }));
 
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") save();
+      if (document.visibilityState === "hidden") save(); // tab hidden, minimised, or closed
     };
     document.addEventListener("visibilitychange", onVisibility);
 
@@ -565,14 +579,14 @@ export const EventPage = () => {
               </>
             )}
           </Flex>
-          {
+          {isUserNew && (
             <Stack mt="md">
               <Center>Looks like you're new here! Take a guided tour?</Center>
               <Center>
                 <Button onClick={() => setTourActive(true, 1)}> Begin walkthrough</Button>
               </Center>
             </Stack>
-          }
+          )}
         </Container>
       </Drawer>
 

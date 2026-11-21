@@ -419,30 +419,22 @@ export const CueCard = memo(function CueCard({
                     >
                       <Group wrap="nowrap" gap="xs">
                         <Radio label="Only when manually changed" value={"manual"} style={{ flex: 1 }} />
-                        <Radio.Card
-                          style={{ flex: 1 }}
-                          styles={{
-                            card: {
-                              border: 0,
-                            },
-                          }}
-                          value="auto"
-                        >
-                          <Group wrap="nowrap" gap="xs">
-                            <Radio.Indicator />
-                            <DebouncedNumberInput
-                              min={1}
-                              allowDecimal={false}
-                              label="Change after"
-                              suffix="ms"
-                              // While manual, show the 100 that picking "auto" will set.
-                              value={holdTimeMs === -1 ? 100 : holdTimeMs}
-                              onSave={(value) => saveTransition({ holdTimeMs: value })}
-                              disabled={holdTimeMs === -1 || isCueInTimeline}
-                              onKeyDown={keepArrowKeysInInput}
-                            />
-                          </Group>
-                        </Radio.Card>
+                        {/* A plain Radio next to the input, not a Radio.Card around it: Radio.Card is a <button>, and
+                            the NumberInput's up/down controls are buttons too (button-in-button is invalid HTML). */}
+                        <Group wrap="nowrap" gap="xs" style={{ flex: 1 }}>
+                          <Radio value="auto" aria-label="Change after a set time" />
+                          <DebouncedNumberInput
+                            min={1}
+                            allowDecimal={false}
+                            label="Change after"
+                            suffix="ms"
+                            // While manual, show the 100 that picking "auto" will set.
+                            value={holdTimeMs === -1 ? 100 : holdTimeMs}
+                            onSave={(value) => saveTransition({ holdTimeMs: value })}
+                            disabled={holdTimeMs === -1 || isCueInTimeline}
+                            onKeyDown={keepArrowKeysInInput}
+                          />
+                        </Group>
                       </Group>
                     </Radio.Group>
                   </Accordion.Panel>
@@ -464,32 +456,23 @@ export const CueCard = memo(function CueCard({
                     >
                       <Group wrap="nowrap" gap="xs">
                         <Radio label="Instant transition" value="instant" flex={1} />
-                        <Radio.Card
-                          flex={1}
-                          styles={{
-                            card: {
-                              border: 0,
-                            },
-                          }}
-                          value="timed"
-                        >
-                          <Group wrap="nowrap">
-                            <Radio.Indicator />
-                            <Box style={{ maxWidth: "200px" }}>
-                              <DebouncedNumberInput
-                                min={1}
-                                allowDecimal={false}
-                                label="Transition over"
-                                suffix="ms"
-                                // While instant, show the 100 that picking "timed" will set.
-                                value={transitionTimeMs === 0 ? 100 : transitionTimeMs}
-                                onSave={(value) => saveTransition({ transitionTimeMs: value })}
-                                disabled={transitionTimeMs === 0}
-                                onKeyDown={keepArrowKeysInInput}
-                              />
-                            </Box>
-                          </Group>
-                        </Radio.Card>
+                        {/* Plain Radio, not Radio.Card: see the hold time options above. */}
+                        <Group wrap="nowrap" flex={1}>
+                          <Radio value="timed" aria-label="Transition over a set time" />
+                          <Box style={{ maxWidth: "200px" }}>
+                            <DebouncedNumberInput
+                              min={1}
+                              allowDecimal={false}
+                              label="Transition over"
+                              suffix="ms"
+                              // While instant, show the 100 that picking "timed" will set.
+                              value={transitionTimeMs === 0 ? 100 : transitionTimeMs}
+                              onSave={(value) => saveTransition({ transitionTimeMs: value })}
+                              disabled={transitionTimeMs === 0}
+                              onKeyDown={keepArrowKeysInInput}
+                            />
+                          </Box>
+                        </Group>
                       </Group>
                     </Radio.Group>
                   </Accordion.Panel>
