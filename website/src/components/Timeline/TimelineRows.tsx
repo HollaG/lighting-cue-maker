@@ -6,6 +6,8 @@ import { TimelineRow } from "./TimelineRow";
 import { TimelineRowId } from "../../utils/timeline";
 import { TimelineSectionItem } from "./TimelineSectionItem";
 import { TimelineAudioItem } from "./TimelineAudioItem";
+import { TimelineWaveform } from "./TimelineWaveform";
+import type { Peaks } from "../../utils/waveform";
 
 /** Must be inside TimelineContext: useTimelineContext gives the container's ref and style. */
 export const TimelineRows = ({
@@ -13,6 +15,7 @@ export const TimelineRows = ({
   itemId,
   timeline,
   audioFiles,
+  peaksByFileId,
   // onSelect: still in the props for the selection WIP, not used yet
   onDelete,
   onCreate,
@@ -22,6 +25,8 @@ export const TimelineRows = ({
   itemId: string;
   timeline: Timeline;
   audioFiles: AudioFileWithUrl[];
+  /** Waveform peaks per audio file; a clip shows no waveform until its file has decoded. */
+  peaksByFileId: ReadonlyMap<string, Peaks>;
   onSelect: (type: TimelineRowId, ids: Set<string>) => void;
   onDelete: (type: TimelineRowId, id: string) => void;
   onCreate: (range: Range) => void;
@@ -34,18 +39,31 @@ export const TimelineRows = ({
     <Box ref={setTimelineRef} style={style}>
       {/* Explicity no creation for Audio */}
       <TimelineRow id={TimelineRowId.AUDIO} sidebar="Audio clips">
-        {timeline.audios.map((clip) => (
-          <TimelineAudioItem
-            key={clip.id}
-            id={clip.id}
-            rowId={TimelineRowId.AUDIO}
-            span={{ start: clip.startTime, end: clip.startTime + clip.duration }}
-            onDelete={(id) => onDelete(TimelineRowId.AUDIO, id)}
-            disabled={disabled}
-          >
-            {fileName.get(clip.audioFileId) ?? "Missing file"}
-          </TimelineAudioItem>
-        ))}
+        {timeline.audios.map((clip) => {
+          const peaks = peaksByFileId.get(clip.audioFileId);
+          return (
+            <TimelineAudioItem
+              key={clip.id}
+              id={clip.id}
+              rowId={TimelineRowId.AUDIO}
+              span={{ start: clip.startTime, end: clip.startTime + clip.duration }}
+              onDelete={(id) => onDelete(TimelineRowId.AUDIO, id)}
+              disabled={disabled}
+              waveform={
+                peaks && (
+                  <TimelineWaveform
+                    peaks={peaks}
+                    startTime={clip.startTime}
+                    duration={clip.duration}
+                    offset={clip.offset}
+                  />
+                )
+              }
+            >
+              {fileName.get(clip.audioFileId) ?? "Missing file"}
+            </TimelineAudioItem>
+          );
+        })}
       </TimelineRow>
 
       <TimelineRow

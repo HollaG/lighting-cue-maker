@@ -20,6 +20,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useTimelineCueSync } from "./useTimelineCueSync";
 import { useAppStore } from "../../store/appStore";
+import { useDecodedAudio } from "./useDecodedAudio";
 
 const logger = new Logger("TimelineWrapper", "orange");
 
@@ -281,8 +282,8 @@ export const TimelineWrapper = ({
 
   /** Clicking on the ruler will move the playhead */
   const onRulerClick = (timeMs: number) => {
-    // TODO: for now, round to 1000ms
-    const rounded = Math.round(timeMs / 1000) * 1000;
+    // nearest whole ms (no grid)
+    const rounded = Math.round(timeMs);
 
     // if playing, stop playing, then resume
     if (isPlaying) {
@@ -295,15 +296,13 @@ export const TimelineWrapper = ({
     startPlayheadPositionRef.current = rounded;
   };
 
-  // buffer cache so we dn't refetch every audio clip everytime
-  const bufferCache = useRef<
-    Map<
-      string,
-      {
-        buffer: AudioBuffer;
-      }
-    >
-  >(new Map());
+  // Each file is downloaded and decoded once, shared by playback and the clips' waveforms. The clips' files start
+  // decoding as soon as the timeline mounts (for the waveforms), so the first Play is usually instant too.
+  const { getBuffer, peaksByFileId } = useDecodedAudio(
+    audioCtx,
+    audioFiles,
+    timeline.audios.map((clip) => clip.audioFileId),
+  );
 
   /** on play button clicked */
   const onPlay = async () => {
@@ -324,19 +323,8 @@ export const TimelineWrapper = ({
         // get an offset for the clip, if we're some distance into the clip
         const skipAmount = Math.max(0, startPlayheadPositionRef.current - clip.startTime);
 
-        // fetch the file, try from cache
-        let buffer: AudioBuffer;
-
-        const existingBuf = bufferCache.current.get(file.id);
-        if (existingBuf) {
-          // 1 hour
-          buffer = existingBuf.buffer;
-        } else {
-          const res = await fetch(file.url);
-          const bytes = await res.arrayBuffer();
-          buffer = await audioCtx.current.decodeAudioData(bytes);
-          bufferCache.current.set(file.id, { buffer });
-        }
+        // from the shared cache (downloads and decodes only the first time)
+        const buffer = await getBuffer(file);
 
         // create audio source
         const src = audioCtx.current.createBufferSource();
@@ -371,7 +359,17 @@ export const TimelineWrapper = ({
     const t = transportRef.current;
     const ctx = audioCtx.current;
     if (!t.playing || !ctx) return startPlayheadPositionRef.current; // paused: the saved position
-    return t.anchorMs + (ctx.currentTime - t.anchorCtxTime) * 1000;
+
+    // audio lag (need to account for buffer time)
+    const { contextTime, performanceTime } = ctx.getOutputTimestamp();
+    const heardCtxTime =
+      contextTime !== undefined && performanceTime !== undefined && performanceTime > 0
+        ? contextTime + (performance.now() - performanceTime) / 1000
+        : ctx.currentTime - ctx.baseLatency - (ctx.outputLatency ?? 0); // no timestamp yet / unsupported
+
+    // Because we "account" for lag, the playhead would become "furhter back" than the place it started playing from if
+
+    return Math.max(t.anchorMs, t.anchorMs + (heardCtxTime - t.anchorCtxTime) * 1000);
   }, []);
 
   const onDelete = (type: TimelineRowId, id: string) => {
@@ -463,6 +461,7 @@ export const TimelineWrapper = ({
             itemId={itemId}
             timeline={timeline}
             audioFiles={audioFiles}
+            peaksByFileId={peaksByFileId}
             onSelect={onSelect}
             onDelete={onDelete}
             onCreate={onCreate}

@@ -9,6 +9,7 @@ export const TimelineAudioItem = ({
   rowId,
   span,
   children,
+  waveform,
   onDelete,
   disabled = false,
 }: {
@@ -16,6 +17,8 @@ export const TimelineAudioItem = ({
   rowId: TimelineRowId;
   span: Span;
   children: ReactNode;
+  /** Drawn behind the label (TimelineWaveform). Positioned from the clip's start, so it ignores the padding. */
+  waveform?: ReactNode;
   disabled?: boolean;
 
   onDelete: (id: string) => void;
@@ -44,12 +47,15 @@ export const TimelineAudioItem = ({
           paddingInline: 6,
           display: "flex",
           alignItems: "center",
-          zIndex: 99,
+          // No zIndex: with position: relative it would apply (it was a no-op before) and paint the clip over the
+          // row's resize handle at the bottom edge.
+          position: "relative", // for the waveform's absolute position
         }}
       >
+        {waveform}
         <Menu shadow="md" position="top" withArrow withinPortal>
           <Menu.ContextMenu>
-            <Box w="100%" style={{ overflow: "hidden" }} h="100%">
+            <Box w="100%" style={{ overflow: "hidden", position: "relative" }} h="100%">
               <Text size="xs" truncate>
                 {children}
               </Text>
